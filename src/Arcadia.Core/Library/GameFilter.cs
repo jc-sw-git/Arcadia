@@ -58,6 +58,15 @@ public sealed class GameFilter : IEquatable<GameFilter>
         offer.HasTypes ? Types.Where(offer.Types.Contains) : []);
 
     /// <summary>
+    /// This choice, made in a tab that offers <paramref name="offer"/>, laid over <paramref name="saved"/>: what the tab
+    /// didn't show (a category it hides, a type it doesn't hold) stays as saved, so it comes back with its entries even
+    /// after the modal was opened and closed meanwhile (#44 case 17).
+    /// </summary>
+    public GameFilter Over(GameFilter saved, FilterOffer offer) => Of(
+        offer.HasInstalled ? Installed : saved.Installed,
+        offer.HasTypes ? Types.Concat(saved.Types.Where(type => !offer.Types.Contains(type))) : saved.Types);
+
+    /// <summary>
     /// The hits and the counts beside every value, each counted with the other category's choice (#44): one pass, so a
     /// tab of 5,000 entries costs well under a millisecond per press in the modal.
     /// </summary>

@@ -120,6 +120,20 @@ public sealed class GameFilterTests
     }
 
     [Fact]
+    public void A_choice_keeps_what_the_tab_did_not_show()
+    {
+        var saved = GameFilter.Of(InstalledChoice.Installed, [GameType.Soundtrack, GameType.Tool]);
+        var withoutSoundtracks = new FilterOffer(true, [GameType.Game, GameType.Tool]);
+        var onlyGames = new FilterOffer(false, [GameType.Game]);
+
+        // The tool unticked, the hidden soundtrack stays; a hidden category stays as saved.
+        Assert.Equal(GameFilter.Of(InstalledChoice.All, [GameType.Soundtrack]),
+            GameFilter.None.Over(saved, withoutSoundtracks));
+        Assert.Equal(saved, GameFilter.None.Over(saved, onlyGames));
+        Assert.Equal(saved, saved.Within(withoutSoundtracks).Over(saved, withoutSoundtracks));
+    }
+
+    [Fact]
     public void A_saved_filter_comes_back_from_settings_json()
     {
         var filter = GameFilter.Of(InstalledChoice.NotInstalled, [GameType.Tool, GameType.Software]);

@@ -167,6 +167,10 @@ public sealed class LibraryFilterTests
         Assert.True(modal.IsActive);
         Assert.Equal(FilterModalViewModel.ResetText, Focused(modal));
         Assert.Equal("Zurücksetzen", modal.AcceptText);
+        // The row has no values to go into: ▶ leaves the focus on it, so no second ring shows.
+        arcadia.Press(UiAction.Right);
+        Assert.False(modal.IsInValues);
+        Assert.Equal(FilterModalViewModel.ResetText, Focused(modal));
 
         arcadia.Press(UiAction.Accept);
         Assert.False(modal.IsActive);
@@ -314,8 +318,52 @@ public sealed class LibraryFilterTests
 
         Assert.False(arcadia.Main.Library.IsFiltered);
         Assert.Equal(6, arcadia.PageGames.Count);
-        // The saved choice stays: the software back, the filter is back.
+        // The saved choice stays, also when the modal is opened and closed meanwhile; with the software back, the filter is back.
+        arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.KeyboardLayout);
         Assert.Equal([GameType.Software], arcadia.Settings.Current.FilterOf(KnownLaunchers.Gog.Id).Types);
+        games.Add(Missing(KnownLaunchers.Gog, "Golf Software", GameType.Software));
+        await arcadia.RescanAsync();
+        Assert.True(arcadia.Main.Library.IsFiltered);
+        Assert.Equal(["Golf Software"], Titles(arcadia));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T465-11")]
+    public async Task Alle_Filter_zuruecksetzen_clears_what_the_tab_no_longer_holds_too()
+    {
+        var (games, specs) = Mixed();
+        using var arcadia = await ArcadiaDriver.StartAsync(specs, settings: new AppSettings
+        {
+            PanEnabled = true,
+            ActiveLaunchers = specs.Select(spec => spec.Launcher.Id).ToList(),
+        }.WithFilter(KnownLaunchers.Gog.Id, GameFilter.Of(InstalledChoice.Installed, [GameType.Software])));
+        games.RemoveAll(game => game.Type == GameType.Software);
+        await arcadia.RescanAsync();
+
+        // Still "Nur installierte": the reset row is first, A clears it and the hidden software.
+        arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.Up).Press(UiAction.Accept).Press(UiAction.KeyboardLayout);
+
+        Assert.Equal(GameFilter.None, arcadia.Settings.Current.FilterOf(KnownLaunchers.Gog.Id));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T465-2")]
+    public async Task Pages_count_only_the_hits()
+    {
+        var gog = KnownLaunchers.Gog;
+        var library = Enumerable.Range(0, 60)
+            .Select(i => i % 2 == 0 ? Installed(gog, $"Spiel {i:00}") : Missing(gog, $"Spiel {i:00}"))
+            .ToList();
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(gog, library.Count, Library: library)]);
+        Assert.Equal("1–25 von 60", arcadia.Main.Library.RangeText);
+
+        arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.KeyboardLayout);
+
+        Assert.Equal("1–25 von 30", arcadia.Main.Library.RangeText);
+        Assert.Equal(["1", "2"], arcadia.Main.Library.PageButtons.Select(button => button.Label));
+        arcadia.Press(UiAction.NextPage);
+        Assert.Equal("26–30 von 30", arcadia.Main.Library.RangeText);
+        Assert.All(arcadia.PageGames, tile => Assert.True(tile.Game.IsInstalled));
     }
 
     [AvaloniaFact]
@@ -352,6 +400,14 @@ public sealed class LibraryFilterTests
         Assert.True(modal.ShowsTypes);
         arcadia.Click(modal.Values.Single(value => value.Label == "Werkzeuge").PickCommand);
         Assert.True(modal.Values.Single(value => value.Label == "Werkzeuge").IsSelected);
+
+        // "Alle Filter zurücksetzen" clicked from the values: the focus goes back to the categories, not to hidden values.
+        arcadia.Click(modal.ResetCommand);
+        Assert.False(modal.IsActive);
+        Assert.False(modal.IsInValues);
+        Assert.Equal("Installiert", Focused(modal));
+        arcadia.Click(modal.Categories[1].PickCommand);
+        arcadia.Click(modal.Values.Single(value => value.Label == "Werkzeuge").PickCommand);
         arcadia.Click(modal.CloseCommand);
 
         Assert.Null(arcadia.Main.FilterModal);

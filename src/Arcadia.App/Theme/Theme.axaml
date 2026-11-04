@@ -2485,7 +2485,7 @@
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
-  <!-- The funnel beside "Ansicht": neutral without a filter, filled in the accent colour with "19 von 412" with one. -->
+  <!-- The funnel beside "Ansicht": neutral without a filter; with one the funnel fills and "19 von 412" shows. -->
   <Style Selector="Button.filterChip">
     <Setter Property="Height" Value="44" />
     <Setter Property="CornerRadius" Value="22" />
@@ -2498,13 +2498,13 @@
   <Style Selector="Button.filterChip:pointerover">
     <Setter Property="Background" Value="{StaticResource Line}" />
   </Style>
-  <Style Selector="Button.filterChip.active, Button.filterChip.active:pointerover">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
-    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  <!-- An active filter stays a chip like "Ansicht": only the funnel fills and the count shows, in the soft accent. -->
+  <Style Selector="Button.filterChip.active">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
   <Style Selector="Button.filterChip.active Path.filterFunnel">
-    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
-    <Setter Property="Fill" Value="{StaticResource OnAccent}" />
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="Fill" Value="{StaticResource AccentSoft}" />
   </Style>
   <!-- A tab with nothing to filter by: the funnel alone, faint, without a key (#44). -->
   <Style Selector="Button.filterChip:disabled">
@@ -2704,7 +2704,7 @@
   <Style Selector="Button.filterOption.focused /template/ Border#Chrome, Button.filterValue.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
   </Style>
-  <Style Selector="Button.filterValue.noHits">
+  <Style Selector="Button.filterOption.noHits, Button.filterValue.noHits">
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
   <Style Selector="TextBlock.filterOptionLabel, TextBlock.filterValueLabel">

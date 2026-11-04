@@ -141,6 +141,9 @@ public sealed partial class FilterModalViewModel : ViewModelBase
     [RelayCommand]
     private void Close() => _close(this);
 
+    /// <summary>"Alle Filter zurücksetzen" was chosen: it clears what the tab doesn't show as well.</summary>
+    public bool WasReset { get; private set; }
+
     [RelayCommand]
     private void Reset()
     {
@@ -149,6 +152,9 @@ public sealed partial class FilterModalViewModel : ViewModelBase
             return;
         }
 
+        // A click while the focus is in the values: back to the categories first, so no press goes to hidden values.
+        LeaveValues();
+        WasReset = true;
         Chosen = GameFilter.None;
         Recount();
         // The row can't be chosen without a filter: the focus goes on to the first category.
@@ -169,6 +175,9 @@ public sealed partial class FilterModalViewModel : ViewModelBase
                 break;
             case UiAction.Accept when IsResetFocused:
                 Reset();
+                break;
+            case UiAction.Right when IsResetFocused:
+                // The reset row has no values to go into.
                 break;
             case UiAction.Right or UiAction.Accept:
                 EnterValues();

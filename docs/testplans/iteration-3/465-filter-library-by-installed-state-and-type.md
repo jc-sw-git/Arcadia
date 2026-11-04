@@ -21,13 +21,13 @@ checklist as far as part A has it, for the quality engineer to check in the revi
       The category's line reads "Software, Werkzeuge" (or "Mehrere" where that doesn't fit). · E2E: yes
 - [x] **T465-4** A tab with games only has no "Typ"; a tab where everything is installed has no "Installiert"; a tab
       with neither shows the funnel alone, without R3, and R3 does nothing. · E2E: yes
-- [x] **T465-5** Without a filter the funnel is neutral; with one it is filled in the accent colour and reads "3 von 7";
+- [x] **T465-5** Without a filter the funnel is neutral; with one the chip stays neutral, the funnel is filled and "3 von 7" shows, both in the soft accent;
       the count line beside the tab's name still counts the whole tab. · E2E: yes
 - [x] **T465-6** A filter without hits: "Keine Einträge passen zu deinen Filtern.", below "<Launcher> hat <M> Einträge,
       der Filter blendet gerade alle aus." and "[R3] Filter ändern" (R3 or A opens the modal); the funnel reads
       "0 von M"; the footer shows Launcher and Ansicht. · E2E: yes
-- [x] **T465-7** "Alle Filter zurücksetzen" is skipped while nothing is chosen; with a filter it is the first row, A
-      clears everything, the focus goes to the first category; closing leaves the tab unfiltered. · E2E: yes
+- [x] **T465-7** "Alle Filter zurücksetzen" is skipped while nothing is chosen; with a filter it is the first row, ▶ on it
+      does nothing, A clears everything, the focus goes to the first category; closing leaves the tab unfiltered. · E2E: yes
 - [x] **T465-8** A filter in one tab: the next tab is unfiltered; after a restart the first tab has its filter again.
       · E2E: yes
 - [x] **T465-9** The detail page turns through the hits only (LT/RT); the search (X) finds entries the filter hides.
@@ -40,7 +40,8 @@ checklist as far as part A has it, for the quality engineer to check in the revi
 
 - [x] **T465-11** A saved value that is gone or unknown (a kind switched off on the launcher page, a rescan, a
       hand-edited `settings.json` with "vielleicht", "7" or a type of a newer version) drops out silently; nothing left,
-      the category is unfiltered; the saved choice comes back with the entries. · E2E: yes
+      the category is unfiltered; the saved choice comes back with the entries, also after opening and closing the
+      modal meanwhile, while "Alle Filter zurücksetzen" clears it. · E2E: yes
 - [x] **T465-12** A rescan while the modal is open: the counts stay those from opening; closing filters the new
       library. · E2E: yes
 - [x] **T465-13** A launcher switched off keeps its filter in `settings.json`; switched on again, it applies.
@@ -58,3 +59,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T465-1 to T465-9, T465-11 to T465-13 | 2026-11-04 | Claude (implementation) | branch of the PR, `dotnet test`, Linux container | ✅ | – |
+| T465-1 to T465-9, T465-11 to T465-13 | 2026-11-04 | Claude (implementation) | after the QE findings B1–B5, `dotnet test`, Linux container | ✅ | – |

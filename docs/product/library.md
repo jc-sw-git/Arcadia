@@ -13,8 +13,10 @@
   "Installiert": Alle / Nur installierte / Nur nicht installierte; "Typ": Alle Typen and the tab's types (several),
   each value with the hits it would bring. A category shows only where it tells the tab's entries apart; with none,
   the funnel stands alone and R3 does nothing. Per tab, saved; a value the tab no longer holds drops out, the saved
-  choice stays (back with the entries, also for a switched-off launcher). The funnel is neutral without a filter,
-  filled in the accent colour with "19 von 412" with one; the count line keeps counting the whole tab. No hits: "Keine
+  choice stays (back with the entries, also for a switched-off launcher and after closing the modal meanwhile;
+  "Alle Filter zurücksetzen" clears it too). The funnel is neutral without a filter,
+  with one the chip stays neutral, only the funnel fills and "19 von 412" shows in the soft accent;
+  the count line keeps counting the whole tab. No hits: "Keine
   Einträge passen zu deinen Filtern." with "[R3] Filter ändern" (A too). The detail page turns through the hits only.
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and

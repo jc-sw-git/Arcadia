@@ -141,7 +141,7 @@
           <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
                   Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="Filter (G)">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <ctl:KeyHint Pad="R3" Keys="G" IsDark="{Binding Library.IsFiltered}" IsVisible="{Binding Library.CanFilter}" />
+              <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
               <Path Classes="filterFunnel" />
               <TextBlock Text="{Binding Library.FilterHitsText}" IsVisible="{Binding Library.IsFiltered}" VerticalAlignment="Center" />
             </StackPanel>

@@ -393,11 +393,11 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         var offer = FilterOffer.Of(tab.Games);
         if (offer.HasAny)
         {
-            var current = _settings.Current.FilterOf(tab.Launcher.Id).Within(offer);
-            _host.ShowFilter(new FilterModalViewModel(tab.Name, tab.Games, offer, current, modal =>
+            var saved = _settings.Current.FilterOf(tab.Launcher.Id);
+            _host.ShowFilter(new FilterModalViewModel(tab.Name, tab.Games, offer, saved.Within(offer), modal =>
             {
                 _host.CloseFilter(modal);
-                ApplyFilter(tab, modal.Chosen);
+                ApplyFilter(tab, modal.WasReset ? modal.Chosen : modal.Chosen.Over(saved, offer));
             }));
         }
     }

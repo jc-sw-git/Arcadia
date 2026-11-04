@@ -80,15 +80,16 @@ public sealed class InstallHandOverPipeTests
         var receive = pipe.ReceiveAsync(InstallHandOver.MaxMessageBytes, CancellationToken.None);
 
         // Same user, another process: let in by the DACL, refused by its process id. cmd's redirection opens the pipe and
-        // ends at once (its write fails after the refusal); a PowerShell client sometimes took over a minute to start on CI.
+        // ends at once, whether its write lands before Pan's refusal or fails on the closed pipe after it; a PowerShell
+        // client sometimes took over a minute to start on CI.
         var other = $@"echo go>\\.\pipe\{InstallHandOver.PipeName(run.Id)}";
         using (var process = Process.Start(new ProcessStartInfo("cmd.exe", ["/c", other]) { CreateNoWindow = true, UseShellExecute = false })!)
         {
-            Assert.True(process.WaitForExit(TimeSpan.FromSeconds(30)), "the other client ended");
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         // Pan logs the refusal after the connection, not necessarily before the other process has ended.
-        await refused.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(await Task.WhenAny(refused.Task, Task.Delay(TimeSpan.FromSeconds(10))) == refused.Task, "Pan logged the refusal");
         Assert.False(receive.IsCompleted, "nothing was taken from the other process");
 
         await using (var arcadia = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))

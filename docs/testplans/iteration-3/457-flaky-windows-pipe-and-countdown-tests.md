@@ -1,6 +1,6 @@
 # #457 Pan pipe test T413-25 fails on Windows CI now and then
 
-**Status:** no new cases; the two touched cases run as automated tests (see History), QE review open.
+**Status:** no new cases; the two touched cases run as automated tests (see History), QE review done.
 **Open for the owner:** nothing.
 
 - [x] **T413-25** (automated) Another process of the same user is refused by the hand-over pipe; Arcadia still gets
@@ -26,3 +26,6 @@ History:
 |---|---|---|---|---|---|
 | T340-1 old loop, Pan check slowed to 20 ms in `FakeSteam` | 2026-11-04 | implementation | PR branch, Debug, Linux cloud container (headless) | ❌ scaling 2: `Expected "9", Actual "6"` (CI: "5") | wait for any one-digit second |
 | T340-1 new loop, Pan check slowed to 20 ms | 2026-11-04 | implementation | PR branch, Debug, Linux cloud container (headless) | ✅ 3 passed | – |
+| T340-1 old loop, Pan check slowed to 200 ms | 2026-11-04 | QE | PR branch, Debug, Linux cloud container (headless) | ❌ 2 of 3 | confirms the cause |
+| T340-1 new loop, Pan check 0/20/200 ms | 2026-11-04 | QE | same | ✅ 3 of 3 each | – |
+| T413-25 ×25 | 2026-11-04 | QE (CI) | PR branch e10da88, Release, windows-latest, full suite | ✅ | – |

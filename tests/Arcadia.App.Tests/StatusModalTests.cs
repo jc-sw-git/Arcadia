@@ -356,20 +356,19 @@ public sealed class StatusModalTests
         arcadia.Press(UiAction.Left);
         Assert.Equal("Installieren", modal.AcceptText);
 
-        // No fix: only "Zu den Einstellungen", ◀ ▶ change nothing; ▲ ▼ stop at the ends.
+        // ▲ ▼ stop at the ends. The restart's info offers "Windows neu starten" too (#382).
         arcadia.Press(UiAction.Down, times: 3);
         Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
-        Assert.False(modal.FocusedHasFix);
-        arcadia.Press(UiAction.Left);
-        Assert.True(modal.Focused!.IsSettingsFocused);
+        Assert.True(modal.FocusedHasFix);
+        Assert.Equal("Windows neu starten", modal.AcceptText);
         arcadia.Press(UiAction.Up, times: 3);
         Assert.Equal("HidHide fehlt", modal.Focused?.Title);
         Assert.True(modal.Focused!.IsFixFocused, "ein neu gewählter Eintrag steht auf seinem ersten Knopf");
 
         // "Zu den Einstellungen" on the info: its row, no question.
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down).Press(UiAction.Right).Press(UiAction.Accept);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
-        Assert.Equal(PanRows.IssueKey("reboot-pending"), controller.FocusedRow?.Key);
+        Assert.Equal(PanRows.IssueKey(EmulationParts.WindowsRestartId), controller.FocusedRow?.Key);
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
     }
 

@@ -269,7 +269,8 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T296-2")]
-    public async Task A_HidHide_whose_removal_waits_for_a_restart_doesn_t_close_Steam()
+    [Trait("TestCase", "T382-7")]
+    public async Task A_HidHide_whose_removal_waits_for_a_restart_doesn_t_close_Steam_and_installs_nothing()
     {
         var service = Create();
         _platform.IsSteamRunning = true;
@@ -279,8 +280,10 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
         Assert.False(service.StopsSteamFor(HealthFix.InstallDrivers));
         await service.ApplyFixAsync(HealthFix.InstallDrivers);
 
-        Assert.Equal(1, _platform.UsbipInstalls);
+        // #382, D1: the removed driver waits for the restart, so nothing is installed before it.
+        Assert.Equal(0, _platform.UsbipInstalls);
         Assert.Equal(0, _platform.SteamStops);
+        Assert.Equal(ControllerSupportService.WindowsRestartFirstText, service.LastError);
     }
 
     [Theory]
@@ -1181,6 +1184,32 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
         public bool HidHideRemovalPending { get; set; }
 
         public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
+
+        /// <summary>usbip-win2 was uninstalled and goes at the next restart (#382).</summary>
+        public bool UsbipRemovalPending { get; set; }
+
+        /// <summary>usbip-win2 was installed since Windows started: the restart is only recommended (#382, S6).</summary>
+        public bool UsbipFresh { get; set; }
+
+        /// <summary>Set, the pending-restart check throws it (#382's failure case).</summary>
+        public Exception? PendingRestartError { get; set; }
+
+        public PendingRestart CheckPendingRestart(AppSettings settings, DateTimeOffset now) =>
+            PendingRestartError is { } error ? throw error
+            : HidHideRemovalPending || UsbipRemovalPending ? PendingRestart.Required
+            : UsbipFresh ? PendingRestart.Recommended
+            : PendingRestart.None;
+
+        public int WindowsRestarts { get; private set; }
+
+        /// <summary>Set, Windows refuses the restart with it.</summary>
+        public Exception? WindowsRestartError { get; set; }
+
+        public Task RestartWindowsAsync(CancellationToken cancellationToken)
+        {
+            WindowsRestarts++;
+            return WindowsRestartError is { } error ? Task.FromException(error) : Task.CompletedTask;
+        }
 
         /// <summary>Runs inside the driver install as Pan gets the installers, e.g. to cancel it midway.</summary>
         public Action? DuringDriverInstall { get; set; }

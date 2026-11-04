@@ -30,6 +30,7 @@ its file.
 | [457](457-flaky-windows-pipe-and-countdown-tests.md) | #457 | Pan pipe test T413-25 fails on Windows CI now and then | none (test races in T413-25 and T340-1, automated tests only) |
 | [459](459-log-row-test-t433-21-fails-on-windows-ci.md) | #459 | Log-row test T433-21 fails on Windows CI now and then | none (test race in T433-21, automated test only) |
 | [465](465-filter-library-by-installed-state-and-type.md) | #465 | Filter the library by installed state and type | T465-1 to T465-14 |
+| [382](382-smooth-out-the-controller-setup-after-an-update.md) | #382 | Smooth out the controller setup after an update: one restart row, no wrong hints, no extra puck restarts | T382-1 to T382-34 |
 
 ## Release candidate tests (restart or installation)
 
@@ -41,6 +42,7 @@ of the acceptance review.
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
 | #166 | T166-8 (the update from the status modal on the installed release candidate) |
 | #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
+| #382 | T382-31 after T382-30 (Windows unrestarted), T382-32, T382-33, T382-34 (the update end to end) |
 
 ## Exploratory test
 
@@ -58,3 +60,4 @@ Charter: –. Time box: –. Findings: –.
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
 | T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |
 | T343-1…T343-8 | `tests/Arcadia.App.Tests/CancelledInstallDialogTests.cs` |
+| T382-7, -9, -10 | `EmulationSetupTests` (restart row); variants T382-2, -8, -11, -29 in `ControllerSupportRestartTests` (Core), T382-3, -4 in `UnchangedPanTests` (Pan) |

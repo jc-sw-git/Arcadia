@@ -14,8 +14,7 @@ The page and its status messages: [settings.md](settings.md).
   "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter." (yellow), "Angehalten – der Grund steht darunter"
   (red). Every part missing: the row offers "Treiber installieren" ("Wird installiert …", after a failure "Erneut
   versuchen" with the red X and the error in the info panel). It is greyed out, with a row below (blue i) saying why,
-  while a driver change waits for the PC's restart ("Windows-Neustart ausstehend": HidHide or usbip-win2 uninstalled,
-  usbip-win2 installed since the PC started; the text names no driver) or a controller's firmware is flashed
+  while a driver removal waits for the restart (the restart row below) or a controller's firmware is flashed
   ("Controller-Update wird durchgeführt": a Steam Controller or puck in its bootloader, Xbox Zubehör or PlayStation
   Accessories open). A row's "Installieren" fails with a message during a firmware update. While a game runs or starts the switch is greyed out:
   "Erst änderbar, wenn „…“ beendet ist". Off Windows: "Auf diesem System noch nicht verfügbar". Its info panel says
@@ -26,14 +25,16 @@ The page and its status messages: [settings.md](settings.md).
   switch and its status points down to it, so there is one install button, not two), HidHide's states (e.g.
   "HidHide-Konfiguration ist geöffnet … Bitte schließe sie", asked only while the settings are open; an old HidHide:
   "HidHide-Version wird nicht unterstützt" with "Aktualisieren"), "Steam Controller lässt sich nicht verstecken",
-  "Emulation startet nicht", "Emulation angehalten" with "Erneut versuchen"; "Windows-Neustart ausstehend", "HidHide:
-  Neustart ausstehend" and "Pan räumt noch auf" carry the blue i. The uninstall ends with a message to restart the PC
+  "Emulation startet nicht", "Emulation angehalten" with "Erneut versuchen"; "Pan räumt noch auf" carries the blue i. Pan is asked about HidHide's
+  states only while a supported HidHide is installed. The uninstall ends with a message to restart the PC
   whenever the player chose to remove a driver and Pan's uninstall started (UAC accepted): a removed driver
   practically always waits for the restart, and its state can't tell yet while Pan's copy is still at work. "Controller wiederherstellen" (Pan's `--restore`)
   stands below the problems, indented like them, while Pan is installed, also while the switch is off. While a part is
   missing, too old or waits for the restart, only the part rows show (nothing from the emulation's state, which would
   only follow from it) and "Controller zuordnen" is hidden while the emulation doesn't run (an old usbip-win2 or
   HidHide may still let it run).
+- A driver change waiting for the Windows restart, Pan paused until then, "Windows neu starten":
+  [settings-controller-restart.md](settings-controller-restart.md).
 - Controllers Arcadia saw right before a hide and doesn't see again within 5 s (#396; HidHide installed while Arcadia
   ran): the emulation ends, Pan shows them, a toast says so, and nothing is hidden until Arcadia restarts, also after
   switching Pan off and on. The row "Arcadia sieht deine Controller nicht mehr" (yellow triangle, the switch's lamp

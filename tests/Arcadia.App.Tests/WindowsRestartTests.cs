@@ -418,7 +418,10 @@ public sealed class WindowsRestartTests
         Assert.Equal(1, steam.SteamStops);
         Assert.True(steam.IsUsbipReady);
         Assert.Equal(HidHideRelease.Version, steam.HidHideVersion);
-        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel { ActionText: "Installieren" });
+
+        // The rows follow the parts' recheck after the run, which lands on the UI thread a moment later (on Windows' CI
+        // after the restart above was already counted).
+        await arcadia.WaitUntilAsync(() => !controller.Rows.Any(row => row is ActionRowViewModel { ActionText: "Installieren" }), "keine Zeile „Installieren“ mehr");
     }
 
     [AvaloniaFact]

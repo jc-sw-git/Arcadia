@@ -31,11 +31,12 @@ public partial class MainWindow : Window
     /// <summary>Seven hits side by side, the width of the window of hits in both layouts.</summary>
     private const double HitWindowWidth = (7 * HitPitchX) - 20;
 
-    /// <summary>Room above the row of hits for the focused one's lift, and above the grid for the row before it, faded.</summary>
+    /// <summary>Room above the row of hits for the focused one's lift.</summary>
     private const double HitRowTop = 8;
 
-    // Small enough that both rows of 2 : 3 hits (#24) fit the viewport whole; the row before still peeks out above.
-    private const double HitGridTop = 16;
+    // Two rows of 2 : 3 hits (#24) take 650 of the grid's 674 px: they sit in the middle, whole and clear of its fades,
+    // and no row before or after peeks in (HitsGridFade, MainWindow.axaml).
+    private const double HitGridTop = 12;
 
     /// <summary>A step of RS (or Shift+W/S) through the settings' info panel.</summary>
     private const double InfoScrollStep = 160;

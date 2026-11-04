@@ -857,16 +857,17 @@
                   </ItemsControl.ItemsPanel>
                 </ItemsControl>
               </Canvas>
-              <!-- The row of hits fades at its sides while the keyboard is out, the grid of hits at top and bottom without it. -->
+              <!-- The row of hits fades at its sides while the keyboard is out. The grid's two rows of 2 : 3 hits (#24) fill
+                   its height: its fades only soften a row sliding past, in the strips above and below them (HitGridTop). -->
               <ctl:EdgeFade Name="HitsRowFade" Orientation="Horizontal" Size="200" Duration="0:0:0" Condition="{Binding IsKeyboardOut}" />
-              <ctl:EdgeFade Name="HitsGridFade" StartSize="40" Duration="0:0:0" Condition="{Binding !IsKeyboardOut}" />
+              <ctl:EdgeFade Name="HitsGridFade" Size="12" Duration="0:0:0" Condition="{Binding !IsKeyboardOut}" />
               <!-- Where the shown hits are among all of them: across below the row, down beside the grid (owner, 2026-10-19).
                    1450 = the width of seven hits (MainWindow.axaml.cs, HitWindowWidth); dragging scrolls (OnHitsScrollBarScroll). -->
               <ScrollBar Name="HitsRowScrollBar" Orientation="Horizontal" IsVisible="{Binding ShowsRowScrollBar}" Width="1450"
                          HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,300,0,0"
                          Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
-              <ScrollBar Name="HitsGridScrollBar" Orientation="Vertical" IsVisible="{Binding ShowsGridScrollBar}" Height="560"
-                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="1498,40,0,0"
+              <ScrollBar Name="HitsGridScrollBar" Orientation="Vertical" IsVisible="{Binding ShowsGridScrollBar}" Height="650"
+                         HorizontalAlignment="Center" VerticalAlignment="Top" Margin="1498,12,0,0"
                          Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollViewport}" Value="{Binding ScrollStart, Mode=OneWay}" />
               <Panel IsVisible="{Binding IsKeyboardOut}">
                 <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Left" Margin="80,104,0,0" IsVisible="{Binding CanTurn}"

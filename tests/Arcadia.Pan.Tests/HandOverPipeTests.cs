@@ -12,7 +12,7 @@ namespace Arcadia.Pan.Tests;
 /// Arcadia are this one process here, so Pan's start is given as a later one where the test needs an older Arcadia.
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-public sealed class InstallHandOverPipeTests
+public sealed class HandOverPipeTests
 {
     private static readonly long Later = DateTime.UtcNow.AddDays(1).ToFileTimeUtc();
 
@@ -22,7 +22,7 @@ public sealed class InstallHandOverPipeTests
     [Trait("TestCase", "T413-25")]
     public void Only_Arcadia_s_user_may_read_and_write_the_pipe()
     {
-        using var pipe = InstallHandOverPipe.Create(Run(Environment.ProcessId), _ => { }, out var failure, Later);
+        using var pipe = HandOverPipe.Create(Run(Environment.ProcessId), _ => { }, out var failure, Later);
 
         Assert.Null(failure);
         var rules = pipe!.Security.GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<PipeAccessRule>().ToList();
@@ -38,9 +38,9 @@ public sealed class InstallHandOverPipeTests
     public void A_pipe_name_taken_before_ends_the_run_without_waiting()
     {
         var run = Run(Environment.ProcessId);
-        using var first = InstallHandOverPipe.Create(run, _ => { }, out _, Later);
+        using var first = HandOverPipe.Create(run, _ => { }, out _, Later);
 
-        using var second = InstallHandOverPipe.Create(run, _ => { }, out var failure, Later);
+        using var second = HandOverPipe.Create(run, _ => { }, out var failure, Later);
 
         Assert.Null(second);
         Assert.Equal(HandOverEnd.PipeTaken, failure);
@@ -53,7 +53,7 @@ public sealed class InstallHandOverPipeTests
         using var newer = Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 5 127.0.0.1 > nul") { CreateNoWindow = true, UseShellExecute = false })!;
         try
         {
-            using var pipe = InstallHandOverPipe.Create(Run(newer.Id), _ => { }, out var failure);
+            using var pipe = HandOverPipe.Create(Run(newer.Id), _ => { }, out var failure);
 
             Assert.Null(pipe);
             Assert.Equal(HandOverEnd.PipeTaken, failure);
@@ -70,7 +70,7 @@ public sealed class InstallHandOverPipeTests
     {
         var run = Run(Environment.ProcessId);
         var refused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var pipe = InstallHandOverPipe.Create(run, line =>
+        using var pipe = HandOverPipe.Create(run, line =>
         {
             if (line.Contains("instead of Arcadia", StringComparison.Ordinal))
             {

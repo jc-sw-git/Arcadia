@@ -375,6 +375,8 @@ public sealed class PanUpdateAtStartTests
         Assert.Null(page.Error);
         await RunClockUntilAsync(arcadia, () => page.State == PanUpdateState.Stuck, "wieder Stufe 1");
 
+        // A restore fails only after an accepted prompt (#471).
+        steam.PromptConfirmed = true;
         steam.RestoreError = "Pan --restore meldete Fehler 5";
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => page.State == PanUpdateState.ManualCleanup, "Stufe 2 mit dem Fehler");

@@ -47,7 +47,7 @@ internal static class InstallCommand
 
             if (handOver.End != HandOverEnd.Go)
             {
-                log.Write($"Ended before the hand-over: {Why(handOver.End)}; nothing changed");
+                log.Write($"Ended before the hand-over: {HandOverPipe.Why(handOver.End)}; nothing changed");
                 return InstallHandOver.EndedExitCode;
             }
 
@@ -98,14 +98,8 @@ internal static class InstallCommand
     private static HandOverResult WaitForHandOver(InstallRun run, PanLog log)
     {
         log.Write($"Waiting for Arcadia's hand-over (run {run.Id})");
-        // Closed once the wait ends, whatever its end: the pipe carries only this one message.
-        using var pipe = InstallHandOverPipe.Create(run, log.Write, out var failure);
-        if (pipe is null)
-        {
-            return new HandOverResult(failure ?? HandOverEnd.PipeTaken);
-        }
-
-        return InstallHandOver.WaitAsync(pipe, run, PanTimeouts.HandOver, TimeProvider.System, IsReparsePoint).GetAwaiter().GetResult();
+        return HandOverPipe.WaitFor(InstallHandOver.PipeName(run.Id), run.ClientProcessId, PanTimeouts.HandOver,
+            message => InstallHandOver.Read(message, run, IsReparsePoint), log.Write);
     }
 
     private static void Step(InstallReportWriter? report, PanInstallStep step, Action work)
@@ -123,14 +117,6 @@ internal static class InstallCommand
 
         report?.Write(step, PanStepState.Done);
     }
-
-    private static string Why(HandOverEnd end) => end switch
-    {
-        HandOverEnd.Abort => "abort",
-        HandOverEnd.ArcadiaGone => "Arcadia gone",
-        HandOverEnd.Timeout => "timeout",
-        _ => "pipe exists",
-    };
 
     private static bool IsReparsePoint(string path) =>
         (File.Exists(path) || Directory.Exists(path)) && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);

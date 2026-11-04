@@ -664,6 +664,83 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
         Assert.False(service.IsRestoringControllers);
     }
 
+    [Fact]
+    [Trait("TestCase", "T471-1")]
+    public async Task A_declined_restore_prompt_never_lets_go_of_Pan()
+    {
+        // #471: letting go ends Pan's emulation, so it waits for the prompt; declined, the game keeps its controller.
+        var service = Create();
+        _platform.RestoreDeclined = true;
+        var letGos = 0;
+        service.LetGoOfPan = _ =>
+        {
+            letGos++;
+            return Task.CompletedTask;
+        };
+        var leftAloneDuringPrompt = "not asked";
+        _platform.OnPrompt = () => leftAloneDuringPrompt = service.WhyPanIsLeftAlone;
+        var restored = 0;
+        service.ControllersRestored += (_, _) => restored++;
+
+        await service.RestoreControllersAsync();
+
+        Assert.Null(leftAloneDuringPrompt);
+        Assert.Equal(0, letGos);
+        Assert.Equal(0, _platform.Restores);
+        Assert.Equal(0, restored);
+        Assert.Contains("abgelehnt", service.LastError);
+        Assert.True(service.MayTalkToPan);
+        Assert.False(service.IsRestoringControllers);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T471-2")]
+    public async Task An_accepted_restore_prompt_lets_go_of_Pan_only_after_the_prompt()
+    {
+        var service = Create();
+        var steps = new List<string>();
+        service.LetGoOfPan = _ =>
+        {
+            steps.Add("let go");
+            return Task.CompletedTask;
+        };
+        _platform.OnPrompt = () => steps.Add($"prompt, left alone: {service.WhyPanIsLeftAlone ?? "no"}");
+        _platform.OnRestore = () => steps.Add("restore");
+
+        await service.RestoreControllersAsync();
+
+        Assert.Equal(["prompt, left alone: no", "let go", "restore"], steps);
+        Assert.Null(service.LastError);
+        Assert.True(service.MayTalkToPan, "the emulation comes back after the restore");
+    }
+
+    [Fact]
+    [Trait("TestCase", "T471-3")]
+    public void Arcadia_s_steps_from_the_restore_prompt_to_the_go_fit_into_Pan_s_wait()
+    {
+        // Connecting to Pan's pipe, then letting go: a request under way gets its reply or times out first.
+        var upToGo = DriverInstallation.PanConnectTimeout + Arcadia.ControllerSupport.Pan.PanClient.ControllerRequestTimeout
+            + Arcadia.ControllerSupport.Pan.PanClient.DefaultRequestTimeout;
+        var margin = TimeSpan.FromMinutes(2);
+
+        Assert.True(upToGo + margin <= Arcadia.Pan.PanTimeouts.RestoreHandOver, $"{upToGo} + {margin} must stay within Pan's {Arcadia.Pan.PanTimeouts.RestoreHandOver}");
+    }
+
+    [Fact]
+    [Trait("TestCase", "T471-2")]
+    public async Task A_failed_let_go_after_the_prompt_restores_nothing_and_takes_Pan_up_again()
+    {
+        // The real platform sends abort then: Pan ends without restoring (exit 9).
+        var service = Create();
+        service.LetGoOfPan = _ => throw new IOException("Pan-Verbindung unterbrochen");
+
+        await service.RestoreControllersAsync();
+
+        Assert.Equal(0, _platform.Restores);
+        Assert.NotNull(service.LastError);
+        Assert.True(service.MayTalkToPan);
+    }
+
     [Theory]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -873,7 +950,7 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
         Assert.False(await service.RestoreAfterOldPanAsync());
         _platform.RestoreDeclined = false;
         Assert.True(await service.RestoreAfterOldPanAsync());
-        Assert.Equal(2, _platform.Restores);
+        Assert.Equal(2, _platform.RestorePrompts);
     }
 
     // --- SISR, removed on request or kept (#214) ---
@@ -1243,11 +1320,25 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
         /// <summary>Runs as the restore starts, to look at the service in that moment.</summary>
         public Action? OnRestore { get; set; }
 
-        public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
+        /// <summary>Runs while the Windows prompt is up, before the user answers it (#471).</summary>
+        public Action? OnPrompt { get; set; }
+
+        /// <summary>How often the restore's Windows prompt came up.</summary>
+        public int RestorePrompts { get; private set; }
+
+        public async Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken)
         {
+            RestorePrompts++;
+            OnPrompt?.Invoke();
+            if (RestoreDeclined)
+            {
+                return false;
+            }
+
+            await afterPrompt(cancellationToken);
             Restores++;
             OnRestore?.Invoke();
-            return Task.FromResult(!RestoreDeclined);
+            return true;
         }
 
         public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>

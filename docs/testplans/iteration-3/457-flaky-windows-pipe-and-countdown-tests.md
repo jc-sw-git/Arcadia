@@ -10,7 +10,7 @@
 No new manual test cases: both failures were in the tests, not in Arcadia or Pan; T413-25 and T340-1 keep their
 meaning and stay automated.
 
-- **T413-25** (`InstallHandOverPipeTests.Another_process_is_refused_and_Arcadia_still_gets_through`): the second pipe
+- **T413-25** (`HandOverPipeTests.Another_process_is_refused_and_Arcadia_still_gets_through`): the second pipe
   client was `powershell.exe`, whose start on a busy Windows runner sometimes took longer than the 60 s the test gave
   it (`the other client ended` after 1 min, green on re-run). The client is now `cmd.exe` redirecting `echo` into the
   pipe, which opens it, is refused and ends at once. The test also waited on nothing between the client's end and

@@ -35,6 +35,12 @@ public static class PanTimeouts
     /// </summary>
     public static readonly TimeSpan HandOver = TimeSpan.FromMinutes(30);
 
+    /// <summary>
+    /// How long elevated Pan waits for Arcadia's <c>go</c> after the restore's prompt (#471): Arcadia only connects and
+    /// lets go of Pan in between, each with its own limit; a test in Arcadia pins that they stay below this.
+    /// </summary>
+    public static readonly TimeSpan RestoreHandOver = TimeSpan.FromMinutes(5);
+
     public static TimeSpan Install => UsbipInstaller + HidHideInstaller + PuckRestart + ServiceSteps;
 
     public static TimeSpan Uninstall => ServiceSteps + StaleDevices + DriverUninstaller + DriverUninstaller;

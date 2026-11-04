@@ -289,7 +289,10 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
     /// <summary>Set, the next restore fails with this message (Pan's exit code 5).</summary>
     public string? RestoreError { get; set; }
 
-    public async Task<bool> RestoreControllersAsync(CancellationToken cancellationToken)
+    /// <summary>Set, Pan's restore runs after the accepted prompt until the test completes it (#471: Arcadia has let go meanwhile).</summary>
+    public TaskCompletionSource? RestoreRunning { get; set; }
+
+    public async Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _restores);
         if (PanPromptUp is { } prompt)
@@ -297,12 +300,23 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
             await prompt.Task.WaitAsync(cancellationToken);
         }
 
+        if (!PromptConfirmed)
+        {
+            return false;
+        }
+
+        await afterPrompt(cancellationToken);
+        if (RestoreRunning is { } running)
+        {
+            await running.Task.WaitAsync(cancellationToken);
+        }
+
         if (RestoreError is { } error)
         {
             throw new InvalidOperationException(error);
         }
 
-        return PromptConfirmed;
+        return true;
     }
 
     /// <summary>The rows the real platform shows for usbip-win2, Pan and HidHide, as far as this fake sets them.</summary>

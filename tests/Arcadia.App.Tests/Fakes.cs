@@ -276,7 +276,7 @@ internal sealed class NoControllerSupportPlatform : IControllerSupportPlatform
     public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
         throw new PlatformNotSupportedException();
 
-    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+    public Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken) => Task.FromResult(false);
 
     public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) => [];
 }

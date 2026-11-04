@@ -6,7 +6,7 @@
   the header like the launcher tabs (LB/RB, Shift+Q/E, a click; Q/E = LT/RT switch tabs inside a category, e.g.
   launcher pages, as in the library), only those with content; a warning or an error of a category shows its symbol
   beside the name, info nothing. Choosing a category's tab opens it at its top level (the launcher list, not the
-  launcher page left there).
+  launcher page left there) and at its first row, scrolled to the top, not at the row left there (#237).
 - Pattern "Leiste" for every category: one column of rows, ▲ ▼ (W/S) move, ◀ ▶ (A/D) change switches and choices at
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows

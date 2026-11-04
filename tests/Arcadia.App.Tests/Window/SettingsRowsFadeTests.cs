@@ -109,7 +109,7 @@ public sealed class SettingsRowsFadeTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T237-4")]
-    public async Task Another_category_brings_its_own_fades_and_coming_back_shows_the_remembered_row_clear_of_them()
+    public async Task Another_category_brings_its_own_fades_and_coming_back_starts_at_the_first_row_at_the_top()
     {
         using var arcadia = await ControllerCategoryAsync();
         var settings = arcadia.Arcadia.Main.Settings!;
@@ -122,17 +122,18 @@ public sealed class SettingsRowsFadeTests
         Assert.Equal(0, arcadia.Named<ScrollViewer>("SettingsRowsScroller").Offset.Y, 1);
         AssertFades(arcadia, top: false, bottom: false);
 
-        // Back in "Controller" the focus is where it was, at the last row.
+        // Back in "Controller" it starts again at its first row, at the top.
         arcadia.Press(UiAction.NextTab).Settle();
-        Assert.Same(settings.Selected.Rows[^1], settings.FocusedRow);
-        AssertFades(arcadia, top: true, bottom: false);
+        Assert.Same(settings.Selected.Rows[0], settings.FocusedRow);
+        Assert.Equal(0, arcadia.Named<ScrollViewer>("SettingsRowsScroller").Offset.Y, 1);
+        AssertFades(arcadia, top: false, bottom: true);
         AssertFocusClear(arcadia, "zurück in Controller");
 
         // The layout is scaled into the window: a smaller window keeps what fits and so the fades.
         arcadia.Window.Width = 1280;
         arcadia.Window.Height = 720;
         arcadia.Settle();
-        AssertFades(arcadia, top: true, bottom: false);
+        AssertFades(arcadia, top: false, bottom: true);
         AssertFocusClear(arcadia, "kleineres Fenster");
     }
 

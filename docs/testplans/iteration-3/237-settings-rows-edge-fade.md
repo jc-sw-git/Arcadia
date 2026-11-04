@@ -35,3 +35,6 @@ History:
 | T237-7 search opened with F, keyboard in (new window test `Opened_without_the_keyboard_…`) | 2026-11-04 | QE (Claude) | same | ❌ grid of hits not faded above and below until the keyboard went out once | Fix in this PR |
 | T237-7 search, settings rows "Controller", info panel looked at | 2026-11-04 | QE (Claude) | PR branch, Release, `--demo`, Xvfb 1920×1080 | ❌ search with F and "e": third row of hits cut hard at the bottom; ✅ rows and info panel fade at the bottom | Fix in this PR |
 | All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | QE (Claude) | PR branch + QE tests, Release, Linux cloud container | ❌ only the new search test, rest ✅ | Fix in this PR |
+| T237-7 search opened with F (fix: fades set up when shown) | 2026-11-04 | Claude | PR branch, Debug, Linux cloud container, Avalonia headless | ✅ `Opened_without_the_keyboard_…` and all search tests | – |
+| T237-4 LB/RB starts a category at its first row (owner's decision) | 2026-11-04 | Claude | same | ✅ `SettingsRowsFadeTests`; T137-8 test adapted (back on "Launcher" at the first launcher) | – |
+| All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ 3,274 passed, 30 skipped | – |

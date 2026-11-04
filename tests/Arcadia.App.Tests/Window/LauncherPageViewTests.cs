@@ -232,10 +232,12 @@ public sealed class LauncherPageViewTests
         Assert.Equal("Amazon Games", Texts(Head(arcadia))[2]);
         arcadia.Key(Key.E, KeyModifiers.Shift);
         Assert.Equal("Controller", arcadia.Arcadia.Main.Settings!.Selected.Name);
-        // Back on the tab "Launcher": the list, on the launcher whose page was open; Space opens it again.
+        // Back on the tab "Launcher": the list at its first launcher (#237); Space opens it, Q turns back to Amazon.
         arcadia.Key(Key.Q, KeyModifiers.Shift);
         Assert.Null(arcadia.LauncherCategory().PageLauncherId);
         arcadia.Key(Key.Space);
+        Assert.Equal("gog", arcadia.LauncherCategory().PageLauncherId);
+        arcadia.Key(Key.Q);
         Assert.Equal("amazon", arcadia.LauncherCategory().PageLauncherId);
 
         // D switches "Aktiv" on the page.

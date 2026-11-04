@@ -36,12 +36,13 @@ public sealed class SteamOnlineAccountTests : IDisposable
         Assert.Equal(AccountStep.SigningIn, account.State.Step);
 
         _web.IsApproved = true;
-        await AdvanceUntilAsync(() => account.State.OwnedGames is not null);
+        // The new state is published before LibraryChanged fires, on another thread: wait for both.
+        await AdvanceUntilAsync(() => account.State.OwnedGames is not null && Volatile.Read(ref libraryChanges) > 0);
 
         Assert.Equal(AccountStep.SignedIn, account.State.Step);
         Assert.Equal(FakeSteamWeb.ProfileName, account.State.AccountName);
         Assert.Equal(2, account.State.OwnedGames);
-        Assert.Equal(1, libraryChanges);
+        Assert.Equal(1, Volatile.Read(ref libraryChanges));
         Assert.Equal(1, _web.SignInPagesShown);
         var owned = account.OwnedGamesFor(Account);
         Assert.NotNull(owned);

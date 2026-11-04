@@ -69,23 +69,27 @@ public sealed class InstallHandOverPipeTests
     public async Task Another_process_is_refused_and_Arcadia_still_gets_through()
     {
         var run = Run(Environment.ProcessId);
-        var log = new List<string>();
-        using var pipe = InstallHandOverPipe.Create(run, line => { lock (log) { log.Add(line); } }, out _, Later)!;
+        var refused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var pipe = InstallHandOverPipe.Create(run, line =>
+        {
+            if (line.Contains("instead of Arcadia", StringComparison.Ordinal))
+            {
+                refused.TrySetResult();
+            }
+        }, out _, Later)!;
         var receive = pipe.ReceiveAsync(InstallHandOver.MaxMessageBytes, CancellationToken.None);
 
-        // Same user, another process: let in by the DACL, refused by its process id.
-        var script = $"$p = New-Object System.IO.Pipes.NamedPipeClientStream('.', '{InstallHandOver.PipeName(run.Id)}', 'InOut'); $p.Connect(10000); " +
-                     "$b = [Text.Encoding]::UTF8.GetBytes(\"go`n\"); try { $p.Write($b, 0, $b.Length); $p.Flush() } catch { }; Start-Sleep -Milliseconds 500";
-        using (var other = Process.Start(new ProcessStartInfo("powershell.exe", ["-NoProfile", "-Command", script]) { CreateNoWindow = true, UseShellExecute = false })!)
+        // Same user, another process: let in by the DACL, refused by its process id. cmd's redirection opens the pipe and
+        // ends at once (its write fails after the refusal); a PowerShell client sometimes took over a minute to start on CI.
+        var other = $@"echo go>\\.\pipe\{InstallHandOver.PipeName(run.Id)}";
+        using (var process = Process.Start(new ProcessStartInfo("cmd.exe", ["/c", other]) { CreateNoWindow = true, UseShellExecute = false })!)
         {
-            Assert.True(other.WaitForExit(TimeSpan.FromSeconds(60)), "the other client ended");
+            Assert.True(process.WaitForExit(TimeSpan.FromSeconds(30)), "the other client ended");
         }
 
+        // Pan logs the refusal after the connection, not necessarily before the other process has ended.
+        await refused.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(receive.IsCompleted, "nothing was taken from the other process");
-        lock (log)
-        {
-            Assert.Contains(log, line => line.Contains("instead of Arcadia", StringComparison.Ordinal));
-        }
 
         await using (var arcadia = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))
         {

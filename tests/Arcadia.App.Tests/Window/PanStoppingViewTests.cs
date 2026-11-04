@@ -39,15 +39,17 @@ public sealed class PanStoppingViewTests
             Assert.InRange(line.Center.X - inRing.Center.X, -1, 1);
         }
 
+        // Any one-digit second will do, not exactly 9: the countdown reads the clock after its Pan check, so a check still
+        // running while the test moves the clock on makes it skip a second.
         var twoDigits = arcadia.Bounds(number).Center;
-        for (var second = 0; second < 40 && number.Text != "9"; second++)
+        for (var second = 0; second < 44 && number.Text is not { Length: 1 }; second++)
         {
             arcadia.Arcadia.Wait(TimeSpan.FromSeconds(1));
             await Task.Delay(5);
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Equal("9", number.Text);
+        Assert.Equal(1, number.Text?.Length);
         arcadia.Settle();
         var oneDigit = arcadia.Bounds(number).Center;
         Assert.InRange(oneDigit.Y - twoDigits.Y, -0.5, 0.5);

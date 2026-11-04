@@ -1,4 +1,4 @@
-﻿using Arcadia.App.Controls;
+using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.Setup;
 using Arcadia.App.Views;

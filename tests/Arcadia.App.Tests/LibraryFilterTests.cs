@@ -355,14 +355,14 @@ public sealed class LibraryFilterTests
             .Select(i => i % 2 == 0 ? Installed(gog, $"Spiel {i:00}") : Missing(gog, $"Spiel {i:00}"))
             .ToList();
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(gog, library.Count, Library: library)]);
-        Assert.Equal("1–25 von 60", arcadia.Main.Library.RangeText);
+        Assert.Equal("1–24 von 60", arcadia.Main.Library.RangeText);
 
         arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.KeyboardLayout);
 
-        Assert.Equal("1–25 von 30", arcadia.Main.Library.RangeText);
+        Assert.Equal("1–24 von 30", arcadia.Main.Library.RangeText);
         Assert.Equal(["1", "2"], arcadia.Main.Library.PageButtons.Select(button => button.Label));
         arcadia.Press(UiAction.NextPage);
-        Assert.Equal("26–30 von 30", arcadia.Main.Library.RangeText);
+        Assert.Equal("25–30 von 30", arcadia.Main.Library.RangeText);
         Assert.All(arcadia.PageGames, tile => Assert.True(tile.Game.IsInstalled));
     }
 

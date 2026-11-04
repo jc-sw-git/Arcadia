@@ -407,7 +407,7 @@ public sealed class SearchViewTests
         arcadia.Key(Key.PageDown);
         Assert.Equal("92–105 von 105", search.RangeText);
 
-        // The wheel scrolls as far, a click on a hit cut off at the edge brings it in, the bar stands beside the grid.
+        // The wheel scrolls as far, the bar stands beside the grid.
         for (var notch = 0; notch < 14; notch++)
         {
             arcadia.Wheel(arcadia.Named<Control>("SearchViewport"), notches: 1);
@@ -419,11 +419,9 @@ public sealed class SearchViewTests
         Assert.True(gridBar.IsEffectivelyVisible);
         Assert.True(arcadia.Bounds(gridBar).Left > arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns - 1])).Right, "Die Leiste steht neben dem Raster");
         Assert.True(arcadia.Bounds(gridBar).Height > 2 * arcadia.Bounds(gridBar).Width, "senkrecht");
-        var cutOff = search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Select(slot => slot.Tile!)
-            .First(tile => arcadia.Bounds(HitButton(arcadia, tile)).Bottom > viewport.Bottom);
-        arcadia.Click(new Point(arcadia.Bounds(HitButton(arcadia, cutOff)).Center.X, viewport.Bottom - 20));
-        Assert.Equal("8–21 von 105", search.RangeText);
-        Assert.Same(cutOff, search.FocusedResult);
+        // Both rows of 2 : 3 hits fit whole (#24), so no hit is cut off at the grid's edges; the next two rows are a turn away.
+        Assert.All(search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Take(2 * SearchViewModel.ResultColumns),
+            slot => Assert.True(arcadia.Bounds(HitButton(arcadia, slot.Tile!)).Bottom <= viewport.Bottom, $"{slot.Tile!.Title} ganz zu sehen"));
         DragThumb(arcadia, gridBar, toEnd: true);
         Assert.Equal("92–105 von 105", search.RangeText);
     }
@@ -753,7 +751,7 @@ public sealed class SearchViewTests
             .OrderBy(panel => arcadia.Bounds(panel).Left)
             .Select(panel => string.Join(' ', panel.Children.Select(child => child switch
             {
-                Border { Child: TextBlock glyph } => glyph.Text,
+                Border glyph => ArcadiaWindow.Printed(glyph),
                 TextBlock text => text.Text,
                 _ => null,
             }).Where(text => !string.IsNullOrEmpty(text))))

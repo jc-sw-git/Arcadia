@@ -36,7 +36,8 @@
   PlayStation ✕ ○ □ △ L1 R1 L2 R2 L3 R3 with PS5 Create/Options icons, PS4 "Share"/"Options", PS3 "Select"/"Start";
   Nintendo (Switch Pro, Joy-Con pair) B A Y X (bottom button prints B) L R ZL ZR, LS RS for the stick clicks, − +;
   Steam Controller A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡. Monochrome, face buttons round, the rest pills, PlayStation's
-  shapes as vector icons from the theme. Only buttons Arcadia uses have a symbol; back grips and trackpads come
+  shapes and ⧉ ≡ (no embedded font has them; ≡ is the same icon as PS5's Options) as vector icons from the theme,
+  as high as a capital letter. Only buttons Arcadia uses have a symbol; back grips and trackpads come
   with their first feature. Guide ("[Guide]", #315) is a pill with the button's name, "Guide", "PS", "Home" or
   "Steam"; the controller's own logo only once brand logos are cleared as a trademark question. A text about one
   controller only (e.g. the Steam Controller's action set in "Steams Desktop-Steuerung zulassen") always shows that

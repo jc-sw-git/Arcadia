@@ -1,11 +1,14 @@
 namespace Arcadia.Core.Library;
 
-/// <summary>The selectable "games per page" values and the rule for which of them make sense.</summary>
+/// <summary>
+/// The selectable "games per page" values and the rule for which of them make sense. Each is a number of full rows of
+/// the library's 8 columns (3, 8 and 16), so a full page never ends in a half-empty row (#24).
+/// </summary>
 public static class PageSizes
 {
-    public const int Default = 25;
+    public const int Default = 24;
 
-    public static IReadOnlyList<int> Options { get; } = [10, 25, 50, 100];
+    public static IReadOnlyList<int> Options { get; } = [24, 64, 128];
 
     /// <summary>
     /// The smallest option is always allowed. Any larger option is allowed only if the library has

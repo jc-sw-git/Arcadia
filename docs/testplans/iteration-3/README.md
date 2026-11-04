@@ -25,6 +25,7 @@ its file.
 | [429](429-close-launcher-confirmation-before-action.md) | #429 | Close the launcher settings' confirmation before its action runs | none (order of closing and confirming; touches T83-7) |
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
 | [457](457-flaky-windows-pipe-and-countdown-tests.md) | #457 | Pan pipe test T413-25 fails on Windows CI now and then | none (test races in T413-25 and T340-1, automated tests only) |
+| [459](459-log-row-test-t433-21-fails-on-windows-ci.md) | #459 | Log-row test T433-21 fails on Windows CI now and then | none (test race in T433-21, automated test only) |
 
 ## Release candidate tests (restart or installation)
 

@@ -108,7 +108,7 @@ public sealed class SettingsViewTests
         var scroller = arcadia.Named<ScrollViewer>("CategoryScroller");
         Assert.Equal(scroller.Extent.Width, scroller.Viewport.Width, tolerance: 1);
         Assert.Equal(ArcadiaWindow.Width / 2, arcadia.Bounds(scroller).Center.X, tolerance: 120);
-        Assert.False(arcadia.Named<Border>("CategoryEdgeLeft").IsVisible || arcadia.Named<Border>("CategoryEdgeRight").IsVisible, "Kein Ausblenden");
+        Assert.False(arcadia.Named<EdgeFade>("CategoryFade").ShowsStart || arcadia.Named<EdgeFade>("CategoryFade").ShowsEnd, "Kein Ausblenden");
     }
 
     [AvaloniaFact]
@@ -467,8 +467,8 @@ public sealed class SettingsViewTests
     private static void AssertInfoFades(ArcadiaWindow arcadia, bool top, bool bottom)
     {
         arcadia.WaitForTransitions();
-        Assert.Equal(top ? 1 : 0, arcadia.Named<Border>("InfoFadeTop").Opacity, 2);
-        Assert.Equal(bottom ? 1 : 0, arcadia.Named<Border>("InfoFadeBottom").Opacity, 2);
+        Assert.Equal(top ? 1 : 0, arcadia.Named<EdgeFade>("InfoFade").StartFade.Opacity, 2);
+        Assert.Equal(bottom ? 1 : 0, arcadia.Named<EdgeFade>("InfoFade").EndFade.Opacity, 2);
     }
 
     private static void AssertSelectedTabDrawn(ArcadiaWindow arcadia, string name)

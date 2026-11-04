@@ -91,6 +91,8 @@
                 <ItemsControl Name="MissingRows" ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource LauncherRow}" />
               </StackPanel>
             </ScrollViewer>
+            <!-- As the settings' rows (#237): faded into the page where more launchers follow. -->
+            <ctl:EdgeFade Name="RowsFade" Margin="-8" Size="64" FocusRoom="8" ScrollTarget="{Binding #RowsScroller}" />
           </Panel>
         </DockPanel>
 

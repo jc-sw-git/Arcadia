@@ -177,16 +177,12 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
 
     private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
 
-    /// <summary>A category's tab is chosen: it opens at its top level and its first row, not where it was left (#237).</summary>
+    /// <summary>A category's tab is chosen: it opens at its top level, not where it was left.</summary>
     private void ChooseTab(SettingsCategoryViewModel category)
     {
         if (category != Selected)
         {
             category.ShowTopLevel();
-            if (category.Rows.Count > 0)
-            {
-                category.FocusRow(category.Rows[0].Key);
-            }
         }
 
         Select(category);

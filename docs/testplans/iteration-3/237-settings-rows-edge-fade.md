@@ -38,3 +38,4 @@ History:
 | T237-7 search opened with F (fix: fades set up when shown) | 2026-11-04 | Claude | PR branch, Debug, Linux cloud container, Avalonia headless | ✅ `Opened_without_the_keyboard_…` and all search tests | – |
 | T237-4 LB/RB starts a category at its first row (owner's decision) | 2026-11-04 | Claude | same | ✅ `SettingsRowsFadeTests`; T137-8 test adapted (back on "Launcher" at the first launcher) | – |
 | All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ 3,274 passed, 30 skipped | – |
+| T237-4 and T137-8: LB/RB back to "Launcher" from a launcher page keeps that launcher (owner's decision), other categories start at their first row | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ all tests (`run-tests.sh 4`) | – |

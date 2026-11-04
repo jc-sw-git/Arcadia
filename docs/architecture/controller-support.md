@@ -43,7 +43,8 @@ The controller emulation for games and Pan, its guardian service. What was verif
 **Pan's client** (`Pan/`)
 - `PanClient` (`IEmulationGuardian`, heartbeat, reconnect), `PanTransport.cs` (`PanPipeTransport`, `PanServiceStart`:
   starting the service and waiting for it), `PanSetup` (runs the bundled `Pan.exe` elevated: install, uninstall,
-  restore), `PanInstallRun` (an elevated install waiting for its hand-over: the pipe, its report, `abort` on dispose),
+  restore), `PanHandOver` (Arcadia's end of the hand-over pipe of an elevated Pan: the server check, the one message,
+  `abort` on dispose), `PanInstallRun` (an elevated install waiting for its installers: the hand-over, its report),
   `PanExitCodes` (what Arcadia says to each exit code), `PanCompatibility` (only the bundled Pan, by SHA-256).
 - `PanEmulation`: hide once at the start, show at the end, every plug registered with Pan; its states and problems
   for the settings. `TakenOverControllers`: every other controller Arcadia takes over, hidden and emulated, sent from
@@ -60,6 +61,7 @@ Pan's decisions, no dependencies, AOT-clean.
   `HidHideRelease`/`HidHideSetup`.
 - An install run (#413): `InstallRun` (its command line), `InstallHandOver` (the `go`/`abort` message, checked against
   the run), `InstallReport` (the step report and its writer).
+- The restore's run (#471): `RestoreRun` and `RestoreHandOver` (only `go`/`abort`); `HandOverWait` is the wait both share.
 - Installers: `InstallerSignature` (`PublisherPin`, `WinTrustAuthenticode`, `UsbipRelease`: who may have signed one).
 - VIIPER's ports: `UsbipPorts`, `TcpListeners`, `ViiperListeners` (only Arcadia's `viiper.exe` on 127.0.0.1).
 - Uninstall: `UninstallOrder`, `PendingUninstall` (the marker a later start finishes, #422), `SelfRemoval` and
@@ -70,6 +72,7 @@ Pan's decisions, no dependencies, AOT-clean.
 
 `Pan.exe`, the guardian service, Native AOT, `InvariantGlobalization`. `Program` (arguments), `ServiceDescriptions`,
 `PanLog`; `Windows/`: `ServiceHost` (SCM), `PipeServer`, `InstallCommand` (`--install`: hand-over, report, steps),
-`InstallHandOverPipe` (the run's pipe), `ServiceSetup` (the service), `PanUninstall` (`--uninstall`, the finish at start), `ArcadiaProbe`, `UsbipInstall`,
+`RestoreCommand` (`--restore`: waits for Arcadia's go, #471),
+`HandOverPipe` (the run's pipe), `ServiceSetup` (the service), `PanUninstall` (`--uninstall`, the finish at start), `ArcadiaProbe`, `UsbipInstall`,
 `HidHideInstall`, `DriverRemoval` (`--remove-drivers`), `Restore` (`--restore`), `WindowsCleanup`, `WindowsHiding`,
 `WindowsStaleDevices`, `UnbiasedClock`, `Native`. Details: `docs/controller-support/pan.md`.

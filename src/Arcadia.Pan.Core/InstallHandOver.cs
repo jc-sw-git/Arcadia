@@ -7,43 +7,30 @@ namespace Arcadia.Pan;
 /// <param name="HidHide">HidHide's path only: its hash stays the pinned <see cref="HidHideRelease.Sha256"/>.</param>
 public sealed record HandedOverInstallers(string? Usbip, string? UsbipSha256, string? HidHide);
 
-/// <summary>How the wait for Arcadia's hand-over ended.</summary>
+/// <summary>How the wait for Arcadia's hand-over ended, of a driver install (#413) or a restore (#471).</summary>
 public enum HandOverEnd
 {
     /// <summary><c>go</c> with valid installers: Pan installs.</summary>
     Go,
 
-    /// <summary>Arcadia sent <c>abort</c>: a step after the prompt failed (download, Steam, a game, a timeout).</summary>
+    /// <summary>Arcadia sent <c>abort</c>: a step after the prompt failed (download, Steam, a game, letting go of Pan, a timeout).</summary>
     Abort,
 
     /// <summary>The pipe broke or Arcadia's process ended before <c>go</c>.</summary>
     ArcadiaGone,
 
-    /// <summary>No <c>go</c> within <see cref="PanTimeouts.HandOver"/>: Arcadia hangs.</summary>
+    /// <summary>No <c>go</c> within the command's limit (<see cref="PanTimeouts.HandOver"/>, <see cref="PanTimeouts.RestoreHandOver"/>): Arcadia hangs.</summary>
     Timeout,
 
     /// <summary>The pipe's name was taken before Pan made it, or Arcadia's process isn't the one that started Pan.</summary>
     PipeTaken,
 
-    /// <summary>The message was malformed, too long, or named other installers or paths than announced.</summary>
+    /// <summary>The message was malformed, too long, or named other installers or paths than announced (a restore's: anything but <c>go</c>).</summary>
     Refused,
 }
 
 /// <param name="Reason">For <see cref="HandOverEnd.Refused"/>: what was wrong, for <c>pan.log</c>.</param>
 public sealed record HandOverResult(HandOverEnd End, HandedOverInstallers? Installers = null, string? Reason = null);
-
-/// <summary>Pan's side of the pipe for one run, as far as it is Windows' (Arcadia.Pan/Windows).</summary>
-public interface IHandOverChannel
-{
-    /// <summary>Completes when Arcadia's process (<see cref="InstallRun.ClientProcessId"/>) has ended.</summary>
-    Task ClientGone { get; }
-
-    /// <summary>
-    /// Waits for Arcadia's process to connect and reads its one message to the end of the connection: at most
-    /// <paramref name="maxBytes"/> bytes plus one, so a longer one shows. Null when the connection broke without a byte.
-    /// </summary>
-    Task<byte[]?> ReceiveAsync(int maxBytes, CancellationToken cancellationToken);
-}
 
 /// <summary>
 /// The hand-over of D7 option A (#413): elevated Pan waits for Arcadia's one message over a per-run pipe, then installs
@@ -85,43 +72,10 @@ public static class InstallHandOver
 
     public static byte[] Abort() => Encoding.UTF8.GetBytes(AbortLine + "\n");
 
-    /// <summary>
-    /// Waits for Arcadia's message; nothing on the machine changes meanwhile. A message wins over Arcadia's end only when
-    /// it was read in full first, so an <c>abort</c> right before Arcadia closes still reads as one.
-    /// </summary>
-    public static async Task<HandOverResult> WaitAsync(IHandOverChannel channel, InstallRun run, TimeSpan timeout, TimeProvider time,
-        Func<string, bool> isReparsePoint, CancellationToken cancellationToken = default)
-    {
-        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var receive = channel.ReceiveAsync(MaxMessageBytes, stop.Token);
-        var timer = Task.Delay(timeout, time, stop.Token);
-        var first = await Task.WhenAny(receive, channel.ClientGone, timer);
-        try
-        {
-            if (first == receive)
-            {
-                byte[]? message;
-                try
-                {
-                    message = await receive;
-                }
-                // A broken or refused pipe gives no installers, so Pan ends as without Arcadia: nothing changed (exit 9).
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-                {
-                    return new(HandOverEnd.ArcadiaGone);
-                }
-
-                return message is null ? new(HandOverEnd.ArcadiaGone) : Read(message, run, isReparsePoint);
-            }
-
-            return first == timer ? new(HandOverEnd.Timeout) : new(HandOverEnd.ArcadiaGone);
-        }
-        finally
-        {
-            await stop.CancelAsync();
-            await Task.WhenAll(receive, timer).ContinueWith(_ => { }, TaskScheduler.Default);
-        }
-    }
+    /// <summary>Waits for Arcadia's message (<see cref="HandOverWait"/>) and checks it against the run's command line.</summary>
+    public static Task<HandOverResult> WaitAsync(IHandOverChannel channel, InstallRun run, TimeSpan timeout, TimeProvider time,
+        Func<string, bool> isReparsePoint, CancellationToken cancellationToken = default) =>
+        HandOverWait.WaitAsync(channel, timeout, time, message => Read(message, run, isReparsePoint), cancellationToken);
 
     /// <summary>Checks one message against the run's command line; see the class for what is refused.</summary>
     public static HandOverResult Read(byte[] message, InstallRun run, Func<string, bool> isReparsePoint)

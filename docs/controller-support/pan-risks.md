@@ -19,6 +19,8 @@ would close it, so a later story can pick it up. Don't "fix" one of these in pas
   not same-user code, which could already swap `Pan.exe` (above). The `go` can only name installers the command line
   announced, in the run's folder; HidHide's hash stays pinned, usbip-win2's is the client's as before. Countermeasure:
   code signing (#271). A same-user process can also take the pipe name first: Pan ends with exit 9, nothing changed.
+  The restore's `go` (#471) carries no data: same-user code could only start the restore of Pan's own journal early,
+  which an elevated `Pan.exe --restore` by hand does too.
 - **`%ProgramFiles%\Arcadia\Pan`** is trusted as Program Files is: only administrators can write there; a junction
   planted by an administrator is not defended against.
 - **A usbip step left behind after its 10 s timeout** keeps running with a cancelled token; `usbip.exe` itself is

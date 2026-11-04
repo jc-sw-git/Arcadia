@@ -8,7 +8,8 @@ namespace Arcadia.Pan;
 /// it). Commands, all started elevated by Arcadia or by hand:
 /// <c>--install [--expect-hash sha256] [--run id --client pid --installers folder [--usbip] [--hidhide [--hidhide-repair]]]</c>
 /// (the installers come over the run's hand-over pipe, <see cref="InstallHandOver"/>),
-/// <c>--uninstall [--remove-drivers]</c>, <c>--restore</c>, <c>--console</c> (the service in a console, for development),
+/// <c>--uninstall [--remove-drivers]</c>, <c>--restore [--run id --client pid]</c> (Arcadia's go comes over the run's
+/// pipe, <see cref="RestoreHandOver"/>), <c>--console</c> (the service in a console, for development),
 /// <c>--version</c>.
 /// </summary>
 internal static class Program
@@ -117,14 +118,7 @@ internal static class Program
                         }
                     }
                 case "--restore":
-                    if (ServiceSetup.CheckDataDirectory() is { } problem)
-                    {
-                        Console.Error.WriteLine($"Not restoring: {problem}; run Pan.exe --install again.");
-                        return 3;
-                    }
-
-                    log.TrustFolder();
-                    return Restore.RunAsync(log.Write).GetAwaiter().GetResult() ? 0 : RestoreIncompleteExitCode;
+                    return RestoreCommand.Run(args, log);
                 default:
                     Console.Error.WriteLine($"Unknown command {args[0]}. Commands: --install, --uninstall, --restore, --console, --version.");
                     return 1;

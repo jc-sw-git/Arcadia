@@ -211,7 +211,8 @@ public sealed class EntryTypeViewTests
         var beside = (Panel)name.GetVisualParent()!;
         var header = (Grid)beside.GetVisualParent()!;
         Assert.DoesNotContain(beside.GetVisualDescendants().OfType<TextBlock>(), text => text.IsEffectivelyVisible && text.Text?.Contains("Seite", StringComparison.Ordinal) == true);
-        var view = header.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible);
+        // "Ansicht" is the first button of the view line; the filter's funnel follows it (#44).
+        var view = header.GetVisualDescendants().OfType<Button>().Where(button => button.IsEffectivelyVisible).MinBy(button => arcadia.Bounds(button).Left)!;
         Assert.True(arcadia.Bounds(line).Left > arcadia.Bounds(name).Right, "Die Zeile steht rechts vom Namen");
         Assert.True(arcadia.Bounds(view).Left - arcadia.Bounds(line).Right > 24, "Die Zeile hält Abstand zur Ansicht");
     }

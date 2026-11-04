@@ -1,5 +1,7 @@
 using Arcadia.App.Input;
 using Arcadia.Core.Settings;
+using Arcadia.Launchers;
+using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -28,6 +30,32 @@ public sealed class RingGeometryTests
         arcadia.Press(UiAction.Options);
         Assert.True(arcadia.Arcadia.Main.IsGameMenuOpen);
         AssertNoRingCutOff(arcadia, "Spielmenü");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T465-14")]
+    public async Task No_ring_is_cut_off_in_the_filter_on_its_first_and_last_rows_and_the_right_edge_of_the_type_grid()
+    {
+        var gog = KnownLaunchers.Gog;
+        Game Entry(string title, GameType type, bool installed) =>
+            (installed ? TestGames.Installed(gog, title, ArcadiaDriver.Now) : TestGames.NotInstalled(gog, title)) with { Type = type };
+        using var arcadia = await ArcadiaWindow.ShowAsync([LauncherSpec.With(gog,
+            Entry("Alpha", GameType.Game, true), Entry("Bravo", GameType.Game, false), Entry("Charlie", GameType.Tool, true),
+            Entry("Delta", GameType.Software, false), Entry("Echo", GameType.Soundtrack, true))]);
+
+        arcadia.Press(UiAction.KeyboardLayout);
+        Assert.True(arcadia.Arcadia.Main.IsFilterOpen);
+        AssertNoRingCutOff(arcadia, "Filter, erste Kategorie");
+        // "Nur installierte", back up to "Alle Filter zurücksetzen".
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept);
+        AssertNoRingCutOff(arcadia, "Filter, Wert");
+        arcadia.Press(UiAction.Back).Press(UiAction.Up);
+        AssertNoRingCutOff(arcadia, "Filter, zurücksetzen");
+        // "Typ", the grid's last column and its last value.
+        arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Accept).Press(UiAction.Right, times: 2);
+        AssertNoRingCutOff(arcadia, "Filter, rechter Rand der Typen");
+        arcadia.Press(UiAction.Down);
+        AssertNoRingCutOff(arcadia, "Filter, letzter Typ");
     }
 
     [AvaloniaFact]

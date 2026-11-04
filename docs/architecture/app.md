@@ -25,7 +25,9 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   `TileSlotViewModel` places that keep their controls when page or tab change (#229), and `EmptyTabViewModel` for a
   tab without games or whose launcher is gone, or no launcher active (#136). It lies under every page and asks more
   through `ILibraryHost`; whether the focused game's install folder is gone it asks `Services/InstallFolderCheck` off
-  the UI thread (#227). It keeps each tab's sorted list until a rescan or the sort changes it.
+  the UI thread (#227). It keeps each tab's sorted and filtered list until a rescan, the sort or the tab's filter
+  changes it. `Filter/` (#44): `FilterModalViewModel` (R3) with its category and value rows, drawn by
+  `Views/FilterModalView`; Main hosts it, the library saves its choice when it closes.
 - `GameDetailViewModel`: detail carousel of `GameDetailPageViewModel`s, `Views/GameDetailView.axaml`; covers in the
   grid are `GameTileViewModel`s (also what the preview panel shows).
 - `GameActions`: what a game does (start, install, back to it, held A), one per window.

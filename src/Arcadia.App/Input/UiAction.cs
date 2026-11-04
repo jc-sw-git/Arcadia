@@ -29,7 +29,7 @@ public enum UiAction
     /// <summary>Opens the search (#12); inside it, deletes the last character.</summary>
     Search,
 
-    /// <summary>The on-screen keyboard's layout menu.</summary>
+    /// <summary>R3 (key G): the on-screen keyboard's layout menu; in the library the tab's filter (#44), which R3 also closes.</summary>
     KeyboardLayout,
 
     // The right stick: a second focus beside the D-pad's, e.g. the hits beside the on-screen keyboard.
@@ -69,7 +69,8 @@ public static class UiActionMap
 
     /// <summary>
     /// The keyboard plays like a game, with one hand on WASD (owner, 2026-10-21): WASD move, Space is A, Q/E are LT/RT,
-    /// Shift+Q/E LB/RB, R is ⧉, F is X, V is Y, C is L3, Esc is B and Enter is ≡. The older keys stay as quiet alternatives.
+    /// Shift+Q/E LB/RB, R is ⧉, F is X, V is Y, C is L3, G is R3, Esc is B and Enter is ≡. The older keys stay as quiet
+    /// alternatives.
     /// </summary>
     public static UiAction? FromKey(Key key, KeyModifiers modifiers) => (key, modifiers) switch
     {
@@ -89,6 +90,7 @@ public static class UiActionMap
         (Key.E, KeyModifiers.None) or (Key.PageDown, _) => UiAction.NextPage,
         (Key.V, KeyModifiers.None) => UiAction.Status,
         (Key.C, KeyModifiers.None) => UiAction.ViewOptions,
+        (Key.G, KeyModifiers.None) => UiAction.KeyboardLayout,
         (Key.R, KeyModifiers.None) or (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
         (Key.F, KeyModifiers.None or KeyModifiers.Control) => UiAction.Search,
         _ => null,

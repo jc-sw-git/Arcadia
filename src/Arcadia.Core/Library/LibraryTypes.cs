@@ -14,8 +14,11 @@ public sealed record TypeCount(GameType Type, int Total, int Installed)
 /// </summary>
 public static class LibraryTypes
 {
-    /// <summary>The order of the count line (owner, 2026-10-26); the filter (#44) will use it too.</summary>
+    /// <summary>The order of the count line (owner, 2026-10-26) and of the filter's types (#44).</summary>
     public static IReadOnlyList<GameType> Order { get; } = [GameType.Game, GameType.Software, GameType.Tool, GameType.Soundtrack];
+
+    /// <summary>Where a type stands in <see cref="Order"/>; a type Arcadia doesn't know yet comes last.</summary>
+    public static int Position(GameType type) => Order.Contains(type) ? Order.ToList().IndexOf(type) : Order.Count + (int)type;
 
     /// <summary>
     /// Games always; another type if one of the launcher's options that names it is switched on, or if none names it
@@ -71,7 +74,7 @@ public static class LibraryTypes
         }
 
         return totals
-            .OrderBy(entry => Order.Contains(entry.Key) ? Order.ToList().IndexOf(entry.Key) : Order.Count + (int)entry.Key)
+            .OrderBy(entry => Position(entry.Key))
             .Select(entry => new TypeCount(entry.Key, entry.Value.Total, entry.Value.Installed))
             .ToList();
     }

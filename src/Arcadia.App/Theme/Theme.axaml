@@ -66,6 +66,7 @@
     <StreamGeometry x:Key="IconInstalled">M5 13.5h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM7.5 7l3 3 6-6</StreamGeometry>
     <StreamGeometry x:Key="IconInstalledFill">M16.4 17a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0z</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoftware">M10.20 4.21L10.52 1.50L13.48 1.50L13.80 4.21A8 8 0 0 1 16.24 5.22L18.38 3.53L20.47 5.62L18.78 7.76A8 8 0 0 1 19.79 10.20L22.50 10.52L22.50 13.48L19.79 13.80A8 8 0 0 1 18.78 16.24L20.47 18.38L18.38 20.47L16.24 18.78A8 8 0 0 1 13.80 19.79L13.48 22.50L10.52 22.50L10.20 19.79A8 8 0 0 1 7.76 18.78L5.62 20.47L3.53 18.38L5.22 16.24A8 8 0 0 1 4.21 13.80L1.50 13.48L1.50 10.52L4.21 10.20A8 8 0 0 1 5.22 7.76L3.53 5.62L5.62 3.53L7.76 5.22A8 8 0 0 1 10.20 4.21ZM9.4 9.6L7.4 12l2 2.4M12.9 9l-1.8 6M14.6 9.6l2 2.4-2 2.4</StreamGeometry>
+    <StreamGeometry x:Key="IconReset">M4 12a8 8 0 1 0 2.3 -5.6M4 4v4.5h4.5</StreamGeometry>
     <StreamGeometry x:Key="IconTypeTool">M10.52 11.22L3.37 18.37A1.6 1.6 0 0 0 5.63 20.63L12.78 13.48A5 5 0 0 0 19.52 6.88L17.26 9.14L14.86 6.74L17.12 4.48A5 5 0 0 0 10.52 11.22Z</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoundtrack">M14 16.4V4c2.4.6 5 2 5 5.4</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoundtrackFill">M7.6 16.4a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0z</StreamGeometry>
@@ -2467,5 +2468,314 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
+  </Style>
+
+  <!-- The library's filter (#44, designs T44Library, T44Modal, T44Bausteine). -->
+  <Style Selector="Path.filterFunnel">
+    <Setter Property="Data" Value="M3.5 5h17l-6.5 8v6l-4 -2v-4z" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Stretch" Value="None" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Stroke" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Path.filterFunnel.modalFunnel">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- The funnel beside "Ansicht": neutral without a filter, filled in the accent colour with "19 von 412" with one. -->
+  <Style Selector="Button.filterChip">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="8,0,16,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+  <Style Selector="Button.filterChip:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.filterChip.active, Button.filterChip.active:pointerover">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.filterChip.active Path.filterFunnel">
+    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
+    <Setter Property="Fill" Value="{StaticResource OnAccent}" />
+  </Style>
+  <!-- A tab with nothing to filter by: the funnel alone, faint, without a key (#44). -->
+  <Style Selector="Button.filterChip:disabled">
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.filterChip:disabled Path.filterFunnel">
+    <Setter Property="Stroke" Value="{StaticResource TextFaint}" />
+  </Style>
+
+  <!-- The filter hides every entry of the tab: an empty funnel over empty tiles. -->
+  <Style Selector="Path.noHitsTile">
+    <Setter Property="Fill" Value="{StaticResource Surface}" />
+  </Style>
+  <Style Selector="Path.noHitsFunnel">
+    <Setter Property="Fill" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Stroke" Value="{StaticResource LineStrong}" />
+    <Setter Property="StrokeThickness" Value="5" />
+    <Setter Property="StrokeJoin" Value="Round" />
+  </Style>
+  <Style Selector="Path.noHitsCross">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+    <Setter Property="StrokeThickness" Value="6" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+  </Style>
+  <Style Selector="Button.filterChange">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Padding" Value="14,0,26,0" />
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <!-- The modal: as wide as the design, its top edge fixed, so it doesn't jump between categories. -->
+  <Style Selector="Border.filterModal">
+    <Setter Property="Width" Value="1520" />
+    <Setter Property="Height" Value="940" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="40,32,40,22" />
+    <Setter Property="Margin" Value="0,70,0,0" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <!-- Left of the ✕, which mouse and keyboard show in the corner. -->
+  <Style Selector="Grid.besideClose">
+    <Setter Property="Margin" Value="0,0,56,22" />
+  </Style>
+  <Style Selector="TextBlock.filterLauncher">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterHitsLead">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,0,5" />
+  </Style>
+  <Style Selector="TextBlock.filterHits">
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="TextBlock.filterHits.active">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="TextBlock.filterHitsTotal">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,0,5" />
+  </Style>
+  <Style Selector="Border.filterDivider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Margin" Value="4,6" />
+  </Style>
+  <Style Selector="Border.filterColumnDivider">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+
+  <!-- A category row: neutral, chosen (icon and summary in the accent colour), current (its values show), focused. -->
+  <Style Selector="Button.filterCategory">
+    <Setter Property="MinHeight" Value="64" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterCategory:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterCategory.current, Button.filterCategory.current:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterCategory.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.filterCategory.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <!-- "Alle Filter zurücksetzen" without a filter: greyed out and skipped by the focus. -->
+  <Style Selector="Button.filterReset:disabled">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Border.filterCategoryDisc">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterCategory.chosen Border.filterCategoryDisc">
+    <Setter Property="Background" Value="{StaticResource PromptIcon}" />
+  </Style>
+  <Style Selector="ctl|LineIcon.filterCategoryIcon">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterCategory.chosen ctl|LineIcon.filterCategoryIcon">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="ctl|LineIcon.filterResetIcon">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterCategoryLabel">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterSummary">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.filterCategory.chosen TextBlock.filterSummary">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="Path.filterChevron">
+    <Setter Property="Data" Value="M9 6l6 6-6 6" />
+    <Setter Property="Stroke" Value="{StaticResource LineStrong}" />
+    <Setter Property="StrokeThickness" Value="2.4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterCategory.current Path.filterChevron">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+  </Style>
+
+  <!-- Values: a radio per line ("Installiert") or a checkbox in the grid ("Typ"); greyed out without hits, still choosable. -->
+  <Style Selector="Button.filterOption, Button.filterValue">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterOption">
+    <Setter Property="Height" Value="72" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.filterValue">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.filterOption:pointerover, Button.filterValue:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterOption.focused, Button.filterValue.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterOption.focused /template/ Border#Chrome, Button.filterValue.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.filterValue.noHits">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="TextBlock.filterOptionLabel, TextBlock.filterValueLabel">
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.filterOptionCount">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterValueCount">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.noHits TextBlock.filterValueCount, Button.noHits TextBlock.filterOptionCount">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Border.filterRadio">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.selected Border.filterRadio">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Ellipse.filterRadioDot">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="Fill" Value="{StaticResource Accent}" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.selected Ellipse.filterRadioDot">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Border.filterCheck">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.noHits Border.filterCheck">
+    <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.selected Border.filterCheck">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Path.filterCheckMark">
+    <Setter Property="Data" Value="M5 12.5l4.5 4.5 9.5 -10" />
+    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
+    <Setter Property="StrokeThickness" Value="3.6" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.selected Path.filterCheckMark">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="ctl|LineIcon.filterValueIcon">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 </Styles>

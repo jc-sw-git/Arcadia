@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:filter="using:Arcadia.App.Filter"
+             x:Class="Arcadia.App.Views.FilterModalView"
+             x:DataType="filter:FilterModalViewModel">
+
+  <!-- "Filter" (#44, designs T44F02, T44F03, T44F09, T44Modal, T44Bausteine): categories left, the values of the one in
+       focus right. Sizes and colours are styles in Theme.axaml (filter…). -->
+  <Panel>
+    <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Command="{Binding CloseCommand}" />
+    <Border Classes="prompt filterModal">
+      <Panel>
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="18" Margin="0,0,0,22"
+                Classes.besideClose="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}">
+            <Border Classes="promptIcon">
+              <Path Classes="filterFunnel modalFunnel" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{x:Static filter:FilterModalViewModel.Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Classes="filterLauncher" Text="{Binding LauncherName}" />
+            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="filterHitsLead" Text="Mit dieser Auswahl" />
+              <TextBlock Classes="filterHits" Classes.active="{Binding IsActive}" Text="{Binding HitsText}" />
+              <TextBlock Classes="filterHitsTotal" Text="{Binding TotalText}" />
+            </StackPanel>
+          </Grid>
+
+          <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" Margin="0,22,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{Binding MoveText}" IsVisible="{Binding !MovesInGrid}" />
+              <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding MoveText}" IsVisible="{Binding MovesInGrid}" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptText}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
+            </StackPanel>
+          </Border>
+
+          <Grid ColumnDefinitions="420,Auto,*" ColumnSpacing="28">
+            <StackPanel Spacing="4">
+              <Button Classes="plain filterCategory filterReset" Classes.focused="{Binding IsResetFocused}" IsEnabled="{Binding IsActive}"
+                      Command="{Binding ResetCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                  <Border Classes="filterCategoryDisc">
+                    <ctl:LineIcon Classes="filterResetIcon" Icon="IconReset" />
+                  </Border>
+                  <TextBlock Classes="filterCategoryLabel" Text="{x:Static filter:FilterModalViewModel.ResetText}" />
+                </StackPanel>
+              </Button>
+              <Border Classes="filterDivider" />
+              <ItemsControl ItemsSource="{Binding Categories}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="4" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="filter:FilterCategoryViewModel">
+                    <Button Classes="plain filterCategory" Classes.current="{Binding IsCurrent}" Classes.focused="{Binding IsFocused}"
+                            Classes.chosen="{Binding IsChosen}" Command="{Binding PickCommand}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Border Classes="filterCategoryDisc">
+                          <ctl:LineIcon Classes="filterCategoryIcon" Icon="{Binding IconKey}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Classes="filterCategoryLabel" Text="{Binding Label}" />
+                          <!-- One line, never cut: the chosen values while they fit, else "Mehrere" (#44). -->
+                          <ctl:FirstThatFits>
+                            <TextBlock Classes="filterSummary" Text="{Binding Summary}" />
+                            <TextBlock Classes="filterSummary" Text="{Binding SummaryFallback}" />
+                          </ctl:FirstThatFits>
+                        </StackPanel>
+                        <Path Grid.Column="2" Classes="filterChevron" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <Border Grid.Column="1" Classes="filterColumnDivider" />
+
+            <!-- "Installiert": one of three. -->
+            <ItemsControl Grid.Column="2" ItemsSource="{Binding Values}" IsVisible="{Binding ShowsRadios}" Width="680" HorizontalAlignment="Left" VerticalAlignment="Top">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="filter:FilterValueViewModel">
+                  <Button Classes="plain filterOption" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                          Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                      <Border Classes="filterRadio">
+                        <Ellipse Classes="filterRadioDot" />
+                      </Border>
+                      <TextBlock Grid.Column="1" Classes="filterOptionLabel" Text="{Binding Label}" />
+                      <TextBlock Grid.Column="2" Classes="filterOptionCount" Text="{Binding CountText}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- "Typ": several at once, "Alle Typen" first, each with its icon (#141). -->
+            <ItemsControl Grid.Column="2" ItemsSource="{Binding Values}" IsVisible="{Binding ShowsTypes}" VerticalAlignment="Top">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="{x:Static filter:FilterModalViewModel.TypeColumns}" ColumnSpacing="10" RowSpacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="filter:FilterValueViewModel">
+                  <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                          Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                      <Border Classes="filterCheck">
+                        <Path Classes="filterCheckMark" />
+                      </Border>
+                      <ctl:LineIcon Grid.Column="1" Classes="filterValueIcon" Icon="{Binding IconKey}" IsVisible="{Binding HasIcon}" />
+                      <TextBlock Grid.Column="2" Classes="filterValueLabel" Text="{Binding Label}" />
+                      <TextBlock Grid.Column="3" Classes="filterValueCount" Text="{Binding CountText}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+        </DockPanel>
+        <Button Classes="plain dialogClose" Margin="0,-14,-22,0" ToolTip.Tip="Schließen"
+                IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+          <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+        </Button>
+      </Panel>
+    </Border>
+  </Panel>
+</UserControl>

@@ -6,6 +6,7 @@
         xmlns:search="using:Arcadia.App.Search"
         xmlns:settings="using:Arcadia.App.Settings"
         xmlns:status="using:Arcadia.App.Status"
+        xmlns:filter="using:Arcadia.App.Filter"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -128,12 +129,24 @@
             <views:CountLineView DataContext="{Binding Library.Counts}" IsVisible="{Binding HasParts}" VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>
-        <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
-          <StackPanel Orientation="Horizontal" Spacing="12">
-            <ctl:KeyHint Pad="L3" Keys="C" />
-            <TextBlock Text="{Binding Library.ViewSummary}" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsViewLineShown}">
+          <Button Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ctl:KeyHint Pad="L3" Keys="C" />
+              <TextBlock Text="{Binding Library.ViewSummary}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Border Classes="divider" />
+          <!-- The tab's filter (#44): neutral, or filled with "19 von 412"; without a category to filter by only the funnel. -->
+          <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
+                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="Filter (G)">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="R3" Keys="G" IsDark="{Binding Library.IsFiltered}" IsVisible="{Binding Library.CanFilter}" />
+              <Path Classes="filterFunnel" />
+              <TextBlock Text="{Binding Library.FilterHitsText}" IsVisible="{Binding Library.IsFiltered}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
 
       <!-- Detail page: path back, position in the list and the sort order -->
@@ -305,7 +318,7 @@
           </Panel>
         </Border>
 
-        <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding !IsEmptyTabShown}">
+        <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding AreGamesShown}">
           <ScrollViewer Name="GridScroller" VerticalScrollBarVisibility="Auto" Padding="6,8,70,8">
             <ItemsControl Name="GameGrid" ItemsSource="{Binding Library.Slots}" VerticalAlignment="Top">
               <!-- A slot keeps its cover's controls when it shows another game (LibraryViewModel.Slots, #229). -->
@@ -435,6 +448,26 @@
             </StackPanel>
           </StackPanel>
         </Panel>
+        <!-- The tab's filter hides all its entries (#44, design T44F11): the way back to the filter instead of covers. -->
+        <StackPanel Grid.ColumnSpan="2" IsVisible="{Binding IsNoHitsShown}" Margin="0,0,80,0" Spacing="28" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <Canvas Width="200" Height="160" HorizontalAlignment="Center">
+            <Path Classes="noHitsTile" Data="M26 104h28a8 8 0 0 1 8 8v28a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-28a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsTile" Data="M146 104h28a8 8 0 0 1 8 8v28a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-28a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsTile" Data="M86 128h28a8 8 0 0 1 8 8v6a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-6a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsFunnel" Data="M40 18h120l-44 54v40l-32 -16v-24z" />
+            <Path Classes="noHitsCross" Data="M86 40l28 28M114 40l-28 28" />
+          </Canvas>
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <TextBlock Text="{x:Static vm:LibraryViewModel.NoHitsTitle}" FontSize="32" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Library.FilterHidesAllText}" FontSize="19" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          </StackPanel>
+          <Button Classes="plain filterChange" Command="{Binding Library.OpenFilterCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ctl:KeyHint Pad="R3" Keys="G" IsDark="True" />
+              <TextBlock Text="Filter ändern" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
 
       <!-- Footer: button hints -->
@@ -455,6 +488,10 @@
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Wechseln" IsVisible="{Binding Library.EmptyTab?.CanRescan, TargetNullValue=False}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Library.EmptyTab?.HasTab, TargetNullValue=False}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsNoHitsShown}">
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" />
+          <ctl:KeyHint Pad="L3" Keys="C" Text="Ansicht" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding AreGamesShown}">
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding Library.FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
@@ -849,6 +886,15 @@
           </Grid>
         </DockPanel>
       </Panel>
+
+      <!-- "Filter" (#44): the selected tab's filter, over the library. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding FilterModal}" IsVisible="{Binding IsFilterOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="filter:FilterModalViewModel">
+            <views:FilterModalView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
 
       <!-- "Status" (#166): the header's messages, over library and detail page. -->
       <ContentControl Grid.RowSpan="4" Content="{Binding StatusModal}" IsVisible="{Binding IsStatusModalOpen}">

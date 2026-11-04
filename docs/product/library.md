@@ -6,6 +6,16 @@
   date always last.
 - Sort order and preferred page size are global, not per tab, and are saved; Arcadia opens in the
   tab the user last chose, always on page 1 with the first game focused.
+- Filter (#44, part A #465): R3 (G, a click on the funnel right of "Ansicht") opens "Filter" over the library: categories
+  left ("Alle Filter zurücksetzen" first, focusable only while something is chosen), the values of the focused one right,
+  on top "Mit dieser Auswahl N von M Einträgen". AND between categories, OR within one. A choice applies only when the
+  modal closes (B on the categories, R3, ✕; no cancel), then page 1, first hit focused; page sizes count the hits.
+  "Installiert": Alle / Nur installierte / Nur nicht installierte; "Typ": Alle Typen and the tab's types (several),
+  each value with the hits it would bring. A category shows only where it tells the tab's entries apart; with none,
+  the funnel stands alone and R3 does nothing. Per tab, saved; a value the tab no longer holds drops out, the saved
+  choice stays (back with the entries, also for a switched-off launcher). The funnel is neutral without a filter,
+  filled in the accent colour with "19 von 412" with one; the count line keeps counting the whole tab. No hits: "Keine
+  Einträge passen zu deinen Filtern." with "[R3] Filter ändern" (A too). The detail page turns through the hits only.
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
   it fades out where more tabs follow. Dividers also stand between a status message and the search chip and

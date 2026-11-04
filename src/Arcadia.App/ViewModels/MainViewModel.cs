@@ -1,3 +1,4 @@
+using Arcadia.App.Filter;
 using Arcadia.App.Input;
 using Arcadia.App.Keyboard;
 using Arcadia.App.Messages;
@@ -187,9 +188,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public bool IsStatusModalOpen => StatusModal is not null;
 
+    /// <summary>The selected tab's filter (#44), over the library.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterOpen))]
+    public partial FilterModalViewModel? FilterModal { get; private set; }
+
+    public bool IsFilterOpen => FilterModal is not null;
+
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen;
+        || IsStatusModalOpen || IsFilterOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -217,7 +225,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>The detail page; it takes the place of the cover grid while open, and of the search when opened from there.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown), nameof(IsSearchShown), nameof(IsTabStripShown), nameof(IsEmptyTabShown), nameof(AreGamesShown))]
+    [NotifyPropertyChangedFor(nameof(IsDetailOpen), nameof(IsLibraryShown), nameof(IsSearchShown), nameof(IsTabStripShown), nameof(IsEmptyTabShown),
+        nameof(IsViewLineShown), nameof(AreGamesShown), nameof(IsNoHitsShown))]
     public partial GameDetailViewModel? Detail { get; private set; }
 
     public bool IsDetailOpen => Detail is not null;
@@ -227,8 +236,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The selected tab has no games, or no launcher is active (#136): the library says so instead of covers.</summary>
     public bool IsEmptyTabShown => IsLibraryShown && Library.EmptyTab is not null;
 
+    /// <summary>The tab has entries: "Ansicht" and the filter's funnel beside its name.</summary>
+    public bool IsViewLineShown => IsLibraryShown && Library.EmptyTab is null;
+
     /// <summary>The library shows covers: the preview, the grid, the pages and their buttons in the footer.</summary>
-    public bool AreGamesShown => IsLibraryShown && Library.EmptyTab is null;
+    public bool AreGamesShown => IsViewLineShown && !Library.FilterHidesAll;
+
+    /// <summary>The tab's filter hides all its entries (#44): the library says so, with "Filter ändern".</summary>
+    public bool IsNoHitsShown => IsViewLineShown && Library.FilterHidesAll;
 
     /// <summary>The search over all launchers (#12); it covers the library while open.</summary>
     [ObservableProperty]
@@ -377,6 +392,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (StatusModal is { } status)
         {
             status.Handle(action);
+            return true;
+        }
+
+        if (FilterModal is { } filter)
+        {
+            filter.Handle(action);
             return true;
         }
 
@@ -557,7 +578,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        var games = Library.SortedGames(tab);
+        var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
             tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true));
@@ -590,7 +611,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The list changed (rescan, new sort): the detail page keeps its game in the middle.</summary>
     private void UpdateDetail()
     {
-        if (Detail is { IsFromLibrary: true } detail && LauncherTabs.SelectedTab is { } tab && !detail.Update(Library.SortedGames(tab), Library.SortLabel))
+        if (Detail is { IsFromLibrary: true } detail && LauncherTabs.SelectedTab is { } tab && !detail.Update(Library.ShownGames(tab), Library.SortLabel))
         {
             Detail = null;
         }
@@ -702,7 +723,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (DetailBehindSearch is { } detail)
         {
             DetailBehindSearch = null;
-            if (LauncherTabs.SelectedTab is { } tab && detail.Update(Library.SortedGames(tab), Library.SortLabel))
+            if (LauncherTabs.SelectedTab is { } tab && detail.Update(Library.ShownGames(tab), Library.SortLabel))
             {
                 Detail = detail;
             }
@@ -989,7 +1010,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 break;
             case nameof(LibraryViewModel.EmptyTab):
                 OnPropertyChanged(nameof(IsEmptyTabShown));
+                OnPropertyChanged(nameof(IsViewLineShown));
                 OnPropertyChanged(nameof(AreGamesShown));
+                OnPropertyChanged(nameof(IsNoHitsShown));
+                break;
+            case nameof(LibraryViewModel.FilterHidesAll):
+                OnPropertyChanged(nameof(AreGamesShown));
+                OnPropertyChanged(nameof(IsNoHitsShown));
                 break;
         }
     }
@@ -1171,6 +1198,22 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         UpdateDetail();
         RebuildViewOptions();
+    }
+
+    void ILibraryHost.ShowFilter(FilterModalViewModel modal)
+    {
+        if (!IsDialogOpen && Search is null && Detail is null)
+        {
+            FilterModal = modal;
+        }
+    }
+
+    void ILibraryHost.CloseFilter(FilterModalViewModel modal)
+    {
+        if (FilterModal == modal)
+        {
+            FilterModal = null;
+        }
     }
 
     LauncherRegistry ILauncherSettingsHost.Launchers => Session.Launchers;

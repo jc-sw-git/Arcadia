@@ -101,9 +101,13 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     {
     }
 
-    /// <summary>The category's tab is chosen (LB/RB, a click): it starts at its top level, not where it was left.</summary>
+    /// <summary>The category's tab is chosen (LB/RB, a click): it starts at its top level and first row, not where it was left (#237).</summary>
     public virtual void ShowTopLevel()
     {
+        if (Rows.Count > 0)
+        {
+            Focus(Rows[0]);
+        }
     }
 
     /// <summary>An input while <see cref="Dialog"/> is open; B closes the dialog, not the page.</summary>

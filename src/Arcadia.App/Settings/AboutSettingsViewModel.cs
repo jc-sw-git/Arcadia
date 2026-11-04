@@ -64,7 +64,11 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
     }
 
     /// <summary>Chosen again: a log may have appeared meanwhile, e.g. pan.log after installing Pan.</summary>
-    public override void ShowTopLevel() => _logging.Refresh();
+    public override void ShowTopLevel()
+    {
+        _logging.Refresh();
+        base.ShowTopLevel();
+    }
 
     public override void Dispose()
     {

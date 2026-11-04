@@ -182,6 +182,17 @@ public sealed class EdgeFade : Control
         }
     }
 
+    /// <summary>
+    /// Shows the fades as they stand when it comes into view: a fade whose condition holds from the start and that has
+    /// no scroller gets no property change that would show it.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        UpdateLook();
+        UpdateShown();
+    }
+
     protected override Size MeasureOverride(Size availableSize) => default;
 
     protected override Size ArrangeOverride(Size finalSize)

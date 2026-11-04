@@ -4,21 +4,23 @@ All cases are rendering, so none is an acceptance test through the view models; 
 (`Arcadia.App.Tests`, Avalonia headless) cover what can be checked drawn, the quality engineer checks the rest with
 screenshots.
 
-- [ ] **T237-1** Category whose rows fit: no fade. · E2E: no (rendering; window test `SettingsRowsFadeTests`)
-- [ ] **T237-2** Controller category: bottom fade on open; ▼ to the end and ▲ back: fades per scenarios, focused row
+**Status:** Automated: T237-1 to T237-6 (window tests) · QE: T237-7 · Open for the owner: T237-8
+
+- [x] **T237-1** Category whose rows fit: no fade. · E2E: no (rendering; window test `SettingsRowsFadeTests`)
+- [x] **T237-2** Controller category: bottom fade on open; ▼ to the end and ▲ back: fades per scenarios, focused row
   never under a fade, group heading visible. · E2E: no (rendering; window test `SettingsRowsFadeTests`)
-- [ ] **T237-3** Wheel to the middle: both fades; mouse over a row under a fade: focused, no jump, click works.
+- [x] **T237-3** Wheel to the middle: both fades; mouse over a row under a fade: focused, no jump, click works.
   · E2E: no (rendering; window test `SettingsRowsFadeTests`)
-- [ ] **T237-4** Category switch, rows changing, window resize: fades follow. · E2E: no (rendering; window test
+- [x] **T237-4** Category switch, rows changing, window resize: fades follow. · E2E: no (rendering; window test
   `SettingsRowsFadeTests` for switch and resize; rows changing by screenshot)
-- [ ] **T237-5** 1280×720 and 1920×1080: no unfaded line at the edges (settings rows, grid, search, detail).
+- [x] **T237-5** 1280×720 and 1920×1080: no unfaded line at the edges (settings rows, grid, search, detail).
   · E2E: no (rendering; window tests `SettingsRowsFadeTests`, `GridFadeTests` T102-4, `SearchViewTests`)
-- [ ] **T237-6** First run with many launchers: same as T237-2. · E2E: no (rendering; window test `FirstRunViewTests`
+- [x] **T237-6** First run with many launchers: same as T237-2. · E2E: no (rendering; window test `FirstRunViewTests`
   with less room than rows, as the built-in launchers fit)
-- [ ] **T237-7** Regression: library grid, tab strips, info panel, "Controller zuordnen", search hits, detail
+- [x] **T237-7** Regression: library grid, tab strips, info panel, "Controller zuordnen", search hits, detail
   neighbours look and behave as before; focus-move latency in the library measured. · E2E: no (rendering; existing
   window tests T102-*, T127-*, T15-*, T238-13, search and detail tests)
-- [ ] **T237-8** (owner) Controller category on the owner's PC scrolled with the Steam Controller. · E2E: no (real
+- [ ] **T237-8** **Owner:** Controller category on the owner's PC scrolled with the Steam Controller. · E2E: no (real
   Steam Controller)
 
 History:

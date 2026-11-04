@@ -40,7 +40,7 @@
   with their first feature. Guide ("[Guide]", #315) is a pill with the button's name, "Guide", "PS", "Home" or
   "Steam"; the controller's own logo only once brand logos are cleared as a trademark question. A text about one
   controller only (e.g. the Steam Controller's action set in "Steams Desktop-Steuerung zulassen") always shows that
-  controller's symbols (`InfoText.Symbols`). Choosing the symbols by hand: #291. Texts keep the neutral names; a toast already shown stays.
+  controller's symbols (`InfoText.Symbols`). Texts keep the neutral names; a toast already shown stays.
 
 ## Every controller in games (#238)
 

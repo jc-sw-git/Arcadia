@@ -21,4 +21,7 @@ Owns the "how": structure, risks, implementation and the tests next to the code.
 - **Checks:** the Definition of Done in `CLAUDE.md`, in its order of priority; behaviour of other programs
   (Steam, Epic, SISR, drivers) is observed before it is built on (skill `.claude/skills/diagnose`). A test fake
   of such a program names the doc its behaviour comes from and what it does not model.
-- **Done when** the owner merges the PR.
+- **Done when** the PR is merged. The owner merges it, except a PR that hands him nothing to test (no cases or only
+  `· RC` ones): once the quality engineer's findings are fixed, the architect ticks off the test plan (cases run in
+  the PR; RC cases stay open), waits for green CI, merges and closes the issue itself. A finding left unfixed on
+  purpose needs the owner's go first.

@@ -200,7 +200,7 @@ public sealed class GameActions : IGameActionHost
 
         if (tile.InstallState is { } install)
         {
-            _toast.Show(install.Phase == InstallPhase.Uninstalling
+            _toast.Show(HealthSeverity.Info, install.Phase == InstallPhase.Uninstalling
                     ? $"„{tile.Title}“ wird gerade deinstalliert."
                     : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
             return;
@@ -210,7 +210,7 @@ public sealed class GameActions : IGameActionHost
         {
             case RunPhase.Starting:
                 // A second A must not start the game twice (#95).
-                _toast.Show($"„{tile.Title}“ wird bereits gestartet …");
+                _toast.Show(HealthSeverity.Info, $"„{tile.Title}“ wird bereits gestartet …");
                 return;
             case RunPhase.Running:
                 ReturnToGameAsync(tile).Forget("Zurück ins Spiel");
@@ -269,13 +269,13 @@ public sealed class GameActions : IGameActionHost
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:
-                _toast.Show($"„{tile.Title}“ konnte nicht gestartet werden: {error.Message}");
+                _toast.Show(HealthSeverity.Error, $"„{tile.Title}“ konnte nicht gestartet werden: {error.Message}");
                 break;
             case { Outcome: LaunchOutcome.FailedUnexpectedly }:
-                _toast.Show($"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.");
+                _toast.Show(HealthSeverity.Error, $"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.");
                 break;
             case { Outcome: LaunchOutcome.AlreadyLaunching }:
-                _toast.Show($"Ein anderes Spiel wird gerade gestartet – „{tile.Title}“ bitte gleich noch einmal starten.");
+                _toast.Show(HealthSeverity.Warning, $"Ein anderes Spiel wird gerade gestartet – „{tile.Title}“ bitte gleich noch einmal starten.");
                 break;
         }
     }
@@ -299,7 +299,7 @@ public sealed class GameActions : IGameActionHost
         if (window == 0)
         {
             AppLog.Write($"Zurück ins Spiel: kein Fenster von {key} gefunden");
-            _toast.Show($"Arcadia findet kein Fenster von „{tile.Title}“ – vielleicht startet es noch oder läuft ohne Fenster.");
+            _toast.Show(HealthSeverity.Warning, $"Arcadia findet kein Fenster von „{tile.Title}“ – vielleicht startet es noch oder läuft ohne Fenster.");
             return;
         }
 
@@ -307,7 +307,7 @@ public sealed class GameActions : IGameActionHost
         AppLog.Write($"Zurück ins Spiel: {key} {(shown ? "vorne" : "ließ sich nicht nach vorne holen")}");
         if (!shown)
         {
-            _toast.Show($"„{tile.Title}“ ließ sich nicht nach vorne holen.");
+            _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ ließ sich nicht nach vorne holen.");
         }
     }
 
@@ -315,7 +315,7 @@ public sealed class GameActions : IGameActionHost
     {
         if (tile.Game.InstallBlockedReason is { } blocked)
         {
-            _toast.Show($"„{tile.Title}“ lässt sich gerade nicht installieren: {blocked}.");
+            _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ lässt sich gerade nicht installieren: {blocked}.");
             return;
         }
 
@@ -324,20 +324,21 @@ public sealed class GameActions : IGameActionHost
             if (_launcher.Install(tile.Game))
             {
                 tile.InstallState = _installs.Started(tile.Game);
-                _toast.Show(tile.Game.InstallStartsInLauncher
+                _toast.Show(HealthSeverity.Info, tile.Game.InstallStartsInLauncher
                     ? $"{tile.LauncherName} wird geöffnet – starte dort selbst die Installation von „{tile.Title}“."
                     : $"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
             }
             else
             {
-                _toast.Show(tile.Game.Install is LaunchTarget.None
+                var isDemo = tile.Game.Install is LaunchTarget.None;
+                _toast.Show(isDemo ? HealthSeverity.Info : HealthSeverity.Warning, isDemo
                     ? $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ installiert."
                     : $"„{tile.Title}“ kann nur direkt in {tile.LauncherName} installiert werden.");
             }
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show($"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
+            _toast.Show(HealthSeverity.Error, $"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
         }
     }
 
@@ -346,13 +347,13 @@ public sealed class GameActions : IGameActionHost
         switch (stage)
         {
             case LaunchStage.StartingLauncher:
-                _toast.Show($"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
+                _toast.Show(HealthSeverity.Info, $"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
                 Task.Delay(TimeSpan.FromSeconds(2), _time).ContinueWith(
                     _ => ForegroundRequested?.Invoke(this, EventArgs.Empty),
                     TaskScheduler.FromCurrentSynchronizationContext()).Forget("Fenster nach vorn holen");
                 break;
             case LaunchStage.LauncherNotReady:
-                _toast.Show($"{tile.LauncherName} reagiert nicht – „{tile.Title}“ wird trotzdem angefragt …");
+                _toast.Show(HealthSeverity.Warning, $"{tile.LauncherName} reagiert nicht – „{tile.Title}“ wird trotzdem angefragt …");
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.LauncherReady:
@@ -360,15 +361,15 @@ public sealed class GameActions : IGameActionHost
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                _toast.Show(tile.UpdateAvailable ? $"„{tile.Title}“ wird gestartet – {tile.LauncherName} installiert ggf. vorher das Update …" : $"„{tile.Title}“ wird gestartet …");
+                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? $"„{tile.Title}“ wird gestartet – {tile.LauncherName} installiert ggf. vorher das Update …" : $"„{tile.Title}“ wird gestartet …");
                 break;
             case LaunchStage.NotStartable:
                 StartFailed(tile);
-                _toast.Show($"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.");
+                _toast.Show(HealthSeverity.Info, $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.");
                 break;
             case LaunchStage.NotConfirmed:
                 StartFailed(tile);
-                _toast.Show($"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
+                _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
                 break;
         }
     }
@@ -393,14 +394,15 @@ public sealed class GameActions : IGameActionHost
         try
         {
             var opened = _launcher.Open(target);
-            _toast.Show(opened ? handedOver
+            var offered = opened || target is LaunchTarget.None;
+            _toast.Show(offered ? HealthSeverity.Info : HealthSeverity.Warning, opened ? handedOver
                 : target is LaunchTarget.None ? demo
                 : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
             return opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show($"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
+            _toast.Show(HealthSeverity.Error, $"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
             return false;
         }
     }

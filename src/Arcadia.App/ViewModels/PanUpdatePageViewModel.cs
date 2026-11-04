@@ -33,7 +33,7 @@ public enum PanUpdateState
 /// beside it; if it doesn't, the page offers the restore and then the steps by hand.
 /// </summary>
 /// <param name="requestStart">[A] or [B] on the notice: the owner runs <see cref="Run"/> once Pan's own dialogs are done.</param>
-public sealed partial class PanUpdatePageViewModel(ControllerSupportService support, TimeProvider time, Action requestStart, Action<string> done, Action quit)
+public sealed partial class PanUpdatePageViewModel(ControllerSupportService support, TimeProvider time, Action requestStart, Action<HealthSeverity, string> done, Action quit)
     : ViewModelBase
 {
     public const string NoticeTitle = "Neue Pan-Version";
@@ -76,7 +76,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     private bool _declining;
 
     /// <summary>The toast once the old Pan has ended: why Pan is off.</summary>
-    private string _offToast = DeclinedToast;
+    private (HealthSeverity Level, string Text) _offToast = (HealthSeverity.Warning, DeclinedToast);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title), nameof(Text), nameof(Hint), nameof(HasHint), nameof(IsBusy), nameof(IsCountingDown),
@@ -154,7 +154,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
 
         if (_declining)
         {
-            SwitchOff(null, DeclinedToast);
+            SwitchOff(null, HealthSeverity.Warning, DeclinedToast);
         }
         else
         {
@@ -220,23 +220,23 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
             // Off the UI thread: the elevated start waits for the Windows prompt.
             if (await Task.Run(() => support.UpdatePanAsync(CancellationToken.None)))
             {
-                done(UpdatedToast);
+                done(HealthSeverity.Info, UpdatedToast);
                 return;
             }
 
-            SwitchOff(null, DeclinedToast);
+            SwitchOff(null, HealthSeverity.Warning, DeclinedToast);
         }
         catch (Exception ex)
         {
             Report(ex, "Pan aktualisieren");
-            SwitchOff(ex.Message, FailedToast);
+            SwitchOff(ex.Message, HealthSeverity.Error, FailedToast);
         }
     }
 
-    private void SwitchOff(string? error, string toast)
+    private void SwitchOff(string? error, HealthSeverity level, string toast)
     {
         support.SwitchPanOffForUpdate(error);
-        _offToast = toast;
+        _offToast = (level, toast);
         WaitForOldPanAsync().Forget("Auf das Ende des alten Pan warten");
     }
 
@@ -250,7 +250,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         {
             if (!await Task.Run(() => support.IsPanRunning))
             {
-                done(_offToast);
+                done(_offToast.Level, _offToast.Text);
                 return;
             }
 
@@ -277,7 +277,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         {
             if (await Task.Run(() => support.RestoreAfterOldPanAsync(CancellationToken.None)))
             {
-                done(RestoredToast);
+                done(HealthSeverity.Info, RestoredToast);
                 return;
             }
 

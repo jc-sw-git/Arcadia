@@ -163,15 +163,16 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             Forwarding = fastReads.SteamController,
         };
         padForPresence = pad;
+        // Given up until a restart or "Controller wiederherstellen": a lasting failure.
         pad.GaveUp += text =>
         {
             emulation.PadGaveUp();
-            notices.Show(text);
+            notices.Show(HealthSeverity.Error, text);
         };
         others.GaveUp += text =>
         {
             emulation.PadGaveUp();
-            notices.Show(text);
+            notices.Show(HealthSeverity.Error, text);
         };
         emulation.Notice += notices.Show;
         controllerSupport.ControllersRestored += (_, _) =>
@@ -180,8 +181,9 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             others.ForgetLosses();
             emulation.ForgetFailures();
         };
-        guardian.TornDown += (_, reason) => notices.Show(TornDownText(reason));
-        guardian.Lost += _ => notices.Show(PanLostText);
+        // The pad comes back by itself: a warning.
+        guardian.TornDown += (_, reason) => notices.Show(HealthSeverity.Warning, TornDownText(reason));
+        guardian.Lost += _ => notices.Show(HealthSeverity.Warning, PanLostText);
         var attempt = new FirmwareAttemptWatch(time, Services.AppLog.Write);
         filter.UpdateTraffic += attempt.Traffic;
         var forGames = new SteamControllerForGames(pad, others, routing, emulation, filter, attempt);
@@ -190,7 +192,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
         {
             if (gameInFront() is not null)
             {
-                notices.Show(FirmwareInGameText);
+                notices.Show(HealthSeverity.Warning, FirmwareInGameText);
             }
             else
             {

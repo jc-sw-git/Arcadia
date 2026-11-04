@@ -1,4 +1,5 @@
 using Arcadia.App.ViewModels;
+using Arcadia.ControllerSupport;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Input;
@@ -10,14 +11,17 @@ namespace Arcadia.App.Input;
 /// </summary>
 public sealed class PanNotices(ToastViewModel toast, Func<bool> isArcadiaActive, Action<string> showOverlay)
 {
-    public void Show(string text) => Dispatcher.UIThread.Post(() =>
+    /// <param name="level">The level of the notice's source (#433); it is an entry of "Letzte Meldungen" either way.</param>
+    public void Show(HealthSeverity level, string text) => Dispatcher.UIThread.Post(() =>
     {
         if (isArcadiaActive())
         {
-            toast.Show(text);
+            toast.Show(level, text);
         }
         else
         {
+            // Behind a game the toast would go unseen, but the list keeps it.
+            toast.History.Add(level, Messages.MessageKind.Toast, text);
             showOverlay(text);
         }
     });

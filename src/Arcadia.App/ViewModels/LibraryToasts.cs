@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.App.ViewModels;
@@ -6,15 +7,15 @@ namespace Arcadia.App.ViewModels;
 /// <summary>The words of the toasts for what <see cref="LibrarySession"/> notices (#228); the session itself shows nothing.</summary>
 public static class LibraryToasts
 {
-    /// <summary>The toast's text, and whether it stays until the next one (a rescan running).</summary>
-    public static (string Text, bool Sticky) For(LibraryNotice notice, LauncherTabsViewModel tabs) => notice switch
+    /// <summary>The toast's level and text, and whether it stays until the next one (a rescan running).</summary>
+    public static (HealthSeverity Level, string Text, bool Sticky) For(LibraryNotice notice, LauncherTabsViewModel tabs) => notice switch
     {
-        LibraryNotice.PendingInstallsFinished { Games: var games } => (games.Count == 1 ? $"„{games[0].Title}“ ist jetzt installiert." : $"{games.Count} Spiele sind jetzt installiert.", false),
-        LibraryNotice.InstallEnded ended => (InstallEnded(ended), false),
-        LibraryNotice.GameNotStarted notStarted => (GameNotStarted(notStarted), false),
-        LibraryNotice.RescanStarted { Launcher: var launcher } => (launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", true),
-        LibraryNotice.RescanFinished { Launcher: var launcher } => (RescanFinished(launcher, tabs), false),
-        LibraryNotice.ScanFailed { Launchers: var launchers } => (ScanFailed([.. launchers.Select(l => l.DisplayName)], keptGames: true), false),
+        LibraryNotice.PendingInstallsFinished { Games: var games } => (HealthSeverity.Info, games.Count == 1 ? $"„{games[0].Title}“ ist jetzt installiert." : $"{games.Count} Spiele sind jetzt installiert.", false),
+        LibraryNotice.InstallEnded ended => (ended.Outcome is InstallOutcome.Completed or InstallOutcome.Cancelled or InstallOutcome.Uninstalled ? HealthSeverity.Info : HealthSeverity.Error, InstallEnded(ended), false),
+        LibraryNotice.GameNotStarted notStarted => (HealthSeverity.Warning, GameNotStarted(notStarted), false),
+        LibraryNotice.RescanStarted { Launcher: var launcher } => (HealthSeverity.Info, launcher is null ? "Alle Launcher werden neu eingelesen …" : $"{launcher.DisplayName} wird neu eingelesen …", true),
+        LibraryNotice.RescanFinished { Launcher: var launcher } => RescanFinished(launcher, tabs),
+        LibraryNotice.ScanFailed { Launchers: var launchers } => (HealthSeverity.Warning, ScanFailed([.. launchers.Select(l => l.DisplayName)], keptGames: true), false),
         _ => throw new ArgumentOutOfRangeException(nameof(notice), notice, null),
     };
 
@@ -43,25 +44,25 @@ public static class LibraryToasts
         };
     }
 
-    private static string RescanFinished(LauncherInfo? launcher, LauncherTabsViewModel tabs)
+    private static (HealthSeverity Level, string Text, bool Sticky) RescanFinished(LauncherInfo? launcher, LauncherTabsViewModel tabs)
     {
         if (launcher is null)
         {
             // A failed launcher is what the player needs to hear of, not that the others were read (#369).
             var failed = tabs.Items.Where(tab => tab.ScanFailed).ToList();
-            return tabs.Items.Count == 0 ? "Weiterhin ist kein Launcher aktiv."
-                : failed.Count > 0 ? ScanFailed([.. failed.Select(tab => tab.Name)], keptGames: failed.Any(tab => tab.Count > 0))
-                : "Alle Launcher sind neu eingelesen.";
+            return tabs.Items.Count == 0 ? (HealthSeverity.Info, "Weiterhin ist kein Launcher aktiv.", false)
+                : failed.Count > 0 ? (HealthSeverity.Warning, ScanFailed([.. failed.Select(tab => tab.Name)], keptGames: failed.Any(tab => tab.Count > 0)), false)
+                : (HealthSeverity.Info, "Alle Launcher sind neu eingelesen.", false);
         }
 
         var name = launcher.DisplayName;
         return tabs.Find(launcher.Id) switch
         {
-            null => $"{name} ist nicht aktiv.",
-            { IsFound: false } => $"{name} ist weiterhin nicht zu finden.",
-            { ScanFailed: true, Count: var kept } => ScanFailed([name], keptGames: kept > 0),
-            { Count: 0 } => $"Weiterhin keine Spiele in {name}.",
-            { Count: var count } => count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.",
+            null => (HealthSeverity.Info, $"{name} ist nicht aktiv.", false),
+            { IsFound: false } => (HealthSeverity.Warning, $"{name} ist weiterhin nicht zu finden.", false),
+            { ScanFailed: true, Count: var kept } => (HealthSeverity.Warning, ScanFailed([name], keptGames: kept > 0), false),
+            { Count: 0 } => (HealthSeverity.Info, $"Weiterhin keine Spiele in {name}.", false),
+            { Count: var count } => (HealthSeverity.Info, count == 1 ? $"1 Spiel in {name} gefunden." : $"{count} Spiele in {name} gefunden.", false),
         };
     }
 

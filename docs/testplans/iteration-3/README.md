@@ -20,9 +20,11 @@ its file.
 | [418](418-explain-back-pan-install-and-removal.md) | #418 | Explain-back: Pan install and removal | none (doc fixes) |
 | [420](420-split-launchersettingsviewmodel-by-concern.md) | #420 | Split LauncherSettingsViewModel by concern | none (refactoring) |
 | [422](422-pan-finishes-interrupted-uninstall.md) | #422 | Pan finishes an interrupted uninstall and removes itself without Arcadia | T422-1 to T422-12 |
+| [433](433-recent-messages-and-logs-in-about-arcadia.md) | #433 | Show recent toasts and status messages and open the logs in "Über Arcadia" | T433-1 to T433-25 |
 | [423](423-restart-notice-at-uninstall.md) | #423 | Restart notice at the uninstall never shows | T423-1; touches T407-1 (both RC) |
 | [429](429-close-launcher-confirmation-before-action.md) | #429 | Close the launcher settings' confirmation before its action runs | none (order of closing and confirming; touches T83-7) |
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
+| [457](457-flaky-windows-pipe-and-countdown-tests.md) | #457 | Pan pipe test T413-25 fails on Windows CI now and then | none (test races in T413-25 and T340-1, automated tests only) |
 
 ## Release candidate tests (restart or installation)
 
@@ -42,6 +44,7 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
+| T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
 | T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
 | T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |

@@ -28,7 +28,7 @@ not the whole folder.
   pipeline) or `E2E: no (reason)` (e.g. real Steam Controller, UAC, real launcher installation).
   An `E2E: yes` case that can't be automated within its issue says `E2E: yes, deferred (reason)`; the
   acceptance review picks it up.
-  Files written before 2026-10-25 (Iteration 1) stay German and say `ja`/`nein`; new files are English.
+  Iteration 1's files stay German and say `ja`/`nein`; new files are English.
 - **Every test run is its own row** in the issue's "History" table: date, who,
   build and environment, result, consequence. Tests during implementation (demo data, virtual
   display, mechanical only) go there too, with an honest environment.

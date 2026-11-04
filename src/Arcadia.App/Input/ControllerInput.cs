@@ -1,6 +1,7 @@
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Input;
+using Arcadia.ControllerSupport;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Input;
@@ -35,6 +36,6 @@ public static class ControllerInput
         new(sdl, AppLog.Write, error =>
         {
             AppLog.Write($"Controller-Eingabe nicht verfügbar (SDL3): {error}");
-            Dispatcher.UIThread.Post(() => viewModel.Toast.Show(UnavailableText));
+            Dispatcher.UIThread.Post(() => viewModel.Toast.Show(HealthSeverity.Error, UnavailableText));
         }, emulated, AppErrors.ReportRepeating, time);
 }

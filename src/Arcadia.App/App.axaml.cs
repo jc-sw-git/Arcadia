@@ -168,7 +168,7 @@ public partial class App : Application
                 Unexpected = AppErrors.ReportRepeating,
             };
             var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
-            pan.JournalProblem += () => panNotices.Show(PanJournalText);
+            pan.JournalProblem += () => panNotices.Show(HealthSeverity.Error, PanJournalText);
             // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
             ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
                 ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
@@ -186,7 +186,7 @@ public partial class App : Application
             // "Arcadia neu starten" and the restart after a HidHide install (#396): HidHide lets only a new process see
             // what Pan hides. The new Arcadia waits until this one has exited.
             controllerSupport.RestartArcadia = reason => Dispatcher.UIThread.Post(() =>
-                RestartSelf(reason, RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(message)));
+                RestartSelf(reason, RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(HealthSeverity.Error, message)));
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
             // to read why it fails. Not while a game is in front: a toast says it there (PanDialogsViewModel.ShowFirmwareAttempt).

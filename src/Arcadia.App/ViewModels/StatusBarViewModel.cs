@@ -1,3 +1,4 @@
+using Arcadia.App.Messages;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
@@ -12,6 +13,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
     private readonly TimeProvider _time;
+    private readonly StatusMessageChanges _history;
 
     // Kept so it isn't collected; it ticks until the window is disposed.
     private readonly ITimer _clock;
@@ -23,8 +25,13 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
 
     private PanEmulationStatus _pan = PanEmulationStatus.Off;
 
-    public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time)
+    /// <summary>The status message of Pan's emulation, for "Letzte Meldungen" (#433).</summary>
+    public const string PanStatusId = "pan-not-running";
+
+    /// <param name="history">Gets the status messages the header shows on every change (#433).</param>
+    public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time, StatusMessageChanges history)
     {
+        _history = history;
         _controllerSupport = controllerSupport;
         _updates = updates;
         _time = time;
@@ -130,5 +137,12 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
             (var n, _) => $"{owner}: {n} Meldungen{panSuffix}",
         };
 
+        // What the header stands for, message by message: their changes are entries of "Letzte Meldungen" (#433).
+        var panLevel = _pan.State == PanEmulationState.Stopped ? HealthSeverity.Error : HealthSeverity.Warning;
+        _history.Show(
+        [
+            .. issues.Select(issue => new StatusMessage(issue.Id, issue.Severity, issue.Title)),
+            .. panProblem ? [new StatusMessage(PanStatusId, panLevel, PanNotRunningText)] : Array.Empty<StatusMessage>(),
+        ]);
     }
 }

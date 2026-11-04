@@ -35,8 +35,8 @@
   name) goes back to the list with that launcher focused. LT/RT (Q/E, a click on a neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping.
 - Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel", "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only
-  active and found); "Controller" (below). Steam's page no longer links to "Controller-Einstellungen für Steam" (#169
-  went with #178); it ends with the group "Desktop-Steuerung", "Steams Desktop-Steuerung zulassen" (#315; off by default; subtitle
+  active and found); "Controller" (below). Steam's page ends with the group "Desktop-Steuerung", "Steams
+  Desktop-Steuerung zulassen" (#315; off by default; subtitle
   "Steams Desktop-Steuerung ist momentan aktiviert" / "… wird momentan ignoriert"), there also while Steam is
   inactive, since it concerns Steam the program (`docs/product/mouse-mode.md`).
 - Name and keyword are written with the shared on-screen keyboard below the page (without ↹ and the edge key; the

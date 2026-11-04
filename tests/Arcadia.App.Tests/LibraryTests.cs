@@ -2,6 +2,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
@@ -30,9 +31,9 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.Up);
         Assert.Equal(1, FocusedIndex(arcadia));
 
-        // Down from the last full row lands on the last tile of the page (25 per page: 3 rows of 8 and one tile).
+        // Down stops at the page's last row (24 per page: 3 full rows of 8).
         arcadia.Press(UiAction.Down, times: 5);
-        Assert.Equal(arcadia.PageGames.Count - 1, FocusedIndex(arcadia));
+        Assert.Equal(1 + (2 * Arcadia.App.ViewModels.LibraryViewModel.GridColumns), FocusedIndex(arcadia));
         Assert.Single(arcadia.PageGames, tile => tile.IsFocused);
     }
 
@@ -50,9 +51,10 @@ public sealed class LibraryTests
         arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadRight);
         Assert.InRange(FocusedIndex(arcadia), 5, 24);
 
-        // Held long, down: row by row to the last tile of the page (25 per page: 3 rows of 8 and one tile), no further.
+        // Held long, down: row by row to the page's last row (24 per page: 3 full rows of 8), no further.
+        var column = FocusedIndex(arcadia) % Arcadia.App.ViewModels.LibraryViewModel.GridColumns;
         arcadia.HoldPad(TimeSpan.FromSeconds(3), PadButtons.DPadDown);
-        Assert.Equal(arcadia.PageGames.Count - 1, FocusedIndex(arcadia));
+        Assert.Equal(column + (2 * Arcadia.App.ViewModels.LibraryViewModel.GridColumns), FocusedIndex(arcadia));
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
@@ -133,14 +135,14 @@ public sealed class LibraryTests
     [Trait("TestCase", "G-8")]
     public async Task LT_and_RT_turn_the_pages_and_the_page_bar_shows_the_current_page()
     {
-        // GOG has 31 games: 25 on page 1, 6 on page 2.
+        // GOG has 31 games: 24 on page 1, 7 on page 2.
         using var arcadia = await ArcadiaDriver.StartAsync();
         var main = arcadia.Main;
-        Assert.Equal(25, arcadia.PageGames.Count);
+        Assert.Equal(24, arcadia.PageGames.Count);
         Assert.Equal("1", CurrentPage(arcadia));
 
         arcadia.Press(UiAction.Right).Press(UiAction.NextPage);
-        Assert.Equal(6, arcadia.PageGames.Count);
+        Assert.Equal(7, arcadia.PageGames.Count);
         Assert.Equal("2", CurrentPage(arcadia));
         Assert.Equal(0, FocusedIndex(arcadia));
 
@@ -149,7 +151,7 @@ public sealed class LibraryTests
         Assert.Equal("2", CurrentPage(arcadia));
 
         arcadia.Press(UiAction.PreviousPage);
-        Assert.Equal(25, arcadia.PageGames.Count);
+        Assert.Equal(24, arcadia.PageGames.Count);
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
@@ -164,24 +166,44 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.ViewOptions);
         var options = Assert.IsType<Arcadia.App.ViewModels.ViewOptionsViewModel>(main.ViewOptions);
 
-        // GOG has 31 games: 10, 25 and 50 can be chosen, 100 would show nothing more.
-        Assert.Equal(["10", "25", "50", "100"], options.PageSizeOptions.Select(o => o.Label));
-        Assert.Equal([true, true, true, false], options.PageSizeOptions.Select(o => o.IsEnabled));
-        Assert.True(options.PageSizeOptions.Single(o => o.Label == "25").IsSelected);
+        // GOG has 31 games: 24 and 64 can be chosen, 128 would show nothing more (T24-1).
+        Assert.Equal(["24", "64", "128"], options.PageSizeOptions.Select(o => o.Label));
+        Assert.Equal([true, true, false], options.PageSizeOptions.Select(o => o.IsEnabled));
+        Assert.True(options.PageSizeOptions.Single(o => o.Label == "24").IsSelected);
 
-        // From the selected sort (first row) down to the page sizes, onto 10, and choose it.
-        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Accept);
+        // From the selected sort (first row) down to the page sizes, onto 64, and choose it.
+        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept);
         Assert.True(main.IsViewOptionsOpen);
-        Assert.Equal(10, arcadia.PageGames.Count);
+        Assert.Equal(31, arcadia.PageGames.Count);
+
+        // A on 128, which can't be chosen, changes nothing.
+        arcadia.Press(UiAction.Right).Press(UiAction.Accept);
+        Assert.True(main.ViewOptions!.PageSizeOptions.Single(o => o.Label == "64").IsSelected);
+        Assert.Equal(64, arcadia.Settings.Current.PreferredPageSize);
 
         arcadia.Press(UiAction.Back);
         Assert.False(main.IsViewOptionsOpen);
-        Assert.Equal(10, arcadia.PageGames.Count);
+        Assert.Equal(31, arcadia.PageGames.Count);
 
-        // A tab with few games offers only 10 and shows all of them.
+        // A tab with few games offers only 24 and shows all of them.
         arcadia.Press(UiAction.PreviousTab).Press(UiAction.ViewOptions);
-        Assert.Equal([true, false, false, false], main.ViewOptions!.PageSizeOptions.Select(o => o.IsEnabled));
+        Assert.Equal([true, false, false], main.ViewOptions!.PageSizeOptions.Select(o => o.IsEnabled));
         Assert.Equal(6, arcadia.PageGames.Count);
+    }
+
+    /// <summary>T24-3: a page size of an older Arcadia (25) gives pages of 24 at the start, marked in "Ansicht" and saved.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T24-3")]
+    public async Task A_page_size_of_an_older_version_becomes_24_marked_and_saved_without_the_player_doing_anything()
+    {
+        var older = new AppSettings { ActiveLaunchers = [.. ArcadiaDriver.DefaultLaunchers.Select(spec => spec.Launcher.Id)], PreferredPageSize = 25, PanEnabled = true };
+
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: older);
+
+        Assert.Equal(24, arcadia.PageGames.Count);
+        arcadia.Press(UiAction.ViewOptions);
+        Assert.Equal("24", Assert.Single(arcadia.Main.ViewOptions!.PageSizeOptions, option => option.IsSelected).Label);
+        Assert.Equal(24, new SettingsStore(arcadia.SettingsPath).Load().PreferredPageSize);
     }
 
     /// <summary>Five games whose order under every sort is written out by hand, so the expectation is not Arcadia's own sorter.</summary>
@@ -227,25 +249,29 @@ public sealed class LibraryTests
         using var first = await ArcadiaDriver.StartAsync();
         first.Press(UiAction.ViewOptions)
             .Press(UiAction.Right).Press(UiAction.Accept)                                         // Name Z → A
-            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Accept) // 10 per page
             .Press(UiAction.Back)
             .Press(UiAction.NextTab);
         var pageOne = first.PageGames.Select(tile => tile.Title).ToList();
 
-        // Arcadia is closed elsewhere than page one and its first game.
-        first.Press(UiAction.NextPage).Press(UiAction.Right, times: 3);
-        Assert.Equal("2", CurrentPage(first));
+        first.Press(UiAction.ViewOptions)
+            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept) // 64 per page
+            .Press(UiAction.Back);
+
+        // Arcadia is closed elsewhere than its first game.
+        first.Press(UiAction.Right, times: 3);
         Assert.Equal(3, FocusedIndex(first));
 
         using var restarted = await first.RestartAsync();
         var main = restarted.Main;
 
+        // Xbox's 62 games on one page of 64, in the order of before.
         Assert.Equal("Xbox", restarted.SelectedTab?.Name);
-        Assert.Equal(10, restarted.PageGames.Count);
+        Assert.Equal(62, restarted.PageGames.Count);
+        Assert.Equal(64, restarted.Settings.Current.PreferredPageSize);
         Assert.Equal("1", CurrentPage(restarted));
         Assert.Equal(0, FocusedIndex(restarted));
         Assert.Equal(new SortOrder(SortField.Name, SortDirection.Descending), restarted.Settings.Current.LibrarySort);
-        Assert.Equal(pageOne, restarted.PageGames.Select(tile => tile.Title));
+        Assert.Equal(pageOne, restarted.PageGames.Take(pageOne.Count).Select(tile => tile.Title));
     }
 
     [AvaloniaFact]
@@ -259,29 +285,29 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.ViewOptions);
         Assert.Equal("Sortierung und Einträge pro Seite, gültig für alle Launcher", main.ViewOptions!.Subtitle);
         arcadia.Press(UiAction.Right).Press(UiAction.Accept)                                                            // Name Z → A
-            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right, times: 2).Press(UiAction.Accept) // 50
+            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept) // 64
             .Press(UiAction.Back);
         Assert.Equal(31, arcadia.PageGames.Count);
         AssertNameZtoA(arcadia);
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
-        Assert.Equal(50, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  50 pro Seite", main.Library.ViewSummary);
+        Assert.Equal(62, arcadia.PageGames.Count);
+        Assert.Equal("Name Z–A  ·  64 pro Seite", main.Library.ViewSummary);
         AssertNameZtoA(arcadia);
 
-        // Six games: 50 isn't offered there, so 10, the largest size it allows.
+        // Six games: 64 isn't offered there, so 24, the largest size it allows.
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Amazon Games", arcadia.SelectedTab?.Name);
         Assert.Equal(6, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  10 pro Seite", main.Library.ViewSummary);
+        Assert.Equal("Name Z–A  ·  24 pro Seite", main.Library.ViewSummary);
         AssertNameZtoA(arcadia);
 
-        // The choice itself is kept: the big tab shows 50 again.
+        // The choice itself is kept: the big tab shows 64 again.
         arcadia.Press(UiAction.PreviousTab);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
-        Assert.Equal(50, arcadia.PageGames.Count);
-        Assert.Equal("Name Z–A  ·  50 pro Seite", main.Library.ViewSummary);
+        Assert.Equal(62, arcadia.PageGames.Count);
+        Assert.Equal("Name Z–A  ·  64 pro Seite", main.Library.ViewSummary);
     }
 
     [AvaloniaFact]

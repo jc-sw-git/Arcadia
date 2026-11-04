@@ -91,7 +91,7 @@ sealed partial class Program
 #if DEBUG
             .WithDeveloperTools()
 #endif
-            .WithInterFont()
+            .WithArcadiaFonts()
             .LogToTrace();
 
     /// <summary>

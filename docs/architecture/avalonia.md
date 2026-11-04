@@ -18,3 +18,8 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   `TargetNullValue` (`IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"`). `XamlBindingTests` checks
   both on every `.axaml` against the App's properties declared nullable (`T? Name`), so declare nullable what can be null.
 
+- Fonts are embedded (`ArcadiaFonts`, used by `Program` and the tests): Figtree for all text, Inter only as fallback
+  for symbols Figtree lacks (▲▼◀▶ ↵ ⇧ ⌫ ␣). `Theme.axaml` sets Fluent's `ContentControlThemeFontFamily` to the same
+  pair. A character neither font has is drawn as a theme icon (⧉ `PadIconView`, ≡ `PadIconOptions`, ↹ `KeyIconTab`);
+  `EmbeddedFontTests` fails on any other in the App's strings and views. A Fluent `Button` centres itself vertically:
+  set `VerticalAlignment` when it must fill a cell.

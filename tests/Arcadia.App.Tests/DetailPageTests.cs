@@ -21,14 +21,14 @@ public sealed class DetailPageTests
         arcadia.Press(UiAction.NextPage);
         var firstOfPageTwo = arcadia.PageGames[0].Game;
         var lastOfTab = arcadia.PageGames[^1].Game;
-        arcadia.Press(UiAction.PreviousPage).Press(UiAction.Right, times: 24);
+        arcadia.Press(UiAction.PreviousPage).Press(UiAction.Right, times: 23);
         Assert.Same(lastOfPageOne, arcadia.FocusedGame!.Game);
 
         arcadia.Hold(UiAction.Accept, PastHoldTime).Press(UiAction.NextPage);
         Assert.Equal(firstOfPageTwo.Key, arcadia.Detail!.Current.Tile.Game.Key);
-        Assert.Equal("26 von 31", arcadia.Detail.PositionText);
+        Assert.Equal("25 von 31", arcadia.Detail.PositionText);
 
-        arcadia.Press(UiAction.PreviousPage, times: 26);
+        arcadia.Press(UiAction.PreviousPage, times: 25);
         Assert.Equal(lastOfTab.Key, arcadia.Detail.Current.Tile.Game.Key);
         Assert.Equal("31 von 31", arcadia.Detail.PositionText);
     }

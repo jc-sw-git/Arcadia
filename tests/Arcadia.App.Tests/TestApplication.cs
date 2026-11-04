@@ -1,3 +1,4 @@
+using Arcadia.App;
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml.Styling;
@@ -23,9 +24,8 @@ public static class TestApplication
         AppBuilder.Configure<StyledApplication>()
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-            // Inter on every machine, as Program does: the same text widths on Windows, macOS and Linux.
-            .WithInterFont()
-            .With(new FontManagerOptions { DefaultFamilyName = "fonts:Inter#Inter" });
+            // Arcadia's embedded fonts, as Program does: the same text widths on Windows, macOS and Linux.
+            .WithArcadiaFonts();
 
     /// <summary>
     /// Arcadia's styles as <c>App.axaml</c> loads them. Not Arcadia's <c>App</c>: it starts the real services and

@@ -67,6 +67,7 @@
                   <!-- A keyboard going down. -->
                   <Path Classes="keyIcon" IsVisible="{Binding IsHideKey}" Width="34" Height="26" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"
                         Data="M3.5 1.5h20a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-20a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z M6 6h2 M11 6h2 M16 6h2 M21 6h0.5 M6 11h16 M9.5 19.5L13.5 23.5l4 -4" />
+                  <Path Classes="keyIcon tab" IsVisible="{Binding IsTabKey}" Data="{StaticResource KeyIconTab}" />
                   <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolBesideName}" Text="{Binding Symbol}" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />

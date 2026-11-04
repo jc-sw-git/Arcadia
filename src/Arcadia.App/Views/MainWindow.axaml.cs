@@ -26,7 +26,7 @@ public partial class MainWindow : Window
     /// <summary>From one search hit to the next: tile width or height (SearchHitTile) plus the spacing between them.</summary>
     private const double HitPitchX = 190 + 20;
 
-    private const double HitPitchY = 270 + 20;
+    private const double HitPitchY = 315 + 20;
 
     /// <summary>Seven hits side by side, the width of the window of hits in both layouts.</summary>
     private const double HitWindowWidth = (7 * HitPitchX) - 20;
@@ -34,7 +34,8 @@ public partial class MainWindow : Window
     /// <summary>Room above the row of hits for the focused one's lift, and above the grid for the row before it, faded.</summary>
     private const double HitRowTop = 8;
 
-    private const double HitGridTop = 40;
+    // Small enough that both rows of 2 : 3 hits (#24) fit the viewport whole; the row before still peeks out above.
+    private const double HitGridTop = 16;
 
     /// <summary>A step of RS (or Shift+W/S) through the settings' info panel.</summary>
     private const double InfoScrollStep = 160;

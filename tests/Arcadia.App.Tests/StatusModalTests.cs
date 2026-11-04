@@ -368,6 +368,37 @@ public sealed class StatusModalTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T166-4")]
+    public async Task Seit_keeps_the_time_a_message_appeared_and_a_level_change_counts_as_new()
+    {
+        using var arcadia = await StartWithPanAsync();
+        arcadia.SteamControllerCopy.FailAttach = "VIIPER antwortet nicht";
+        arcadia.SteamControllerCopy.Current!.Lose();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(
+            () => arcadia.Main.Status.Entries.Any(entry => entry.Id == StatusBarViewModel.PanStatusId), "„Pan läuft nicht“ als Warnung");
+        var appeared = $"seit {Formatting.Clock(arcadia.Time.GetLocalNow())}";
+
+        arcadia.Press(UiAction.Status);
+        var pan = Modal(arcadia).Entries.Single(entry => entry.Id == StatusBarViewModel.PanStatusId);
+        Assert.True(pan.IsWarning);
+        Assert.Equal(appeared, pan.SinceText);
+
+        // The same message at the same level keeps its time, also a minute later.
+        arcadia.Time.Advance(TimeSpan.FromMinutes(1));
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(pan.IsWarning);
+        Assert.Equal(appeared, pan.SinceText);
+
+        // Pan gives up after further failures: the message turns into an error, a new one with the time of the change.
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => pan.IsError, "„Pan läuft nicht“ als Fehler");
+        Assert.Equal($"seit {Formatting.Clock(arcadia.Time.GetLocalNow())}", pan.SinceText);
+        Assert.NotEqual(appeared, pan.SinceText);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T166-14")]
     public async Task Ansicht_is_on_L3_now_and_Y_does_nothing_in_the_settings()
     {

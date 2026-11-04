@@ -49,7 +49,7 @@ Steam, Pan and releases, fake time).
       can open; a click on it opens the modal instead of the category. · E2E: yes (window test)
 - [x] **T166-14** "Ansicht" is on L3 (C) in library and detail page; in the settings category "Launcher" L3 (C) lifts a
       row, ▲ ▼ move it, L3 drops it, B cancels; Y does nothing in the settings. · E2E: yes
-- [ ] **T166-15** Visual check of the design's checklist: focus ring on first, last and a middle entry and on both
+- [x] **T166-15** Visual check of the design's checklist: focus ring on first, last and a middle entry and on both
       buttons; chip hint follows the input (Xbox, PlayStation △, keyboard V), hover like the search chip; top edge stays
       when entries go; more than five entries fade at the bottom; long title and short text end with "…", "seit hh:mm"
       and the buttons never cut; footer as designed; empty state centred, confetti falls once; 200 % scaling.
@@ -62,3 +62,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T166-1 to T166-14, T166-17 | 2026-11-04 | Claude | PR branch, `dotnet test`, Linux container, headless | ✅ (automated) | – |
+| T166-1 to T166-14, T166-17 (+ new test for "seit" on a level change, T166-4) | 2026-11-04 | QE (Claude) | PR branch, Release, `tools/ci/run-tests.sh 4`, Linux container, headless | ✅ (automated, all 3,500 tests green) | – |
+| T166-15 | 2026-11-04 | QE (Claude) | PR branch, Release, headless window captures on Linux (fake Steam and Pan, DualSense and keyboard simulated, render scaling 2) | ✅ focus ring on first, middle, last entry and both buttons; chip Y/△/V and hover like the search chip; top edge stays (120 px with 2, 1, 0 entries); fade under the sixth entry; long title and short text end with "…", "seit" and buttons whole; footer; empty state centred with ✕ | Not seen: real Windows display scaling and the confetti's motion (only its end state) |

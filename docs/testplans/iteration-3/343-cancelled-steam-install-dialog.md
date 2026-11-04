@@ -4,8 +4,8 @@ Derived from the issue's specification. Every case runs with the gamepad alone; 
 means the tile and the detail page show "Bitte in … bestätigen" (Epic engine: "Bitte in … starten"). "1 minute"
 allows one install poll on top (2 s). Automated cases use made-up Steam and Epic fixtures and the driver's clock.
 
-**Status:** T343-1…T343-9 done (automated tests and the QE review, see History). **Open for the owner:**
-T343-10, T343-11, T343-12, T343-14 (T343-13 optional).
+**Status:** Automated: T343-1…T343-9 · QE: T343-1…T343-9 · Open for the owner: T343-10, T343-11, T343-12, T343-14,
+T343-13 (optional)
 
 - [x] **T343-1** Waiting ends after 1 minute: install a not-installed Steam game with A, the launcher reports
       nothing. At 59 s the game still waits; after 1 minute the tile, the detail page button and the button hint

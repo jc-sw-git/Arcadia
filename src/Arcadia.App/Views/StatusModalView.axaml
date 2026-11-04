@@ -24,7 +24,7 @@
           </Grid>
 
           <Panel IsVisible="{Binding HasEntries}">
-            <ScrollViewer Name="EntriesScroller" MaxHeight="600" VerticalScrollBarVisibility="Hidden" Padding="6" Margin="-6">
+            <ScrollViewer Name="EntriesScroller" MaxHeight="470" VerticalScrollBarVisibility="Hidden" Padding="6" Margin="-6">
               <ItemsControl Name="EntryList" ItemsSource="{Binding Entries}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>

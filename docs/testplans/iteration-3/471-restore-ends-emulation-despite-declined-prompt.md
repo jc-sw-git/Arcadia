@@ -25,3 +25,4 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T471-1, T471-2, T471-3 and all other tests (`dotnet test Arcadia.slnx`; Windows-only pipe tests skipped there) | 2026-11-04 | Claude | PR branch e541664, Debug, Linux cloud container | ✅ Pan 433, Core 2448, App 624 passed, 0 warnings | – |

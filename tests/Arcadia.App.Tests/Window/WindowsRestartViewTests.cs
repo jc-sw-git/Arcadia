@@ -27,6 +27,9 @@ public sealed class WindowsRestartViewTests
         }
     }
 
+    private static string Shown(TextBlock block) =>
+        block.Text is { Length: > 0 } text ? text : string.Concat(block.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Select(run => run.Text) ?? []);
+
     private static IReadOnlyList<string> VisibleHints(ArcadiaWindow arcadia) =>
         arcadia.Hints(arcadia.Window.GetVisualDescendants().OfType<Arcadia.App.Controls.KeyHint>().Where(hint => hint.IsEffectivelyVisible));
 
@@ -79,6 +82,41 @@ public sealed class WindowsRestartViewTests
         arcadia.Press(UiAction.Accept).Press(UiAction.Accept).Settle();
         await arcadia.Arcadia.WaitUntilAsync(() => steam.WindowsRestarts == 1, "der Neustart von Windows");
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
+    }
+
+    /// <summary>
+    /// The designer's checklist (T382-25), as far as a picture can be checked: no focus ring cut off on the page or in the
+    /// question, the rings on [Neu starten] and [Abbrechen], the longest row subtitle on one line and the button's label
+    /// whole. Layout is fixed at 1920×1080 in a Viewbox, so 200 % scaling draws the same layout larger.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T382-25")]
+    public async Task Rings_are_whole_the_longest_subtitle_fits_one_line_and_the_button_label_is_not_clipped()
+    {
+        var steam = new FakeSteam { HidHideRemovalPending = true };
+        var (arcadia, controller) = await OpenAsync(steam);
+        using var _ = arcadia;
+
+        RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Einstellungen mit der Neustart-Zeile");
+        // The row's texts are set as inlines (button glyphs), so they are found by what they show.
+        var texts = arcadia.Window.GetVisualDescendants().OfType<TextBlock>().Where(block => block.IsEffectivelyVisible && arcadia.Bounds(block).Width > 0).ToList();
+        foreach (var shown in new[] { EmulationParts.PausedSummary, EmulationParts.WindowsRestartLabel })
+        {
+            var block = texts.FirstOrDefault(block => Shown(block) == shown) ?? throw new InvalidOperationException($"„{shown}“ steht nicht im Fenster");
+            Assert.Single(block.TextLayout.TextLines);
+            Assert.True(block.TextLayout.WidthIncludingTrailingWhitespace <= block.Bounds.Width + 0.5, $"„{shown}“ ist ganz zu sehen");
+        }
+
+        arcadia.Press(UiAction.Accept).Settle();
+        Assert.Equal(SettingsPrompt.ConfirmWindowsRestart, controller.Prompt);
+        var confirm = arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && button.Command == controller.ConfirmRestartCommand);
+        arcadia.AssertRingAround(confirm, "Neu starten");
+        arcadia.Press(UiAction.Right).Settle();
+        var cancel = arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && Equals(button.Content, "Abbrechen")
+            && button.Command == controller.ClosePromptCommand);
+        arcadia.AssertRingAround(cancel, "Abbrechen");
+        RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Windows neu starten?");
+        Keep(arcadia, "382-question-cancel-focused");
     }
 
     [AvaloniaFact]

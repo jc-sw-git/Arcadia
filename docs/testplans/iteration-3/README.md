@@ -61,3 +61,4 @@ Charter: –. Time box: –. Findings: –.
 | T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |
 | T343-1…T343-8 | `tests/Arcadia.App.Tests/CancelledInstallDialogTests.cs` |
 | T382-7, -9, -10 | `EmulationSetupTests` (restart row); variants T382-2, -8, -11, -29 in `ControllerSupportRestartTests` (Core), T382-3, -4 in `UnchangedPanTests` (Pan) |
+| T382-1, -5, -6, -8, -12 to -17, -20, -21, -26 to -28 | `WindowsRestartTests`; T382-18, -19, -22, -23, -25 in `Window/WindowsRestartViewTests` |

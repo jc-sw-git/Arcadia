@@ -109,6 +109,10 @@ public sealed partial class StatusModalViewModel : ViewModelBase
         }
 
         Arrange();
+
+        // The focused entry's fix can come or go (an update starts loading), and with it what A does.
+        OnPropertyChanged(nameof(FocusedHasFix));
+        OnPropertyChanged(nameof(AcceptText));
     }
 
     /// <summary>A press while the modal is open; it takes every one.</summary>

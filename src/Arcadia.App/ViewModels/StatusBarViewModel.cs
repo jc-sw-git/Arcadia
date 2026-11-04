@@ -189,6 +189,11 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         _ => StatusLevel.Info,
     };
 
+    /// <summary>While the update loads, its entry shows the progress and has no fix, so A can't start it twice.</summary>
+    private StatusEntry UpdateEntry() => _updates is { Progress: { } percent, AvailableVersion: { } version }
+        ? new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, AboutSettingsViewModel.LoadingText(version, percent), default, StatusTarget.ArcadiaUpdate, null)
+        : new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, UpdateShortText, default, StatusTarget.ArcadiaUpdate, UpdateFixLabel);
+
     /// <summary>The header's messages as the modal's entries, each with the time it appeared at its level.</summary>
     private void ShowEntries()
     {
@@ -196,7 +201,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         [
             .. _controllerEntries,
             .. HasArcadiaUpdate
-                ? [new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, UpdateShortText, default, StatusTarget.ArcadiaUpdate, UpdateFixLabel)]
+                ? [UpdateEntry()]
                 : Array.Empty<StatusEntry>(),
         ];
 

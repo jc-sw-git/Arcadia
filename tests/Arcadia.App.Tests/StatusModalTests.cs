@@ -216,6 +216,30 @@ public sealed class StatusModalTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T166-8")]
+    public async Task While_the_update_loads_its_entry_shows_the_progress_and_A_cannot_start_it_again()
+    {
+        var download = new TaskCompletionSource();
+        using var arcadia = await StartAsync(new FakeSteam(), new FakeReleases("0.1.0", ("0.3.0", ["Neu"])) { HeldDownload = download });
+        await arcadia.Updates.CheckIfDueAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasArcadiaUpdate, "das Update im Header");
+
+        arcadia.Press(UiAction.Status).Press(UiAction.Accept);
+        var update = Assert.Single(Modal(arcadia).Entries);
+        await arcadia.WaitUntilAsync(() => update.ShortText == AboutSettingsViewModel.LoadingText("0.3.0", 40), "der Fortschritt im Eintrag");
+        Assert.False(update.HasFix);
+        Assert.False(Modal(arcadia).FocusedHasFix);
+        Assert.Equal(StatusEntryViewModel.SettingsLabel, Modal(arcadia).AcceptText);
+        Assert.True(update.IsSettingsFocused);
+
+        // The download fails: the entry offers the update again.
+        download.SetResult();
+        await arcadia.WaitUntilAsync(() => update.HasFix, "der Knopf wieder da");
+        Assert.Equal(StatusBarViewModel.UpdateShortText, update.ShortText);
+        Assert.Equal(StatusBarViewModel.UpdateFixLabel, Modal(arcadia).AcceptText);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T166-9")]
     public async Task Zu_den_Einstellungen_on_the_update_opens_Ueber_Arcadia_on_Jetzt_aktualisieren()
     {

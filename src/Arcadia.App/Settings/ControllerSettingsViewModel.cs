@@ -611,6 +611,12 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// A game started or ended: the rows a game greys out ("Windows neu starten", Pan's switch) follow it, as neither Pan
+    /// nor the support changes with it.
+    /// </summary>
+    public void RunningGamesChanged() => OnSupportChanged(this, EventArgs.Empty);
+
     private void OnSupportChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
     {
         if (!_disposed)

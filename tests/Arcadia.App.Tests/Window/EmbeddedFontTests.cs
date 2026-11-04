@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Arcadia.App.Input;
 using Avalonia.Controls;
@@ -113,7 +114,7 @@ public sealed partial class EmbeddedFontTests
         Assert.Empty(asText);
     }
 
-    // The characters of everything a view can show: string literals of the App's code (no comments, no log lines) and
+    // The characters of everything a view can show: string literals of the App's code (no comments, no log calls) and
     // the views' markup outside comments. Text elements, so a surrogate pair counts as one character.
     private static IEnumerable<(string Character, string Where)> UiCharacters()
     {
@@ -122,7 +123,7 @@ public sealed partial class EmbeddedFontTests
         var sources = Directory.EnumerateFiles(app, "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains(buildOutput, StringComparison.Ordinal))
             .SelectMany(file => File.ReadAllLines(file).Select((line, i) => (Where: $"{Path.GetFileName(file)}:{i + 1}", Line: line.Trim())))
-            .Where(entry => !entry.Line.StartsWith("//", StringComparison.Ordinal) && !entry.Line.StartsWith("///", StringComparison.Ordinal) && !entry.Line.Contains("Log", StringComparison.Ordinal))
+            .Where(entry => !entry.Line.StartsWith("//", StringComparison.Ordinal) && !LogCall().IsMatch(entry.Line))
             .SelectMany(entry => StringLiteral().Matches(entry.Line).Select(match => (entry.Where, Text: match.Groups[1].Value)));
         var views = Directory.EnumerateFiles(app, "*.axaml", SearchOption.AllDirectories)
             .SelectMany(file => WithoutComments(File.ReadAllText(file)).Split('\n').Select((line, i) => (Where: $"{Path.GetFileName(file)}:{i + 1}", Text: line)));
@@ -145,19 +146,25 @@ public sealed partial class EmbeddedFontTests
     private static string WithoutComments(string xaml) =>
         XamlComment().Replace(xaml, comment => new string(comment.Value.Select(c => c == '\n' ? '\n' : ' ').ToArray()));
 
-    private static string RepoRoot()
+    // Found from this source file, not from the test binaries: CI runs each shard from a copy of them outside the repo
+    // (tools/ci/run-tests.sh).
+    private static string RepoRoot([CallerFilePath] string thisFile = "")
     {
-        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        var folder = new DirectoryInfo(Path.GetDirectoryName(thisFile)!);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "Arcadia.slnx")))
         {
             folder = folder.Parent;
         }
 
-        return folder?.FullName ?? throw new InvalidOperationException("Arcadia.slnx not found above the test's folder.");
+        return folder?.FullName ?? throw new InvalidOperationException($"Arcadia.slnx not found above {thisFile}.");
     }
 
     [GeneratedRegex("\"((?:[^\"\\\\]|\\\\.)*)\"")]
     private static partial Regex StringLiteral();
+
+    // A line that writes to the log; its texts go to arcadia.log, not to the screen.
+    [GeneratedRegex(@"\bAppLog\.Write\(|(?<![\w.])_?log\(")]
+    private static partial Regex LogCall();
 
     [GeneratedRegex("<!--.*?-->", RegexOptions.Singleline)]
     private static partial Regex XamlComment();

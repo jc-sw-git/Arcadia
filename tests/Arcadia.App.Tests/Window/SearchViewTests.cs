@@ -419,9 +419,16 @@ public sealed class SearchViewTests
         Assert.True(gridBar.IsEffectivelyVisible);
         Assert.True(arcadia.Bounds(gridBar).Left > arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns - 1])).Right, "Die Leiste steht neben dem Raster");
         Assert.True(arcadia.Bounds(gridBar).Height > 2 * arcadia.Bounds(gridBar).Width, "senkrecht");
-        // Both rows of 2 : 3 hits fit whole (#24), so no hit is cut off at the grid's edges; the next two rows are a turn away.
-        Assert.All(search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Take(2 * SearchViewModel.ResultColumns),
-            slot => Assert.True(arcadia.Bounds(HitButton(arcadia, slot.Tile!)).Bottom <= viewport.Bottom, $"{slot.Tile!.Title} ganz zu sehen"));
+        // Both rows of 2 : 3 hits fit whole (#24) and clear of the fades, the launcher name below the lower row included;
+        // the next two rows are a turn away.
+        var fadedAbove = arcadia.Bounds(gridFade.StartFade).Bottom;
+        var fadedBelow = arcadia.Bounds(gridFade.EndFade).Top;
+        Assert.All(search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Take(2 * SearchViewModel.ResultColumns), slot =>
+        {
+            var hit = arcadia.Bounds(HitButton(arcadia, slot.Tile!));
+            var launcher = arcadia.Bounds(One(arcadia, HitButton(arcadia, slot.Tile!).GetVisualParent<Control>()!, slot.Tile!.LauncherName));
+            Assert.True(hit.Top >= fadedAbove && launcher.Bottom <= fadedBelow, $"{slot.Tile!.Title}: {hit}, Launcher {launcher}, frei zwischen {fadedAbove} und {fadedBelow}");
+        });
         DragThumb(arcadia, gridBar, toEnd: true);
         Assert.Equal("92–105 von 105", search.RangeText);
     }

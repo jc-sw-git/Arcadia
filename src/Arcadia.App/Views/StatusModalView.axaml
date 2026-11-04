@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:status="using:Arcadia.App.Status"
+             x:Class="Arcadia.App.Views.StatusModalView"
+             x:DataType="status:StatusModalViewModel">
+
+  <!-- "Status" (#166, designs T166Modal, T166Empty, T166Bausteine): the header's messages, one entry each. The top edge
+       stays put, so the modal gets shorter at the bottom when entries go and the focus doesn't jump. -->
+  <Panel>
+    <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Command="{Binding CloseCommand}" />
+    <Border Classes="prompt" Width="1080" Padding="44,40,44,28" Margin="0,120,0,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+      <Panel>
+        <StackPanel Spacing="24">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
+            <Border Classes="promptIcon">
+              <Path Classes="statusModalIcon" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{x:Static status:StatusModalViewModel.Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Classes="statusCount" Text="{Binding CountText}" IsVisible="{Binding HasEntries}"
+                       Classes.besideClose="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" />
+          </Grid>
+
+          <Panel IsVisible="{Binding HasEntries}">
+            <ScrollViewer Name="EntriesScroller" MaxHeight="600" VerticalScrollBarVisibility="Hidden" Padding="6" Margin="-6">
+              <ItemsControl Name="EntryList" ItemsSource="{Binding Entries}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="status:StatusEntryViewModel">
+                    <Border Classes="statusEntry" Classes.focused="{Binding IsFocused}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20">
+                        <Border Classes="levelDisc" Classes.error="{Binding IsError}" Classes.warning="{Binding IsWarning}"
+                                Classes.update="{Binding IsUpdate}" Classes.info="{Binding IsInfo}">
+                          <Panel Width="26" Height="26">
+                            <Path Classes="statusIcon levelIcon" Classes.info="{Binding IsInfo}" Classes.error="{Binding IsError}" IsVisible="{Binding !IsUpdate}" />
+                            <Panel IsVisible="{Binding IsUpdate}">
+                              <Path Classes="updateIcon levelIcon" />
+                              <Ellipse Classes="updateDot discDot" />
+                            </Panel>
+                          </Panel>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                          <ctl:TrailingKeptRow Spacing="12">
+                            <TextBlock Classes="statusTitle" Text="{Binding Title}" />
+                            <TextBlock Classes="statusSince" Text="{Binding SinceText}" />
+                          </ctl:TrailingKeptRow>
+                          <TextBlock Classes="statusShort" Text="{Binding ShortText}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                          <Button Classes="plain statusButton fix" Classes.focused="{Binding IsFixFocused}" IsVisible="{Binding HasFix}"
+                                  Content="{Binding FixLabel}" Command="{Binding FixCommand}" />
+                          <Button Classes="plain statusButton" Classes.focused="{Binding IsSettingsFocused}"
+                                  Content="{x:Static status:StatusEntryViewModel.SettingsLabel}" Command="{Binding OpenSettingsCommand}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <!-- The shared fade (#237) into the modal's surface, only where the list can still scroll; over the scroller's
+                 padding (the room for the focus ring) too. -->
+            <ctl:EdgeFade Name="EntriesFade" Margin="-6" StartSize="56" EndSize="72" FocusRoom="8" FadeColor="{StaticResource SurfaceColor}"
+                          ScrollTarget="{Binding #EntriesScroller}" />
+          </Panel>
+
+          <!-- The last entry went (owner): a celebration, its confetti falls once (no loop, so no CPU while idle). -->
+          <StackPanel Classes="statusEmpty" IsVisible="{Binding IsEmpty}">
+            <Canvas Classes="confetti" Classes.celebrating="{Binding IsEmpty}" Width="360" Height="240">
+              <Path Classes="popper" Data="M70 196 L104 120 L130 170 Z" />
+              <Path Classes="popperStripe" Data="M84 165 L118 147 M92 182 L124 162" />
+              <Path Classes="popper" Data="M290 196 L256 120 L230 170 Z" />
+              <Path Classes="popperStripe" Data="M276 165 L242 147 M268 182 L236 162" />
+              <Path Classes="streamer soft" Data="M108 112 C96 92 116 80 104 60" />
+              <Path Classes="streamer danger" Data="M252 112 C264 92 244 80 256 60" />
+              <Path Classes="streamer success" Data="M84 108 C66 100 70 80 52 74" />
+              <Path Classes="streamer accent" Data="M276 108 C294 100 290 80 308 74" />
+              <Ellipse Classes="checkDisc" Canvas.Left="110" Canvas.Top="48" Width="140" Height="140" />
+              <Path Classes="checkMark" Data="M148 120 L172 144 L214 96" />
+              <Path Classes="flake accent" Data="M128 22h12v7h-12z" />
+              <Path Classes="flake danger" Data="M222 18h12v7h-12z" />
+              <Path Classes="flake warning" Data="M60 40h12v7h-12z" />
+              <Path Classes="flake success" Data="M292 44h12v7h-12z" />
+              <Path Classes="flake soft" Data="M34 122h12v7h-12z" />
+              <Path Classes="flake warning" Data="M316 130h12v7h-12z" />
+              <Ellipse Classes="flake warning" Canvas.Left="171" Canvas.Top="15" Width="10" Height="10" />
+              <Ellipse Classes="flake success" Canvas.Left="92" Canvas.Top="22" Width="8" Height="8" />
+              <Ellipse Classes="flake soft" Canvas.Left="258" Canvas.Top="30" Width="8" Height="8" />
+              <Ellipse Classes="flake danger" Canvas.Left="36" Canvas.Top="84" Width="8" Height="8" />
+              <Ellipse Classes="flake accent" Canvas.Left="317" Canvas.Top="91" Width="10" Height="10" />
+              <Path Classes="flake soft" Data="M150 34 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z" />
+              <Path Classes="flake soft" Data="M300 168 l2.5 6.5 6.5 2.5 -6.5 2.5 -2.5 6.5 -2.5 -6.5 -6.5 -2.5 6.5 -2.5z" />
+              <Path Classes="flake soft" Data="M56 160 l2.5 6.5 6.5 2.5 -6.5 2.5 -2.5 6.5 -2.5 -6.5 -6.5 -2.5 6.5 -2.5z" />
+            </Canvas>
+            <StackPanel Spacing="10" HorizontalAlignment="Center">
+              <TextBlock Classes="emptyLead" Text="{x:Static status:StatusModalViewModel.EmptyLead}" />
+              <TextBlock Classes="emptyHeadline" Text="{x:Static status:StatusModalViewModel.EmptyHeadline}" />
+              <TextBlock Classes="emptyPraise" Text="{x:Static status:StatusModalViewModel.EmptyPraise}" />
+            </StackPanel>
+          </StackPanel>
+
+          <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+            <DockPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasEntries}" DockPanel.Dock="Left">
+                <ctl:KeyHint Pad="L3" Keys="C" Text="Sortierung:" />
+                <TextBlock Classes="statusOrder" Text="{Binding OrderText}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="Meldung" IsVisible="{Binding HasSeveral}" />
+                <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Knopf" IsVisible="{Binding FocusedHasFix}" />
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptText}" IsVisible="{Binding HasEntries}" />
+                <ctl:KeyHint Pad="B" Keys="Esc" Text="Schließen" />
+              </StackPanel>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+        <Button Classes="plain dialogClose" Margin="0,-18,-22,0" ToolTip.Tip="Schließen"
+                IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+          <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+        </Button>
+      </Panel>
+    </Border>
+  </Panel>
+</UserControl>

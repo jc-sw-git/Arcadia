@@ -31,8 +31,9 @@
       (Klick auf Zeilen, Pfeile neben den Werten, Kategorien, ✕, Mausrad im Infopanel) ist jede Einstellung erreichbar.
       Die Maus über einer Zeile fokussiert sie, ohne sie zu ändern, und das Infopanel erklärt sie; ruht die Maus,
       während die Zeilen mit Tasten scrollen, bleibt der Fokus bei den Tasten. · E2E: ja
-- [x] **T15-10** Die Symbole im Header der Bibliothek öffnen die passende Kategorie: Controller-Warnung und
-      SISR-Update „Controller“, Arcadia-Update „Über Arcadia“. · E2E: ja
+- [x] ~~**T15-10** Die Symbole im Header der Bibliothek öffnen die passende Kategorie: Controller-Warnung und
+      SISR-Update „Controller“, Arcadia-Update „Über Arcadia“. · E2E: ja~~ Überholt durch #166: ein Klick auf die
+      Symbole öffnet das Statusmodal (T166-13).
 - [ ] **T15-11** Wählschalter laufen an den Enden um (owner, 2026-10-24, ohne Issue): „Zeigergeschwindigkeit“ auf 1,
       ◀ (Taste A, Klick auf den linken Pfeil): 9; ▶ auf 9: 1. Kein Pfeil ist am Ende ausgegraut. Ein Schalter („An“/„Aus“,
       „Aktiv“ eines Launchers, SISR, Ersteinrichtung) wechselt mit beiden Pfeilen; „Aktiv“ eines nicht installierten

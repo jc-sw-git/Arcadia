@@ -16,8 +16,12 @@ public enum UiAction
     NextTab,
     PreviousPage,
     NextPage,
+    /// <summary>L3 (key C): "Ansicht" in library and detail page, the search's filter and sort order, lifting a launcher in the settings (#166).</summary>
     ViewOptions,
     Settings,
+
+    /// <summary>Y (key V): the header's status messages in a modal (#166).</summary>
+    Status,
 
     /// <summary>The context menu of the focused game.</summary>
     Options,
@@ -27,9 +31,6 @@ public enum UiAction
 
     /// <summary>The on-screen keyboard's layout menu.</summary>
     KeyboardLayout,
-
-    /// <summary>L3: the search's launcher filter and sort order.</summary>
-    Filter,
 
     // The right stick: a second focus beside the D-pad's, e.g. the hits beside the on-screen keyboard.
     SecondaryUp,
@@ -52,13 +53,13 @@ public static class UiActionMap
         GamepadButton.RightShoulder => UiAction.NextTab,
         GamepadButton.LeftTrigger => UiAction.PreviousPage,
         GamepadButton.RightTrigger => UiAction.NextPage,
-        GamepadButton.Y => UiAction.ViewOptions,
+        GamepadButton.Y => UiAction.Status,
         // The owner's choice (2026-10-17): the context menu is used far more often than the settings.
         GamepadButton.View => UiAction.Options,
         GamepadButton.Menu => UiAction.Settings,
         GamepadButton.X => UiAction.Search,
         GamepadButton.RightStickClick => UiAction.KeyboardLayout,
-        GamepadButton.LeftStickClick => UiAction.Filter,
+        GamepadButton.LeftStickClick => UiAction.ViewOptions,
         GamepadButton.RightStickUp => UiAction.SecondaryUp,
         GamepadButton.RightStickDown => UiAction.SecondaryDown,
         GamepadButton.RightStickLeft => UiAction.SecondaryLeft,
@@ -68,7 +69,7 @@ public static class UiActionMap
 
     /// <summary>
     /// The keyboard plays like a game, with one hand on WASD (owner, 2026-10-21): WASD move, Space is A, Q/E are LT/RT,
-    /// Shift+Q/E LB/RB, R is ⧉, F is X, V is Y, Esc is B and Enter is ≡. The older keys stay as quiet alternatives.
+    /// Shift+Q/E LB/RB, R is ⧉, F is X, V is Y, C is L3, Esc is B and Enter is ≡. The older keys stay as quiet alternatives.
     /// </summary>
     public static UiAction? FromKey(Key key, KeyModifiers modifiers) => (key, modifiers) switch
     {
@@ -86,7 +87,8 @@ public static class UiActionMap
         (Key.E, KeyModifiers.Shift) or (Key.Tab, KeyModifiers.Control) => UiAction.NextTab,
         (Key.Q, KeyModifiers.None) or (Key.PageUp, _) => UiAction.PreviousPage,
         (Key.E, KeyModifiers.None) or (Key.PageDown, _) => UiAction.NextPage,
-        (Key.V, KeyModifiers.None) => UiAction.ViewOptions,
+        (Key.V, KeyModifiers.None) => UiAction.Status,
+        (Key.C, KeyModifiers.None) => UiAction.ViewOptions,
         (Key.R, KeyModifiers.None) or (Key.Apps, _) or (Key.F10, KeyModifiers.Shift) => UiAction.Options,
         (Key.F, KeyModifiers.None or KeyModifiers.Control) => UiAction.Search,
         _ => null,

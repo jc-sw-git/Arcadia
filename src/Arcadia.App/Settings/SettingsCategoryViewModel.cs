@@ -59,9 +59,9 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     /// </summary>
     public bool ShowsPageHints => Dialog is not IHasOwnHints;
 
-    /// <summary>What Y does on the rows, for the footer (e.g. "Verschieben"); null if nothing.</summary>
+    /// <summary>What L3 does on the rows, for the footer (e.g. "Verschieben"); null if nothing.</summary>
     [ObservableProperty]
-    public partial string? YActionText { get; protected set; }
+    public partial string? L3ActionText { get; protected set; }
 
     /// <summary>What X does on the rows, for the footer (e.g. "Alle neu einlesen"); null if nothing.</summary>
     [ObservableProperty]

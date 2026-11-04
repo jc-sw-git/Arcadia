@@ -5,7 +5,7 @@ namespace Arcadia.App.Settings;
 
 /// <summary>
 /// The order of the launcher list (#136): ◀ ▶ switch a launcher on (it goes to the end of the active ones) or off (to the
-/// top of the inactive ones); Y or the mouse lift it, ▲ ▼ or dragging move it, Y or letting go put it down, B puts it back.
+/// top of the inactive ones); L3 or the mouse lift it, ▲ ▼ or dragging move it, L3 or letting go put it down, B puts it back.
 /// Put down among the inactive ones it is off.
 /// </summary>
 internal sealed class LauncherOrder(ILauncherCategory category)

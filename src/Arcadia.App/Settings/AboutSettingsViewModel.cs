@@ -12,6 +12,9 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
 {
     private const string Group = "VERSION";
 
+    /// <summary>"Jetzt aktualisieren"; the status modal's update entry leads there (#166).</summary>
+    public const string InstallKey = "arcadia-install";
+
     private readonly ArcadiaUpdateService _updates;
     private readonly InfoRowViewModel _version;
     private readonly ActionRowViewModel _check;
@@ -40,7 +43,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
             Group = Group,
             Subtitle = "Arcadia sucht auch von selbst alle 6 Stunden",
         };
-        _install = new ActionRowViewModel("arcadia-install", "Jetzt aktualisieren", () => installUpdate().Forget("Arcadia aktualisieren"))
+        _install = new ActionRowViewModel(InstallKey, "Jetzt aktualisieren", () => installUpdate().Forget("Arcadia aktualisieren"))
         {
             Group = Group,
             Subtitle = "Arcadia schließt sich, installiert das Update und startet neu",

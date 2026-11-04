@@ -108,7 +108,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     /// <summary>The library's sort order, as the detail page names it.</summary>
     public string SortLabel => Formatting.SortLabel(_settings.Current.LibrarySort);
 
-    /// <summary>The grid, A on a cover, ⧉, LB/RB, LT/RT and Y; false for ≡ and X, which open pages over it.</summary>
+    /// <summary>The grid, A on a cover, ⧉, LB/RB, LT/RT and L3; false for ≡ and X, which open pages over it.</summary>
     public bool Handle(UiAction action)
     {
         if (EmptyTab is { } empty && action is UiAction.Left or UiAction.Right or UiAction.Accept)

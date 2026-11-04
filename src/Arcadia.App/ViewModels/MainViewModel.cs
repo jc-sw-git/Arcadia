@@ -5,6 +5,7 @@ using Arcadia.App.Search;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.App.Setup;
+using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Launchers;
@@ -24,7 +25,7 @@ namespace Arcadia.App.ViewModels;
 /// detail page, search, settings, first start), holds the dialogs over them and wires the parts. The pages handle their
 /// own input (<see cref="IPage"/>); the library's loading, installs and running games are <see cref="LibrarySession"/>'s.
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IWebPageHost, IControllerModeHost, IDisposable
+public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IWebPageHost, IControllerModeHost, IStatusModalHost, IDisposable
 {
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
@@ -69,6 +70,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
         Messages = new RecentMessages(time, AppLog.Write);
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
+        Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time);
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
@@ -178,8 +180,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     public bool IsConfirmationOpen => Confirmation is not null;
 
+    /// <summary>The header's messages in a modal (#166), over the library or the detail page.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsStatusModalOpen))]
+    public partial StatusModalViewModel? StatusModal { get; private set; }
+
+    public bool IsStatusModalOpen => StatusModal is not null;
+
     /// <summary>A dialog or menu over the page takes the input.</summary>
-    public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen;
+    public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
+        || IsStatusModalOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -302,6 +312,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
+        // Only where the header is (#166); in the search Y is the keyboard's space, in the settings it does nothing.
+        if (action == UiAction.Status && page is LibraryViewModel or GameDetailViewModel)
+        {
+            OpenStatusModal();
+            return;
+        }
+
         if (page.Handle(action))
         {
             return;
@@ -354,6 +371,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 ViewOptions = null;
             }
 
+            return true;
+        }
+
+        if (StatusModal is { } status)
+        {
+            status.Handle(action);
             return true;
         }
 
@@ -742,9 +765,87 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [RelayCommand]
     private void OpenSettings() => ShowSettings(first: null);
 
-    /// <summary>The header's Arcadia update symbol.</summary>
+    /// <summary>
+    /// Y (V) or a click on the header's status chip (#166): only while the header shows a message or the update, and
+    /// never over another dialog or menu.
+    /// </summary>
     [RelayCommand]
-    private void OpenAboutSettings() => ShowSettings(typeof(AboutSettingsViewModel));
+    private void OpenStatusModal()
+    {
+        if (Status.HasEntries && !IsDialogOpen && Search is null)
+        {
+            StatusModal = new StatusModalViewModel(Status.Entries, _settings.Current.SortsStatusByNewest, this);
+        }
+    }
+
+    private void OnStatusChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(StatusBarViewModel.Entries))
+        {
+            StatusModal?.Show(Status.Entries);
+        }
+    }
+
+    void IStatusModalHost.Close(StatusModalViewModel modal)
+    {
+        if (StatusModal == modal)
+        {
+            StatusModal = null;
+        }
+    }
+
+    void IStatusModalHost.OpenSettingsOf(StatusEntry entry, bool startFix)
+    {
+        StatusModal = null;
+        switch (entry.Target)
+        {
+            case StatusTarget.PanProblem:
+                ControllerMode.ShowPanProblem();
+                break;
+            case StatusTarget.ArcadiaUpdate:
+                ShowSettings(typeof(AboutSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, AboutSettingsViewModel.InstallKey);
+                break;
+            case StatusTarget.ControllerIssue:
+                var controller = ((IControllerModeHost)this).OpenControllerSettings();
+                var row = FocusRowOrTop(controller, PanRows.IssueKey(entry.Id));
+                // The fix as A on its row starts it: its question and the progress dialog come from the settings (#413).
+                // A row that is busy is disabled, and a fix that runs starts nothing a second time.
+                if (startFix && row is ActionRowViewModel { IsEnabled: true, CanActivate: true } fixRow)
+                {
+                    fixRow.Activate();
+                }
+
+                break;
+        }
+    }
+
+    /// <summary>The row of a message, or the category's top row when the message went meanwhile (#166).</summary>
+    private static SettingsRowViewModel? FocusRowOrTop(SettingsCategoryViewModel? category, string key)
+    {
+        if (category is null || category.Rows.Count == 0)
+        {
+            return null;
+        }
+
+        var row = category.Rows.FirstOrDefault(r => r.Key == key);
+        category.FocusRow((row ?? category.Rows[0]).Key);
+        return row;
+    }
+
+    void IStatusModalHost.InstallUpdate() => InstallUpdateAsync().Forget("Arcadia aktualisieren");
+
+    /// <summary>From the status modal (#166): the settings' row shows the failure, here it is a toast.</summary>
+    private async Task InstallUpdateAsync()
+    {
+        await _updates.InstallAsync();
+        if (_updates.LastError is { } error)
+        {
+            Toast.Show(HealthSeverity.Error, error);
+        }
+    }
+
+    void IStatusModalHost.OrderChanged(bool newestFirst) => SaveView(settings => settings with { SortsStatusByNewest = newestFirst });
 
     /// <summary>The settings page (#15) in place of the library, which stays as it is underneath for the way back.</summary>
     private void ShowSettings(Type? first, string? launcherId = null)

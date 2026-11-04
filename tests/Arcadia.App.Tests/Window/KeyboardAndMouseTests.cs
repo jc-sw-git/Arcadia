@@ -22,7 +22,7 @@ public sealed class KeyboardAndMouseTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
 
         AssertController(arcadia);
-        Assert.Equal(["A Spielen", "A halten: Details", "⧉ Optionen", "Y Ansicht", "LB RB Launcher", "LT RT Seite"], arcadia.FooterHints());
+        Assert.Equal(["A Spielen", "A halten: Details", "⧉ Optionen", "L3 Ansicht", "LB RB Launcher", "LT RT Seite"], arcadia.FooterHints());
 
         arcadia.Key(Key.D);
         AssertKeyboard(arcadia);
@@ -125,13 +125,13 @@ public sealed class KeyboardAndMouseTests
         arcadia.Key(Key.D3);
         Assert.Equal("Amazon Games", arcadia.Arcadia.SelectedTab?.Name);
         arcadia.Key(Key.D1);
-
+        // R options, C view, Esc closes each.
         // R options, V view, Esc closes each.
         arcadia.Key(Key.R);
         Assert.True(main.IsGameMenuOpen);
         arcadia.Key(Key.Escape);
         Assert.False(main.IsGameMenuOpen);
-        arcadia.Key(Key.V);
+        arcadia.Key(Key.C);
         Assert.True(main.IsViewOptionsOpen);
         arcadia.Key(Key.Escape);
         Assert.False(main.IsViewOptionsOpen);

@@ -116,10 +116,6 @@ public sealed partial class ControllerModeViewModel : ViewModelBase, IDisposable
         _actions.CycleControllerMode(game);
     }
 
-    /// <summary>The header's Steam Controller symbols: straight to the category the message belongs to.</summary>
-    [RelayCommand]
-    private void OpenControllerSettings() => _host.OpenControllerSettings();
-
     /// <summary>The controller settings with the row focused that says why Pan's emulation doesn't run; B goes back.</summary>
     public void ShowPanProblem()
     {

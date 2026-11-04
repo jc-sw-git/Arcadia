@@ -9,7 +9,7 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// The category "Launcher" (#136): which launchers are active, i.e. read, watched and shown as tabs, and in which order.
 /// Above "Aktiv · erscheinen als Tabs" in tab order, below "Nicht aktiv", the installed ones first. ◀ ▶ switch a launcher
-/// on or off, Y lifts it to move it (<see cref="LauncherOrder"/>). X, or the row "Alle neu einlesen" below the launchers
+/// on or off, L3 lifts it to move it (<see cref="LauncherOrder"/>). X, or the row "Alle neu einlesen" below the launchers
 /// (for the mouse), reads every launcher again. A or a click open a launcher's page (#137): its account
 /// (<see cref="LauncherAccountRow"/>), "Allgemein" (<see cref="LauncherGeneralRows"/>), "Bibliothek"
 /// (<see cref="LauncherLibraryRows"/>) and "Controller" (<see cref="LauncherControllerRows"/>); LT/RT turn to the
@@ -21,7 +21,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
     private const string ActiveGroup = "AKTIV · ERSCHEINEN ALS TABS";
     private const string InactiveGroup = "NICHT AKTIV";
     private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
-    private const string ListYAction = "Verschieben";
+    private const string ListL3Action = "Verschieben";
 
     private const string ListXAction = "Alle neu einlesen";
 
@@ -49,9 +49,9 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _host = host;
         _changes = changes;
         _time = time;
-        YActionText = ListYAction;
+        L3ActionText = ListL3Action;
         XActionText = ListXAction;
-        FocusMoved += (_, _) => ShowYAction();
+        FocusMoved += (_, _) => ShowL3Action();
 
         _order = new LauncherOrder(this);
         _states = new LauncherRowStates(this);
@@ -185,7 +185,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
                     Turn(1);
                     return true;
                 default:
-                    // Y and X have nothing to do on a launcher's page.
+                    // L3 and X have nothing to do on a launcher's page.
                     return action is UiAction.ViewOptions or UiAction.Search;
             }
         }
@@ -229,12 +229,12 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         }
     }
 
-    /// <summary>Y lifts only a launcher, so the footer names it only there, not on "Alle neu einlesen".</summary>
-    private void ShowYAction()
+    /// <summary>L3 lifts only a launcher, so the footer names it only there, not on "Alle neu einlesen".</summary>
+    private void ShowL3Action()
     {
         if (_page is null)
         {
-            YActionText = FocusedRow is LauncherRowViewModel ? ListYAction : null;
+            L3ActionText = FocusedRow is LauncherRowViewModel ? ListL3Action : null;
         }
     }
 
@@ -289,7 +289,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _order.PutBack();
     }
 
-    /// <summary>The mouse starts dragging <paramref name="row"/>: lifted as with Y.</summary>
+    /// <summary>The mouse starts dragging <paramref name="row"/>: lifted as with L3.</summary>
     public void BeginDrag(LauncherRowViewModel row)
     {
         if (_order.Lifted is null)
@@ -301,7 +301,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
     /// <summary>The dragged launcher is over the place below <paramref name="rowsAbove"/> of the other rows.</summary>
     public void DragTo(int rowsAbove) => _order.DragTo(rowsAbove);
 
-    /// <summary>Y, or the mouse let go: the lifted launcher stays where it stands; among the inactive ones it is off.</summary>
+    /// <summary>L3, or the mouse let go: the lifted launcher stays where it stands; among the inactive ones it is off.</summary>
     public void Drop() => _order.Drop();
 
     /// <summary>Opens a launcher's page with the focus on one of its rows, e.g. from the controller settings.</summary>
@@ -324,7 +324,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
 
         Focus(row);
         _page = row.Launcher.Id;
-        YActionText = null;
+        L3ActionText = null;
         XActionText = null;
         Head = _head;
         Refresh();
@@ -339,7 +339,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         Head = null;
         XActionText = ListXAction;
         Refresh();
-        ShowYAction();
+        ShowL3Action();
     }
 
     /// <summary>LT/RT or a click on a neighbour: the page of the launcher before or after this one in the list; the focus stays on its row.</summary>

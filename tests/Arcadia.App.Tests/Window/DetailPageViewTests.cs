@@ -44,7 +44,7 @@ public sealed class DetailPageViewTests
         Assert.True(right.Left < ArcadiaWindow.Width && right.Right > ArcadiaWindow.Width, $"Nächstes Spiel {right} rechts angeschnitten");
         Assert.All(pages.Where(page => page.DataContext is GameDetailPageViewModel { IsSide: true }), page => Assert.True(page.Opacity < 1, "Nachbar abgedunkelt"));
 
-        Assert.Equal(["D-Pad Aktion wählen", "A Auswählen", "Y Ansicht", "LB RB Launcher", "LT RT Spiel", "B Zurück"], arcadia.FooterHints());
+        Assert.Equal(["D-Pad Aktion wählen", "A Auswählen", "L3 Ansicht", "LB RB Launcher", "LT RT Spiel", "B Zurück"], arcadia.FooterHints());
 
         // ⧉ → "Details anzeigen" opens the same page.
         arcadia.Press(UiAction.Back).Press(UiAction.Options).Press(UiAction.Down).Press(UiAction.Accept);

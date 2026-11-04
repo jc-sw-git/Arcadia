@@ -2230,4 +2230,242 @@
       </DataTemplate>
     </Setter>
   </Style>
+
+  <!-- The status messages (#166, designs T166Library/T166Modal/T166Empty/T166Bausteine). -->
+  <Style Selector="Button.headerChip.statusChip">
+    <Setter Property="Padding" Value="8,0,10,0" />
+  </Style>
+  <!-- The update symbol: in the header chip and on an entry's disc; the dot marks it as Arcadia's own update. -->
+  <Style Selector="Path.updateIcon">
+    <Setter Property="Data" Value="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" />
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Stretch" Value="None" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Ellipse.updateDot">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="Fill" Value="{StaticResource Accent}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Ellipse.updateDot.chipDot">
+    <Setter Property="Stroke" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Margin" Value="0,2,2,0" />
+  </Style>
+  <Style Selector="Button.headerChip:pointerover Ellipse.updateDot.chipDot">
+    <Setter Property="Stroke" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Ellipse.updateDot.discDot">
+    <Setter Property="Stroke" Value="{StaticResource PromptIcon}" />
+    <Setter Property="Margin" Value="0,-2,-2,0" />
+  </Style>
+  <Style Selector="Path.statusModalIcon">
+    <Setter Property="Data" Value="M3 12h4l2.5-6 5 12 2.5-6h4" />
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.statusCount">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- Left of the ✕, which mouse and keyboard show in the corner. -->
+  <Style Selector="TextBlock.statusCount.besideClose">
+    <Setter Property="Margin" Value="0,0,56,0" />
+  </Style>
+  <Style Selector="Border.statusEntry">
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="MinHeight" Value="76" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.statusEntry.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <!-- The level in a tinted disc, so it shows by its outline also without colour. -->
+  <Style Selector="Border.levelDisc">
+    <Setter Property="Width" Value="48" />
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.levelDisc.error">
+    <Setter Property="Background" Value="{StaticResource DangerSurface}" />
+  </Style>
+  <Style Selector="Border.levelDisc.warning">
+    <Setter Property="Background" Value="{StaticResource PromptIconWarning}" />
+  </Style>
+  <Style Selector="Border.levelDisc.update">
+    <Setter Property="Background" Value="{StaticResource PromptIcon}" />
+  </Style>
+  <Style Selector="Border.levelDisc.info">
+    <Setter Property="Background" Value="{StaticResource InfoNoteSurface}" />
+  </Style>
+  <Style Selector="Path.levelIcon">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.statusTitle">
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="TextBlock.statusSince">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+  </Style>
+  <Style Selector="TextBlock.statusShort">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <!-- An entry's buttons; the chosen one of the focused entry is filled like a chosen tab, the fix stays blue otherwise. -->
+  <Style Selector="Button.statusButton">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="22,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.statusButton.fix">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="Button.statusButton:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.statusButton.focused, Button.statusButton.focused:pointerover">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="TextBlock.statusOrder">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="StackPanel.statusEmpty">
+    <Setter Property="Spacing" Value="26" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,8,0,22" />
+  </Style>
+  <Style Selector="StackPanel.statusEmpty TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.emptyLead">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.emptyHeadline">
+    <Setter Property="FontSize" Value="40" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="TextBlock.emptyPraise">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.popper">
+    <Setter Property="Fill" Value="{StaticResource Warning}" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.popperStripe">
+    <Setter Property="Stroke" Value="{StaticResource Surface}" />
+    <Setter Property="StrokeThickness" Value="5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.streamer">
+    <Setter Property="StrokeThickness" Value="4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.streamer.soft">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.streamer.danger">
+    <Setter Property="Stroke" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.streamer.success">
+    <Setter Property="Stroke" Value="{StaticResource Success}" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.streamer.accent">
+    <Setter Property="Stroke" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Canvas.confetti Ellipse.checkDisc">
+    <Setter Property="Fill" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Stroke" Value="{StaticResource Success}" />
+    <Setter Property="StrokeThickness" Value="5" />
+  </Style>
+  <Style Selector="Canvas.confetti Path.checkMark">
+    <Setter Property="Stroke" Value="{StaticResource Success}" />
+    <Setter Property="StrokeThickness" Value="12" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+  </Style>
+  <Style Selector="Canvas.confetti :is(Shape).flake.soft">
+    <Setter Property="Fill" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="Canvas.confetti :is(Shape).flake.danger">
+    <Setter Property="Fill" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Canvas.confetti :is(Shape).flake.success">
+    <Setter Property="Fill" Value="{StaticResource Success}" />
+  </Style>
+  <Style Selector="Canvas.confetti :is(Shape).flake.accent">
+    <Setter Property="Fill" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Canvas.confetti :is(Shape).flake.warning">
+    <Setter Property="Fill" Value="{StaticResource Warning}" />
+  </Style>
+  <!-- When the last entry goes the confetti falls once: no FillMode, so each piece ends where it is drawn. -->
+  <Style Selector="Canvas.confetti.celebrating Path.flake">
+    <Style.Animations>
+      <Animation Duration="0:0:0.9" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Canvas.Top" Value="-36" />
+          <Setter Property="Opacity" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Canvas.Top" Value="0" />
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Canvas.confetti.celebrating Ellipse.flake">
+    <Style.Animations>
+      <Animation Duration="0:0:0.9" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
 </Styles>

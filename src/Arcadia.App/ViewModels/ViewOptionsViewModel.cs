@@ -34,7 +34,6 @@ public sealed class ViewOptionsViewModel : ViewModelBase
     public const int LauncherColumns = 4;
 
     private readonly List<IReadOnlyList<OptionViewModel>> _grid;
-    private readonly UiAction _closeAction;
     private int _row;
     private int _column;
 
@@ -44,8 +43,7 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         IReadOnlyList<IReadOnlyList<OptionViewModel>> launcherRows,
         IReadOnlyList<SortRowViewModel> sortRows,
         IReadOnlyList<OptionViewModel> pageSizeOptions,
-        string pageSizeNote,
-        UiAction closeAction)
+        string pageSizeNote)
     {
         Title = title;
         Subtitle = subtitle;
@@ -53,7 +51,6 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         SortRows = sortRows;
         PageSizeOptions = pageSizeOptions;
         PageSizeNote = pageSizeNote;
-        _closeAction = closeAction;
         _grid = [.. launcherRows, .. sortRows.Select(r => r.Options)];
         if (pageSizeOptions.Count > 0)
         {
@@ -94,8 +91,7 @@ public sealed class ViewOptionsViewModel : ViewModelBase
             [],
             SortRowsFor(sort, order => applySort(order!.Value), withRelevance: false),
             pageSizes,
-            pageSizeNote,
-            UiAction.ViewOptions);
+            pageSizeNote);
     }
 
     /// <summary>The search's filter (L3): the launchers it covers, several at once, and the order of its hits.</summary>
@@ -110,8 +106,7 @@ public sealed class ViewOptionsViewModel : ViewModelBase
             rows,
             SortRowsFor(sort, applySort, withRelevance: true),
             [],
-            string.Empty,
-            UiAction.Filter);
+            string.Empty);
     }
 
     public string Title { get; }
@@ -170,7 +165,8 @@ public sealed class ViewOptionsViewModel : ViewModelBase
                 return true;
             case UiAction.Back:
                 return false;
-            case var close when close == _closeAction:
+            // The button that opened it (L3) closes it again.
+            case UiAction.ViewOptions:
                 return false;
             default:
                 return true;

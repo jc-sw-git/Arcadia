@@ -38,7 +38,7 @@ public sealed class OnScreenKeyboardTests
         Assert.Equal("^", arcadia.FocusedLabel());
 
         arcadia.TypeOnKeys("uiz");
-        arcadia.Press(UiAction.ViewOptions);
+        arcadia.Press(UiAction.Status);
         Assert.Equal("quiz ", search.Text);
 
         arcadia.Press(UiAction.Search);

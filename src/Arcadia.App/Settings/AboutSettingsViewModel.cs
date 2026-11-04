@@ -12,6 +12,12 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
 {
     private const string Group = "VERSION";
 
+    /// <summary>"Jetzt aktualisieren"; the status modal's update entry leads there (#166).</summary>
+    public const string InstallKey = "arcadia-install";
+
+    /// <summary>The download's progress, here and on the status modal's update entry.</summary>
+    public static string LoadingText(string version, int percent) => $"Version {version} wird geladen … {percent} %";
+
     private readonly ArcadiaUpdateService _updates;
     private readonly InfoRowViewModel _version;
     private readonly ActionRowViewModel _check;
@@ -40,7 +46,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
             Group = Group,
             Subtitle = "Arcadia sucht auch von selbst alle 6 Stunden",
         };
-        _install = new ActionRowViewModel("arcadia-install", "Jetzt aktualisieren", () => installUpdate().Forget("Arcadia aktualisieren"))
+        _install = new ActionRowViewModel(InstallKey, "Jetzt aktualisieren", () => installUpdate().Forget("Arcadia aktualisieren"))
         {
             Group = Group,
             Subtitle = "Arcadia schließt sich, installiert das Update und startet neu",
@@ -100,7 +106,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
             { IsInstalled: false } => "Entwicklungs-Build – Updates gibt es nur für das installierte Arcadia.",
             { IsChecking: true } => "Suche nach Updates …",
             { AvailableVersion: { } next, IsRestartingForUpdate: true } => $"Version {next} ist geladen – Arcadia startet neu …",
-            { AvailableVersion: { } next, Progress: { } percent } => $"Version {next} wird geladen … {percent} %",
+            { AvailableVersion: { } next, Progress: { } percent } => LoadingText(next, percent),
             { AvailableVersion: { } next } => $"Version {next} ist verfügbar.",
             { LastChecked: { } checkedAt } => $"Arcadia ist auf dem neuesten Stand. Zuletzt gesucht: {checkedAt.ToLocalTime():HH:mm} Uhr.",
             _ => "Arcadia ist auf dem neuesten Stand.",

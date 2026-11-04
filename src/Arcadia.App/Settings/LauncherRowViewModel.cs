@@ -8,7 +8,7 @@ namespace Arcadia.App.Settings;
 
 /// <summary>
 /// A launcher in the category "Launcher" (#136): its tab key, logo, name and state, and the switch "Aktiv". ◀ ▶ switch it,
-/// Y lifts it to move it, A or a click open its page (#137) (<see cref="LauncherSettingsViewModel"/>).
+/// L3 lifts it to move it, A or a click open its page (#137) (<see cref="LauncherSettingsViewModel"/>).
 /// </summary>
 public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 {

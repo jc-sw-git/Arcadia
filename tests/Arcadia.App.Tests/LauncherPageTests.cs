@@ -250,7 +250,7 @@ public sealed class LauncherPageTests
 
         Assert.False(KeyWith(editor.Keyboard, ',').IsUnavailable);
         Assert.All(KeysOf(editor.Keyboard, BoardKeyKind.Space, BoardKeyKind.Shift, BoardKeyKind.AltGr), key => Assert.False(key.IsUnavailable));
-        arcadia.Press(UiAction.ViewOptions);
+        arcadia.Press(UiAction.Status);
         Assert.Equal("GOG Galaxy ", editor.Text);
     }
 

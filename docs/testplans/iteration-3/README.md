@@ -10,6 +10,7 @@ its file.
 
 | File | Issue | Title | Test cases |
 |---|---|---|---|
+| [166](166-status-messages-modal-with-y.md) | #166 | Open and fix the status messages in a modal with Y | T166-1 to T166-17 |
 | [237](237-settings-rows-edge-fade.md) | #237 | Fade out the settings rows where the list can still scroll, with one shared edge fade | T237-1 to T237-8 |
 | [288](288-steam-update-shown-that-steam-dropped.md) | #288 | Steam: update shown that Steam dropped seconds later | T288-1 to T288-9 |
 | [106](106-epic-cancelled-install-keeps-waiting.md) | #106 | Epic: cancelled install keeps showing "Warte auf Bestätigung" | none (covered by T343-2, T343-14) |
@@ -37,6 +38,7 @@ of the acceptance review.
 | Issue | Test cases |
 |---|---|
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
+| #166 | T166-8 (the update from the status modal on the installed release candidate) |
 | #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
 
 ## Exploratory test
@@ -47,6 +49,8 @@ Charter: –. Time box: –. Findings: –.
 
 | Test cases | Tests |
 |---|---|
+| T166-1 to -11, -14, -17 | `StatusModalTests`, variants in `StatusModalOrderTests` |
+| T166-12, -13, -15 (in part) | `Window/StatusModalViewTests`; T166-13 also `ControllerSupportTests` |
 | T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
 | T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |

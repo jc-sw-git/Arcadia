@@ -544,8 +544,8 @@ public sealed class PanRows
     {
         var (subtitle, text, severity) = Texts(issue);
         var fix = issue.Fix;
-        var row = Row($"issue:{issue.Id}", issue.Title, subtitle, failed is null ? severity : HealthSeverity.Error, text,
-            fix == HealthFix.None ? null : issue.FixLabel ?? "Beheben", fix == HealthFix.None ? null : () => _applyFix(fix));
+        var row = Row(IssueKey(issue.Id), issue.Title, subtitle, failed is null ? severity : HealthSeverity.Error, text,
+            fix == HealthFix.None ? null : issue.FixLabel ?? DefaultFixLabel, fix == HealthFix.None ? null : () => _applyFix(fix));
         row.ShowProblem(failed);
         if (failed is not null)
         {
@@ -599,6 +599,15 @@ public sealed class PanRows
     }
 
     private readonly Dictionary<string, Action?> _run = [];
+
+    /// <summary>The row of a Steam Controller message, by its <see cref="HealthIssue.Id"/>; the status modal leads there (#166).</summary>
+    public static string IssueKey(string issueId) => $"issue:{issueId}";
+
+    /// <summary>The button of a fix that names none of its own.</summary>
+    public const string DefaultFixLabel = "Beheben";
+
+    /// <summary>The line below a message's title, the same in its row and in the status modal (#166).</summary>
+    public static string SubtitleOf(HealthIssue issue) => Texts(issue).Subtitle;
 
     /// <summary>The designs' line and explanation for a part's row (T242Warnzeilen); a row they don't name keeps its own.</summary>
     private static (string Subtitle, string Text, HealthSeverity Severity) Texts(HealthIssue issue) => issue.Id switch

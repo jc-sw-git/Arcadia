@@ -88,6 +88,9 @@ public sealed record AppSettings
 
     public bool ListsErrors { get; init; } = true;
 
+    /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
+    public bool SortsStatusByNewest { get; init; }
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.

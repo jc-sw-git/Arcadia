@@ -273,7 +273,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
                 break;
             case UiAction.Back:
                 break;
-            case UiAction.Filter:
+            case UiAction.ViewOptions:
                 OpenFilter();
                 break;
             case UiAction.Settings when FocusedResult is { } hit:
@@ -629,7 +629,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         UiAction.Right => KeyboardButton.Right,
         UiAction.Accept => KeyboardButton.Type,
         UiAction.Search => KeyboardButton.Erase,
-        UiAction.ViewOptions => KeyboardButton.Space,
+        UiAction.Status => KeyboardButton.Space,
         UiAction.PreviousTab => KeyboardButton.Shift,
         UiAction.NextTab => KeyboardButton.AltGr,
         UiAction.KeyboardLayout => KeyboardButton.Layout,

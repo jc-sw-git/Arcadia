@@ -188,7 +188,7 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
         UiAction.Right => KeyboardButton.Right,
         UiAction.Accept => KeyboardButton.Type,
         UiAction.Search => KeyboardButton.Erase,
-        UiAction.ViewOptions => KeyboardButton.Space,
+        UiAction.Status => KeyboardButton.Space,
         UiAction.PreviousTab => KeyboardButton.Shift,
         UiAction.NextTab => KeyboardButton.AltGr,
         UiAction.KeyboardLayout => KeyboardButton.Layout,

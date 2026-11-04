@@ -1,5 +1,13 @@
 # #457 Pan pipe test T413-25 fails on Windows CI now and then
 
+**At a glance**
+
+| Who | What | Status |
+|---|---|---|
+| Implementation | T340-1 red with a slowed Pan check, green after the fix; T413-25 25 times in a row on the Windows runner | T340-1 ✅, T413-25 running on CI |
+| QE review | review of PR #458 | open |
+| Owner | nothing to test: test races only, no manual case | – |
+
 No new manual test cases: both failures were in the tests, not in Arcadia or Pan; T413-25 and T340-1 keep their
 meaning and stay automated.
 
@@ -17,5 +25,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T340-1 old loop, Pan check slowed to 20 ms in `FakeSteam` | 2026-11-04 | Claude | PR branch, Debug, Linux cloud container (headless) | ❌ scaling 2: `Expected "9", Actual "6"` (CI: "5") | wait for any one-digit second |
-| T340-1 new loop, Pan check slowed to 20 ms | 2026-11-04 | Claude | PR branch, Debug, Linux cloud container (headless) | ✅ 3 passed | – |
+| T340-1 old loop, Pan check slowed to 20 ms in `FakeSteam` | 2026-11-04 | implementation | PR branch, Debug, Linux cloud container (headless) | ❌ scaling 2: `Expected "9", Actual "6"` (CI: "5") | wait for any one-digit second |
+| T340-1 new loop, Pan check slowed to 20 ms | 2026-11-04 | implementation | PR branch, Debug, Linux cloud container (headless) | ✅ 3 passed | – |

@@ -5,7 +5,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 (key C). Acceptance tests use `ArcadiaDriver` (demo or fixture libraries with made-up games), window tests
 `ArcadiaWindow` at 1920 × 1080.
 
-**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-5 (container), T24-10, T24-14 · Open for the owner: T24-15, T24-16
+**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (open until Review finding 2 is fixed) · Open for the owner: T24-5, T24-15, T24-16
 
 **Page sizes**
 
@@ -20,7 +20,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
       24 without the player changing anything. · E2E: yes
 - [x] **T24-4** Choose 64 in "Ansicht", restart: 64 is still marked and used. With 128 preferred, a tab with 30 games
       shows all 30 on one page (64 effective), a tab with 200 games 128; the saved preference stays 128. · E2E: yes
-- [ ] **T24-5** 1,000 demo games, 128 per page, Release build: start to usable library < 2 s, focus move between tiles
+- [ ] **T24-5** **Owner:** 1,000 demo games, 128 per page, Release build: start to usable library < 2 s, focus move between tiles
       < 50 ms (`Bild:` lines in `arcadia.log`), paging forward and back binds the covers without a visible stall
       (`LibrarySpeedTests` extended to 128). · E2E: yes
 
@@ -88,3 +88,5 @@ History:
 | T24-9 (red once) | 2026-11-04 | Claude | same, a string "Spiel ⧓" added to the App | ❌ as intended | – |
 | T24-5 | 2026-11-04 | Claude | Release, Linux container (Xvfb), `--demo --demo-games 1000`, 128 per page | start 2.5–3.3 s to the library, `main` with 100 per page 2.8–3.0 s in the same container; 247–249 MB; focus move not measured (keys don't reach the window under Xvfb here) | budget only on the owner's PC; no regression against `main` |
 | T24-10 | 2026-11-04 | Claude | Release, Linux container without Figtree installed | ✅ the library shows Figtree (embedded) | – |
+| T24-1 to T24-13 (QE review) | 2026-11-04 | QE (Claude) | branch of this PR at 1e99209, Linux container: Release build without warnings, `tools/ci/run-tests.sh 4` | ❌ 2 of 607 App tests: T24-9 and the T24-11 source scan don't find `Arcadia.slnx` when run from the shard's copy of the build, as CI runs them; everything else ✅ | fix in this PR (Review finding 1) |
+| T24-14 | 2026-11-04 | QE (Claude) | same, real app under Xvfb (library) and headless frames (search row and grid, detail page, mouse-mode keyboard), compared with the boards T24Feinschliff, Main and Search | ❌ search grid: launcher names under the lower row of hits lie under the bottom fade, no row peeks out above or below any more; library, detail page, keyboard icons as designed. `docs/designs/*.png` predate the boards (25 tiles, "Ansicht" on Y): no new difference outside this issue | fix in this PR (Review finding 2) |

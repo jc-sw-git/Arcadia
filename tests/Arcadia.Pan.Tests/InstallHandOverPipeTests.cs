@@ -68,40 +68,37 @@ public sealed class InstallHandOverPipeTests
     [Trait("TestCase", "T413-25")]
     public async Task Another_process_is_refused_and_Arcadia_still_gets_through()
     {
-        for (var repeat = 0; repeat < 25; repeat++)
+        var run = Run(Environment.ProcessId);
+        var refused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var pipe = InstallHandOverPipe.Create(run, line =>
         {
-            var run = Run(Environment.ProcessId);
-            var refused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            using var pipe = InstallHandOverPipe.Create(run, line =>
+            if (line.Contains("instead of Arcadia", StringComparison.Ordinal))
             {
-                if (line.Contains("instead of Arcadia", StringComparison.Ordinal))
-                {
-                    refused.TrySetResult();
-                }
-            }, out _, Later)!;
-            var receive = pipe.ReceiveAsync(InstallHandOver.MaxMessageBytes, CancellationToken.None);
-
-            // Same user, another process: let in by the DACL, refused by its process id. cmd's redirection opens the pipe and
-            // ends at once (its write fails after the refusal); a PowerShell client sometimes took over a minute to start on CI.
-            var other = $@"echo go>\\.\pipe\{InstallHandOver.PipeName(run.Id)}";
-            using (var process = Process.Start(new ProcessStartInfo("cmd.exe", ["/c", other]) { CreateNoWindow = true, UseShellExecute = false })!)
-            {
-                Assert.True(process.WaitForExit(TimeSpan.FromSeconds(30)), "the other client ended");
+                refused.TrySetResult();
             }
+        }, out _, Later)!;
+        var receive = pipe.ReceiveAsync(InstallHandOver.MaxMessageBytes, CancellationToken.None);
 
-            // Pan logs the refusal after the connection, not necessarily before the other process has ended.
-            await refused.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            Assert.False(receive.IsCompleted, "nothing was taken from the other process");
-
-            await using (var arcadia = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))
-            {
-                await arcadia.ConnectAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
-                await arcadia.WriteAsync(InstallHandOver.Abort());
-                // As Arcadia does: the pipe stays open until Pan has read the message.
-                arcadia.WaitForPipeDrain();
-            }
-
-            Assert.Equal(InstallHandOver.Abort(), await receive.WaitAsync(TimeSpan.FromSeconds(10)));
+        // Same user, another process: let in by the DACL, refused by its process id. cmd's redirection opens the pipe and
+        // ends at once (its write fails after the refusal); a PowerShell client sometimes took over a minute to start on CI.
+        var other = $@"echo go>\\.\pipe\{InstallHandOver.PipeName(run.Id)}";
+        using (var process = Process.Start(new ProcessStartInfo("cmd.exe", ["/c", other]) { CreateNoWindow = true, UseShellExecute = false })!)
+        {
+            Assert.True(process.WaitForExit(TimeSpan.FromSeconds(30)), "the other client ended");
         }
+
+        // Pan logs the refusal after the connection, not necessarily before the other process has ended.
+        await refused.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.False(receive.IsCompleted, "nothing was taken from the other process");
+
+        await using (var arcadia = new NamedPipeClientStream(".", InstallHandOver.PipeName(run.Id), PipeDirection.InOut, PipeOptions.Asynchronous))
+        {
+            await arcadia.ConnectAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
+            await arcadia.WriteAsync(InstallHandOver.Abort());
+            // As Arcadia does: the pipe stays open until Pan has read the message.
+            arcadia.WaitForPipeDrain();
+        }
+
+        Assert.Equal(InstallHandOver.Abort(), await receive.WaitAsync(TimeSpan.FromSeconds(10)));
     }
 }

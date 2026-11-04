@@ -20,7 +20,7 @@
   changed the value the other way). Only a value that can't be taken greys an arrow out (e.g. "Aktiv" for a launcher
   that isn't installed). A row that can't change now (e.g. while Pan sets up) still takes the focus. The footer names
   the focused row's buttons. Applies at once, no save button. Questions (e.g. "Steam beenden?") stay dialogs over the
-  page; the header's status symbols open their category.
+  page; the header's status chip opens the status modal (below).
 - Dependent options sit in the same box as their main switch; on the settings page in the same group right below it,
   indented one step per level (`SettingsRowViewModel.Indent`), greyed out while it is off, keeping their values. Each
   group of the settings page is a box of its own.
@@ -36,6 +36,25 @@ running, usbip driver missing, SISR running beside Pan; **Error** (red X) for la
 at once. The header shows the worst level; info alone doesn't make a status unhealthy. A failed fix shows its error at
 its own row (the error icon, the message in place of the subtitle with how to go on, the detail panel), not at the
 switch.
+
+## Status modal (#166)
+
+- Y (V) or a click on the header's status chip (Y/V/△ and the symbols, like the search and settings chips) opens
+  "Status" in the library and on the detail page, only while the header shows a message or the update and never over
+  another dialog or menu; otherwise Y does nothing. "Controller wird eingerichtet …" alone is no entry and shows no chip.
+- One entry per message the header shows: every Steam Controller message (info too), "Pan läuft nicht" and the Arcadia
+  update. Each: level symbol in a tinted disc, title, the row's short line, "seit hh:mm" (when it appeared; a level change
+  counts as new), its fix (if any) and always "Zu den Einstellungen".
+- L3 (C) switches "Dringlichkeit" (error, warning, update, info; newest first within a level) and "Neueste zuerst"; the
+  footer names it, saved for every opening, the focus stays on its entry.
+- A controller fix closes the modal, opens "Controller" on its row and starts there (its question, the progress
+  dialog); a fix already running only jumps there. "Jetzt aktualisieren" runs from the modal; a failure is an error
+  toast and the entry stays. "Zu den Einstellungen" opens the category on the message's row ("Pan läuft nicht": the row
+  that says why; the update: "Jetzt aktualisieren"), its top row if the message went meanwhile; B returns to library
+  or detail page.
+- The list follows the header live: a new entry never moves the focus, a gone focused one hands it to the next. After
+  the last one: a celebrating graphic (its confetti falls once) and "Hier gibt es nichts zu sehen. Alles erledigt! Das
+  hast du wunderbar gemacht!"; B closes.
 
 ## Toast levels
 

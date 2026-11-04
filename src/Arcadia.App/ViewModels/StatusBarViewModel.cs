@@ -1,5 +1,7 @@
 using Arcadia.App.Messages;
 using Arcadia.App.Services;
+using Arcadia.App.Settings;
+using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Avalonia.Threading;
@@ -27,6 +29,20 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
 
     /// <summary>The status message of Pan's emulation, for "Letzte Meldungen" (#433).</summary>
     public const string PanStatusId = "pan-not-running";
+
+    /// <summary>The line below "Pan läuft nicht" in the status modal (#166): the reason has several rows of its own.</summary>
+    public const string PanShortText = "Warum, steht in den Controller-Einstellungen.";
+
+    /// <summary>The Arcadia update as an entry of the status modal (#166).</summary>
+    public const string UpdateStatusId = "arcadia-update";
+
+    public const string UpdateShortText = "Arcadia schließt sich, installiert das Update und startet neu.";
+
+    public const string UpdateFixLabel = "Jetzt aktualisieren";
+
+    // When each shown message appeared, at its current level (#166); a message that goes is forgotten.
+    private readonly Dictionary<string, (StatusLevel Level, DateTimeOffset Since)> _since = [];
+    private IReadOnlyList<StatusEntry> _controllerEntries = [];
 
     /// <param name="history">Gets the status messages the header shows on every change (#433).</param>
     public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time, StatusMessageChanges history)
@@ -72,6 +88,17 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
     public partial bool IsControllerStarting { get; private set; }
 
+    /// <summary>
+    /// Every message the header shows, for the status modal (#166): the Steam Controller's, "Pan läuft nicht" and the
+    /// update; "Controller wird eingerichtet …" is none. Replaced as a whole on every change, on the UI thread.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasEntries))]
+    public partial IReadOnlyList<StatusEntry> Entries { get; private set; } = [];
+
+    /// <summary>The header shows a message or the update, so Y (V) or a click opens the status modal.</summary>
+    public bool HasEntries => Entries.Count > 0;
+
     /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
     public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate;
 
@@ -105,6 +132,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     {
         HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.IsRestartingForUpdate;
         ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
+        ShowEntries();
     }
 
     /// <summary>Pan's emulation changed (#242); UI thread.</summary>
@@ -144,5 +172,61 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
             .. issues.Select(issue => new StatusMessage(issue.Id, issue.Severity, issue.Title)),
             .. panProblem ? [new StatusMessage(PanStatusId, panLevel, PanNotRunningText)] : Array.Empty<StatusMessage>(),
         ]);
+
+        _controllerEntries =
+        [
+            .. issues.Select(issue => new StatusEntry(issue.Id, LevelOf(issue.Severity), issue.Title, PanRows.SubtitleOf(issue), default, StatusTarget.ControllerIssue,
+                issue.Fix == HealthFix.None ? null : issue.FixLabel ?? PanRows.DefaultFixLabel)),
+            .. panProblem ? [new StatusEntry(PanStatusId, LevelOf(panLevel), PanNotRunningText, PanShortText, default, StatusTarget.PanProblem, null)] : Array.Empty<StatusEntry>(),
+        ];
+        ShowEntries();
+    }
+
+    private static StatusLevel LevelOf(HealthSeverity severity) => severity switch
+    {
+        HealthSeverity.Error => StatusLevel.Error,
+        HealthSeverity.Warning => StatusLevel.Warning,
+        _ => StatusLevel.Info,
+    };
+
+    /// <summary>While the update loads, its entry shows the progress and has no fix, so A can't start it twice.</summary>
+    private StatusEntry UpdateEntry() => _updates is { Progress: { } percent, AvailableVersion: { } version }
+        ? new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, AboutSettingsViewModel.LoadingText(version, percent), default, StatusTarget.ArcadiaUpdate, null)
+        : new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, UpdateShortText, default, StatusTarget.ArcadiaUpdate, UpdateFixLabel);
+
+    /// <summary>The header's messages as the modal's entries, each with the time it appeared at its level.</summary>
+    private void ShowEntries()
+    {
+        IReadOnlyList<StatusEntry> shown =
+        [
+            .. _controllerEntries,
+            .. HasArcadiaUpdate
+                ? [UpdateEntry()]
+                : Array.Empty<StatusEntry>(),
+        ];
+
+        var now = _time.GetLocalNow();
+        foreach (var gone in _since.Keys.Where(id => shown.All(entry => entry.Id != id)).ToList())
+        {
+            _since.Remove(gone);
+        }
+
+        var stamped = new List<StatusEntry>(shown.Count);
+        foreach (var entry in shown)
+        {
+            // A level change counts as new (owner).
+            if (!_since.TryGetValue(entry.Id, out var seen) || seen.Level != entry.Level)
+            {
+                seen = (entry.Level, now);
+                _since[entry.Id] = seen;
+            }
+
+            stamped.Add(entry with { Since = seen.Since });
+        }
+
+        if (!stamped.SequenceEqual(Entries))
+        {
+            Entries = stamped;
+        }
     }
 }

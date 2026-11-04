@@ -5,6 +5,8 @@
         xmlns:views="using:Arcadia.App.Views"
         xmlns:search="using:Arcadia.App.Search"
         xmlns:settings="using:Arcadia.App.Settings"
+        xmlns:status="using:Arcadia.App.Status"
+        xmlns:filter="using:Arcadia.App.Filter"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -79,20 +81,22 @@
             <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
             <TextBlock Text="Controller wird eingerichtet …" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasControllerStatus}" Command="{Binding ControllerMode.OpenControllerSettingsCommand}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
-            <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
-            <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
-          </Button>
-          <Button Classes="plain glyphButton" Width="44" Height="44" MinWidth="44" CornerRadius="22" Padding="0" Background="Transparent"
-                  IsVisible="{Binding Status.HasArcadiaUpdate}" Command="{Binding OpenAboutSettingsCommand}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
-            <Panel Width="24" Height="24">
-              <Path Data="M20 12a8 8 0 1 1 -2.3 -5.6 M20 4v4.5h-4.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                    Width="24" Height="24" Stretch="None" />
-              <!-- The dot marks it as Arcadia's own update. -->
-              <Ellipse Width="8" Height="8" Fill="{StaticResource Accent}" Stroke="{StaticResource Bg}" StrokeThickness="2"
-                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-1,-1,0" />
-            </Panel>
+          <!-- The status messages as one chip like search and settings (#166, design T166Library): Y (V) and the symbols;
+               a click anywhere on it opens the status modal. "Controller wird eingerichtet …" alone shows no chip. -->
+          <Button Name="StatusChip" Classes="plain headerChip statusChip" Command="{Binding OpenStatusModalCommand}" ToolTip.Tip="Status (V)"
+                  IsVisible="{Binding Status.HasEntries}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <ctl:KeyHint Pad="Y" Keys="V" Margin="0,0,6,0" />
+              <Panel Width="32" Height="32" IsVisible="{Binding Status.HasControllerStatus}" ToolTip.Tip="{Binding Status.ControllerStatusText}">
+                <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
+                <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
+              </Panel>
+              <Panel Width="32" Height="32" IsVisible="{Binding Status.HasArcadiaUpdate}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
+                <Path Classes="updateIcon" />
+                <!-- The dot marks it as Arcadia's own update. -->
+                <Ellipse Classes="updateDot chipDot" />
+              </Panel>
+            </StackPanel>
           </Button>
           <Border Classes="divider" Margin="6,0" IsVisible="{Binding Status.HasAnyStatus}" />
           <!-- Search and settings as chips: the key that opens them beside their symbol (owner, 2026-10-21). -->
@@ -125,12 +129,24 @@
             <views:CountLineView DataContext="{Binding Library.Counts}" IsVisible="{Binding HasParts}" VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>
-        <Button Grid.Column="1" Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}" IsVisible="{Binding AreGamesShown}">
-          <StackPanel Orientation="Horizontal" Spacing="12">
-            <ctl:KeyHint Pad="Y" Keys="V" />
-            <TextBlock Text="{Binding Library.ViewSummary}" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsViewLineShown}">
+          <Button Classes="plain toolbar" Command="{Binding Library.OpenViewOptionsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ctl:KeyHint Pad="L3" Keys="C" />
+              <TextBlock Text="{Binding Library.ViewSummary}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Border Classes="divider" />
+          <!-- The tab's filter (#44): neutral, or filled with "19 von 412"; without a category to filter by only the funnel. -->
+          <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
+                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="Filter (G)">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
+              <Path Classes="filterFunnel" />
+              <TextBlock Text="{Binding Library.FilterHitsText}" IsVisible="{Binding Library.IsFiltered}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
 
       <!-- Detail page: path back, position in the list and the sort order -->
@@ -150,7 +166,7 @@
           <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
           <Button Classes="plain toolbar" Command="{Binding Detail?.OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="12">
-              <ctl:KeyHint Pad="Y" Keys="V" />
+              <ctl:KeyHint Pad="L3" Keys="C" />
               <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
@@ -302,7 +318,7 @@
           </Panel>
         </Border>
 
-        <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding !IsEmptyTabShown}">
+        <Grid Grid.Column="1" RowDefinitions="*,64" IsVisible="{Binding AreGamesShown}">
           <ScrollViewer Name="GridScroller" VerticalScrollBarVisibility="Auto" Padding="6,8,70,8">
             <ItemsControl Name="GameGrid" ItemsSource="{Binding Library.Slots}" VerticalAlignment="Top">
               <!-- A slot keeps its cover's controls when it shows another game (LibraryViewModel.Slots, #229). -->
@@ -432,6 +448,26 @@
             </StackPanel>
           </StackPanel>
         </Panel>
+        <!-- The tab's filter hides all its entries (#44, design T44F11): the way back to the filter instead of covers. -->
+        <StackPanel Grid.ColumnSpan="2" IsVisible="{Binding IsNoHitsShown}" Margin="0,0,80,0" Spacing="28" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <Canvas Width="200" Height="160" HorizontalAlignment="Center">
+            <Path Classes="noHitsTile" Data="M26 104h28a8 8 0 0 1 8 8v28a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-28a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsTile" Data="M146 104h28a8 8 0 0 1 8 8v28a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-28a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsTile" Data="M86 128h28a8 8 0 0 1 8 8v6a8 8 0 0 1 -8 8h-28a8 8 0 0 1 -8 -8v-6a8 8 0 0 1 8 -8z" />
+            <Path Classes="noHitsFunnel" Data="M40 18h120l-44 54v40l-32 -16v-24z" />
+            <Path Classes="noHitsCross" Data="M86 40l28 28M114 40l-28 28" />
+          </Canvas>
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <TextBlock Text="{x:Static vm:LibraryViewModel.NoHitsTitle}" FontSize="32" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Library.FilterHidesAllText}" FontSize="19" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          </StackPanel>
+          <Button Classes="plain filterChange" Command="{Binding Library.OpenFilterCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ctl:KeyHint Pad="R3" Keys="G" IsDark="True" />
+              <TextBlock Text="Filter ändern" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
 
       <!-- Footer: button hints -->
@@ -443,7 +479,7 @@
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
           <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="Aktion wählen" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
-          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="L3" Keys="C" Text="Ansicht" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="Spiel" />
           <ctl:KeyHint Pad="B" Keys="Esc" Text="Zurück" />
@@ -453,11 +489,15 @@
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="Auswählen" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" IsVisible="{Binding Library.EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsNoHitsShown}">
+          <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" />
+          <ctl:KeyHint Pad="L3" Keys="C" Text="Ansicht" />
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding AreGamesShown}">
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding Library.FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="halten: Details" />
           <ctl:KeyHint Pad="⧉" Keys="R" Alt="Rechtsklick" Text="Optionen" />
-          <ctl:KeyHint Pad="Y" Keys="V" Text="Ansicht" />
+          <ctl:KeyHint Pad="L3" Keys="C" Text="Ansicht" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="Launcher" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="Seite" />
         </StackPanel>
@@ -846,6 +886,24 @@
           </Grid>
         </DockPanel>
       </Panel>
+
+      <!-- "Filter" (#44): the selected tab's filter, over the library. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding FilterModal}" IsVisible="{Binding IsFilterOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="filter:FilterModalViewModel">
+            <views:FilterModalView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
+      <!-- "Status" (#166): the header's messages, over library and detail page. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding StatusModal}" IsVisible="{Binding IsStatusModalOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="status:StatusModalViewModel">
+            <views:StatusModalView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
 
       <!-- "Ansicht" dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
@@ -1578,13 +1636,13 @@
             <Panel IsVisible="{Binding !Selected.IsEditing}">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsReordering}">
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="Ziehen" Text="Verschieben" />
-              <ctl:KeyHint Pad="Y" Keys="V" Alt="Loslassen" Text="Ablegen" />
+              <ctl:KeyHint Pad="L3" Keys="C" Alt="Loslassen" Text="Ablegen" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding !Selected.IsReordering}">
               <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="Ändern" IsVisible="{Binding FocusedRow?.CanChange, TargetNullValue=False}" />
               <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding FocusedRow?.ActivateText, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.ShowsActivateHint, TargetNullValue=False}" />
-              <ctl:KeyHint Pad="Y" Keys="V" Alt="Ziehen" Text="{Binding Selected.YActionText}" IsVisible="{Binding Selected.YActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="L3" Keys="C" Alt="Ziehen" Text="{Binding Selected.L3ActionText}" IsVisible="{Binding Selected.L3ActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding Selected.XActionText}" IsVisible="{Binding Selected.XActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
               <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="Launcher" IsVisible="{Binding Selected.Head, Converter={x:Static ObjectConverters.IsNotNull}}" />

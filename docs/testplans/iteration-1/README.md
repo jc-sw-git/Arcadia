@@ -131,7 +131,7 @@ Automatisiert in `tests/Arcadia.App.Tests` (Abnahme-Iteration 1, #184, #187, #18
 | T15-1 | `SettingsTests.Menu_opens_the_settings_and_B_goes_back_to_the_same_tab_page_and_game` | teilweise: Controller, nicht Enter/Esc und Klick (prüft der Fenstertest, #192) |
 | G-31 | `SettingsTests.The_settings_are_worked_with_the_controller_alone_rows_categories_and_values` | teilweise: Scrollen ins Bild nicht (prüft der Fenstertest, #192) |
 | T15-5 | `SettingsRowTests.The_footer_names_only_the_buttons_of_the_focused_row` | teilweise: was der Footer nennt (◀▶, A mit Text, Kategorien), nicht der Wechsel zu Tasten und Maus nach Taste oder Klick |
-| T15-10 | `ControllerSupportTests.The_header_symbols_open_their_category_Controller_for_SISR_and_Ueber_Arcadia_for_Arcadias_update` | teilweise: Klick als Befehl des View Models, nicht auf das Symbol |
+| ~~T15-10~~ | überholt durch #166 (T166-13) | – |
 | T15-11 | `SettingsRowTests.Choices_wrap_at_their_ends_and_switches_flip_with_either_arrow`, `…Steam_Controller_Kompatibilitaet_switches_with_either_arrow` | teilweise: ohne Schalter der Ersteinrichtung und ohne Taste A der Tastatur (die Tests drücken ◀) |
 | T23-2 | `UpdateTests.Without_a_newer_release_the_search_says_Arcadia_is_up_to_date_and_offers_no_update` | teilweise: Velopack mit `TestVelopackLocator` und eigener Quelle statt installiertem Arcadia und GitHub |
 | T23-4 | `UpdateTests.What_is_new_lists_the_changes_of_every_release_after_the_running_one_and_B_goes_back` | teilweise: wie T23-2 |

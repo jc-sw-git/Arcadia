@@ -37,6 +37,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `LibraryService`/`LibraryRefresher`: scan and rescan; every active launcher keeps a library, also empty or not
   found, `ScannedAt`. `LibraryTypes`: which types a tab shows by the launcher's switches, counts per type.
 - `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours).
+- `GameFilter` (#44): a tab's filter, its hit counts per value, what is left of it `Within` a tab's `FilterOffer` (the categories that
+  tell its entries apart) and a choice laid back `Over` the saved one; saved by name per launcher as `Settings/SavedFilter` in `AppSettings.LibraryFilters`.
 - `InstallTracker`: installs started from Arcadia or in the launcher, and the update state a monitor reports live (#288). `Changelog`: release notes between versions.
 
 **Running games**

@@ -144,7 +144,7 @@ public sealed class LauncherPageViewTests
             arcadia.Press(action);
         }
 
-        arcadia.Press(UiAction.Accept).Press(UiAction.ViewOptions);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Status);
         AssertField(arcadia, name, "GOG Galx ", "");
 
         // R3 opens the layouts, B closes only them; B again drops the text.

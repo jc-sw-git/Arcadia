@@ -9,7 +9,8 @@
 - ◀ ▶ switch "Aktiv": off means not scanned, no tab, no search hits, not watched; on goes to the end of the active
   ones, off to the top of the inactive ones. A click anywhere on the switch's box switches it too (a click elsewhere on
   the row opens its page). Not found can't be switched on; active and no longer found can be switched off.
-- Y lifts a row, ▲ ▼ move it, Y drops it (under "Nicht aktiv": off), B cancels; the mouse drags.
+- L3 (C) lifts a row, ▲ ▼ move it, L3 drops it (under "Nicht aktiv": off), B cancels; the mouse drags. Y does nothing
+  in the settings.
 - X, or the row "Alle neu einlesen" in a group "Bibliothek" below the launchers (for the mouse alone, its pill shows
   [X] / F), reads all again; A opens the launcher's page (below).
 - An active launcher without games or no longer found keeps its tab with an empty state ("Keine Spiele in …" / "…

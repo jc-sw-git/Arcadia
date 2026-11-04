@@ -219,7 +219,8 @@ public partial class MainWindow : Window
         {
             // A held key repeats its KeyDown. Moving and turning may repeat; A acts on the release or after a hold, like the
             // gamepad button, and a dialog must not open and close again with every repeat.
-            if (!_keysDown.Add(e.Key) && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions)
+            if (!_keysDown.Add(e.Key) && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions or UiAction.Status
+                or UiAction.KeyboardLayout)
             {
                 e.Handled = true;
                 return;

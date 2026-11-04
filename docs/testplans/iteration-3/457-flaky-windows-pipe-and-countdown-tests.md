@@ -1,12 +1,11 @@
 # #457 Pan pipe test T413-25 fails on Windows CI now and then
 
-**At a glance**
+**Status:** no new cases; the two touched cases run as automated tests (see History), QE review open.
+**Open for the owner:** nothing.
 
-| Who | What | Status |
-|---|---|---|
-| Implementation | T340-1 red with a slowed Pan check, green after the fix; T413-25 25 times in a row on the Windows runner | T340-1 ✅, T413-25 running on CI |
-| QE review | review of PR #458 | open |
-| Owner | nothing to test: test races only, no manual case | – |
+- [x] **T413-25** (automated) Another process of the same user is refused by the hand-over pipe; Arcadia still gets
+      through. · E2E: yes
+- [x] **T340-1** (automated) The countdown's number stays in place when it gets one digit, at scaling 1 and 2. · E2E: yes
 
 No new manual test cases: both failures were in the tests, not in Arcadia or Pan; T413-25 and T340-1 keep their
 meaning and stay automated.

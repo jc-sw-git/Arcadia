@@ -42,7 +42,7 @@ of the acceptance review.
 | #422 | T422-4, T422-8, T422-11, T422-1, T422-3, T422-9, T422-12 (in this order, one PC with Pan, the drivers and the puck) |
 | #166 | T166-8 (the update from the status modal on the installed release candidate) |
 | #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
-| #382 | T382-31 after T382-30 (Windows unrestarted), T382-32, T382-33, T382-34 (the update end to end) |
+| #382 | T382-30, then T382-31 (Windows unrestarted in between), T382-32, T382-33, T382-34 (the update end to end) |
 
 ## Exploratory test
 

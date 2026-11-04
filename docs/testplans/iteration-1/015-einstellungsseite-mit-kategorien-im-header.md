@@ -1,5 +1,7 @@
 # #15 Einstellungsseite mit Kategorien im Header
 
+**Status:** Automated: T15-1, T15-2, T15-4 to T15-6, T15-9 · QE: T15-3, T15-7, T15-8 (manual runs before this layout) · Open for the owner: T15-11
+
 - [x] **T15-1** In der Bibliothek auf Seite 2 ein Spiel fokussieren, ≡ drücken: Die Einstellungen ersetzen die ganze
       Seite. B führt zurück auf denselben Tab, dieselbe Seite und dasselbe Spiel. Ebenso mit Enter und Esc, mit einem
       Klick auf den Chip und ✕, und von einer Detailseite aus (B führt auf die Detailseite zurück). · E2E: ja
@@ -34,7 +36,7 @@
 - [x] ~~**T15-10** Die Symbole im Header der Bibliothek öffnen die passende Kategorie: Controller-Warnung und
       SISR-Update „Controller“, Arcadia-Update „Über Arcadia“. · E2E: ja~~ Überholt durch #166: ein Klick auf die
       Symbole öffnet das Statusmodal (T166-13).
-- [ ] **T15-11** Wählschalter laufen an den Enden um (owner, 2026-10-24, ohne Issue): „Zeigergeschwindigkeit“ auf 1,
+- [ ] **T15-11** **Owner:** Wählschalter laufen an den Enden um (owner, 2026-10-24, ohne Issue): „Zeigergeschwindigkeit“ auf 1,
       ◀ (Taste A, Klick auf den linken Pfeil): 9; ▶ auf 9: 1. Kein Pfeil ist am Ende ausgegraut. Ein Schalter („An“/„Aus“,
       „Aktiv“ eines Launchers, SISR, Ersteinrichtung) wechselt mit beiden Pfeilen; „Aktiv“ eines nicht installierten
       Launchers bleibt gesperrt. · E2E: ja

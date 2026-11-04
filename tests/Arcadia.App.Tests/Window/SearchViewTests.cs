@@ -1,3 +1,4 @@
+using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.Keyboard;
 using Arcadia.App.Search;
@@ -376,9 +377,9 @@ public sealed class SearchViewTests
         arcadia.Press(UiAction.Back);
         Assert.False(search.IsKeyboardOut);
         Assert.Equal("1–14 von 105", search.RangeText);
-        var fades = Page(arcadia).GetVisualDescendants().OfType<Border>().Where(border => border.IsEffectivelyVisible && !border.IsHitTestVisible
-            && border.Background is Avalonia.Media.LinearGradientBrush && arcadia.Bounds(border).Width > 1000).Select(border => arcadia.Bounds(border)).ToList();
-        Assert.Equal(2, fades.Count);
+        var gridFade = arcadia.Named<EdgeFade>("HitsGridFade");
+        Assert.True(gridFade.ShowsStart && gridFade.ShowsEnd, "Oben und unten ausgeblendet");
+        Assert.False(arcadia.Named<EdgeFade>("HitsRowFade").ShowsStart || arcadia.Named<EdgeFade>("HitsRowFade").ShowsEnd, "Seitlich nicht ausgeblendet");
         arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("1–14 von 105", search.RangeText);
         arcadia.Press(UiAction.NextPage);

@@ -9,7 +9,8 @@
   <Styles.Resources>
     <Color x:Key="BgColor">#0B0F14</Color>
     <SolidColorBrush x:Key="Bg" Color="#0B0F14" />
-    <SolidColorBrush x:Key="Surface" Color="#151B23" />
+    <Color x:Key="SurfaceColor">#151B23</Color>
+    <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}" />
     <SolidColorBrush x:Key="SurfaceRaised" Color="#1E2630" />
     <SolidColorBrush x:Key="SurfaceSunken" Color="#0F141A" />
     <!-- "Was ist neu" in the settings: a card a shade lighter than its section, with a version pill. -->
@@ -57,16 +58,6 @@
     <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
-    <!-- Bg at zero opacity, for gradients that fade into the background. -->
-    <Color x:Key="BgClearColor">#000B0F14</Color>
-    <!-- Bg on a cosine curve from opaque to clear, the steps of the fades below. -->
-    <Color x:Key="BgFade1Color">#F50B0F14</Color>
-    <Color x:Key="BgFade2Color">#DA0B0F14</Color>
-    <Color x:Key="BgFade3Color">#B00B0F14</Color>
-    <Color x:Key="BgFade4Color">#800B0F14</Color>
-    <Color x:Key="BgFade5Color">#4F0B0F14</Color>
-    <Color x:Key="BgFade6Color">#250B0F14</Color>
-    <Color x:Key="BgFade7Color">#0A0B0F14</Color>
 
     <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
          ctl:LineIcon, which also fills "<key>Fill". Own drawings, from the designs (T141Icons). -->
@@ -79,84 +70,24 @@
     <StreamGeometry x:Key="IconTypeSoundtrack">M14 16.4V4c2.4.6 5 2 5 5.4</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoundtrackFill">M7.6 16.4a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0z</StreamGeometry>
 
-    <!-- Edges that fade into the background: the tab strip where more tabs follow, the cover grid where
-         it can still scroll (#102), the detail page's neighbours and the search's row of hits. All but
-         the tab strip's run along a cosine curve, so neither end of the fade shows an edge. -->
-    <LinearGradientBrush x:Key="TabEdgeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="TabEdgeRight" StartPoint="100%,0%" EndPoint="0%,0%">
-      <GradientStop Offset="0.45" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="ListFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
-      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
-      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
-      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
-      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
-      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
-      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="ListFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
-      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
-      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
-      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
-      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
-      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
-      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
-    <!-- The settings page's info panel (#15) where it can scroll on: the same curve on the panel's surface. -->
-    <LinearGradientBrush x:Key="InfoFadeTop" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#FF151B23" />
-      <GradientStop Offset="0.125" Color="#F5151B23" />
-      <GradientStop Offset="0.25" Color="#DA151B23" />
-      <GradientStop Offset="0.375" Color="#B0151B23" />
-      <GradientStop Offset="0.5" Color="#80151B23" />
-      <GradientStop Offset="0.625" Color="#4F151B23" />
-      <GradientStop Offset="0.75" Color="#25151B23" />
-      <GradientStop Offset="0.875" Color="#0A151B23" />
-      <GradientStop Offset="1" Color="#00151B23" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="InfoFadeBottom" StartPoint="0%,100%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="#FF151B23" />
-      <GradientStop Offset="0.125" Color="#F5151B23" />
-      <GradientStop Offset="0.25" Color="#DA151B23" />
-      <GradientStop Offset="0.375" Color="#B0151B23" />
-      <GradientStop Offset="0.5" Color="#80151B23" />
-      <GradientStop Offset="0.625" Color="#4F151B23" />
-      <GradientStop Offset="0.75" Color="#25151B23" />
-      <GradientStop Offset="0.875" Color="#0A151B23" />
-      <GradientStop Offset="1" Color="#00151B23" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="CarouselFadeLeft" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
-      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
-      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
-      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
-      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
-      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
-      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="CarouselFadeRight" StartPoint="100%,0%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="{StaticResource BgColor}" />
-      <GradientStop Offset="0.125" Color="{StaticResource BgFade1Color}" />
-      <GradientStop Offset="0.25" Color="{StaticResource BgFade2Color}" />
-      <GradientStop Offset="0.375" Color="{StaticResource BgFade3Color}" />
-      <GradientStop Offset="0.5" Color="{StaticResource BgFade4Color}" />
-      <GradientStop Offset="0.625" Color="{StaticResource BgFade5Color}" />
-      <GradientStop Offset="0.75" Color="{StaticResource BgFade6Color}" />
-      <GradientStop Offset="0.875" Color="{StaticResource BgFade7Color}" />
-      <GradientStop Offset="1" Color="{StaticResource BgClearColor}" />
-    </LinearGradientBrush>
+    <!-- The edge fade (ctl:EdgeFade, #237): how opaque it is from the edge (0) inwards (1); only the alpha counts, the
+         colour is the surface it fades into. A cosine curve, so neither end of the fade shows an edge. -->
+    <GradientStops x:Key="EdgeFadeCurve">
+      <GradientStop Offset="0" Color="#FF000000" />
+      <GradientStop Offset="0.125" Color="#F5000000" />
+      <GradientStop Offset="0.25" Color="#DA000000" />
+      <GradientStop Offset="0.375" Color="#B0000000" />
+      <GradientStop Offset="0.5" Color="#80000000" />
+      <GradientStop Offset="0.625" Color="#4F000000" />
+      <GradientStop Offset="0.75" Color="#25000000" />
+      <GradientStop Offset="0.875" Color="#0A000000" />
+      <GradientStop Offset="1" Color="#00000000" />
+    </GradientStops>
+    <!-- The tab strips': solid for almost half, so a cut-off tab's text is gone before the fade starts. -->
+    <GradientStops x:Key="EdgeFadeCurveTabs">
+      <GradientStop Offset="0.45" Color="#FF000000" />
+      <GradientStop Offset="1" Color="#00000000" />
+    </GradientStops>
 
     <!-- Detail page. -->
     <SolidColorBrush x:Key="DetailSurface" Color="#121820" />
@@ -960,20 +891,14 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="24,20" />
   </Style>
-  <!-- Fades at the top and bottom of the cover grid; MainWindow.axaml.cs shows them where it can scroll on.
-       Height must match MainWindow.ListFadeHeight. -->
-  <Style Selector="Border.listFade">
-    <Setter Property="Height" Value="96" />
+  <!-- The edge fade's defaults (#237); each place sets only what differs. Click-through: clicks and the wheel reach the
+       content under it. -->
+  <Style Selector="ctl|EdgeFade">
+    <Setter Property="FadeColor" Value="{StaticResource BgColor}" />
+    <Setter Property="Curve" Value="{StaticResource EdgeFadeCurve}" />
+    <Setter Property="Overlap" Value="2" />
+    <Setter Property="Duration" Value="0:0:0.2" />
     <Setter Property="IsHitTestVisible" Value="False" />
-    <Setter Property="Opacity" Value="0" />
-    <Setter Property="Transitions">
-      <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
-      </Transitions>
-    </Setter>
-  </Style>
-  <Style Selector="Border.listFade.shown">
-    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <!-- The detail carousel's neighbours are dimmed as a whole, so the fade at the window's edge needs no step. The dimming

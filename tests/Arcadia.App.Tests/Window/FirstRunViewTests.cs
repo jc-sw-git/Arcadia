@@ -1,3 +1,4 @@
+﻿using Arcadia.App.Controls;
 using Arcadia.App.Input;
 using Arcadia.App.Setup;
 using Arcadia.App.Views;
@@ -128,6 +129,51 @@ public sealed class FirstRunViewTests
 
         arcadia.Click(Finish(arcadia));
         await AssertLibraryAsync(arcadia, ["Xbox"], "Klick auf Fertig");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T237-6")]
+    public async Task More_launchers_than_fit_fade_where_more_follow_and_the_focused_one_stays_clear_of_the_fades()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync(KnownLaunchers.All.Select(launcher => new LauncherSpec(launcher, 3)).ToList(), new AppSettings());
+        var firstRun = arcadia.Arcadia.Main.FirstRun!;
+        var rows = firstRun.Found.Concat(firstRun.Missing).ToList();
+        var fade = Assert.Single(View(arcadia).GetVisualDescendants().OfType<EdgeFade>());
+        // All built-in launchers fit: no fade.
+        AssertFades(arcadia, fade, top: false, bottom: false);
+
+        // More than fit, as with plugins: the list gets less room than its rows need.
+        fade.ScrollTarget!.MaxHeight = 500;
+        arcadia.Settle();
+        AssertFades(arcadia, fade, top: false, bottom: true);
+
+        for (var i = 1; i < rows.Count; i++)
+        {
+            arcadia.Press(UiAction.Down);
+            AssertFocused(arcadia, rows[i], $"{i}× ▼", withRing: false);
+            AssertClearOfFades(arcadia, fade, rows[i], $"{i}× ▼");
+        }
+
+        AssertFades(arcadia, fade, top: true, bottom: false);
+        arcadia.Press(UiAction.Up, times: rows.Count);
+        AssertClearOfFades(arcadia, fade, rows[0], "wieder oben");
+        AssertFades(arcadia, fade, top: false, bottom: true);
+    }
+
+    private static void AssertFades(ArcadiaWindow arcadia, EdgeFade fade, bool top, bool bottom)
+    {
+        arcadia.WaitForTransitions();
+        Assert.Equal((top, bottom), (fade.ShowsStart, fade.ShowsEnd));
+    }
+
+    private static void AssertClearOfFades(ArcadiaWindow arcadia, EdgeFade fade, FirstRunLauncherViewModel row, string how)
+    {
+        arcadia.WaitForTransitions();
+        var focused = arcadia.Bounds(RowButton(arcadia, row)).Inflate(3);
+        foreach (var strip in new[] { fade.StartFade, fade.EndFade }.Where(strip => strip.Opacity > 0))
+        {
+            Assert.False(arcadia.Bounds(strip).Intersects(focused), $"{how}: {row.Name} unter der Ausblendung");
+        }
     }
 
     private static FirstRunView View(ArcadiaWindow arcadia) => arcadia.Window.GetVisualDescendants().OfType<FirstRunView>().Single();

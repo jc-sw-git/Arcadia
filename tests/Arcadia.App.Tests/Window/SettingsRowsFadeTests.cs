@@ -136,6 +136,39 @@ public sealed class SettingsRowsFadeTests
         AssertFocusClear(arcadia, "kleineres Fenster");
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T237-4")]
+    public async Task Rows_that_go_or_come_take_the_fades_with_them_without_scrolling()
+    {
+        using var arcadia = await ControllerCategoryAsync();
+        var rows = arcadia.Arcadia.Main.Settings!.Selected.Rows;
+        var scroller = arcadia.Named<ScrollViewer>("SettingsRowsScroller");
+        AssertFades(arcadia, top: false, bottom: true);
+
+        // Rows go until the rest fits (e.g. a group that goes away): the bottom fade goes with them, nothing scrolls.
+        var gone = new List<SettingsRowViewModel>();
+        while (scroller.Extent.Height > scroller.Viewport.Height + 1)
+        {
+            gone.Add(rows[^1]);
+            rows.RemoveAt(rows.Count - 1);
+            arcadia.Settle();
+        }
+
+        Assert.Equal(0, scroller.Offset.Y, 1);
+        AssertFades(arcadia, top: false, bottom: false);
+
+        // They come back: so does the fade, still from the top.
+        gone.Reverse();
+        foreach (var row in gone)
+        {
+            rows.Add(row);
+        }
+
+        arcadia.Settle();
+        Assert.Equal(0, scroller.Offset.Y, 1);
+        AssertFades(arcadia, top: false, bottom: true);
+    }
+
     [AvaloniaTheory]
     [Trait("TestCase", "T237-5")]
     [InlineData(1920, 1080, 1.0)]

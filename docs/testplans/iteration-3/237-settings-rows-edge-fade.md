@@ -31,3 +31,7 @@ History:
 | T237-2, T237-7 looked at | 2026-11-04 | Claude | PR branch, Debug, `--demo`, Xvfb 1920×1080 | ✅ Controller rows at top and end, library grid, tab strip, detail neighbours | – |
 | T237-7 latency | 2026-11-04 | Claude | PR branch, Release, `--demo` (31 games), Xvfb, keys W/S/D | ✅ 32 moves: median 1.9 ms, p95 9.4 ms, max 33.7 ms (`Bild:` in `arcadia.log`) | Owner's PC not measured |
 | All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ 3,272 passed, 30 skipped | – |
+| T237-4 rows going and coming (new window test `Rows_that_go_or_come_…`) | 2026-11-04 | QE (Claude) | PR branch, Debug, Linux cloud container, Avalonia headless | ✅; red with a fade that follows only scroll offsets | – |
+| T237-7 search opened with F, keyboard in (new window test `Opened_without_the_keyboard_…`) | 2026-11-04 | QE (Claude) | same | ❌ grid of hits not faded above and below until the keyboard went out once | Fix in this PR |
+| T237-7 search, settings rows "Controller", info panel looked at | 2026-11-04 | QE (Claude) | PR branch, Release, `--demo`, Xvfb 1920×1080 | ❌ search with F and "e": third row of hits cut hard at the bottom; ✅ rows and info panel fade at the bottom | Fix in this PR |
+| All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | QE (Claude) | PR branch + QE tests, Release, Linux cloud container | ❌ only the new search test, rest ✅ | Fix in this PR |

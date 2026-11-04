@@ -22,7 +22,7 @@ public sealed partial class StatusEntryViewModel : ViewModelBase
     /// <summary>The message as the header shows it now; replaced when its text or time changes.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title), nameof(ShortText), nameof(SinceText), nameof(FixLabel), nameof(HasFix), nameof(IsError), nameof(IsWarning),
-        nameof(IsUpdate), nameof(IsInfo))]
+        nameof(IsUpdate), nameof(IsInfo), nameof(IsFixFocused), nameof(IsSettingsFocused), nameof(FocusedLabel))]
     public partial StatusEntry Entry { get; set; }
 
     public string Id => Entry.Id;

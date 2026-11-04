@@ -216,6 +216,30 @@ public sealed class StatusModalTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T166-8")]
+    public async Task While_the_update_loads_its_entry_shows_the_progress_and_A_cannot_start_it_again()
+    {
+        var download = new TaskCompletionSource();
+        using var arcadia = await StartAsync(new FakeSteam(), new FakeReleases("0.1.0", ("0.3.0", ["Neu"])) { HeldDownload = download });
+        await arcadia.Updates.CheckIfDueAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasArcadiaUpdate, "das Update im Header");
+
+        arcadia.Press(UiAction.Status).Press(UiAction.Accept);
+        var update = Assert.Single(Modal(arcadia).Entries);
+        await arcadia.WaitUntilAsync(() => update.ShortText == AboutSettingsViewModel.LoadingText("0.3.0", 40), "der Fortschritt im Eintrag");
+        Assert.False(update.HasFix);
+        Assert.False(Modal(arcadia).FocusedHasFix);
+        Assert.Equal(StatusEntryViewModel.SettingsLabel, Modal(arcadia).AcceptText);
+        Assert.True(update.IsSettingsFocused);
+
+        // The download fails: the entry offers the update again.
+        download.SetResult();
+        await arcadia.WaitUntilAsync(() => update.HasFix, "der Knopf wieder da");
+        Assert.Equal(StatusBarViewModel.UpdateShortText, update.ShortText);
+        Assert.Equal(StatusBarViewModel.UpdateFixLabel, Modal(arcadia).AcceptText);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T166-9")]
     public async Task Zu_den_Einstellungen_on_the_update_opens_Ueber_Arcadia_on_Jetzt_aktualisieren()
     {
@@ -365,6 +389,37 @@ public sealed class StatusModalTests
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
         Assert.Equal(controller.Rows[0].Key, controller.FocusedRow?.Key);
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T166-4")]
+    public async Task Seit_keeps_the_time_a_message_appeared_and_a_level_change_counts_as_new()
+    {
+        using var arcadia = await StartWithPanAsync();
+        arcadia.SteamControllerCopy.FailAttach = "VIIPER antwortet nicht";
+        arcadia.SteamControllerCopy.Current!.Lose();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(
+            () => arcadia.Main.Status.Entries.Any(entry => entry.Id == StatusBarViewModel.PanStatusId), "„Pan läuft nicht“ als Warnung");
+        var appeared = $"seit {Formatting.Clock(arcadia.Time.GetLocalNow())}";
+
+        arcadia.Press(UiAction.Status);
+        var pan = Modal(arcadia).Entries.Single(entry => entry.Id == StatusBarViewModel.PanStatusId);
+        Assert.True(pan.IsWarning);
+        Assert.Equal(appeared, pan.SinceText);
+
+        // The same message at the same level keeps its time, also a minute later.
+        arcadia.Time.Advance(TimeSpan.FromMinutes(1));
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(pan.IsWarning);
+        Assert.Equal(appeared, pan.SinceText);
+
+        // Pan gives up after further failures: the message turns into an error, a new one with the time of the change.
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.TickSteamControllerAsync();
+        await arcadia.WaitUntilAsync(() => pan.IsError, "„Pan läuft nicht“ als Fehler");
+        Assert.Equal($"seit {Formatting.Clock(arcadia.Time.GetLocalNow())}", pan.SinceText);
+        Assert.NotEqual(appeared, pan.SinceText);
     }
 
     [AvaloniaFact]

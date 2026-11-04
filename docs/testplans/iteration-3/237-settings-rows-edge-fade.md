@@ -4,7 +4,7 @@ All cases are rendering, so none is an acceptance test through the view models; 
 (`Arcadia.App.Tests`, Avalonia headless) cover what can be checked drawn, the quality engineer checks the rest with
 screenshots.
 
-**Status:** Automated: T237-1 to T237-6 (window tests) · QE: T237-7 · Open for the owner: T237-8
+**Status:** Automated: T237-1 to T237-6 (window tests) · QE: T237-7 · Open for the owner: none (T237-8 passed)
 
 - [x] **T237-1** Category whose rows fit: no fade. · E2E: no (rendering; window test `SettingsRowsFadeTests`)
 - [x] **T237-2** Controller category: bottom fade on open; ▼ to the end and ▲ back: fades per scenarios, focused row
@@ -20,7 +20,7 @@ screenshots.
 - [x] **T237-7** Regression: library grid, tab strips, info panel, "Controller zuordnen", search hits, detail
   neighbours look and behave as before; focus-move latency in the library measured. · E2E: no (rendering; existing
   window tests T102-*, T127-*, T15-*, T238-13, search and detail tests)
-- [ ] **T237-8** **Owner:** Controller category on the owner's PC scrolled with the Steam Controller. · E2E: no (real
+- [x] **T237-8** **Owner:** Controller category on the owner's PC scrolled with the Steam Controller. · E2E: no (real
   Steam Controller)
 
 History:
@@ -41,3 +41,4 @@ History:
 | T237-4 LB/RB starts a category at its first row (owner's decision) | 2026-11-04 | Claude | same | ✅ `SettingsRowsFadeTests`; T137-8 test adapted (back on "Launcher" at the first launcher) | – |
 | All tests (`tools/ci/run-tests.sh 4`) | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ 3,274 passed, 30 skipped | – |
 | T237-4 and T137-8: LB/RB back to "Launcher" from a launcher page keeps that launcher (owner's decision), other categories start at their first row | 2026-11-04 | Claude | PR branch, Release, Linux cloud container | ✅ all tests (`run-tests.sh 4`) | – |
+| T237-8 | 2026-11-04 | owner | PR #463, real PC, Steam Controller | ✅ | – |

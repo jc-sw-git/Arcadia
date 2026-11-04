@@ -428,7 +428,7 @@ public sealed class WindowsRestartTests
     [Trait("TestCase", "T382-28")]
     public async Task A_failing_pending_restart_check_shows_no_restart_row_logs_it_and_Pan_runs()
     {
-        var steam = new FakeSteam { PendingRestartError = new IOException("Registrierung nicht lesbar (Test 382-28)") };
+        var steam = new FakeSteam { PendingRestartError = () => new IOException("Registrierung nicht lesbar (Test 382-28)") };
         using var arcadia = await StartAsync(steam);
         var controller = OpenControllerSettings(arcadia);
         await RunForAsync(arcadia, TimeSpan.FromSeconds(4));
@@ -438,6 +438,7 @@ public sealed class WindowsRestartTests
         var log = ArcadiaDriver.Log;
         var line = log.IndexOf("Nicht geprüft, ob ein Windows-Neustart aussteht: System.IO.IOException: Registrierung nicht lesbar (Test 382-28)", StringComparison.Ordinal);
         Assert.True(line >= 0, "die Zeile in arcadia.log");
-        Assert.Contains("at Arcadia.App.Tests.FakeSteam.CheckPendingRestart", log[line..], StringComparison.Ordinal);
+        // A stack trace follows; which frames it shows depends on the JIT (a Release build may inline the fake's check).
+        Assert.Contains($"(Test 382-28){Environment.NewLine}   at ", log[line..], StringComparison.Ordinal);
     }
 }

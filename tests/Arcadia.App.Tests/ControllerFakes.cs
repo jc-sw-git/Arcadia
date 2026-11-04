@@ -192,11 +192,14 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
     /// <summary>usbip-win2 was uninstalled and Windows removes it at the next restart (#382); Pan pauses, as for HidHide.</summary>
     public bool UsbipRemovalPending { get; set; }
 
-    /// <summary>Set, the pending-restart check throws this (a registry read that fails, #382's failure case).</summary>
-    public Exception? PendingRestartError { get; set; }
+    /// <summary>
+    /// Set, the pending-restart check throws a new exception from this (a registry read that fails, #382's failure case):
+    /// the tick and the settings' refresh may check at once, and one instance thrown on two threads keeps one stack trace.
+    /// </summary>
+    public Func<Exception>? PendingRestartError { get; set; }
 
     public PendingRestart CheckPendingRestart(AppSettings settings, DateTimeOffset now) =>
-        PendingRestartError is { } error ? throw error
+        PendingRestartError is { } error ? throw error()
         : UsbipRemovalPending || HidHideRemovalPending ? PendingRestart.Required
         : UsbipRebootPending ? PendingRestart.Recommended
         : PendingRestart.None;

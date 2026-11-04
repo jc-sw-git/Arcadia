@@ -32,9 +32,8 @@ public sealed class ArchitectureTests
     {
         // The App composes the built-in launchers (BuiltInLaunchers) but reaches none of them directly; a reference to a
         // launcher's own namespace would be a special case a plugin launcher couldn't get.
-        var app = Path.Combine(RepositoryRoot(), "src", "Arcadia.App");
-        var offending = Directory.EnumerateFiles(app, "*.cs", SearchOption.AllDirectories)
-            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+        var app = Path.Combine(RepositoryFiles.Root(), "src", "Arcadia.App");
+        var offending = RepositoryFiles.SourceFiles("Arcadia.App", "*.cs")
             .Where(file => File.ReadLines(file).Any(line => SingleLauncherNames.Any(ns => line.Contains(ns, StringComparison.Ordinal))))
             .Select(file => Path.GetRelativePath(app, file))
             .ToList();
@@ -44,17 +43,6 @@ public sealed class ArchitectureTests
 
     // KnownLaunchers names Steam and Epic too, by their identity.
     private static readonly string[] SingleLauncherNames = ["Arcadia.Launchers.Steam", "Arcadia.Launchers.Epic", "Arcadia.Launchers.Demo", "KnownLaunchers"];
-
-    private static string RepositoryRoot()
-    {
-        var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "Arcadia.slnx")))
-        {
-            folder = folder.Parent;
-        }
-
-        return folder?.FullName ?? throw new InvalidOperationException("Arcadia.slnx not found above the test's folder.");
-    }
 
     [Fact]
     public void Core_knows_launchers_only_through_the_contract() =>

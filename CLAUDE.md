@@ -164,6 +164,9 @@ Every step of a session resends its whole context, so keep it small:
   an issue, drop the number. Prefixes: `feat` (new or changed feature behaviour), `fix` (bug fix), `ci` (CI only),
   `test` (tests only), `doc` (docs only, agent skills included), `td` (any other product code change, i.e. tech
   debt). Rename generated names such as `claude/project-thread-…` before the first push.
+- For the owner's PRs the CI check `PR rules` checks the branch name, the sections **Handoff** and **Review**, and that
+  no private name, id or path of the owner appears (`.github/workflows/pr-rules.yml`). Contributors' PRs skip it,
+  as they skip `Testplan` and `Bug origin`: those are our way of working, not rules for contributors.
 - Commit messages: imperative subject, body explains why.
 - After each merge to `main`, check that your open PR is still mergeable and resolve conflicts before the owner
   finds them.

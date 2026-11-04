@@ -59,3 +59,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T382-1 to T382-29 (automated ones) | 2026-11-04 | Claude | PR branch rebased on main, Release, `tools/ci/run-tests.sh 4`, Linux container, headless | ✅ (automated, all tests green) | – |
+| T382-7, T382-18, T382-19, T382-22, T382-23 | 2026-11-04 | Claude | PR branch, headless window captures on Linux (fake Steam and Pan, controller and keyboard simulated) | ✅ paused switch with its restart row, the question with "auch Arcadia", footer [A] Neu starten / [Leertaste] [Esc], refusal toast | Not seen: a real restart and real Windows (T382-30 to T382-34) |

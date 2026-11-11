@@ -279,6 +279,9 @@ public sealed class ArtworkWindowTests : IDisposable
         window.Arcadia.Artwork.Update([new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), source)]);
         await window.Arcadia.Artwork.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
         await WaitShowingAsync(window);
+        // The focused tile's lift starts when the window shows; a capture during it and the bounds read a moment later
+        // would disagree at the tile's edges.
+        window.WaitForTransitions();
     }
 
     /// <summary>Lets the window draw until every visible image with a file is decoded and shown.</summary>

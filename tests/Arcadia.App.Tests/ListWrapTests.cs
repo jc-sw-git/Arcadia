@@ -154,6 +154,53 @@ public sealed class ListWrapTests
         Assert.False(question.IsConfirmFocused);
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-5")]
+    public async Task The_context_menu_comes_round_to_its_first_entry_and_never_rests_on_a_greyed_out_one()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.Press(UiAction.Options);
+        var menu = arcadia.Main.GameMenu!;
+        var enabled = menu.Actions.Where(action => action.IsEnabled).ToList();
+        Assert.Contains(menu.Actions, action => !action.IsEnabled);
+
+        for (var step = 1; step <= enabled.Count; step++)
+        {
+            arcadia.Press(UiAction.Down);
+            Assert.Same(enabled[step % enabled.Count], Focused(menu));
+        }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-5")]
+    public void The_empty_tabs_two_buttons_go_round_and_a_held_arrow_stays()
+    {
+        var empty = new EmptyTabViewModel(null, () => { }, () => { });
+        Assert.True(empty.IsSettingsFocused);
+
+        empty.Handle(UiAction.Left);
+        Assert.True(empty.IsRescanFocused);
+        empty.Handle(UiAction.Right);
+        Assert.True(empty.IsSettingsFocused);
+        HeldPress.Run(repeat: true, () => empty.Handle(UiAction.Left));
+        Assert.True(empty.IsSettingsFocused);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-5")]
+    public void The_firmware_dialogs_buttons_go_round_and_a_held_arrow_stays()
+    {
+        using var notice = new FirmwareAttemptViewModel(() => Task.CompletedTask, () => { }, TimeProvider.System, action => action());
+        Assert.True(notice.CloseButton.IsFocused);
+
+        notice.Handle(UiAction.Right);
+        Assert.True(notice.ReleaseButton.IsFocused);
+        notice.Handle(UiAction.Up);
+        Assert.True(notice.CloseButton.IsFocused);
+        HeldPress.Run(repeat: true, () => notice.Handle(UiAction.Down));
+        Assert.True(notice.CloseButton.IsFocused);
+    }
+
     private static GameActionViewModel? Focused(GameMenuViewModel menu) => menu.Actions.SingleOrDefault(action => action.IsFocused);
 
     private sealed class NoHost : IStatusModalHost

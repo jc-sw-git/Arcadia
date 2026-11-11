@@ -625,4 +625,20 @@ public sealed class EveryControllerForGamesTests
         Assert.DoesNotContain(PanRows.LayoutsKey, RowsBelow(controller));
         Assert.Null(controller.Dialog);
     }
+
+    /// <summary>#476: "Controller zuordnen" goes round from its first row to "Übernehmen" and back.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-5")]
+    public async Task Controller_zuordnen_goes_round_from_its_first_row_to_Uebernehmen_and_back()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: [DualSense, GameCube]);
+        var controller = OpenControllerSettings(arcadia);
+        var layouts = OpenLayouts(arcadia, controller);
+        Assert.Same(layouts.Rows[0], layouts.FocusedRow);
+
+        arcadia.Press(UiAction.Up);
+        Assert.True(layouts.IsApplyFocused);
+        arcadia.Press(UiAction.Down);
+        Assert.Same(layouts.Rows[0], layouts.FocusedRow);
+    }
 }

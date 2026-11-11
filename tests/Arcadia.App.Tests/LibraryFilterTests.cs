@@ -416,4 +416,43 @@ public sealed class LibraryFilterTests
         Assert.Null(arcadia.Main.FilterModal);
         Assert.Equal(["Echo Werkzeug", "Foxtrot Werkzeug"], Titles(arcadia));
     }
+
+    /// <summary>
+    /// #476: the type grid goes round in its rows and columns, and from the last value right to the first; left out of
+    /// the first column still goes back to the categories. The list of values goes round too.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-5")]
+    public async Task The_filters_values_go_round_and_left_out_of_the_first_column_goes_back_to_the_categories()
+    {
+        var (_, specs) = Mixed();
+        using var arcadia = await ArcadiaDriver.StartAsync(specs);
+        arcadia.Press(UiAction.KeyboardLayout);
+        var modal = Modal(arcadia);
+
+        arcadia.Press(UiAction.Accept);
+        var values = modal.Values;
+        Assert.Equal(values[0].Label, Focused(modal));
+        arcadia.Press(UiAction.Up);
+        Assert.Equal(values[^1].Label, Focused(modal));
+        arcadia.Press(UiAction.Down);
+        Assert.Equal(values[0].Label, Focused(modal));
+        arcadia.Press(UiAction.Back).Press(UiAction.Down).Press(UiAction.Right);
+
+        Assert.True(modal.ShowsTypes);
+        var types = modal.Values;
+        var columns = FilterModalViewModel.TypeColumns;
+        Assert.True(types.Count > columns, "Der Typ-Raster braucht mehr als eine Zeile.");
+        Assert.Equal(types[0].Label, Focused(modal));
+        arcadia.Press(UiAction.Up);
+        Assert.Equal(types[(types.Count - 1) / columns * columns].Label, Focused(modal));
+        arcadia.Press(UiAction.Down);
+        Assert.Equal(types[0].Label, Focused(modal));
+        arcadia.Press(UiAction.Right, times: types.Count);
+        Assert.Equal(types[0].Label, Focused(modal));
+
+        arcadia.Press(UiAction.Left);
+        Assert.False(modal.IsInValues);
+        Assert.Equal("Typ", Focused(modal));
+    }
 }

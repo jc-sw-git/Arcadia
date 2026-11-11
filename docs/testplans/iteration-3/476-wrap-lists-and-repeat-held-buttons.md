@@ -1,6 +1,6 @@
 # #476 Wrap round at the ends of every list and repeat LT/RT and LB/RB while held
 
-**Status:** Automated: T476-1 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: –
+**Status:** Automated: T476-1 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run), T476-5 (PR #486, app run) · Open for the owner: –
 
 Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now); T476-5 replaces T12-2's "the focus stays at the keyboard's edges".
 
@@ -38,3 +38,4 @@ History:
 | T476-16, T476-17 | 2026-11-11 | Claude | PR #481, Linux container, `HeldButtonsTests.Held_RT_turns_the_detail_page_round_past_the_last_game_without_stopping`, `LibraryTests.The_D_pad_held_repeats_the_move_and_stops_at_the_pages_edge_until_a_fresh_press`, each red without the change | ✅ | – |
 | T476-15 | 2026-11-11 | owner | PR #481 | ✅ ticked by the owner for the merge | – |
 | T476-5 | 2026-11-11 | Claude | PR (part 3), Linux container, `ListWrapTests` (each red with `ListFocus.Cycle` clamping again), `KeyGridTests`, `FullKeyboardTests`, `ListFocusTests`, changed `OnScreenKeyboardTests`, `LibraryFilterTests`; real app under Xvfb, `--demo`, keys only: settings ↑ on the first row to "Alle neu einlesen", context menu ↓ ↑ ↑ to "Deinstallieren …", rings whole | ✅ | – |
+| T476-5 | 2026-11-11 | QE | PR #486, Linux container: acceptance tests for the filter's values (list and type grid, left out of the first column back to the categories), first start, the empty tab, the firmware dialog, "Controller zuordnen", the Windows restart question and the context menu's ring over its greyed-out entry, each red with `ListFocus.Cycle` clamping again (the filter with its view model back on `main`); real app under Xvfb, `--demo`, keys only: "Ansicht" ↑ on "Name A → Z" to "24", filter values ↑ on "Alle" to "Nur nicht installierte", rings whole | ✅ | – |

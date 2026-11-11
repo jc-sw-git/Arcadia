@@ -192,4 +192,18 @@ public sealed class FirstRunTests
         Assert.False(arcadia.Main.IsFirstRunShown);
         Assert.Equal(AppTexts.NoLauncherActive, arcadia.Main.Library.EmptyTab?.Title);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-5")]
+    public async Task The_first_starts_rows_go_round_also_to_a_launcher_not_found()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
+        var firstRun = arcadia.Main.FirstRun!;
+        Assert.Equal("GOG Galaxy", firstRun.FocusedRow?.Name);
+
+        arcadia.Press(UiAction.Up);
+        Assert.Equal("Amazon Games", firstRun.FocusedRow?.Name);
+        arcadia.Press(UiAction.Down);
+        Assert.Equal("GOG Galaxy", firstRun.FocusedRow?.Name);
+    }
 }

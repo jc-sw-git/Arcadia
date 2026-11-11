@@ -63,7 +63,7 @@ Charter: –. Time box: –. Findings: –.
 | T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
 | T476-8 to -12 | `HeldButtonsTests`, `Window/HeldKeysTests`; variants in `GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests` |
 | T476-1 to -4, -6, -7, -14, -16, -17 | `HeldButtonsTests` (T476-16), `SearchWrapTests`, `LibraryTests` (grid, pages, page buttons), `Window/SearchViewTests.More_hits_than_fit_the_row_…_turns_by_two_rows_and_round`, `SteamControllerTests`; variants in `GridFocusTests`, `HitWindowTests`, `GamepadPollsTests` |
-| T476-5 | `ListWrapTests`, `OnScreenKeyboardTests.The_D_pad_walks_the_keys_…_goes_round_at_the_edges_…`, `LibraryFilterTests.Alle_Filter_zuruecksetzen_…`; variants in `ListFocusTests`, `KeyGridTests`, `FullKeyboardTests` |
+| T476-5 | `ListWrapTests`, `FirstRunTests.The_first_starts_rows_go_round_…`, `EveryControllerForGamesTests.Controller_zuordnen_goes_round_…`, `WindowsRestartTests.The_restart_questions_two_buttons_go_round_…`, `LibraryFilterTests.The_filters_values_go_round_…`, `OnScreenKeyboardTests.The_D_pad_walks_the_keys_…_goes_round_at_the_edges_…`, `LibraryFilterTests.Alle_Filter_zuruecksetzen_…`; variants in `ListFocusTests`, `KeyGridTests`, `FullKeyboardTests` |
 | T465-1 to -9, -11 to -13 | `LibraryFilterTests`, variants in `GameFilterTests` (Core) |
 | T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |

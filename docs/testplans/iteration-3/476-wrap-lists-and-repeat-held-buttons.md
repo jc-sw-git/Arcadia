@@ -1,6 +1,6 @@
 # #476 Wrap round at the ends of every list and repeat LT/RT and LB/RB while held
 
-**Status:** Automated: T476-8 to T476-12 · QE: – · Open for the owner: T476-13
+**Status:** Automated: T476-8 to T476-12 · QE: T476-8, T476-9 (app run) · Open for the owner: T476-13
 
 Part 1 (hold). T476-1 to T476-7 (scenarios 1 to 7 of the issue) are added with part 2 (search and library wrap: T476-1 to -4, -6, -7) and part 3 (all other lists: T476-5).
 
@@ -16,3 +16,6 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T476-8 to T476-12 | 2026-11-11 | Claude | PR (part 1), Linux container, unit and acceptance tests (`GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests`, `HeldButtonsTests`, `HeldKeysTests`); each acceptance test red once with the feature broken | ✅ | – |
+| T476-8, -9, -10, -12 | 2026-11-11 | QE | PR #479, Linux container: acceptance tests for the library, the search row, the launcher pages, a launcher's switch, the keyboard sliding in and Pan letting go; each red once | ✅ | – |
+| T476-10 | 2026-11-11 | QE | PR #479, code review | ❌ a dialog of a settings category (prompt, "Controller zuordnen", question) doesn't stop a hold | fixed in this PR (Review, finding 1) |
+| T476-8, -9 | 2026-11-11 | QE | PR #479, real app under Xvfb, `--demo`, held E, Shift+E, Page Down (no gamepad) | ✅ library stops on the last page, tabs on the last tab, 34 to 84 repeats each | – |

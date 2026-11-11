@@ -530,6 +530,18 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// Every controller let go and read again, as Pan does when it hides or shows one (#367): SDL ends without reporting a
+    /// release and opens the controllers again under new numbers.
+    /// </summary>
+    public ArcadiaDriver LetGoOfControllers()
+    {
+        _controllers.ReadControllers(false);
+        PollControllers();
+        _controllers.ReadControllers(true);
+        return PollControllers().PollControllers();
+    }
+
     /// <summary>The buttons pressed together on the controller <paramref name="pad"/> of <see cref="Sdl"/>, then let go.</summary>
     public ArcadiaDriver PressOn(uint pad, params SdlPadState.Button[] buttons)
     {

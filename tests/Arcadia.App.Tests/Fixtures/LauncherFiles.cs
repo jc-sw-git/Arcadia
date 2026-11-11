@@ -38,12 +38,16 @@ internal sealed class LauncherFiles : IDisposable
     /// <summary>Steam's web API for the Steam account (#83), with the time of <see cref="ArcadiaDriver.Now"/>.</summary>
     public Arcadia.Core.Tests.FakeSteamWeb SteamWeb { get; } = new(ArcadiaDriver.Now);
 
+    /// <summary>Steam's image server for the covers and backgrounds (#487); knows no image until the test serves one.</summary>
+    public Arcadia.Core.Tests.Artwork.FakeImageServer ImageServer { get; } = new();
+
     /// <summary>Where the Steam account keeps its sign-in and the owned games, kept across a restart.</summary>
     public string AccountFolder => PathFor("Arcadia");
 
     public void Dispose()
     {
         SteamWeb.Dispose();
+        ImageServer.Dispose();
         try
         {
             Directory.Delete(_root, recursive: true);

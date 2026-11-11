@@ -48,6 +48,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private static readonly TimeSpan PadPoll = TimeSpan.FromMilliseconds(8);
 
     private readonly HttpClient _http;
+    private readonly HttpClient _artworkHttp;
     private readonly bool _ownsFolder;
     private readonly Fixtures.LauncherFiles? _files;
     private readonly List<LaunchTarget> _opened;
@@ -108,8 +109,10 @@ internal sealed class ArcadiaDriver : IDisposable
         Updates.Log = AppLog.Write;
         FolderCheck = new InstallFolderCheck(Folders.Exists, action => Dispatcher.UIThread.Post(action));
         var controllerPlatform = (IControllerSupportPlatform?)steam ?? (IControllerSupportPlatform?)files?.ControllerSupport ?? new NoControllerSupportPlatform();
-        // The artwork cache in the test's folder; Steam's image server is the fake network's, which knows no image (#487).
-        Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _http, time) { Log = AppLog.Write };
+        // The artwork cache in the test's folder; Steam's image server is the launcher files' (kept across a restart), else
+        // the fake network's, which knows no image (#487).
+        _artworkHttp = files is null ? _http : new HttpClient(files.ImageServer, disposeHandler: false);
+        Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _artworkHttp, time) { Log = AppLog.Write };
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
@@ -657,6 +660,7 @@ internal sealed class ArcadiaDriver : IDisposable
         SteamAccount?.Dispose();
         _controllers.Dispose();
         _http.Dispose();
+        _artworkHttp.Dispose();
         if (_ownsFolder)
         {
             Steam?.Sisr.Dispose();

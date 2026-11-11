@@ -81,20 +81,20 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     private List<GameTileViewModel> _results = [];
     private TextWithCaret _text = TextWithCaret.AtEnd(string.Empty);
     private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
-    private readonly SearchPageParts _parts;
+    private readonly SharedKeyboard _sharedKeyboard;
 
     /// <param name="tabs">The launcher tabs; the search covers the ones with games.</param>
     /// <param name="actions">The window's one <see cref="GameActions"/>: it holds the press in progress for every page.</param>
     /// <param name="host">The window, asked to close the search and to show the hit's menu and the filter dialog.</param>
-    /// <param name="parts">The keyboard and the places of the hits, kept from the search before.</param>
-    /// <param name="layout">The keyboard's layout; it may have been changed elsewhere since the search before.</param>
+    /// <param name="keyboard">The search page's one on-screen keyboard, kept from the search before (#477).</param>
+    /// <param name="slots">The places of the hits, kept from the search before with their controls (#477).</param>
     /// <param name="createTile">A hit's cover from its game, what focuses it and what a click on it does.</param>
     public SearchViewModel(
         LauncherTabsViewModel tabs,
         GameActions actions,
         IPageHost host,
-        SearchPageParts parts,
-        KeyboardLayout layout,
+        SharedKeyboard keyboard,
+        ObservableCollection<TileSlotViewModel> slots,
         Func<Game, Action<GameTileViewModel>, Action<GameTileViewModel>, GameTileViewModel> createTile,
         Func<LauncherInfo, LauncherBadge> badgeOf,
         bool usesController)
@@ -106,12 +106,12 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
         _badgeOf = badgeOf;
-        _parts = parts;
-        Keyboard = parts.Keyboard;
-        Slots = parts.Slots;
-        parts.Attach(this, layout);
+        _sharedKeyboard = keyboard;
+        Slots = slots;
+        Keyboard = keyboard.Take(this, usesController);
+        // A search field has no tab order to go through, and the keyboard is part of the page, with no edge to move to.
+        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown);
         UsesController = usesController;
-        Keyboard.UsesController = usesController;
         IsKeyboardOut = usesController;
         _window = HitWindow.Of(0, ResultRows, ResultColumns);
         BuildChips();
@@ -600,7 +600,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
             KeyboardClosed?.Invoke();
         }
 
-        _parts.Detach(this);
+        _sharedKeyboard.GiveBack(this);
     }
 
     partial void OnUsesControllerChanged(bool value) => Keyboard.UsesController = value;

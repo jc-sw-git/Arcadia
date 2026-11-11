@@ -48,6 +48,20 @@ public sealed class SearchSpeedTests
         Assert.Equal("Spiel 0777", ToolTip.GetTip(hits[0]));
     }
 
+    /// <summary>The keyboard is built right after the library shows, so even the first X finds its keys there.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T477-5")]
+    public async Task The_keyboard_is_built_once_the_library_shows_before_the_first_search()
+    {
+        using var window = await ArcadiaWindow.ShowAsync(ThousandGames);
+        Assert.Null(window.Arcadia.Search);
+        var keys = window.Named<OnScreenKeyboardView>("SearchKeyboard").GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("boardKey")).ToList();
+        Assert.NotEmpty(keys);
+
+        window.Press(UiAction.Search);
+        Assert.Equal(keys, Keys(window));
+    }
+
     /// <summary>The kept keyboard starts each search as a new one did: focus on its first key, shift off, nothing typed.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T477-2")]

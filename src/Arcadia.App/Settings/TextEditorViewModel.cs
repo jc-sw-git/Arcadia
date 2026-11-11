@@ -17,25 +17,29 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     private readonly Func<string, string?> _problemOf;
     private readonly Func<string, bool> _take;
     private readonly Action _close;
+    private readonly Action<IKeyboardTarget> _giveBackKeyboard;
     private TextWithCaret _text;
 
     /// <param name="problemOf">Why a text can't be taken, or null if it can.</param>
     /// <param name="take">Takes a text without problem; false if it couldn't, and the editor stays open.</param>
     /// <param name="close">The editor is done, the text taken or dropped.</param>
+    /// <param name="takeKeyboard">The settings' one on-screen keyboard, now typing into this editor; given back on dispose.</param>
     /// <param name="takes">The characters the text may hold; the on-screen keyboard greys out the others. Null: all.</param>
     public TextEditorViewModel(
         string text,
         Func<string, string?> problemOf,
         Func<string, bool> take,
         Action close,
-        Func<IKeyboardTarget, OnScreenKeyboardViewModel> createKeyboard,
+        Func<IKeyboardTarget, OnScreenKeyboardViewModel> takeKeyboard,
+        Action<IKeyboardTarget> giveBackKeyboard,
         Func<char, bool>? takes = null)
     {
         _text = TextWithCaret.AtEnd(text);
         _problemOf = problemOf;
         _take = take;
         _close = close;
-        Keyboard = createKeyboard(this);
+        _giveBackKeyboard = giveBackKeyboard;
+        Keyboard = takeKeyboard(this);
         Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown, takes);
         Problem = problemOf(text);
     }
@@ -143,7 +147,7 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     /// <summary>B, Esc or "Ausblenden": the old value stays.</summary>
     public void Drop() => Close();
 
-    public void Dispose() => Keyboard.Dispose();
+    public void Dispose() => _giveBackKeyboard(this);
 
     void IKeyboardTarget.Type(char character) => Type(character.ToString());
 

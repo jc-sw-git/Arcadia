@@ -316,6 +316,37 @@ public sealed class LauncherPageViewTests
     private static Control Drawer(ArcadiaWindow arcadia) =>
         arcadia.Window.GetVisualDescendants().OfType<Controls.RevealPanel>().Single(panel => panel.Classes.Contains("keyboardDrawer") && panel.DataContext == arcadia.Arcadia.Main);
 
+    /// <summary>The keyboard's controls stay from one text to the next (#477); the next text starts with it as new.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T477-6")]
+    public async Task Writing_a_text_again_keeps_the_keys_and_starts_them_as_new()
+    {
+        using var arcadia = await OpenGogPageAsync();
+        arcadia.Arcadia.FocusRow("launcher-name");
+        arcadia.Press(UiAction.Accept);
+        var keyboard = arcadia.Arcadia.Main.Settings!.Selected.Editor!.Keyboard;
+        var firstKey = keyboard.FocusedKey;
+        var keys = DrawnKeys(arcadia);
+        Assert.NotEmpty(keys);
+        arcadia.Press(UiAction.Right, times: 2).Press(UiAction.PreviousTab).Press(UiAction.Back);
+        Assert.False(arcadia.Arcadia.Main.Settings.Selected.IsEditing);
+
+        arcadia.Press(UiAction.Accept);
+        var editor = arcadia.Arcadia.Main.Settings.Selected.Editor!;
+        Assert.Same(keyboard, editor.Keyboard);
+        Assert.Equal(keys, DrawnKeys(arcadia));
+        Assert.Same(firstKey, keyboard.FocusedKey);
+        Assert.Equal(Arcadia.Core.Search.KeyLevel.Normal, keyboard.Level);
+        Assert.Equal("GOG Galaxy", editor.Text);
+
+        // The keys type into the new text, not into the one dropped.
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal("GOG Galaxy" + firstKey.Label, editor.Text);
+    }
+
+    private static List<Button> DrawnKeys(ArcadiaWindow arcadia) =>
+        Drawer(arcadia).GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("boardKey")).ToList();
+
     private static Button DrawnKey(ArcadiaWindow arcadia, BoardKeyViewModel key) => Drawer(arcadia).GetVisualDescendants().OfType<Button>()
         .Single(button => button.Classes.Contains("boardKey") && button.DataContext == key);
 

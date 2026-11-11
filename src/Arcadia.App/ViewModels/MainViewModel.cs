@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Arcadia.App.Filter;
 using Arcadia.App.Input;
 using Arcadia.App.Keyboard;
@@ -88,11 +89,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs = new PanDialogsViewModel(controllerSupport, settings, Toast, time, () => QuitRequested?.Invoke(this, EventArgs.Empty), CancelHold);
         PanDialogs.PropertyChanged += OnPanDialogsChanged;
         Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);
-        SearchParts = new SearchPageParts(
-            KeyboardLayout.Find(settings.Current.KeyboardLayout),
-            layout => SaveView(view => view with { KeyboardLayout = layout.Id }),
-            time,
-            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        SearchKeyboard = CreateSharedKeyboard();
+        SettingsKeyboard = CreateSharedKeyboard();
         Library.PropertyChanged += OnLibraryChanged;
         LauncherTabs.Chosen += OnTabChosen;
         if (firstRun.IsPending)
@@ -255,8 +253,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [NotifyPropertyChangedFor(nameof(IsSearchShown))]
     public partial SearchViewModel? Search { get; private set; }
 
-    /// <summary>The search page's keyboard and the places of its hits, which every search uses again (#477).</summary>
-    public SearchPageParts SearchParts { get; }
+    /// <summary>
+    /// The search page's on-screen keyboard and the places of its hits, which every search uses again: building their
+    /// controls anew for each search took most of the half second between X and the search on screen (#477).
+    /// </summary>
+    public SharedKeyboard SearchKeyboard { get; }
+
+    /// <inheritdoc cref="SearchKeyboard"/>
+    public ObservableCollection<TileSlotViewModel> SearchSlots { get; } = [];
+
+    /// <summary>The on-screen keyboard of the texts written in the settings, which every text uses again (#477).</summary>
+    public SharedKeyboard SettingsKeyboard { get; }
 
     /// <summary>The search is open and not hidden behind a detail page opened from it.</summary>
     public bool IsSearchShown => Search is not null && Detail is null;
@@ -710,8 +717,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             LauncherTabs,
             _actions,
             this,
-            SearchParts,
-            KeyboardLayout.Find(_settings.Current.KeyboardLayout),
+            SearchKeyboard,
+            SearchSlots,
             CreateTile,
             _logos.BadgeOf,
             Input.Kind == InputKind.Gamepad);
@@ -993,7 +1000,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ControllerMode.Dispose();
         Status.Dispose();
         Toast.Dispose();
-        SearchParts.Dispose();
+        SearchKeyboard.Dispose();
+        SettingsKeyboard.Dispose();
         Session.Dispose();
         GC.SuppressFinalize(this);
     }
@@ -1248,19 +1256,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void ILauncherSettingsHost.RescanLauncher(string launcherId) =>
         Session.RescanAsync(Session.Launchers.Info(launcherId)).Forget("Launcher neu einlesen");
 
-    OnScreenKeyboardViewModel ILauncherSettingsHost.CreateKeyboard(IKeyboardTarget target)
-    {
-        var keyboard = new OnScreenKeyboardViewModel(
-            KeyboardLayout.Find(_settings.Current.KeyboardLayout),
-            target,
-            _time,
-            action => Avalonia.Threading.Dispatcher.UIThread.Post(action))
-        {
-            UsesController = Input.UsesController,
-        };
-        keyboard.LayoutChosen += layout => SaveView(settings => settings with { KeyboardLayout = layout.Id });
-        return keyboard;
-    }
+    OnScreenKeyboardViewModel ILauncherSettingsHost.TakeKeyboard(IKeyboardTarget editor) => SettingsKeyboard.Take(editor, Input.UsesController);
+
+    void ILauncherSettingsHost.GiveBackKeyboard(IKeyboardTarget editor) => SettingsKeyboard.GiveBack(editor);
+
+    /// <summary>A keyboard in the layout last chosen, whose choice of another layout is saved.</summary>
+    private SharedKeyboard CreateSharedKeyboard() => new(
+        () => KeyboardLayout.Find(_settings.Current.KeyboardLayout),
+        layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
+        _time,
+        action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
 
     void ILauncherSettingsHost.Warn(string message) => Toast.Show(HealthSeverity.Warning, message);
 

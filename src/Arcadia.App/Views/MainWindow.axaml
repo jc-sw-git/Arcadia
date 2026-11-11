@@ -815,7 +815,9 @@
             </Button>
             <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsKeyboardOut}">
               <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
-                <views:OnScreenKeyboardView DataContext="{Binding Keyboard}" HorizontalAlignment="Center" />
+                <!-- The keys and the hits' places come from the window, not from the search: so their controls stay while
+                     no search is open, and the next search only binds them (#477). -->
+                <views:OnScreenKeyboardView Name="SearchKeyboard" DataContext="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SearchKeyboard.Keyboard}" HorizontalAlignment="Center" />
               </Border>
             </ctl:RevealPanel>
           </StackPanel>
@@ -838,8 +840,8 @@
             </Grid>
             <Panel Grid.Row="1" Name="SearchViewport" Background="Transparent" ClipToBounds="True" IsVisible="{Binding HasHits}">
               <Canvas>
-                <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding Slots}">
-                  <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots). -->
+                <ItemsControl Name="SearchResults" Classes="hits" Classes.grid="{Binding !IsKeyboardOut}" ItemsSource="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SearchSlots}">
+                  <!-- A slot keeps its tile's controls when it shows another hit (SearchViewModel.Slots), also in the next search. -->
                   <ItemsControl.Styles>
                     <Style Selector="ItemsControl#SearchResults > ContentPresenter" x:DataType="vm:TileSlotViewModel">
                       <Setter Property="IsVisible" Value="{Binding IsShown}" />
@@ -1633,7 +1635,8 @@
           <ctl:RevealPanel Grid.Row="1" Classes="keyboardDrawer bleed" Classes.out="{Binding Settings?.Selected.IsEditing, TargetNullValue=False}" VerticalAlignment="Bottom"
                            IsVisible="{Binding Settings?.Selected.IsEditing, TargetNullValue=False}">
             <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
-              <views:OnScreenKeyboardView DataContext="{Binding Settings?.Selected.Editor?.Keyboard}" HorizontalAlignment="Center" />
+              <!-- From the window, not from the text being written: its controls stay from one text to the next (#477). -->
+              <views:OnScreenKeyboardView Name="SettingsKeyboard" DataContext="{Binding SettingsKeyboard.Keyboard}" HorizontalAlignment="Center" />
             </Border>
           </ctl:RevealPanel>
 

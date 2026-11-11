@@ -430,6 +430,7 @@ public sealed class MouseModeHost : IDisposable
             {
                 // A held A must not open the details while the controller is a mouse.
                 _viewModel.CancelHold();
+                BuildKeyboardAhead();
                 if (gameInFront)
                 {
                     ForegroundGuard.CentrePointerOnForeground();
@@ -481,17 +482,10 @@ public sealed class MouseModeHost : IDisposable
 
             var settings = _settings.Current;
             var layout = KeyboardLayout.Find(settings.KeyboardLayout);
-            if (_keyboard is null || _keyboardWindow is null)
-            {
-                var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked);
-                _keyboard = new OnScreenKeyboardViewModel(layout, target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
-                _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
-                _keyboardWindow = new MouseModeKeyboardWindow { DataContext = _keyboard };
-            }
-
-            var atTop = _keyboardWindow.Open(settings.MouseMode.KeyboardAtTop);
-            _keyboard.Open(layout, atTop);
-            _openKeyboard = _keyboard;
+            var (keyboard, window) = KeyboardAndWindow();
+            var atTop = window.Open(settings.MouseMode.KeyboardAtTop);
+            keyboard.Open(layout, atTop);
+            _openKeyboard = keyboard;
             _gameWasInFront = GameInFront();
             AppLog.Write($"Bildschirmtastatur offen ({(atTop ? "oben" : "unten")}, {layout.Code})");
         }
@@ -500,6 +494,50 @@ public sealed class MouseModeHost : IDisposable
             AppErrors.Report(ex, "Bildschirmtastatur öffnen");
             CloseKeyboard("Fehler beim Öffnen");
         }
+    }
+
+    /// <summary>The keyboard over other windows and its window, made on first use and kept for the session.</summary>
+    private (OnScreenKeyboardViewModel Keyboard, MouseModeKeyboardWindow Window) KeyboardAndWindow()
+    {
+        if (_keyboard is null || _keyboardWindow is null)
+        {
+            var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked);
+            _keyboard = new OnScreenKeyboardViewModel(
+                KeyboardLayout.Find(_settings.Current.KeyboardLayout), target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
+            _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
+            _keyboardWindow = new MouseModeKeyboardWindow { DataContext = _keyboard };
+        }
+
+        return (_keyboard, _keyboardWindow);
+    }
+
+    /// <summary>
+    /// The mouse mode came on for the first time: its keyboard's keys are built now, in the background, so the first Y
+    /// doesn't wait half a second for them (#477). Not at Arcadia's start: many sessions never use the mouse mode.
+    /// </summary>
+    private void BuildKeyboardAhead()
+    {
+        if (_keyboardWindow is not null)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                try
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    KeyboardAndWindow().Window.BuildKeys();
+                    AppLog.Write($"Tastatur des Mausmodus in {watch.ElapsedMilliseconds} ms vorbereitet");
+                }
+                catch (Exception ex)
+                {
+                    // Only a head start: Y builds the keyboard itself.
+                    AppErrors.Report(ex, "Tastatur des Mausmodus vorbereiten");
+                }
+            },
+            DispatcherPriority.Background);
     }
 
     /// <summary>Closes the keyboard; the mouse mode goes on with the buttons as the mouse's.</summary>

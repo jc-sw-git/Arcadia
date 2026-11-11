@@ -50,9 +50,9 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   `Views/FirstRunView`.
 - `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
   hits shown in `TileSlotViewModel` places too).
-- `Keyboard/`: the one on-screen keyboard (#110): `OnScreenKeyboardViewModel` (drawn by `Views/OnScreenKeyboardView`)
-  with `BoardKeyViewModel`, `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types
-  into; its user greys out or leaves out keys, `BoardKeyState`) and `WindowInFrontTarget` (the mouse mode's).
+- `Keyboard/` (#110): `OnScreenKeyboardViewModel` (view `Views/OnScreenKeyboardView`), `BoardKeyViewModel`,
+  `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types into; its user greys out or
+  leaves out keys, `BoardKeyState`), `WindowInFrontTarget` (the mouse mode's), `SharedKeyboard` (taken in turn, #477).
 - `Messages/` (#433): `RecentMessages` (the last 50 toasts and status changes, any thread), `StatusMessageChanges`
   (the header's status messages turned into entries; fed by `StatusBarViewModel`), `ILogFiles`/`LogFiles` (the three
   logs by `LogKind`, never a path). `ToastViewModel.Show` takes a level and records every toast; the group "LOGGING" is

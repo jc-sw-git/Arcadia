@@ -180,6 +180,56 @@ public partial class MainWindow : Window
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _viewModel.LauncherTabs.PropertyChanged += OnTabsPropertyChanged;
             _viewModel.Library.PropertyChanged += OnLibraryPropertyChanged;
+            BuildKeyboardsOnceLibraryShows(_viewModel.Session);
+        }
+    }
+
+    /// <summary>
+    /// Builds the on-screen keyboards of the search and of the settings' texts while nobody waits for them (#477): right
+    /// after the first frame of the library (or the first start's page), so Arcadia still shows up as fast and the first X
+    /// finds its keyboard built. Building one on demand took about half a second, nearly all of it its keys' controls. One
+    /// keyboard per job, so a press in between is handled; one right after the start may wait for a keyboard being built.
+    /// </summary>
+    private void BuildKeyboardsOnceLibraryShows(LibrarySession session)
+    {
+        if (!session.IsLoading)
+        {
+            RequestAnimationFrame(_ =>
+            {
+                Dispatcher.UIThread.Post(() => BuildKeyboard(SearchKeyboard, "der Suche"), DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(() => BuildKeyboard(SettingsKeyboard, "der Einstellungen"), DispatcherPriority.Background);
+            });
+            return;
+        }
+
+        void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(LibrarySession.IsLoading) && !session.IsLoading)
+            {
+                session.PropertyChanged -= OnSessionChanged;
+                BuildKeyboardsOnceLibraryShows(session);
+            }
+        }
+
+        session.PropertyChanged += OnSessionChanged;
+    }
+
+    /// <summary>
+    /// Measuring a keyboard builds its keys' controls although the page hiding it isn't shown: the layout skips what is
+    /// hidden, a measure called on a visible control doesn't.
+    /// </summary>
+    private static void BuildKeyboard(OnScreenKeyboardView keyboard, string whose)
+    {
+        try
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            keyboard.Measure(Size.Infinity);
+            AppLog.Write($"Tastatur {whose} in {watch.ElapsedMilliseconds} ms vorbereitet");
+        }
+        catch (Exception ex)
+        {
+            // Only a head start: the page builds the keyboard itself when it shows it.
+            AppErrors.Report(ex, $"Tastatur {whose} vorbereiten");
         }
     }
 

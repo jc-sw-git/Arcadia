@@ -1,17 +1,17 @@
 # #477 Opening the search from the library takes half a second or more
 
-**Status:** Automated: T477-1, T477-2, T477-5, T477-6, T477-9 · QE: T477-3, T477-7 · Open for the owner: T477-4, T477-8, T477-10
+**Status:** Automated: T477-1, T477-2, T477-5, T477-6, T477-9 · QE: T477-3, T477-7 · Open for the owner: none (T477-4, T477-8, T477-10 passed by the owner)
 
 - [x] **T477-1** Library with 1,000 games, X opens the search, a term is typed, B twice closes it, X opens it again and a new term is typed: the on-screen keyboard's keys and the hits are the same controls as in the first search, bound to the new hits · E2E: yes
 - [x] **T477-2** A search opened again starts as a new one: nothing typed, the keyboard out (controller) with the focus on its first key and shift off, its keys type into the new search · E2E: yes
 - [x] **T477-3** Release build with `--demo --demo-games 1000`, F and Esc seven times: every opening after the first logs `Bild: Search` under 50 ms · E2E: no (real rendering and the log's frame times; the window test checks the kept controls instead)
-- [ ] **T477-4** **Owner:** own library (700+ games), controller: start Arcadia, wait a few seconds, then X from the library several times, also after a game was started from the search: the search appears without a visible pause, the first time too; `arcadia.log` has `Bild: Search nach` under 50 ms from the second opening on · E2E: no (owner's PC and library, real frame times)
+- [x] **T477-4** **Owner:** own library (700+ games), controller: start Arcadia, wait a few seconds, then X from the library several times, also after a game was started from the search: the search appears without a visible pause, the first time too; `arcadia.log` has `Bild: Search nach` under 50 ms from the second opening on · E2E: no (owner's PC and library, real frame times)
 - [x] **T477-5** Once the library shows, the search's keyboard is built before the first X: its keys exist while the search is closed, and the first search shows those same controls · E2E: yes
 - [x] **T477-6** A text of the settings (launcher name) written, dropped with B and written again: the keyboard's keys are the same controls, the focus on the first key, shift off, the text the launcher's name again, and the keys type into the new text · E2E: yes
 - [x] **T477-7** Release build with `--demo --demo-games 1000`, a few seconds after the start F: `arcadia.log` has both lines `Tastatur … vorbereitet` after the line `Bibliothek:`, and the first `Bild: Search` is under 150 ms · E2E: no (real rendering and start-up timing)
-- [ ] **T477-8** **Owner:** controller, right after the start: the library shows as fast as before; a few seconds later the settings, a launcher, "Name": the keyboard comes without a visible pause, also the second time · E2E: no (owner's PC, real timing)
+- [x] **T477-8** **Owner:** controller, right after the start: the library shows as fast as before; a few seconds later the settings, a launcher, "Name": the keyboard comes without a visible pause, also the second time · E2E: no (owner's PC, real timing)
 - [x] **T477-9** The mouse mode's keyboard window builds its keys before it is shown, and its first opening shows those same controls · E2E: yes
-- [ ] **T477-10** **Owner:** controller, Arcadia started, mouse mode on (Back + Start), a few seconds later Steam's sign-in page or another text field, Y: the keyboard comes without a visible pause the first time; `arcadia.log` has `Tastatur des Mausmodus in … ms vorbereitet` after `Mausmodus an` · E2E: no (Windows mouse mode, real window in front)
+- [x] **T477-10** **Owner:** controller, Arcadia started, mouse mode on (Back + Start), a few seconds later Steam's sign-in page or another text field, Y: the keyboard comes without a visible pause the first time; `arcadia.log` has `Tastatur des Mausmodus in … ms vorbereitet` after `Mausmodus an` · E2E: no (Windows mouse mode, real window in front)
 
 History:
 
@@ -29,3 +29,4 @@ History:
 | T477-5, T477-6 | 2026-11-11 | Claude | PR branch, Release, Linux cloud container | ✅ | – |
 | T477-9 (before the fix) | 2026-11-11 | Claude | PR branch without measuring the keyboard in `BuildKeys`, Release, Linux cloud container | ❌ no keys before the window shows | fixed |
 | T477-9 | 2026-11-11 | Claude | PR branch, Release, Linux cloud container | ✅ 63 keys built before showing (~730 ms headless), the same after opening | – |
+| T477-4, T477-8, T477-10 | 2026-11-11 | owner | Windows, his PC, real library and controller | ✅ approved for merge | – |

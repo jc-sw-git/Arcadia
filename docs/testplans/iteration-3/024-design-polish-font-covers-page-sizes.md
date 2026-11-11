@@ -5,7 +5,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 (key C). Acceptance tests use `ArcadiaDriver` (demo or fixture libraries with made-up games), window tests
 `ArcadiaWindow` at 1920 × 1080.
 
-**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (its finding is Review finding 2) · Open for the owner: T24-5, T24-15, T24-16
+**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (its finding is Review finding 2) · Owner: T24-5, T24-15, T24-16
 
 **Page sizes**
 
@@ -20,7 +20,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
       24 without the player changing anything. · E2E: yes
 - [x] **T24-4** Choose 64 in "Ansicht", restart: 64 is still marked and used. With 128 preferred, a tab with 30 games
       shows all 30 on one page (64 effective), a tab with 200 games 128; the saved preference stays 128. · E2E: yes
-- [ ] **T24-5** **Owner:** 1,000 demo games, 128 per page, Release build: start to usable library < 2 s, focus move between tiles
+- [x] **T24-5** **Owner:** 1,000 demo games, 128 per page, Release build: start to usable library < 2 s, focus move between tiles
       < 50 ms (`Bild:` lines in `arcadia.log`), paging forward and back binds the covers without a visible stall
       (`LibrarySpeedTests` extended to 128). · E2E: yes
 
@@ -64,11 +64,11 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 
 **Owner**
 
-- [ ] **T24-15** **Owner:** Windows, Release build, real library: library, detail page, search, settings, on-screen
+- [x] **T24-15** **Owner:** Windows, Release build, real library: library, detail page, search, settings, on-screen
       keyboard and the mouse-mode legend show Figtree, sharp at the PC's resolution and scaling; no empty box anywhere,
       also not in real game titles (umlauts, ™, ®, titles in other scripts if any). · E2E: no (real Windows font
       rendering, real library)
-- [ ] **T24-16** **Owner:** with the Steam Controller: footers, preview, search chip and the on-screen keyboard show ⧉
+- [x] **T24-16** **Owner:** with the Steam Controller: footers, preview, search chip and the on-screen keyboard show ⧉
       and ≡ as the new icons, as high as the capitals beside them; after a key press keys show, after a button press
       the icons come back. · E2E: no (real Steam Controller)
 
@@ -93,3 +93,4 @@ History:
 | T24-1 to T24-13 | 2026-11-04 | Claude | after Review findings 1 to 3: Linux container, Release build, `tools/ci/run-tests.sh 4` (shards from copies, as CI); search grid test now also checks hits and launcher names clear of the fades; T24-9 skips only log calls | ✅ 607 of 607 App tests, Core and Pan green | – |
 | T24-1 to T24-13 | 2026-11-11 | Claude | rebased on `main`, after the owner's finding that the search grid no longer says more hits follow: LT/RT buttons beside the grid (`SearchViewTests` T12-16 checks where they show); Linux container, Release, `tools/ci/run-tests.sh 4` | ✅ 624 of 624 App tests, Core and Pan green | – |
 | – (search opens slowly, owner's finding) | 2026-11-11 | Claude | headless, Release, 750 games in 3 launchers, library → search 6 times, branch against `main` | opening takes 0.4–0.8 s on both, the first opening 1.2–1.9 s here against 1.1 s on `main` (noisy) | not caused by this PR; own issue proposed to the owner |
+| T24-5, T24-15, T24-16 | 2026-11-11 | owner | Windows, his PC, real library and Steam Controller | ✅ approved for merge; found: no hint in the search grid that LT/RT turn on (fixed in this PR), and, existing before it, the grid stopping at its ends, LT/RT not repeating while held, a slow switch from the library to the search | own issues for the ones that existed before |

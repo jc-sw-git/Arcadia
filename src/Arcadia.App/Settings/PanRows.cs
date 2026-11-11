@@ -690,8 +690,9 @@ public sealed class PanRows
         [
             new InfoText(AppTexts.PanMainInfo4),
             .. ModeCards,
-            new InfoNote(AppTexts.PanMainInfo5, HealthSeverity.Info) { Title = AppTexts.PanFirmwareUpdatesHeading },
         ]),
+        // Firmware updates concern every controller Pan virtualises, not only the Steam Controller.
+        new InfoNote(AppTexts.PanMainInfo5, HealthSeverity.Info) { Title = AppTexts.PanFirmwareUpdatesHeading },
         new InfoSection(AppTexts.PanWhatItNeeds,
         [
             new InfoText(AppTexts.PanMainInfoDrivers),

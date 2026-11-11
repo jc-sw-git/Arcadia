@@ -20,9 +20,13 @@ public static class PanExitCodes
     /// <summary><c>--uninstall --remove-drivers</c> left a driver.</summary>
     public const int DriversNotRemoved = 7;
 
-    /// <summary>Exit 9 that Arcadia didn't cause (#413): Pan waited in vain or the pipe was taken; nothing was changed.</summary>
+    /// <summary>Exit 9 of a driver install that Arcadia didn't cause (#413): Pan waited in vain or the pipe was taken; nothing was changed.</summary>
     public const string HandOverEndedText =
         "Pan hat die Installation beendet, bevor Arcadia die Installer übergeben konnte. Es wurde nichts verändert – bitte noch einmal „Installieren“ wählen.";
+
+    /// <summary>Exit 9 of a restore that Arcadia didn't cause (#471): Pan waited in vain for the go; nothing was restored.</summary>
+    public const string RestoreHandOverEndedText =
+        "Pan hat die Wiederherstellung beendet, bevor Arcadia sie freigeben konnte. Es wurde nichts verändert – bitte noch einmal „Controller wiederherstellen“ wählen.";
 
     /// <summary>Today's message for each exit code other than 0.</summary>
     public static Exception ErrorFor(int exitCode, string command) => exitCode switch
@@ -33,7 +37,7 @@ public static class PanExitCodes
         HidHideFailed => new InvalidOperationException($"Pan ist eingerichtet, HidHide aber nicht – Details stehen in {PanPaths.LogPath}. HidHide lässt sich auch selbst installieren: {HidHideRelease.ManualInstallUrl}"),
         DriversNotRemoved => new InvalidOperationException($"Pan ist entfernt, aber nicht jeder Treiber – Details stehen in {PanPaths.LogPath}; der Rest lässt sich unter Windows-Einstellungen → Apps entfernen."),
         // When Arcadia aborted, it shows its own failed step's message instead.
-        InstallHandOver.EndedExitCode => new InvalidOperationException(HandOverEndedText),
+        InstallHandOver.EndedExitCode => new InvalidOperationException(command == "--restore" ? RestoreHandOverEndedText : HandOverEndedText),
         _ => new InvalidOperationException($"Pan {command} meldete Fehler {exitCode} – Details stehen in {PanPaths.LogPath}."),
     };
 }

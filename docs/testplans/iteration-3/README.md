@@ -29,9 +29,10 @@ its file.
 | [434](434-pan-service-test-race.md) | #434 | Pan service test fails when a Pan process exits while it is checked | none (test race, automated test only) |
 | [457](457-flaky-windows-pipe-and-countdown-tests.md) | #457 | Pan pipe test T413-25 fails on Windows CI now and then | none (test races in T413-25 and T340-1, automated tests only) |
 | [459](459-log-row-test-t433-21-fails-on-windows-ci.md) | #459 | Log-row test T433-21 fails on Windows CI now and then | none (test race in T433-21, automated test only) |
-| [470](470-debugger-stops-at-restore-controllers.md) | #470 | Debugger stops Arcadia at "Controller wiederherstellen" while a virtual Xbox pad is plugged in | T470-1, T470-2 |
 | [465](465-filter-library-by-installed-state-and-type.md) | #465 | Filter the library by installed state and type | T465-1 to T465-14 |
 | [382](382-smooth-out-the-controller-setup-after-an-update.md) | #382 | Smooth out the controller setup after an update: one restart row, no wrong hints, no extra puck restarts | T382-1 to T382-34 |
+| [470](470-debugger-stops-at-restore-controllers.md) | #470 | Debugger stops Arcadia at "Controller wiederherstellen" while a virtual Xbox pad is plugged in | T470-1, T470-2 |
+| [471](471-restore-ends-emulation-despite-declined-prompt.md) | #471 | "Controller wiederherstellen" ends the emulation even when the Windows prompt is declined | T471-1 to T471-4 |
 
 ## Release candidate tests (restart or installation)
 

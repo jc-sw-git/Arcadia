@@ -230,45 +230,96 @@ public sealed class SteamControllerXboxPadTests
         Assert.True(arcadia.XboxPad.IsPlugged);
     }
 
-    /// <summary>T366-1 (automated part): "Controller wiederherstellen" while the emulation runs ends it first and brings it back.</summary>
+    /// <summary>
+    /// T366-1, T471-2 (automated part): "Controller wiederherstellen" while the emulation runs keeps it through the
+    /// Windows prompt, ends it once the prompt was accepted and brings it back after the restore.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T366-1")]
-    public async Task Restoring_the_controllers_while_the_pad_runs_ends_the_emulation_first_and_brings_it_back()
+    [Trait("TestCase", "T471-2")]
+    public async Task Restoring_the_controllers_while_the_pad_runs_ends_the_emulation_after_the_prompt_and_brings_it_back()
     {
-        var steam = new FakeSteam();
-        using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
-        arcadia.Sdl.Plug(KnownPads.SteamController);
-        arcadia.StartControllers();
-        arcadia.IsArcadiaInFront = false;
-        await arcadia.TickSteamControllerAsync();
-        Assert.True(arcadia.XboxPad.IsPlugged);
+        var (arcadia, steam, controller) = await StartWithPadAndRestoreRowAsync();
+        using var _ = arcadia;
         var started = arcadia.Pan.Started.Count;
-
-        arcadia.IsArcadiaInFront = true;
-        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
-        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan-restore"), "the row „Controller wiederherstellen“");
         var prompt = new TaskCompletionSource();
+        var running = new TaskCompletionSource();
         steam.PanPromptUp = prompt;
+        steam.RestoreRunning = running;
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan-restore")).Activate();
         await arcadia.WaitUntilAsync(() => steam.Restores == 1, "the Windows prompt of the restore");
 
+        // While the prompt is up, the game keeps its controller (#471).
+        await TickInBackgroundAsync(arcadia);
+        Assert.Equal(0, arcadia.Pan.LetGos);
+        Assert.True(arcadia.XboxPad.IsPlugged);
+
         // While Pan's --restore runs beside the service, Arcadia has let go of Pan: no emulation, no new one.
-        Assert.Equal(1, arcadia.Pan.LetGos);
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.Pan.LetGos == 1, "letting go of Pan after the prompt");
         Assert.Equal(ControllerSupportService.RestoringReason, arcadia.Pan.Unavailable());
-        arcadia.IsArcadiaInFront = false;
-        await arcadia.TickSteamControllerAsync();
+        await TickInBackgroundAsync(arcadia);
         Assert.False(arcadia.XboxPad.IsPlugged);
         Assert.Equal(started, arcadia.Pan.Started.Count);
 
         var restored = false;
         arcadia.ControllerSupport.ControllersRestored += (_, _) => restored = true;
-        prompt.SetResult();
+        running.SetResult();
         await arcadia.WaitUntilAsync(() => restored, "the restore");
         await arcadia.TickSteamControllerAsync();
         Assert.True(arcadia.XboxPad.IsPlugged);
         Assert.Null(arcadia.ControllerSupport.LastError);
         Assert.Null(arcadia.Pan.Unavailable());
+    }
+
+    /// <summary>T471-1 (automated part): a declined prompt of "Controller wiederherstellen" leaves the running emulation alone.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T471-1")]
+    public async Task A_declined_restore_prompt_keeps_the_emulation_running()
+    {
+        var (arcadia, steam, controller) = await StartWithPadAndRestoreRowAsync();
+        using var _ = arcadia;
+        var started = arcadia.Pan.Started.Count;
+        var prompt = new TaskCompletionSource();
+        steam.PanPromptUp = prompt;
+        steam.PromptConfirmed = false;
+        Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "pan-restore")).Activate();
+        await arcadia.WaitUntilAsync(() => steam.Restores == 1, "the Windows prompt of the restore");
+
+        prompt.SetResult();
+        await arcadia.WaitUntilAsync(() => arcadia.ControllerSupport.LastError is not null, "the declined prompt's message");
+        await TickInBackgroundAsync(arcadia);
+
+        Assert.Contains("abgelehnt", arcadia.ControllerSupport.LastError);
+        Assert.Equal(0, arcadia.Pan.LetGos);
+        Assert.Null(arcadia.Pan.Unavailable());
+        Assert.True(arcadia.XboxPad.IsPlugged);
+        Assert.Equal(started, arcadia.Pan.Started.Count);
+    }
+
+    /// <summary>Arcadia in the background with the Steam Controller's pad plugged in, the settings open at the controller rows.</summary>
+    private static async Task<(ArcadiaDriver Arcadia, FakeSteam Steam, ControllerSettingsViewModel Controller)> StartWithPadAndRestoreRowAsync()
+    {
+        var steam = new FakeSteam();
+        var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
+        arcadia.Sdl.Plug(KnownPads.SteamController);
+        arcadia.StartControllers();
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        Assert.True(arcadia.XboxPad.IsPlugged);
+
+        arcadia.IsArcadiaInFront = true;
+        arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
+        var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "pan-restore"), "the row „Controller wiederherstellen“");
+        return (arcadia, steam, controller);
+    }
+
+    private static async Task TickInBackgroundAsync(ArcadiaDriver arcadia)
+    {
+        arcadia.IsArcadiaInFront = false;
+        await arcadia.TickSteamControllerAsync();
+        arcadia.IsArcadiaInFront = true;
     }
 
     /// <summary>T213-2, owner 2026-10-26: View held alone reaches the game as held, also while it brings Arcadia back.</summary>

@@ -674,7 +674,7 @@ public sealed class ControllerSupportService
     /// </summary>
     public async Task<bool> RestoreAfterOldPanAsync(CancellationToken cancellationToken = default)
     {
-        if (!await _platform.RestoreControllersAsync(cancellationToken))
+        if (!await _platform.RestoreControllersAsync(_ => Task.CompletedTask, cancellationToken))
         {
             Log?.Invoke("Wiederherstellung nach dem alten Pan in der Windows-Abfrage abgelehnt");
             return false;
@@ -686,22 +686,15 @@ public sealed class ControllerSupportService
 
     /// <summary>
     /// "Controller wiederherstellen": Pan's <c>--restore</c>, elevated, for when the service hangs (#243) or a model
-    /// stays hidden. Arcadia's emulation ends and its client lets go first, as for an update, and comes back afterwards
-    /// (#366, see <see cref="IsRestoringControllers"/>).
+    /// stays hidden. Only once the Windows prompt was accepted Arcadia's emulation ends and its client lets go, as for an
+    /// update, and comes back afterwards (#366, #471, see <see cref="IsRestoringControllers"/>); declined, nothing changes.
     /// </summary>
     public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>
         RunBusyAsync("Controller werden wiederhergestellt – bitte die Windows-Abfrage bestätigen …", async token =>
         {
-            IsRestoringControllers = true;
-            OnChanged();
             try
             {
-                if (LetGoOfPan is { } letGo)
-                {
-                    await letGo(token);
-                }
-
-                if (!await _platform.RestoreControllersAsync(token))
+                if (!await _platform.RestoreControllersAsync(LetGoForRestoreAsync, token))
                 {
                     throw new InvalidOperationException("Die Wiederherstellung wurde in der Windows-Abfrage abgelehnt.");
                 }
@@ -715,6 +708,16 @@ public sealed class ControllerSupportService
             Log?.Invoke("Controller über Pan wiederhergestellt");
             ControllersRestored?.Invoke(this, EventArgs.Empty);
         }, cancellationToken);
+
+    private async Task LetGoForRestoreAsync(CancellationToken cancellationToken)
+    {
+        IsRestoringControllers = true;
+        OnChanged();
+        if (LetGoOfPan is { } letGo)
+        {
+            await letGo(cancellationToken);
+        }
+    }
 
     /// <summary>"Controller wiederherstellen" succeeded: Pan ended the emulation on purpose, so the pad may count afresh.</summary>
     public event EventHandler? ControllersRestored;

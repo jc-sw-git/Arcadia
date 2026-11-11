@@ -13,7 +13,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
   installed, downloads the installers into the run's folder (usbip-win2 only when missing or too old, `VerifiedDownload`,
   GitHub's SHA-256; HidHide when missing or older than supported, pinned in `HidHideRelease`: 1.5.230, URL, SHA-256,
   size), each step with its own timeout, and hands them over.
-- Hand-over (`InstallHandOver`, `InstallHandOverPipe`): elevated Pan secures its data folder, then waits for one message
+- Hand-over (`InstallHandOver`, `HandOverPipe`): elevated Pan secures its data folder, then waits for one message
   on the pipe `Arcadia.Pan.Install.<id>` (first instance, DACL: Arcadia's user only, read/write). Arcadia checks that
   the pipe's server is the Pan it started; Pan hears only `<pid>`, and refuses a `<pid>` that started after itself.
   `go` (UTF-8, ≤ 4 KB, one `key=value` per line: `usbip=`, `usbip-sha256=`, `hidhide=`) must name exactly the installers
@@ -64,11 +64,15 @@ How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](p
 
 ## Restore, missing parts, exit codes
 
-- "Controller wiederherstellen" (settings, while Pan is installed): `Pan.exe --restore` elevated, for the case the
-  service itself hangs or a model stays hidden: undoes the journal in a second process, beside a running service.
-  Before it Arcadia lets go of Pan as for an update (`WhyPanIsLeftAlone`, `PanClient.LetGoAsync`: a hide under way
-  gets its answer first), so the service journals no new hide the restore could overwrite; the service's teardown
-  only shows and removes, as the restore does. The Xbox pad comes back afterwards, also after Arcadia gave up on
+- "Controller wiederherstellen" (settings, while Pan is installed): `Pan.exe --restore --run <id> --client <pid>`
+  elevated (`PanSetup.RestoreAsync`, `RestoreCommand`), for the case the service itself hangs or a model stays hidden:
+  undoes the journal in a second process, beside a running service. The prompt comes first: Pan waits on the pipe
+  `Arcadia.Pan.Restore.<id>` (as the install's: `HandOverPipe`, Arcadia's server check) for exactly `go` (`RestoreHandOver`).
+  Only then Arcadia lets go of Pan as for an update (`WhyPanIsLeftAlone`, `PanClient.LetGoAsync`: a hide under way
+  gets its answer first; Pan ends the emulation on it), so the service journals no new hide the restore could
+  overwrite; the service's teardown only shows and removes, as the restore does. Declined: no Pan starts, the
+  emulation keeps running. `abort` (a failed let-go), Arcadia's end, a broken pipe or no `go` within
+  `PanTimeouts.RestoreHandOver` (5 min) end Pan with exit 9, nothing restored. By hand, without `--run`, it restores at once. The Xbox pad comes back afterwards, also after Arcadia gave up on
   VIIPER, and the pad Pan ended doesn't count as a VIIPER failure.
 - Missing parts (`EmulationParts`): usbip-win2, VIIPER, Pan and HidHide each get a warning row with "Installieren" (an
   old HidHide: "Aktualisieren"; a newer major: no fix); with every part missing the setting itself offers "Treiber
@@ -80,4 +84,4 @@ How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](p
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
   incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and
   retries at every start; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,
-  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated, 9 the install ended before the hand-over.
+  7 a driver stayed (Pan retries at the next start, or gave up), 8 unelevated, 9 the install or restore ended before the hand-over.

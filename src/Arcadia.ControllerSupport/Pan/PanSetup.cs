@@ -11,7 +11,8 @@ namespace Arcadia.ControllerSupport.Pan;
 /// Installs, updates, removes and restores with Pan.exe (#243). Arcadia ships Pan in <c>Pan\Pan.exe</c> beside its
 /// own exe (the user's folder, writable by anyone who can write there); every command runs the bundled exe elevated,
 /// with one UAC prompt, and <c>--install</c> gets the SHA-256 Arcadia computed so the copy in Program Files is checked
-/// against it after the copy. A driver install's prompt comes first, its installers after it (#413, <see cref="StartInstallAsync"/>).
+/// against it after the copy. A driver install's prompt comes first, its installers after it (#413, <see cref="StartInstallAsync"/>);
+/// a restore's prompt comes before Arcadia lets go of Pan (#471, <see cref="RestoreAsync"/>).
 /// </summary>
 [SupportedOSPlatform("windows")]
 public static class PanSetup
@@ -85,8 +86,51 @@ public static class PanSetup
     public static Task<bool> UninstallAsync(bool removeDrivers, CancellationToken cancellationToken) =>
         RunElevatedAsync(removeDrivers ? ["--uninstall", "--remove-drivers"] : ["--uninstall"], PanTimeouts.Uninstall, cancellationToken);
 
-    /// <summary><c>Pan.exe --restore</c> elevated: the manual way out when the service hangs; undoes what its journal lists.</summary>
-    public static Task<bool> RestoreAsync(CancellationToken cancellationToken) => RunElevatedAsync(["--restore"], PanTimeouts.Restore, cancellationToken);
+    /// <summary>
+    /// <c>Pan.exe --restore --run …</c> elevated: the manual way out when the service hangs; undoes what its journal
+    /// lists. Pan waits for Arcadia's <c>go</c> (#471): <paramref name="afterPrompt"/> runs only once the Windows prompt
+    /// was accepted, and Pan restores only after it. A failure in between sends <c>abort</c>: nothing is restored.
+    /// </summary>
+    /// <returns>False if the user declined the prompt; <paramref name="afterPrompt"/> didn't run then.</returns>
+    public static async Task<bool> RestoreAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken)
+    {
+        const string command = "--restore";
+        var run = new RestoreRun(InstallRun.NewId(), Environment.ProcessId);
+        var process = StartElevated([command, .. run.ToArguments()]);
+        if (process is null)
+        {
+            return false;
+        }
+
+        PanHandOver handOver;
+        try
+        {
+            handOver = await PanHandOver.ConnectAsync(process, RestoreHandOver.PipeName(run.Id), command, "die Wiederherstellung", cancellationToken);
+        }
+        catch
+        {
+            process.Dispose();
+            throw;
+        }
+
+        await using (handOver)
+        {
+            await afterPrompt(cancellationToken);
+            await handOver.SendAsync(RestoreHandOver.Go(), cancellationToken);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(PanTimeouts.Restore);
+            try
+            {
+                await handOver.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new System.TimeoutException($"Pan {command} hat nach {PanTimeouts.Restore.TotalMinutes:0} Minuten nicht geantwortet.");
+            }
+        }
+
+        return true;
+    }
 
     private static async Task<bool> RunElevatedAsync(IReadOnlyList<string> arguments, TimeSpan wait, CancellationToken cancellationToken)
     {

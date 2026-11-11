@@ -54,7 +54,11 @@ internal sealed class SteamPc(SteamFolder steam) : IControllerSupportPlatform, I
     public Task<string> DownloadHidHideInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress> progress, CancellationToken cancellationToken) =>
         throw new PlatformNotSupportedException();
 
-    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+    public async Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken)
+    {
+        await afterPrompt(cancellationToken);
+        return true;
+    }
 
     public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) => [];
 }

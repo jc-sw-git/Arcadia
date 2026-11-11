@@ -52,8 +52,11 @@ public interface IControllerSupportPlatform
     Task<bool> UpdatePanAsync(CancellationToken cancellationToken) => Task.FromResult(false);
 
 
-    /// <summary>Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.</summary>
-    Task<bool> RestoreControllersAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Pan's <c>--restore</c>: gives the real controllers back by hand; false if the user declined the Windows prompt.
+    /// <paramref name="afterPrompt"/> runs once the prompt was accepted, before Pan restores anything (#471).
+    /// </summary>
+    Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken);
 
     /// <summary>Problems with what Arcadia's own pad depends on: the usbip driver and Pan (#243).</summary>
     IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now);
@@ -153,8 +156,8 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
 
     public bool SteamControllerPlugged => OperatingSystem.IsWindows() && Copy.WindowsPuck.Present() is not null;
 
-    public Task<bool> RestoreControllersAsync(CancellationToken cancellationToken) =>
-        OperatingSystem.IsWindows() ? PanSetup.RestoreAsync(cancellationToken) : Task.FromResult(false);
+    public Task<bool> RestoreControllersAsync(Func<CancellationToken, Task> afterPrompt, CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? PanSetup.RestoreAsync(afterPrompt, cancellationToken) : Task.FromResult(false);
 
     public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now)
     {

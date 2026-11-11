@@ -55,19 +55,21 @@ public sealed class HeldButtonsTests
         Assert.Equal(KnownLaunchers.Gog.Id, arcadia.SelectedTab!.Launcher.Id);
     }
 
+    /// <summary>The carousel shows no first or last game, so a held RT goes round without stopping.</summary>
     [AvaloniaFact]
-    [Trait("TestCase", "T476-9")]
-    public async Task Held_RT_stops_at_the_detail_pages_last_game_and_a_fresh_press_goes_round()
+    [Trait("TestCase", "T476-16")]
+    public async Task Held_RT_turns_the_detail_page_round_past_the_last_game_without_stopping()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Hold(UiAction.Accept, PastHoldTime).Press(UiAction.PreviousPage, times: 2);
         Assert.Equal("30 von 31", arcadia.Detail!.PositionText);
 
+        // The press, then repeats at 400, 550, 700 and 850 ms: 31, 1, 2, 3, 4.
         arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.RightTrigger);
-        Assert.Equal("31 von 31", arcadia.Detail.PositionText);
+        Assert.Equal("4 von 31", arcadia.Detail.PositionText);
 
-        arcadia.HoldPad(TimeSpan.FromMilliseconds(100), PadButtons.RightTrigger);
-        Assert.Equal("1 von 31", arcadia.Detail.PositionText);
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.LeftTrigger);
+        Assert.Equal("30 von 31", arcadia.Detail.PositionText);
     }
 
     /// <summary>A ◀ ▶ selector in the settings, as a held D-pad steps it: it stops at the last value, a fresh press wraps.</summary>
@@ -144,8 +146,14 @@ public sealed class HeldButtonsTests
         await arcadia.RescanAsync();
         Assert.EndsWith("von 5", arcadia.Detail!.PositionText);
 
-        arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.RightTrigger);
-        Assert.Equal("5 von 5", arcadia.Detail!.PositionText);
+        // The carousel goes round while held (T476-16): every turn lands on one of the five games left.
+        for (var step = 0; step < 8; step++)
+        {
+            arcadia.HoldPad(TimeSpan.FromMilliseconds(150), PadButtons.RightTrigger, letGo: false);
+            Assert.Matches("^[1-5] von 5$", arcadia.Detail!.PositionText);
+        }
+
+        arcadia.HoldPad(TimeSpan.Zero, PadButtons.RightTrigger);
     }
 
     [AvaloniaFact]

@@ -3,6 +3,7 @@ using Arcadia.App.Filter;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Core.Library;
+using Arcadia.Core.Navigation;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -149,16 +150,16 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         switch (action)
         {
             case UiAction.Up:
-                MoveFocus(-GridColumns);
+                MoveFocus(0, -1);
                 break;
             case UiAction.Down:
-                MoveFocus(GridColumns);
+                MoveFocus(0, 1);
                 break;
             case UiAction.Left:
-                MoveFocus(-1);
+                MoveFocus(-1, 0);
                 break;
             case UiAction.Right:
-                MoveFocus(1);
+                MoveFocus(1, 0);
                 break;
             case UiAction.Accept when FilterHidesAll:
                 // The no-hits message's only button, "Filter ändern".
@@ -182,10 +183,10 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
                 _tabs.Cycle(1);
                 break;
             case UiAction.PreviousPage:
-                GoToPage(_requestedPage - 1);
+                TurnPage(-1);
                 break;
             case UiAction.NextPage:
-                GoToPage(_requestedPage + 1);
+                TurnPage(1);
                 break;
             case UiAction.ViewOptions:
                 OpenViewOptions();
@@ -425,11 +426,24 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         }
     }
 
+    /// <summary>The LT/Q button below the grid.</summary>
     [RelayCommand]
-    private void PreviousPage() => GoToPage(_requestedPage - 1);
+    private void PreviousPage() => TurnPage(-1);
 
+    /// <summary>The RT/E button below the grid.</summary>
     [RelayCommand]
-    private void NextPage() => GoToPage(_requestedPage + 1);
+    private void NextPage() => TurnPage(1);
+
+    /// <summary>LT/RT: the next or previous page, round from the last to the first (#476); a held one stops at the end.</summary>
+    private void TurnPage(int direction)
+    {
+        if (_tabs.SelectedTab is { } tab)
+        {
+            var hits = Shown(tab).Games.Count;
+            var pages = PageWindow.For(hits, PageSizes.Effective(_settings.Current.PreferredPageSize, hits), _requestedPage).PageCount;
+            GoToPage(ListFocus.Cycle(_requestedPage, direction, pages, HeldPress.IsRepeat));
+        }
+    }
 
     private void ChangeView(Func<AppSettings, AppSettings> change)
     {
@@ -457,28 +471,32 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         Refresh(focusIndex: 0);
     }
 
-    private void MoveFocus(int delta)
+    /// <summary>
+    /// A step of the focus through all games of the tab: past a page's edge onto the neighbouring page, past the last
+    /// game round to the first (#476). A held stick or D-pad stops at the page's edge, so it never turns the page
+    /// unnoticed; a fresh press goes on.
+    /// </summary>
+    private void MoveFocus(int columnStep, int rowStep)
     {
-        if (FocusedGame is null || PageGames.Count == 0)
+        if (FocusedGame is null || PageGames.Count == 0 || _tabs.SelectedTab is not { } tab)
         {
             return;
         }
 
-        var index = PageGames.IndexOf(FocusedGame);
-        var target = index + delta;
-
-        // Left/right move through the page in reading order; up/down stop at the edges.
-        if (Math.Abs(delta) == 1)
+        var hits = Shown(tab).Games.Count;
+        var pageSize = PageSizes.Effective(_settings.Current.PreferredPageSize, hits);
+        var pageStart = _requestedPage * pageSize;
+        var index = pageStart + PageGames.IndexOf(FocusedGame);
+        var target = GridFocus.Step(index, hits, pageSize, GridColumns, columnStep, rowStep, HeldPress.IsRepeat);
+        if (target >= pageStart && target < pageStart + PageGames.Count)
         {
-            target = Math.Clamp(target, 0, PageGames.Count - 1);
+            Focus(PageGames[target - pageStart]);
         }
-        else if (target < 0 || target >= PageGames.Count)
+        else if (!HeldPress.IsRepeat)
         {
-            // Moving down from a partial last row lands on the last tile.
-            target = delta > 0 && index / GridColumns < (PageGames.Count - 1) / GridColumns ? PageGames.Count - 1 : index;
+            _requestedPage = target / pageSize;
+            Refresh(focusIndex: target % pageSize);
         }
-
-        Focus(PageGames[target]);
     }
 
     private void Focus(GameTileViewModel tile)

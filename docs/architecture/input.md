@@ -18,7 +18,8 @@ Controller input and the mouse mode. Findings on the controllers: `docs/controll
 
 **Buttons to actions**
 - `GamepadPolls`: polls → presses, repeats and releases, left stick as D-pad, auto-repeat for D-pad, sticks, LB/RB and
-  LT/RT (`ButtonRepeated`, not a press); platform-free, so the acceptance tests use it too.
+  LT/RT (`ButtonRepeated`, not a press), sticks and triggers let go below a lower threshold than they press at;
+  platform-free, so the acceptance tests use it too.
 - `HoldGesture` (tap vs. hold), `RepeatGesture` (held erase), `LatchGesture` (shift: tap or hold), `SoloButtons`
   (View/Menu act alone, not together).
 - `ButtonSymbolSets` (each controller's printing for the neutral button names), `ButtonText` (the buttons in a text),

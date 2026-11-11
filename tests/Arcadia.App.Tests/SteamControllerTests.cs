@@ -80,13 +80,15 @@ public sealed class SteamControllerTests
         var sisrPad = arcadia.Sdl.Plug(KnownPads.SisrXbox360 with { Path = "XInput#2" });
         var steamVirtual = arcadia.Sdl.Plug(KnownPads.SteamVirtual);
         arcadia.StartControllers();
-        var first = arcadia.Main.Library.FocusedGame!.Game;
+        var library = arcadia.Main.Library;
 
+        // At most one step per real pad, none from SISR's pad or Steam's virtual one. (Counted by index: a step left
+        // from the first game goes round to the last since #476.)
         arcadia.PressOn(xbox, B.DPadRight).PressOn(steamController, B.DPadRight);
+        var stepped = library.PageGames.IndexOf(library.FocusedGame!);
+        Assert.InRange(stepped, 1, 2);
         arcadia.PressOn(sisrPad, B.DPadRight).PressOn(steamVirtual, B.DPadRight);
-        arcadia.Press(UiAction.Left).Press(UiAction.Left);
-
-        Assert.Same(first, arcadia.Main.Library.FocusedGame!.Game);
+        Assert.Equal(stepped, library.PageGames.IndexOf(library.FocusedGame!));
         // By device: Pan hid the Xbox pad meanwhile (#238), and SDL, let go of for that, gave every pad a new id.
         Assert.Equal([arcadia.Sdl.IdOf(KnownPads.SteamController), arcadia.Sdl.IdOf(KnownPads.Xbox360)], arcadia.Sdl.OpenPads.Order());
     }

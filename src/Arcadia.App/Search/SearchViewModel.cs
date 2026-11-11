@@ -200,27 +200,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>More hits than fit: LT/RT turn them.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar), nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
+    [NotifyPropertyChangedFor(nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool CanTurn { get; private set; }
 
     /// <summary>The scroll bar runs across below the row of hits beside the keyboard, and down beside the grid without it.</summary>
     public bool ShowsRowScrollBar => CanTurn && IsKeyboardOut;
 
+    /// <summary>
+    /// The scroll bar and the LT/RT buttons beside the grid. The two rows fill it and no row peeks in (#24), so the
+    /// buttons say that more hits lie beyond; as the grid goes round at its ends, both show at every window (#476).
+    /// </summary>
     public bool ShowsGridScrollBar => CanTurn && !IsKeyboardOut;
-
-    // The grid's LT/RT buttons: the two rows fill it and no row peeks in (#24), so they say that more hits lie above or
-    // below; the grid stops at its ends, so each shows only where it can still turn.
-    public bool CanTurnUpInGrid => ShowsGridScrollBar && ScrollStart > 0;
-
-    public bool CanTurnDownInGrid => ShowsGridScrollBar && ScrollStart < ScrollEnd;
 
     // The scroll bar beside the hits: where the window starts, the last place it can start, and how many hits it shows.
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial int ScrollStart { get; private set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial int ScrollEnd { get; private set; }
 
     [ObservableProperty]
@@ -240,7 +236,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar), nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>The keyboard out or in, its layout menu open or not: each gives the buttons other meanings.</summary>
@@ -669,7 +665,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         }
     }
 
-    /// <summary>LT/RT: the next or previous window of hits; the row wraps round, the grid stops at its ends.</summary>
+    /// <summary>LT/RT: the next or previous window of hits, round at the ends.</summary>
     private void Turn(int direction)
     {
         if (_window.CanTurn)
@@ -689,7 +685,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         }
 
         var previous = _window.Start;
-        (_window, _focus) = _window.Move(_focus, columns, rows);
+        (_window, _focus) = _window.Move(_focus, columns, rows, HeldPress.IsRepeat);
         if (_window.Start != previous)
         {
             ShowWindow(previous);

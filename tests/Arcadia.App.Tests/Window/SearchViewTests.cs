@@ -339,7 +339,10 @@ public sealed class SearchViewTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T12-16")]
-    public async Task More_hits_than_fit_the_row_shows_faded_neighbours_and_turns_round_and_the_grid_scrolls_by_two_rows_and_stops_at_its_ends()
+    [Trait("TestCase", "T476-1")]
+    [Trait("TestCase", "T476-6")]
+    [Trait("TestCase", "T476-7")]
+    public async Task More_hits_than_fit_the_row_shows_faded_neighbours_and_turns_round_and_the_grid_turns_by_two_rows_and_round()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(Hollows);
         var main = arcadia.Arcadia.Main;
@@ -378,6 +381,7 @@ public sealed class SearchViewTests
         // The scroll bar below the row: a click at its end scrolls there.
         var rowBar = arcadia.Named<ScrollBar>("HitsRowScrollBar");
         Assert.True(rowBar.IsEffectivelyVisible);
+        Assert.False(arcadia.Named<ScrollBar>("HitsGridScrollBar").IsEffectivelyVisible, "Die Leiste des Rasters ist bei der Reihe weg");
         Assert.True(arcadia.Bounds(rowBar).Top > arcadia.Bounds(HitButton(arcadia, search.Results[0])).Bottom, "Die Leiste steht unter der Reihe");
         Assert.True(arcadia.Bounds(rowBar).Width > 2 * arcadia.Bounds(rowBar).Height, "waagrecht");
         ClickTrackNearEnd(arcadia, rowBar);
@@ -389,31 +393,42 @@ public sealed class SearchViewTests
         arcadia.MouseMove(new Point(10, 10)).Click(Tab(arcadia)).Click(Tab(arcadia));
         Assert.All(TurnButtons(arcadia), button => Assert.Empty(VisibleTexts(button)));
 
-        // Keyboard in: a grid of two rows, faded above and below, LT/RT and Page Up/Down turn by two rows and stop at the ends.
+        // Keyboard in: a grid of two rows, faded above and below, LT/RT and Page Up/Down turn by two rows and round (#476).
         arcadia.Press(UiAction.Back);
         Assert.False(search.IsKeyboardOut);
         Assert.Equal("1–14 von 105", search.RangeText);
+        // The row's bar goes with the row: a scroll bar shows itself whenever it has something to scroll, so a bound
+        // IsVisible alone left its thumb as a line through the launcher name under the first row's last hit.
+        Assert.False(rowBar.IsEffectivelyVisible, "Die Leiste der Reihe ist im Raster weg");
         var gridFade = arcadia.Named<EdgeFade>("HitsGridFade");
         Assert.True(gridFade.ShowsStart && gridFade.ShowsEnd, "Oben und unten ausgeblendet");
         Assert.False(arcadia.Named<EdgeFade>("HitsRowFade").ShowsStart || arcadia.Named<EdgeFade>("HitsRowFade").ShowsEnd, "Seitlich nicht ausgeblendet");
-        // RT beside the lower row says more follow, as no row peeks in (#24); LT joins it once there are hits above.
+        // LT beside the upper row and RT beside the lower one say more follow, as no row peeks in (#24); the grid goes
+        // round, so both show at every window (#476).
         var gridBarRight = arcadia.Bounds(arcadia.Named<ScrollBar>("HitsGridScrollBar")).Right;
         var lowerRow = arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns]));
-        var down = Assert.Single(TurnButtons(arcadia));
-        Assert.Same(search.TurnOnCommand, down.Command);
+        var assertBothTurnButtons = () => Assert.Equal(
+            [search.TurnBackCommand, search.TurnOnCommand],
+            TurnButtons(arcadia).OrderBy(button => arcadia.Bounds(button).Top).Select(button => button.Command));
+        assertBothTurnButtons();
+        var down = TurnButtons(arcadia).Single(button => button.Command == search.TurnOnCommand);
         Assert.True(arcadia.Bounds(down).Left > gridBarRight && arcadia.Bounds(down).Center.Y > lowerRow.Top && arcadia.Bounds(down).Center.Y < lowerRow.Bottom, $"RT {arcadia.Bounds(down)} rechts neben der unteren Reihe {lowerRow}");
         arcadia.Press(UiAction.PreviousPage);
+        Assert.Equal("92–105 von 105", search.RangeText);
+        assertBothTurnButtons();
+        arcadia.Press(UiAction.NextPage);
         Assert.Equal("1–14 von 105", search.RangeText);
         arcadia.Press(UiAction.NextPage);
         Assert.Equal("15–28 von 105", search.RangeText);
-        Assert.Equal([search.TurnBackCommand, search.TurnOnCommand], TurnButtons(arcadia).OrderBy(button => arcadia.Bounds(button).Top).Select(button => button.Command));
+        assertBothTurnButtons();
         arcadia.Key(Key.PageDown);
         Assert.Equal("29–42 von 105", search.RangeText);
-        arcadia.Key(Key.PageUp).Press(UiAction.NextPage, times: 10);
+        arcadia.Key(Key.PageUp).Press(UiAction.NextPage, times: 6);
         Assert.Equal("92–105 von 105", search.RangeText);
         arcadia.Key(Key.PageDown);
+        Assert.Equal("1–14 von 105", search.RangeText);
+        arcadia.Key(Key.PageUp);
         Assert.Equal("92–105 von 105", search.RangeText);
-        Assert.Same(search.TurnBackCommand, Assert.Single(TurnButtons(arcadia)).Command);
 
         // The wheel scrolls as far, the bar stands beside the grid.
         for (var notch = 0; notch < 14; notch++)

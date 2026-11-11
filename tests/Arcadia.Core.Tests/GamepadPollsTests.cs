@@ -167,6 +167,50 @@ public sealed class GamepadPollsTests
             down);
     }
 
+    /// <summary>#476: a half-pressed trigger wobbling across the press point gives no fresh press, which would wrap round.</summary>
+    [Fact]
+    [Trait("TestCase", "T476-14")]
+    public void A_held_trigger_lets_go_only_below_a_quarter()
+    {
+        var trigger = (short value, long now) => _polls.Update([SdlPadMapping.ToReading(0, new SdlPadState(0, 0, 0, 0, 0, 0, value))], now);
+
+        trigger(17000, 0);
+        trigger(15000, 10);
+        trigger(16500, 20);
+        trigger(8500, 30);
+        Assert.Equal(["+RightTrigger"], _events);
+
+        trigger(8000, 40);
+        trigger(15000, 50);
+        Assert.Equal(["+RightTrigger", "-RightTrigger"], _events);
+
+        trigger(16384, 60);
+        Assert.Equal(["+RightTrigger", "-RightTrigger", "+RightTrigger"], _events);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-14")]
+    public void A_held_stick_lets_go_only_below_three_tenths()
+    {
+        var tilt = (double x, double y, long now) => _polls.Update([Reading(leftStick: new StickPosition(x, y), rightStick: new StickPosition(-x, -y))], now);
+
+        tilt(0.6, 0, 0);
+        tilt(0.4, 0, 10);
+        tilt(0.31, 0, 20);
+        Assert.Equal(["+DPadRight", "+RightStickLeft"], _events.Order(StringComparer.Ordinal));
+
+        tilt(0.29, 0, 30);
+        tilt(0.45, 0, 40);
+        Assert.Equal(["+DPadRight", "+RightStickLeft", "-DPadRight", "-RightStickLeft"], _events.Order(StringComparer.Ordinal));
+
+        // The other way is a press of its own, at half way.
+        _events.Clear();
+        tilt(-0.45, 0, 50);
+        Assert.Empty(_events);
+        tilt(-0.6, 0, 60);
+        Assert.Equal(["+DPadLeft", "+RightStickRight"], _events.Order(StringComparer.Ordinal));
+    }
+
     private void Poll(long now, PadButtons buttons = PadButtons.None) => _polls.Update([Reading(buttons)], now);
 
     private static GamepadReading Reading(PadButtons buttons = PadButtons.None, StickPosition leftStick = default, StickPosition rightStick = default, int slot = 0) =>

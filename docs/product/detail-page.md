@@ -7,7 +7,7 @@
   Spielen, Zu Favoriten, In … öffnen, Artwork ändern; then the game's own settings (Steam Controller mode,
   "Individueller Mausmodus", later e.g. launch options); last "Deinstallieren …" alone.
 - The detail page is a carousel through the tab's games in the library's sort order, across pages and
-  wrapping at the ends (two games: the other on both sides; one: no neighbours). LT/RT turn it, LB/RB switch
+  wrapping at the ends (two games: the other on both sides; one: no neighbours), held LT/RT included. LT/RT turn it, LB/RB switch
   the tab and stay on the detail page (first game), L3 re-sorts with the shown game kept in the middle, B returns
   to the library page of the game shown last. X opens the search over it; B in the search
   returns to it (#127). Below the buttons only "Spielen" has a note (update, installation); a disabled button tells

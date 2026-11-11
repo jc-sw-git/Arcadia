@@ -476,9 +476,10 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <paramref name="duration"/>, then let go: read every 8 ms as the App reads it, held buttons repeat.
     /// </summary>
     /// <param name="letGo">False: still held afterwards, so the next call goes on with the same hold (or adds a button).</param>
-    public ArcadiaDriver HoldPad(TimeSpan duration, PadButtons buttons = PadButtons.None, StickPosition leftStick = default, bool letGo = true)
+    /// <param name="triggers">How far LT and RT are pulled; the <paramref name="buttons"/> say whether past half way.</param>
+    public ArcadiaDriver HoldPad(TimeSpan duration, PadButtons buttons = PadButtons.None, StickPosition leftStick = default, bool letGo = true, TriggerPosition triggers = default)
     {
-        var held = new GamepadReading(0, buttons, leftStick, default);
+        var held = new GamepadReading(0, buttons, leftStick, default) { Triggers = triggers };
         for (var waited = TimeSpan.Zero; waited <= duration; waited += PadPoll)
         {
             _pad.Update([held], (long)Time.GetElapsedTime(0).TotalMilliseconds);

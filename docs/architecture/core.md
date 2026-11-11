@@ -61,7 +61,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per
   launcher: name, keyword, logo file, folder. `MouseModeSettings`, `ReturnWithViewSettings`.
 - `ListFocus`: focus in a column of rows that come and go, tabs that wrap. `ValueCycle`: a ◀ ▶ selector whose step
-  past one end comes in at the other.
+  past one end comes in at the other. `GridFocus`: focus in a grid cut into pages (library, search hits), round at
+  the ends and across page edges.
 
 **Diagnostics**
 - `LogLocation`: `arcadia.log` in `%APPDATA%\Arcadia\logs`, beside the settings. `LogPrivacy`: the Windows account's

@@ -159,8 +159,9 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// </summary>
     public void Rotate(int delta)
     {
-        // Held LT/RT stop at the first and the last game; only a fresh press goes round (#476).
-        if (Games.Count < 2 || (HeldPress.IsRepeat && ListFocus.Cycle(Index, delta, Games.Count, held: true) == Index))
+        // Held LT/RT go round without a stop (#476): the carousel shows no first or last game, so a stop there would
+        // seem to come at random.
+        if (Games.Count < 2)
         {
             return;
         }

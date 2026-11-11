@@ -7,10 +7,15 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Artwork;
 
-/// <summary>Where an image came from (#13): a launcher's own (also the player's own images in the launcher, #487).</summary>
+/// <summary>
+/// Where an image came from (#13): a launcher's own (also the player's own images in the launcher, #487), or a file the
+/// player chose in "Artwork ändern" (#490), or SteamGridDB (#489).
+/// </summary>
 public enum ArtworkSource
 {
     Launcher,
+    File,
+    SteamGridDb,
 }
 
 /// <summary>
@@ -23,17 +28,31 @@ public enum ArtworkSource
 public sealed record CachedImage(string File, ArtworkSource Source, string Origin, string Stamp, bool SetByHand = false);
 
 /// <summary>What the cache holds for one game.</summary>
+/// <param name="Cover">The cover in use.</param>
+/// <param name="Hero">The background in use.</param>
+/// <param name="OwnCover">The player's own file for the cover (#490), kept while another image is in use, so "Eigene Datei"
+/// still offers it; in use when <paramref name="Cover"/> names the same file.</param>
+/// <param name="OwnHero">The player's own file for the background, as <paramref name="OwnCover"/>.</param>
 /// <param name="Unreadable">Its metadata couldn't be read: every image in the folder counts as set by hand (#13).</param>
-public sealed record CachedArtwork(string GameKey, CachedImage? Cover, CachedImage? Hero, bool Unreadable = false)
+public sealed record CachedArtwork(
+    string GameKey, CachedImage? Cover, CachedImage? Hero, bool Unreadable = false, CachedImage? OwnCover = null, CachedImage? OwnHero = null)
 {
     public CachedImage? Of(ArtworkKind kind) => kind == ArtworkKind.Cover ? Cover : Hero;
 
+    public CachedImage? OwnOf(ArtworkKind kind) => kind == ArtworkKind.Cover ? OwnCover : OwnHero;
+
+    /// <summary>Neither an image in use nor an own file: the game's folder can go.</summary>
+    public bool IsEmpty => Cover is null && Hero is null && OwnCover is null && OwnHero is null;
+
     public CachedArtwork With(ArtworkKind kind, CachedImage? image) => kind == ArtworkKind.Cover ? this with { Cover = image } : this with { Hero = image };
+
+    public CachedArtwork WithOwn(ArtworkKind kind, CachedImage? image) => kind == ArtworkKind.Cover ? this with { OwnCover = image } : this with { OwnHero = image };
 }
 
 /// <summary>
 /// The artwork cache on disk (#13, #487): <c>%LOCALAPPDATA%\Arcadia\artwork\&lt;game&gt;\cover|hero.*</c> plus
-/// <c>artwork.json</c> with source and "set by hand" per image. Every file is written to a temporary file first and then
+/// <c>artwork.json</c> with source and "set by hand" per image, and the player's own files as <c>own-cover|own-hero.*</c>
+/// (#490). Every file is written to a temporary file first and then
 /// renamed, so a crash never leaves half an image or half a metadata file; temporary files left by one are removed on the
 /// game's next write. A game's folder name is made from its key so that no key leads outside the cache.
 /// </summary>
@@ -41,6 +60,12 @@ public sealed record CachedArtwork(string GameKey, CachedImage? Cover, CachedIma
 public sealed class ArtworkCache(string root)
 {
     public const string MetadataFile = "artwork.json";
+
+    /// <summary>
+    /// Images "Artwork ändern" offers (#490) wait here until the player takes one; nothing in it is in use, and it is thrown
+    /// away at every start. No game's folder can be called so: a key's dot is written as <c>~2e</c>.
+    /// </summary>
+    private const string SuggestionsFolder = ".suggestions";
 
     private const string TemporarySuffix = ".tmp";
 
@@ -117,7 +142,12 @@ public sealed class ArtworkCache(string root)
             var stored = JsonSerializer.Deserialize<StoredArtwork>(File.ReadAllText(metadata), Json);
             if (stored?.Game is { Length: > 0 } key && (gameKey is null || key == gameKey) && FolderOf(key) == folder)
             {
-                return new CachedArtwork(key, Checked(stored.Cover, ArtworkKind.Cover), Checked(stored.Hero, ArtworkKind.Hero));
+                return new CachedArtwork(
+                    key,
+                    Checked(stored.Cover, ArtworkKind.Cover, inUse: true),
+                    Checked(stored.Hero, ArtworkKind.Hero, inUse: true),
+                    OwnCover: Checked(stored.OwnCover, ArtworkKind.Cover, inUse: false),
+                    OwnHero: Checked(stored.OwnHero, ArtworkKind.Hero, inUse: false));
             }
         }
         catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
@@ -134,27 +164,42 @@ public sealed class ArtworkCache(string root)
         return Unreadable(folder, gameKey);
     }
 
-    /// <summary>A stored image whose file name is one of ours; anything else (a path, another name) counts as missing.</summary>
-    private static CachedImage? Checked(CachedImage? image, ArtworkKind kind) =>
-        image is { File: var file } && IsOwnFileName(file, kind) && image.Origin is not null && image.Stamp is not null ? image : null;
+    /// <summary>
+    /// A stored image whose file name is one of ours; anything else (a path, another name) counts as missing. An image in use
+    /// may be the own file (then it is from a file); an own file is only ever one.
+    /// </summary>
+    private static CachedImage? Checked(CachedImage? image, ArtworkKind kind, bool inUse)
+    {
+        if (image is not { File: { } file } || image.Origin is null || image.Stamp is null)
+        {
+            return null;
+        }
 
-    private static bool IsOwnFileName(string file, ArtworkKind kind) =>
-        Path.GetFileNameWithoutExtension(file) == BaseName(kind) && Extensions.Contains(Path.GetExtension(file)) && Path.GetFileName(file) == file;
+        var own = image.Source == ArtworkSource.File;
+        return (inUse || own) && IsFileName(file, BaseName(kind, own)) ? image : null;
+    }
+
+    private static bool IsFileName(string file, string baseName) =>
+        Path.GetFileNameWithoutExtension(file) == baseName && Extensions.Contains(Path.GetExtension(file)) && Path.GetFileName(file) == file;
 
     private static readonly string[] Extensions = [".png", ".jpg", ".webp"];
 
-    private static string BaseName(ArtworkKind kind) => kind == ArtworkKind.Cover ? "cover" : "hero";
+    private static string BaseName(ArtworkKind kind, bool own = false) => (own ? "own-" : string.Empty) + (kind == ArtworkKind.Cover ? "cover" : "hero");
 
     /// <summary>The metadata can't be read: the images in the folder count as set by hand, so nothing overwrites them (#13).</summary>
     private static CachedArtwork Unreadable(string folder, string gameKey)
     {
-        CachedImage? Found(ArtworkKind kind) => Extensions
-            .Select(extension => BaseName(kind) + extension)
+        CachedImage? Found(ArtworkKind kind, bool own) => Extensions
+            .Select(extension => BaseName(kind, own) + extension)
             .Where(file => File.Exists(Path.Combine(folder, file)))
-            .Select(file => new CachedImage(file, ArtworkSource.Launcher, "unknown", "unknown", SetByHand: true))
+            .Select(file => new CachedImage(file, own ? ArtworkSource.File : ArtworkSource.Launcher, "unknown", "unknown", SetByHand: true))
             .FirstOrDefault();
 
-        return new CachedArtwork(gameKey, Found(ArtworkKind.Cover), Found(ArtworkKind.Hero), Unreadable: true);
+        // Which image was in use isn't known any more: the launcher's copy where there is one, else the own file.
+        var ownCover = Found(ArtworkKind.Cover, own: true);
+        var ownHero = Found(ArtworkKind.Hero, own: true);
+        return new CachedArtwork(
+            gameKey, Found(ArtworkKind.Cover, own: false) ?? ownCover, Found(ArtworkKind.Hero, own: false) ?? ownHero, Unreadable: true, ownCover, ownHero);
     }
 
     /// <summary>
@@ -162,26 +207,27 @@ public sealed class ArtworkCache(string root)
     /// Removes the image of the same kind with another extension. The metadata is the caller's next step.
     /// </summary>
     /// <param name="extension">The file's type, from its content: <c>.png</c>, <c>.jpg</c> or <c>.webp</c>.</param>
+    /// <param name="own">The player's own file (#490), kept beside the image in use.</param>
     /// <returns>The file name written.</returns>
-    public string WriteImage(string gameKey, ArtworkKind kind, ReadOnlySpan<byte> content, string extension)
+    public string WriteImage(string gameKey, ArtworkKind kind, ReadOnlySpan<byte> content, string extension, bool own = false)
     {
         var folder = Directory.CreateDirectory(FolderOf(gameKey)).FullName;
         RemoveTemporaryFiles(folder);
-        var file = BaseName(kind) + extension;
+        var file = BaseName(kind, own) + extension;
         WriteThroughTemporary(Path.Combine(folder, file), content);
         foreach (var other in Extensions.Where(e => e != extension))
         {
-            File.Delete(Path.Combine(folder, BaseName(kind) + other));
+            File.Delete(Path.Combine(folder, BaseName(kind, own) + other));
         }
 
         return file;
     }
 
-    /// <summary>Writes the game's metadata; with neither image left, removes the game's folder.</summary>
+    /// <summary>Writes the game's metadata; with no image left, removes the game's folder.</summary>
     public void WriteMetadata(CachedArtwork artwork)
     {
         var folder = FolderOf(artwork.GameKey);
-        if (artwork is { Cover: null, Hero: null })
+        if (artwork.IsEmpty)
         {
             if (Directory.Exists(folder))
             {
@@ -192,11 +238,11 @@ public sealed class ArtworkCache(string root)
         }
 
         Directory.CreateDirectory(folder);
-        var stored = new StoredArtwork { Game = artwork.GameKey, Cover = artwork.Cover, Hero = artwork.Hero };
+        var stored = new StoredArtwork { Game = artwork.GameKey, Cover = artwork.Cover, Hero = artwork.Hero, OwnCover = artwork.OwnCover, OwnHero = artwork.OwnHero };
         WriteThroughTemporary(Path.Combine(folder, MetadataFile), JsonSerializer.SerializeToUtf8Bytes(stored, Json));
     }
 
-    /// <summary>Deletes the game's image of <paramref name="kind"/>, whatever its extension.</summary>
+    /// <summary>Deletes the game's launcher copy of <paramref name="kind"/>, whatever its extension; the own file stays.</summary>
     public void DeleteImage(string gameKey, ArtworkKind kind)
     {
         var folder = FolderOf(gameKey);
@@ -205,6 +251,46 @@ public sealed class ArtworkCache(string root)
             File.Delete(Path.Combine(folder, BaseName(kind) + extension));
         }
     }
+
+    /// <summary>
+    /// Keeps an image "Artwork ändern" offers (#490) until the player takes one or the next offer of the same game and kind
+    /// replaces it; each gets a name of its own, so a view never shows an older one by its path.
+    /// </summary>
+    /// <returns>The file's full path.</returns>
+    public string WriteSuggestion(string gameKey, ArtworkKind kind, ReadOnlySpan<byte> content, string extension)
+    {
+        var folder = Directory.CreateDirectory(Path.Combine(Root, SuggestionsFolder, Path.GetFileName(FolderOf(gameKey)))).FullName;
+        var path = Path.Combine(folder, BaseName(kind) + "-" + Guid.NewGuid().ToString("N")[..12] + extension);
+        WriteThroughTemporary(path, content);
+        return path;
+    }
+
+    /// <summary>Removes the offered images of the game and kind, before it is offered anew.</summary>
+    public void ClearSuggestions(string gameKey, ArtworkKind kind)
+    {
+        var folder = Path.Combine(Root, SuggestionsFolder, Path.GetFileName(FolderOf(gameKey)));
+        if (Directory.Exists(folder))
+        {
+            foreach (var file in Directory.EnumerateFiles(folder, BaseName(kind) + "-*"))
+            {
+                File.Delete(file);
+            }
+        }
+    }
+
+    /// <summary>Removes every offered image; at the start, when no view shows one.</summary>
+    public void ClearAllSuggestions()
+    {
+        var folder = Path.Combine(Root, SuggestionsFolder);
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    /// <summary>True for a file <see cref="WriteSuggestion"/> wrote, so only those can be taken as an offer.</summary>
+    public bool IsSuggestion(string path) =>
+        Path.GetFullPath(path).StartsWith(Path.Combine(Root, SuggestionsFolder) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
 
     /// <summary>The extension for an image's content, by its first bytes; null for none Arcadia shows.</summary>
     public static string? ExtensionOf(ReadOnlySpan<byte> content) => content switch
@@ -242,5 +328,9 @@ public sealed class ArtworkCache(string root)
         public CachedImage? Cover { get; set; }
 
         public CachedImage? Hero { get; set; }
+
+        public CachedImage? OwnCover { get; set; }
+
+        public CachedImage? OwnHero { get; set; }
     }
 }

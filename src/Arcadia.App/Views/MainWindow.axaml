@@ -933,6 +933,15 @@
         </ContentControl.DataTemplates>
       </ContentControl>
 
+      <!-- "Artwork ändern" (#490): a game's cover and background, over library, search and detail page. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding ChangeArtwork}" IsVisible="{Binding IsChangeArtworkOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:ChangeArtworkViewModel">
+            <views:ChangeArtworkView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
       <!-- "Ansicht" dialog -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsViewOptionsOpen}">
         <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"

@@ -45,6 +45,9 @@ public interface IGameActionsOwner
     /// <summary>The game's "Individueller Mausmodus" one step on (1) or back (-1).</summary>
     void StepGameMouseMode(Game game, int delta);
 
+    /// <summary>"Artwork ändern" (#490): the modal over the page.</summary>
+    void ChangeArtwork(GameTileViewModel tile);
+
     /// <summary>A game is starting or its start failed: every shown cover takes its run state again.</summary>
     void RunStatesChanged();
 }
@@ -467,4 +470,6 @@ public sealed class GameActions : IGameActionHost
     bool IGameActionHost.DefaultGameMouseModeAllowed => _settings.Current.MouseMode.PerGameDefaultAllowed;
 
     void IGameActionHost.StepGameMouseMode(GameTileViewModel tile, int delta) => _owner.StepGameMouseMode(tile.Game, delta);
+
+    void IGameActionHost.ChangeArtwork(GameTileViewModel tile) => _owner.ChangeArtwork(tile);
 }

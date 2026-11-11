@@ -44,9 +44,8 @@ Rail and rows
       at the ends; the rail's line for "Controller" and the row show the new value; it holds for this game only, also
       after leaving and reopening the page and after a restart of Arcadia. The same for "Individueller Mausmodus".
       A held ◀ ▶ stops at the end of the range and doesn't flip a switch back and forth (T476-9). · E2E: yes
-- [x] **T499-9** "Artwork ändern" in "Verwalten": greyed with "Folgt in einer späteren Version" until the artwork
-      dialog exists (#490); then A opens it and after B the focus is on "Artwork ändern" again and "Verwalten" is
-      still open. "Deinstallieren …", A: the same question as in the context menu;
+- [x] **T499-9** "Artwork ändern" in "Verwalten": A opens the artwork dialog (#490); after B the focus is on
+      "Artwork ändern" again and "Verwalten" is still open. "Deinstallieren …", A: the same question as in the context menu;
       "Abbrechen" or B returns to that row, confirming hands over to the launcher as today. · E2E: yes
 - [x] **T499-10** Button hints follow the focus: on the button row A names the button and B "Zurück"; in the rail A
       opens the area's rows (none on "Übersicht") and B "Zurück"; on a value row ◀ ▶ "Ändern", on an action row A
@@ -139,7 +138,7 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T499-1, -2, -4 to -8, -10, -11, -14 to -20 | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container; demo and made-up GOG, Steam and Epic libraries, fake Steam Controller | ✅ `DetailAreasTests`, `DetailPageTests`, `ListWrapTests`, `PanEmulationTests`, `LauncherControllerModeTests`, `RunningGameTests` | T499-9: "Artwork ändern" stays greyed until #490; T499-12: LB/RB automated, L3, X and Y left to the QE run |
+| T499-1, -2, -4 to -8, -10, -11, -14 to -20 | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container; demo and made-up GOG, Steam and Epic libraries, fake Steam Controller | ✅ `DetailAreasTests`, `DetailPageTests`, `ListWrapTests`, `PanEmulationTests`, `LauncherControllerModeTests`, `RunningGameTests` | T499-9: artwork dialog from the row covered by `ChangeArtworkTests` after merging #490; T499-12: LB/RB automated, L3, X and Y left to the QE run |
 | T499-1, -2, -16, -17, -23, -25, -26 | 2026-11-11 | Claude | PR branch, Debug, headless window 1920 × 1080, Linux cloud container | ✅ `DetailPageViewTests`, `ArtworkViewTests`, `ArtworkWindowTests`: one button row above the panel, rings whole on first and last button, area and row, one ring at a time, long title in two lines with "…", rows keep their width, click on area and stack, mouse over a row | clicking the ◀ ▶ arrows left to the QE run |
 | T499-1, -3, -5, -6, -18, -27 (look) | 2026-11-11 | Claude | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ screenshots: layout as the artboard, stacks' inner edges to the middle, greyed rows with the reason in the info box, RT keeps "Verwalten" and its second row | software rendering only; motion judged from single frames |
 | T499-29 | 2026-11-11 | Claude | Release, Xvfb software rendering, `--demo --demo-games 5000`, `main` measured the same way | ⚠️ start to library 1.74 s (main 1.75 s), 271 MB at the library (main 266 MB), same RSS after the page; ▲ ▼ ◀ ▶ 5 to 37 ms; a carousel turn 29 to 94 ms to the frame (main 25 to 60 ms), of it 4 to 26 ms work | the frame wait is software rendering of the full-screen page while covers move; T499-31 on the owner's PC decides |

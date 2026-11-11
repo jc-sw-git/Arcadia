@@ -5,7 +5,7 @@ updated Main, Search, GameDetail boards). Controller only unless a case says oth
 (key C). Acceptance tests use `ArcadiaDriver` (demo or fixture libraries with made-up games), window tests
 `ArcadiaWindow` at 1920 × 1080.
 
-**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (its finding is Review finding 2) · Owner: T24-5, T24-15, T24-16
+**Status:** Automated: T24-1 to T24-4, T24-6 to T24-13 · QE: T24-10, T24-14 (its finding is Review finding 2) · Open for the owner: none (T24-5, T24-15, T24-16 passed by the owner)
 
 **Page sizes**
 

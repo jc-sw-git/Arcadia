@@ -116,7 +116,7 @@ public sealed class DetailPageTests
 
         arcadia.Press(UiAction.ViewOptions);
         var options = Assert.IsType<ViewOptionsViewModel>(arcadia.Main.ViewOptions);
-        Assert.Equal("Gilt für die Bibliothek; die Detailseite zeigt immer ein Spiel. Das aktuelle Spiel bleibt in der Mitte, die Nachbarn ordnen sich nach der neuen Sortierung.", options.PageSizeNote);
+        Assert.Equal(AppTexts.ViewOptionsForLibraryInfo, options.PageSizeNote);
 
         // Name Z → A: Echo, Delta, Charlie, bravo, Alpha.
         arcadia.Press(UiAction.Right).Press(UiAction.Accept).Press(UiAction.Back);
@@ -126,7 +126,7 @@ public sealed class DetailPageTests
         Assert.Equal("4 von 5", detail.PositionText);
         Assert.Equal("Charlie", Side(detail, -1));
         Assert.Equal("Alpha", Side(detail, 1));
-        Assert.Equal("Name Z–A", detail.SortLabel);
+        Assert.Equal(AppTexts.SortNameDescending, detail.SortLabel);
     }
 
     [AvaloniaFact]
@@ -180,9 +180,9 @@ public sealed class DetailPageTests
         page = arcadia.Detail!.Current;
         Assert.Equal("Bravo", page.Tile.Title);
         Assert.False(page.Tile.IsInstalled);
-        Assert.Equal((GameActionKind.Play, "Installieren", true), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
+        Assert.Equal((GameActionKind.Play, AppTexts.Install, true), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
         Assert.Equal("–", page.InstalledAt);
-        Assert.Equal("Nicht installiert", page.Tile.LocationText);
+        Assert.Equal(AppTexts.NotInstalled, page.Tile.LocationText);
         Assert.False(page.HasUpdateNote);
 
         // Only the first row: no settings for the game, nothing to uninstall.
@@ -227,7 +227,7 @@ public sealed class DetailPageTests
         // What the launcher doesn't report is said so, not left blank.
         arcadia.Press(UiAction.NextPage);
         page = arcadia.Detail!.Current;
-        Assert.Equal("Nie gespielt", page.Tile.LastPlayedText);
+        Assert.Equal(AppTexts.NeverPlayed, page.Tile.LastPlayedText);
         Assert.Equal("–", page.LastPlayedAt);
         Assert.Equal("–", page.Tile.PlaytimeText);
         Assert.Equal("GOG Galaxy meldet keine", page.PlaytimeSource);

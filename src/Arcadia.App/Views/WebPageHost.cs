@@ -116,15 +116,15 @@ public sealed class WebPageHost : Decorator
             }
         };
         view.NavigationCompleted += (_, e) =>
-            LoadedAsync(page, view, e.IsSuccess, e.Request ?? view.Source).Forget("Webseite lesen");
+            LoadedAsync(page, view, e.IsSuccess, e.Request ?? view.Source).Forget(AppTexts.ErrorContextReadWebPage);
         var started = false;
         view.AdapterCreated += (_, _) =>
         {
             started = true;
-            StartAsync(page, view).Forget("Webseite öffnen");
+            StartAsync(page, view).Forget(AppTexts.ErrorContextOpenWebPage);
         };
         Child = view;
-        GiveUpIfNotStartedAsync(page, () => started).Forget("Webseite öffnen");
+        GiveUpIfNotStartedAsync(page, () => started).Forget(AppTexts.ErrorContextOpenWebPage);
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ public sealed class WebPageHost : Decorator
         if (!started() && !page.Result.IsCompleted)
         {
             AppLog.Write("Browser: Web-Ansicht nicht gestartet (WebView2 bzw. WebKitGTK fehlt?).");
-            page.Complete(WebPageResult.Failed("Der Browser startet nicht."));
+            page.Complete(WebPageResult.Failed(AppTexts.WebPageBrowserNotStarting));
         }
     }
 
@@ -151,7 +151,7 @@ public sealed class WebPageHost : Decorator
 
         if (view.TryGetCookieManager() is not { } cookies)
         {
-            page.Complete(WebPageResult.Failed("Dieser Browser kann keine Cookies löschen."));
+            page.Complete(WebPageResult.Failed(AppTexts.WebPageCannotDeleteCookies));
             return;
         }
 
@@ -184,7 +184,7 @@ public sealed class WebPageHost : Decorator
             if (!page.IsShown || !_hasLoaded)
             {
                 AppLog.Write($"Browser: {page.Page.Host} nicht geladen.");
-                page.Complete(WebPageResult.Failed("Die Seite konnte nicht geladen werden."));
+                page.Complete(WebPageResult.Failed(AppTexts.WebPageNotLoaded));
             }
 
             return;

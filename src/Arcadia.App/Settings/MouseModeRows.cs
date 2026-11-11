@@ -12,13 +12,13 @@ public sealed record MouseModeHelpRow(string Input, string Effect);
 /// </summary>
 public sealed class MouseModeRows
 {
-    private const string Group = "MAUSMODUS";
+    private static string Group => AppTexts.MouseModeGroup;
 
     /// <summary>The values of "Mausmodus", in the order of <see cref="MouseModeActivation"/>.</summary>
-    private static readonly string[] ActivationNames = ["Aus", "Von Hand", "Automatisch"];
+    private static readonly string[] ActivationNames = [AppTexts.Off, AppTexts.MouseModeManual, "Automatisch"];
 
     /// <summary>The values of "Beenden des Mausmodus in Spielen erzwingen", in the order of <see cref="MouseModeInGames"/>.</summary>
-    private static readonly string[] InGamesNames = ["Nein", "Ja", "Individuell"];
+    private static readonly string[] InGamesNames = [AppTexts.No, AppTexts.Yes, "Individuell"];
 
     private readonly SettingsChanges _changes;
     private readonly ChoiceRowViewModel _activation;
@@ -34,7 +34,7 @@ public sealed class MouseModeRows
         _changes = changes;
         _activation = new ChoiceRowViewModel(
             "mouse-mode",
-            "Mausmodus",
+            AppTexts.MouseMode,
             () => (int)Current.Activation,
             value => Change(s => s with { Activation = (MouseModeActivation)value }),
             value => ActivationNames[value],
@@ -42,7 +42,7 @@ public sealed class MouseModeRows
             (int)MouseModeActivation.Automatic)
         {
             Group = Group,
-            Subtitle = "Der Controller steuert den Mauszeiger, auch außerhalb von Arcadia",
+            Subtitle = AppTexts.MouseModeSubtitle,
         };
         _hold = new ChoiceRowViewModel(
             "mouse-mode-hold",
@@ -55,8 +55,8 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "So lange müssen ⧉ und ≡ gehalten werden.",
-            Info = [new InfoText("So lange müssen ⧉ und ≡ gehalten werden.")],
+            Subtitle = AppTexts.MouseModeHoldSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeHoldSubtitle)],
         };
         _speed = new ChoiceRowViewModel(
             "mouse-mode-speed",
@@ -69,34 +69,34 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Wie schnell [LS] den Mauszeiger bewegt.",
-            Info = [new InfoText("Wie schnell [LS] den Mauszeiger bewegt. [L3] macht ihn langsamer.")],
+            Subtitle = AppTexts.MouseModeSpeedSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeSpeedInfo)],
         };
         _forDialogs = new SwitchRowViewModel(
             "mouse-mode-for-dialogs",
-            "Bei System-Dialogfenstern einschalten",
+            AppTexts.MouseModeForDialogsTitle,
             () => Current.ForDialogs,
             value => Change(s => s with { ForDialogs = value }))
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Für Dialogfenster wie die Datei- oder Ordnerwahl",
-            Info = [new InfoText("Öffnest du mit dem Controller in Arcadia ein Windows-Dialogfenster, das sich nur mit Maus und Tastatur bedienen lässt (z. B. wenn du eigene Logos oder Artworks hochlädst), schaltet sich der Mausmodus ein, solange das Fenster offen ist.")],
+            Subtitle = AppTexts.MouseModeForDialogsSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeForDialogsInfo)],
         };
         _endInFront = new SwitchRowViewModel(
             "mouse-mode-end-in-front",
-            "Mausmodus beenden, wenn Arcadia im Vordergrund ist",
+            AppTexts.MouseModeEndInFrontTitle,
             () => Current.EndWhenArcadiaInFront,
             value => Change(s => s with { EndWhenArcadiaInFront = value }))
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Nur aktiv im Modus „Von Hand“",
-            Info = [new InfoText("Sobald du wieder in das Fenster von Arcadia klickst oder Arcadia nach vorne holst (z. B. durch „Mit ⧉ zurück zu Arcadia“), schaltet sich der Mausmodus automatisch ab. Aktivierst du den Mausmodus von Hand, während Arcadia bereits im Vordergrund ist, bleibt er so lange aktiv, bis Arcadia das nächste Mal in den Vordergrund zurückgeholt wird, also z. B. durch Raus- und wieder Reinklicken.")],
+            Subtitle = AppTexts.MouseModeOnlyManual,
+            Info = [new InfoText(AppTexts.MouseModeEndInFrontInfo)],
         };
         _inGames = new ChoiceRowViewModel(
             "mouse-mode-in-games",
-            "Beenden des Mausmodus in Spielen erzwingen",
+            AppTexts.MouseModeForceEndInGamesTitle,
             () => (int)Current.InGames,
             value => Change(s => s with { InGames = (MouseModeInGames)value }),
             value => InGamesNames[value],
@@ -105,11 +105,11 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Nur aktiv im Modus „Von Hand“",
+            Subtitle = AppTexts.MouseModeOnlyManual,
         };
         _perGameDefault = new ChoiceRowViewModel(
             "mouse-mode-per-game-default",
-            "Standardeinstellung bei „Individuell“",
+            AppTexts.MouseModeDefaultTitle,
             () => Current.PerGameDefaultAllowed ? 0 : 1,
             value => Change(s => s with { PerGameDefaultAllowed = value == 0 }),
             value => value == 0 ? GameMouseModes.Allowed : GameMouseModes.Blocked,
@@ -118,8 +118,8 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Indent = 2,
-            Subtitle = "Vorausgewählt für jedes Spiel auf der Detailseite",
-            Info = [new InfoText("„Standard“ ist für jedes Spiel auf der Detailseite vorausgewählt. „Erlaubt“ wird den Mausmodus erlauben. „Deaktiviert“ wird ihn deaktivieren.")],
+            Subtitle = AppTexts.MouseModeDefaultSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeDefaultInfo)],
         };
         Update();
     }
@@ -128,25 +128,25 @@ public sealed class MouseModeRows
     public static IReadOnlyList<MouseModeHelpRow> HelpRows { get; } =
     [
         new("LS", "Mauszeiger"),
-        new("L3", "Antippen: langsamer Zeiger an/aus · Halten: langsam, solange gehalten"),
-        new("RT oder A", "Linke Maustaste (gedrückt halten = ziehen)"),
-        new("LT oder X", "Rechte Maustaste"),
-        new("RS", "Mausrad, auch seitwärts"),
+        new("L3", AppTexts.MouseModeHelpL3),
+        new(AppTexts.MouseModeHelpRtOrA, AppTexts.MouseModeHelpLeftClick),
+        new(AppTexts.MouseModeHelpLtOrX, AppTexts.MouseModeHelpRightClick),
+        new("RS", AppTexts.MouseModeHelpWheel),
         new("D-Pad", "Pfeiltasten"),
         new("B", "Esc"),
-        new("LB / RB", "Umschalt+Tab / Tab"),
+        new("LB / RB", AppTexts.MouseModeHelpShiftTab),
         new("≡", "Enter"),
-        new("Y", "Bildschirmtastatur ([B] blendet sie aus)"),
-        new("⧉ halten", "Holt Arcadia nach vorne (Einstellung „Zurück zu Arcadia“)"),
-        new("⧉ + ≡ halten", "Zurück zum normalen Controller (bei „Automatisch“, bis Arcadia wieder vorne war)"),
+        new("Y", AppTexts.MouseModeHelpKeyboard),
+        new("⧉ halten", AppTexts.MouseModeHelpBackToArcadia),
+        new("⧉ + ≡ halten", AppTexts.MouseModeHelpBackToController),
     ];
 
     /// <summary>Where the mouse mode can't help, so nobody wonders why.</summary>
     public static IReadOnlyList<string> HelpLimits { get; } =
     [
-        "Windows-Abfragen nach Administratorrechten (UAC) laufen auf einem geschützten Bildschirm, den keine Eingabe von Arcadia erreicht.",
-        "Fenster von Programmen, die als Administrator laufen, lassen Eingaben eines Arcadia ohne Administratorrechte nicht durch.",
-        "Über Spielen im exklusiven Vollbild zeigt Windows den Rand, den Hinweis und die Bildschirmtastatur nicht an; das Umschalten spürst du dann nur am Vibrieren.",
+        AppTexts.MouseModeLimitUac,
+        AppTexts.MouseModeLimitAdmin,
+        AppTexts.MouseModeLimitFullscreen,
     ];
 
     /// <summary>In the order the controller moves through them.</summary>
@@ -155,9 +155,9 @@ public sealed class MouseModeRows
     private MouseModeSettings Current => _changes.Current.MouseMode;
 
     /// <summary>Below the description of "Mausmodus", in a box of its own (owner, 2026-10-22).</summary>
-    private static readonly InfoSection Help = new("SO FUNKTIONIERT ES",
+    private static readonly InfoSection Help = new(AppTexts.MouseModeHowItWorks,
     [
-        new InfoText("⧉ + ≡ gedrückt halten, bis der Bildschirmrand voll ist: Der Controller steuert jetzt die Maus, auch in Fenstern außerhalb von Arcadia. Genauso geht es zurück. Jeder verbundene Controller kann umschalten und den Zeiger bewegen."),
+        new InfoText(AppTexts.MouseModeHelp),
         .. HelpRows.Select(r => new InfoKey(r.Input, r.Effect)),
         new InfoHeading("GRENZEN"),
         .. HelpLimits.Select(l => new InfoBullet(l)),
@@ -166,22 +166,22 @@ public sealed class MouseModeRows
     /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
     private string ActivationText => Current.Activation switch
     {
-        MouseModeActivation.Off => "Der Controller bleibt immer ein Controller.",
-        MouseModeActivation.Automatic => "Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus, sobald Arcadia (oder ein Arcadia bekanntes Spiel) nicht mehr den Fokus hat, das heißt nicht mehr im Vordergrund läuft. Der Controller kann dann den Mauszeiger bedienen. Unten unter „So funktioniert es“ erfährst du mehr dazu. Kommt Arcadia (oder ein Spiel) zurück in den Fokus, wird der Mausmodus automatisch beendet. Dies passiert auch dann, wenn „Mausmodus beenden, wenn Arcadia im Vordergrund ist“ ausgeschaltet ist.",
-        _ => "Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus. Dies erlaubt dem Controller, den Mauszeiger zu steuern. Erneutes Halten schaltet den Modus aus. Unten unter „So funktioniert es“ erfährst du mehr dazu.",
+        MouseModeActivation.Off => AppTexts.MouseModeActivationOff,
+        MouseModeActivation.Automatic => AppTexts.MouseModeActivationAutomatic,
+        _ => AppTexts.MouseModeActivationManual,
     };
 
     /// <summary>What the chosen value of "Beenden des Mausmodus in Spielen erzwingen" does (owner's wording, 2026-10-21).</summary>
     private string InGamesText => Current.InGames switch
     {
-        MouseModeInGames.Blocked => "Der Mausmodus wird automatisch beendet und kann auch nicht mehr von Hand aktiviert werden, sobald ein Spiel im Vordergrund läuft. Das Spiel muss dafür in Arcadias Bibliothek vorhanden sein.",
-        MouseModeInGames.PerGame => "Es kann pro Spiel (auf der Detailseite) entschieden werden, ob der Mausmodus beendet wird oder erlaubt ist.",
-        _ => "Der Mausmodus bleibt auch in Spielen aktiv und kann auch aktiviert werden, wenn das Spiel gerade im Vordergrund läuft.",
+        MouseModeInGames.Blocked => AppTexts.MouseModeInGamesEnd,
+        MouseModeInGames.PerGame => AppTexts.MouseModeInGamesPerGame,
+        _ => AppTexts.MouseModeInGamesAllow,
     };
 
     private void Change(Func<MouseModeSettings, MouseModeSettings> change)
     {
-        _changes.Apply(s => s with { MouseMode = change(s.MouseMode) }, "Mausmodus");
+        _changes.Apply(s => s with { MouseMode = change(s.MouseMode) }, AppTexts.MouseMode);
         Update();
     }
 
@@ -204,7 +204,7 @@ public sealed class MouseModeRows
 /// <summary>"Zurück zu Arcadia" (#64): View held brings Arcadia back, with or without the mouse mode; its own group.</summary>
 public sealed class ReturnWithViewRows
 {
-    private const string Group = "ZURÜCK ZU ARCADIA";
+    private static string Group => AppTexts.MouseModeBackToArcadiaGroup;
 
     private readonly SettingsChanges _changes;
     private readonly SwitchRowViewModel _enabled;
@@ -213,11 +213,11 @@ public sealed class ReturnWithViewRows
     public ReturnWithViewRows(SettingsChanges changes)
     {
         _changes = changes;
-        _enabled = new SwitchRowViewModel("return-with-view", "Mit ⧉ zurück zu Arcadia", () => Current.Enabled, value => Change(s => s with { Enabled = value }))
+        _enabled = new SwitchRowViewModel("return-with-view", AppTexts.MouseModeBackToArcadiaTitle, () => Current.Enabled, value => Change(s => s with { Enabled = value }))
         {
             Group = Group,
-            Subtitle = "⧉ gedrückt halten holt Arcadia nach vorne",
-            Info = [new InfoText("⧉ gedrückt halten holt Arcadia nach vorne, wenn es im Hintergrund ist – aus einem Spiel, einem Launcher oder dem Mausmodus. In Arcadia öffnet ⧉ weiter das Menü.")],
+            Subtitle = AppTexts.MouseModeBackToArcadiaSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeBackToArcadiaInfo)],
         };
         _hold = new ChoiceRowViewModel(
             "return-with-view-hold",
@@ -230,8 +230,8 @@ public sealed class ReturnWithViewRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "So lange muss ⧉ gehalten werden.",
-            Info = [new InfoText("So lange muss ⧉ gehalten werden. Kurz gedrückt schiebt ⧉ die Bildschirmtastatur des Mausmodus an den anderen Bildschirmrand.")],
+            Subtitle = AppTexts.MouseModeBackHoldSubtitle,
+            Info = [new InfoText(AppTexts.MouseModeBackHoldInfo)],
         };
         Update();
     }
@@ -243,7 +243,7 @@ public sealed class ReturnWithViewRows
 
     private void Change(Func<ReturnWithViewSettings, ReturnWithViewSettings> change)
     {
-        _changes.Apply(s => s with { ReturnWithView = change(s.ReturnWithView) }, "Zurück zu Arcadia");
+        _changes.Apply(s => s with { ReturnWithView = change(s.ReturnWithView) }, AppTexts.BackToArcadia);
         Update();
     }
 
@@ -261,7 +261,7 @@ public static class GameMouseModes
     {
         true => Allowed,
         false => Blocked,
-        null => defaultAllowed ? "Standard (erlaubt)" : "Standard (deaktiviert)",
+        null => defaultAllowed ? AppTexts.MouseModeDefaultAllowed : AppTexts.MouseModeDefaultDisabled,
     };
 
     /// <summary>Standard → Erlaubt → Deaktiviert → Standard.</summary>

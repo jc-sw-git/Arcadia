@@ -4,6 +4,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
+using Arcadia.ControllerSupport;
 
 namespace Arcadia.App.Tests;
 
@@ -24,23 +25,23 @@ public sealed class SettingsRowTests
         Assert.True(settings.HasSeveralCategories, "Der Footer nennt „LB RB Kategorie“.");
 
         // A launcher: ◀▶ switch it, A opens its page.
-        Assert.Equal(new Footer(Change: true, Activate: "Öffnen"), Footer.Of(settings.FocusedRow!));
+        Assert.Equal(new Footer(Change: true, Activate: AppTexts.Open), Footer.Of(settings.FocusedRow!));
 
         arcadia.Press(UiAction.NextTab);
         await arcadia.WaitUntilAsync(() => settings.Selected.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung zum fehlenden Pan");
 
         // A problem with its fix: only A, named by the fix.
-        Assert.Equal(new Footer(Change: false, Activate: "Installieren"), Footer.Of(arcadia.FocusRow("issue:pan-missing")));
+        Assert.Equal(new Footer(Change: false, Activate: ControllerSupportTexts.Install), Footer.Of(arcadia.FocusRow("issue:pan-missing")));
 
         // A choice: only ◀▶, A counting on goes without saying.
         Assert.Equal(new Footer(Change: true, Activate: null), Footer.Of(arcadia.FocusRow("mouse-mode")));
 
         // A switch: ◀▶ and "A Umschalten".
-        Assert.Equal(new Footer(Change: true, Activate: "Umschalten"), Footer.Of(arcadia.FocusRow("mouse-mode-end-in-front")));
+        Assert.Equal(new Footer(Change: true, Activate: AppTexts.Toggle), Footer.Of(arcadia.FocusRow("mouse-mode-end-in-front")));
 
         // A row that only shows something: neither.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Über Arcadia", settings.Selected.Name);
+        Assert.Equal(AppTexts.AboutTitle, settings.Selected.Name);
         Assert.Equal(new Footer(Change: false, Activate: null), Footer.Of(settings.FocusedRow!));
     }
 

@@ -64,7 +64,7 @@ public sealed class LatencyStats
         {
             if (_count == 0)
             {
-                return "keine Werte";
+                return "keine Werte"; // not a UI text (log)
             }
 
             return FormattableString.Invariant(

@@ -28,20 +28,20 @@ public sealed class SteamDesktopLayoutTests
         Assert.Equal("steam", launchers.PageLauncherId);
 
         var row = Assert.IsType<SteamDesktopLayoutRowViewModel>(launchers.Rows[^1]);
-        Assert.Equal(("Steams Desktop-Steuerung zulassen", "DESKTOP-STEUERUNG"), (row.Title, row.Group));
+        Assert.Equal((AppTexts.SteamDesktopTitle, "DESKTOP-STEUERUNG"), (row.Title, row.Group));
         // Off by default: allowing Steam's desktop control is the choice, ignoring it the rule.
         Assert.False(row.IsOn);
-        Assert.Equal("Steams Desktop-Steuerung wird momentan ignoriert", row.Subtitle);
+        Assert.Equal(AppTexts.SteamDesktopIgnored, row.Subtitle);
         Assert.True(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
 
         arcadia.FocusRow(SteamDesktopLayoutRowViewModel.RowKey);
         arcadia.Press(UiAction.Left);
         Assert.True(row.IsOn);
         Assert.False(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
-        Assert.Equal("Steams Desktop-Steuerung ist momentan aktiviert", row.Subtitle);
+        Assert.Equal(AppTexts.SteamDesktopAllowed, row.Subtitle);
         arcadia.Press(UiAction.Accept);
         Assert.True(arcadia.Settings.Current.IgnoreSteamDesktopLayout);
-        Assert.Equal("Steams Desktop-Steuerung wird momentan ignoriert", row.Subtitle);
+        Assert.Equal(AppTexts.SteamDesktopIgnored, row.Subtitle);
 
         // B goes back to the list, again B leaves the settings.
         arcadia.Press(UiAction.Back);

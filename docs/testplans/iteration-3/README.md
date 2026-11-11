@@ -36,6 +36,7 @@ its file.
 | [024](024-design-polish-font-covers-page-sizes.md) | #24 | Design polish: Figtree font, 2:3 covers, page sizes that fill the grid | T24-1 to T24-16 |
 | [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-8 to T476-13 (part 1) |
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
+| [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 
 ## Release candidate tests (restart or installation)
 
@@ -69,4 +70,5 @@ Charter: –. Time box: –. Findings: –.
 | T382-7, -9, -10 | `EmulationSetupTests` (restart row); variants T382-2, -8, -11, -29 in `ControllerSupportRestartTests` (Core), T382-3, -4 in `UnchangedPanTests` (Pan) |
 | T382-1, -5, -6, -8, -12 to -17, -20, -21, -26 to -28 | `WindowsRestartTests`; T382-18, -19, -22, -23, -25 in `Window/WindowsRestartViewTests` |
 | T477-1, -2, -5, -6, -9 | `SearchSpeedTests`; T477-6 in `Window/LauncherPageViewTests`, T477-9 in `Window/OnScreenKeyboardViewTests` |
+| T480-8, -9 | `BrokenTextTests`, `PluralTextsTests`; the fallback T480-1 to -7, -10, -11 in `UiTextTests`, T480-15 in `UiTextsStayInResourcesTests` (Core) |
 | T24-1 to -4, -6 to -13 | `PagingTests`, `SettingsServiceTests`, `LibraryTests`, `GridFadeTests`, `LibrarySpeedTests`, `Window/CoverAndIconTests`, `Window/EmbeddedFontTests` |

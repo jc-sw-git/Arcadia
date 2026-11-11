@@ -68,6 +68,6 @@ public sealed class TypeCountLineTests
         Assert.Equal(counted, GameTypeTexts.Count(type, count));
         Assert.Equal(name, GameTypeTexts.Name(type));
         Assert.Equal(action, GameTypeTexts.PrimaryAction(type));
-        Assert.Equal(type == GameType.Game ? "Zurück ins Spiel" : "Weiter tüfteln", GameTypeTexts.ReturnAction(type));
+        Assert.Equal(type == GameType.Game ? AppTexts.ReturnToGame : AppTexts.ContinueTinkering, GameTypeTexts.ReturnAction(type));
     }
 }

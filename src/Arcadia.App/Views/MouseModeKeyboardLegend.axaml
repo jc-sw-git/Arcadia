@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:kb="using:Arcadia.App.Keyboard"
              xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.MouseModeKeyboardLegend"
@@ -11,36 +12,36 @@
     <StackPanel Orientation="Horizontal" Spacing="26" IsVisible="{Binding UsesController}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="D-Pad" />
-        <TextBlock Classes="keyboardHint" Text="Tasten wählen" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.ChooseKeys}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="A" />
-        <TextBlock Classes="keyboardHint" Text="Tippen" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.Type}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="LS" />
-        <TextBlock Classes="keyboardHint" Text="Mauszeiger" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.MousePointer}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="RT" />
-        <TextBlock Classes="keyboardHint" Text="Linksklick" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.LeftClick}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="LT" />
-        <TextBlock Classes="keyboardHint" Text="Rechtsklick" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.RightClick}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="RS" />
-        <TextBlock Classes="keyboardHint" Text="Mausrad" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.MouseWheel}" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <ctl:PadGlyph Button="L3" />
-        <TextBlock Classes="keyboardHint" Text="Langsamer Zeiger" />
+        <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.SlowPointer}" />
       </StackPanel>
     </StackPanel>
     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !UsesController}">
-      <Border Classes="glyph kbd"><TextBlock Text="Klick" /></Border>
-      <TextBlock Classes="keyboardHint" Text="Taste tippen" />
+      <Border Classes="glyph kbd"><TextBlock Text="{x:Static app:AppTexts.Click}" /></Border>
+      <TextBlock Classes="keyboardHint" Text="{x:Static app:AppTexts.TypeKey}" />
     </StackPanel>
   </Panel>
 </UserControl>

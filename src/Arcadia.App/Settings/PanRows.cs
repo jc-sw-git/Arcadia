@@ -75,11 +75,11 @@ public sealed class NoPanEmulation : IPanEmulationView
 
 /// <summary>"Controller-Wächter (Pan)": a switch, "Treiber installieren", or why neither is possible (#242).</summary>
 public sealed class PanRowViewModel(Action<bool?> activate)
-    : SetupSwitchRowViewModel(PanRows.MainKey, "Controller-Wächter (Pan)", activate)
+    : SetupSwitchRowViewModel(PanRows.MainKey, AppTexts.PanTitle, activate)
 {
-    public override string InfoTitle => "PAN, DER CONTROLLER-WÄCHTER";
+    public override string InfoTitle => AppTexts.PanInfoTitle;
 
-    public override string ActivateText => IsInstall ? InstallText : "Ändern";
+    public override string ActivateText => IsInstall ? InstallText : AppTexts.Change;
 }
 
 /// <summary>
@@ -94,13 +94,13 @@ public sealed class PanRows
     public const string LayoutsKey = "pan-layouts";
     public const string Group = "PAN";
 
-    private const string Admin = "Windows fragt einmal nach Administratorrechten.";
+    private static string Admin => AppTexts.PanAdminOnce;
 
-    public const string UpdateDueSubtitle = "Neue Pan-Version verfügbar";
-    public const string UpdatingSubtitle = "Pan wird aktualisiert …";
-    public const string UpdateDueInfo = "Schaltest du den Controller-Wächter ein, wird Pan zuerst aktualisiert. Dabei fragt Windows nach deiner Erlaubnis.";
-    public const string ExcludedSubtitle = "An – Steam Controller und Puck freigegeben, bis du Pan aus- und wieder einschaltest";
-    public const string NotUpdatedToast = "Pan: nicht aktualisiert, Controller-Wächter bleibt aus";
+    public static string UpdateDueSubtitle => AppTexts.PanUpdateDueSubtitle;
+    public static string UpdatingSubtitle => AppTexts.PanUpdatingSubtitle;
+    public static string UpdateDueInfo => AppTexts.PanUpdateDueInfo;
+    public static string ExcludedSubtitle => AppTexts.PanExcludedSubtitle;
+    public static string NotUpdatedToast => AppTexts.PanNotUpdatedToast;
 
     private readonly ControllerSupportService _support;
     private readonly SettingsChanges _changes;
@@ -121,18 +121,18 @@ public sealed class PanRows
         _gameInTheWay = gameInTheWay;
         _applyFix = applyFix;
         Main = new PanRowViewModel(_ => Activate()) { Group = Group };
-        Restore = new ActionRowViewModel(RestoreKey, "Controller wiederherstellen", () => _support.RestoreControllersAsync().Forget("Controller wiederherstellen"))
+        Restore = new ActionRowViewModel(RestoreKey, AppTexts.ErrorContextRestoreControllers, () => _support.RestoreControllersAsync().Forget(AppTexts.ErrorContextRestoreControllers))
         {
             Group = Group,
-            Subtitle = "Wenn Controller nicht reagieren oder doppelt eingeben",
-            ActionText = "Wiederherstellen",
+            Subtitle = AppTexts.PanRestoreSubtitle,
+            ActionText = AppTexts.Restore,
             Info =
             [
-                new InfoText("Stellt deine Controller wieder her, wenn sie unerwartet nicht mehr reagieren oder doppelte Eingaben verursachen. Pan gibt dann alle Controller wieder frei und räumt die emulierten Controller auf. Windows fragt dafür nach Administratorrechten."),
-                new InfoText("Im Normalfall ist das nicht nötig, aber besser haben als brauchen."),
-                new InfoSection("HILFT AUCH DAS NICHT",
+                new InfoText(AppTexts.PanRestoreInfo),
+                new InfoText(AppTexts.PanRestoreInfoNormal),
+                new InfoSection(AppTexts.PanIfThatFails,
                 [
-                    new InfoText("Öffne die HidHide-Konfiguration aus dem Startmenü, hake deine Controller ab, entferne Arcadia aus der Programmliste und schalte „Enable device hiding“ aus."),
+                    new InfoText(AppTexts.PanRestoreManual),
                 ]),
             ],
         };
@@ -140,7 +140,7 @@ public sealed class PanRows
         {
             Group = Group,
             Indent = 1,
-            Subtitle = "Ändere das Layout deiner angeschlossenen Controller",
+            Subtitle = AppTexts.PanLayoutsSubtitle,
             ActionText = "Zuordnen",
         };
     }
@@ -198,12 +198,12 @@ public sealed class PanRows
         var problem = warnings.Any(row => row.Severity > HealthSeverity.Info) || status.HasProblem;
         var updateDue = !notHere && !allMissing && IsUpdateDue;
 
-        Main.InstallText = IsInstalling ? "Wird installiert …" : installFailed ? "Erneut versuchen" : "Treiber installieren";
+        Main.InstallText = IsInstalling ? AppTexts.Installing : installFailed ? AppTexts.TryAgain : AppTexts.DriversInstall;
         Main.Update(
             notHere ? SetupRowMode.Unavailable : allMissing ? SetupRowMode.Install : SetupRowMode.Switch,
             !notHere && !allMissing && IsOn,
             isLocked: IsBusy || _updating || (game is not null && !allMissing) || installBlocked,
-            unavailableText: "Auf diesem System noch nicht verfügbar",
+            unavailableText: AppTexts.LauncherControllerUnsupported,
             status: Subtitle(status, allMissing, installFailed, problem, game, excluded, updateDue));
         // A running game would lose its controller mid-game: greyed out like "Auf Werkseinstellungen zurücksetzen".
         Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy) || installBlocked;
@@ -257,15 +257,15 @@ public sealed class PanRows
         Layouts.IsEnabled = !IsBusy;
         Layouts.Info =
         [
-            new InfoText("Pan erlaubt es, deinen angeschlossenen Controllern ein anderes Layout zuzuweisen. Controller wie der DualSense, Xbox Controller oder Nintendo Switch 2 Pro Controller werden von Pan nativ unterstützt, also 1:1 übersetzt, und haben von Haus aus ihr korrektes Layout. Controller, die Pan nicht nativ übersetzen kann (zum Beispiel der GameCube Controller oder Controller anderer Hersteller), werden als Xbox 360 Controller behandelt."),
-            new InfoText("Das Layout zu ändern kann sinnvoll sein, wenn du den GameCube Controller in Spielen verwenden möchtest, die ihn nicht unterstützen, oder wenn dein Controller eines anderen Herstellers wie ein DualSense ein Touchpad oder Gyro hat."),
-            new InfoText("Mit „Nicht übernehmen“ ignoriert Pan dieses Controller-Modell. Seine Eingaben kommen dann direkt im Spiel an, als wäre Pan ausgeschaltet."),
-            new InfoFacts("SPIELE SEHEN",
+            new InfoText(AppTexts.PanLayoutsInfo),
+            new InfoText(AppTexts.PanLayoutsInfoWhen),
+            new InfoText(AppTexts.PanLayoutsInfoNotApplied),
+            new InfoFacts(AppTexts.PanGamesSee,
             [
                 .. steamController ? [new InfoFact(ControllerLayoutsViewModel.SteamControllerTitle, PadKinds.DisplayName(PadKind.Xbox360))] : Array.Empty<InfoFact>(),
                 .. models.Select(model => ControllerLayouts.Effective(ControllerLayouts.Find(chosen, model.Model), model.DefaultKind) is { IsTakenOver: true } layout
                     ? new InfoFact(model.Name, ControllerLayouts.DisplayName(layout))
-                    : new InfoFact(model.Name, "Nicht übernommen", IsMuted: true)),
+                    : new InfoFact(model.Name, AppTexts.PanLayoutNotApplied, IsMuted: true)),
             ]),
         ];
         return true;
@@ -279,21 +279,21 @@ public sealed class PanRows
     private string Subtitle(PanEmulationStatus status, bool allMissing, bool installFailed, bool problem, string? game, bool excluded, bool updateDue) =>
         (allMissing, IsOn) switch
         {
-            (true, _) when IsInstalling => "Windows fragt einmal nach Administratorrechten",
-            (true, _) when installFailed => "Installation abgebrochen – warum, steht im Info-Panel",
-            (true, _) => "Pan verwaltet, wie Spiele, Programme und Launcher deine Controller nutzen",
-            _ when game is not null => $"Erst änderbar, wenn „{game}“ beendet ist",
+            (true, _) when IsInstalling => AppTexts.PanAdminOnceSubtitle,
+            (true, _) when installFailed => AppTexts.PanSubtitleInstallAborted,
+            (true, _) => AppTexts.PanSubtitleDescription,
+            _ when game is not null => AppTexts.PanSubtitleGameRunning(game),
             _ when updateDue => _updating ? UpdatingSubtitle : UpdateDueSubtitle,
-            (_, false) => "Aus – Spiele und Launcher sehen deine echten Controller direkt",
+            (_, false) => AppTexts.PanSubtitleOff,
             _ when _support.PausesForWindowsRestart => PanEmulation.WindowsRestartReason,
-            _ when status.State == PanEmulationState.Stopped => "Angehalten – der Grund steht darunter",
-            _ when problem => "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.",
+            _ when status.State == PanEmulationState.Stopped => AppTexts.PanSubtitlePaused,
+            _ when problem => AppTexts.PanSubtitleProblem,
             _ when excluded => ExcludedSubtitle,
             _ => status.State switch
             {
-                PanEmulationState.Running => "An – deine Controller werden von Arcadia verwaltet",
-                PanEmulationState.Ready => "Bereit – kein Controller verbunden",
-                _ => "Wird eingerichtet …",
+                PanEmulationState.Running => AppTexts.PanSubtitleOn,
+                PanEmulationState.Ready => AppTexts.PanSubtitleReadyNoController,
+                _ => AppTexts.PanSubtitleSettingUp,
             },
         };
 
@@ -314,11 +314,11 @@ public sealed class PanRows
         var on = !IsOn;
         if (on && _support.IsPanUpdateDue)
         {
-            UpdateAndSwitchOnAsync().Forget("Pan aktualisieren");
+            UpdateAndSwitchOnAsync().Forget(AppTexts.ErrorContextUpdatePan);
             return;
         }
 
-        _changes.Apply(settings => settings with { PanEnabled = on }, "Controller-Wächter (Pan)");
+        _changes.Apply(settings => settings with { PanEnabled = on }, AppTexts.PanTitle);
         Services.AppLog.Write($"Controller-Wächter (Pan): {(on ? "an" : "aus")}");
         Switched?.Invoke();
     }
@@ -344,7 +344,7 @@ public sealed class PanRows
             // logged with its stack, and the row still says that Pan stays off.
             if (ex is not (InvalidOperationException or TimeoutException))
             {
-                AppErrors.Report(ex, "Pan aktualisieren");
+                AppErrors.Report(ex, AppTexts.ErrorContextUpdatePan);
             }
 
             _support.SwitchPanOffForUpdate(ex.Message);
@@ -357,7 +357,7 @@ public sealed class PanRows
 
         if (updated)
         {
-            _changes.Apply(settings => settings with { PanEnabled = true }, "Controller-Wächter (Pan)");
+            _changes.Apply(settings => settings with { PanEnabled = true }, AppTexts.PanTitle);
             Services.AppLog.Write("Controller-Wächter (Pan): aktualisiert und an");
         }
 
@@ -394,7 +394,7 @@ public sealed class PanRows
         {
             // Normally gone at once with the restart; it stays only when that failed (its toast), so the player can try again.
             rows.Add(Row("pan:restart-pending", RestartPendingTitle, RestartPendingSubtitle, HealthSeverity.Info, RestartPendingInfo,
-                RestartText, () => restart("„Arcadia neu starten“ nach der HidHide-Installation")));
+                RestartText, () => restart(AppTexts.PanRestartAfterHidHide)));
         }
 
         // Only while the emulation runs: otherwise every controller reaches games directly anyway, and the rows above say why.
@@ -410,7 +410,7 @@ public sealed class PanRows
         if (status.State == PanEmulationState.Unavailable && !rows.Any(row => row.Severity > HealthSeverity.Info))
         {
             // Pan or VIIPER doesn't answer, and no part row says why.
-            rows.Add(Row("pan:start-failed", "Emulation startet nicht", status.Reason ?? "Pan antwortet nicht", HealthSeverity.Warning,
+            rows.Add(Row("pan:start-failed", AppTexts.PanEmulationNotStarting, status.Reason ?? AppTexts.PanNotAnswering, HealthSeverity.Warning,
                 StartFailedText, RetryText, _pan.Retry));
         }
 
@@ -439,25 +439,25 @@ public sealed class PanRows
                 yield return (hiding.Id, IssueRow(hiding, null));
                 break;
             case PanEmulationProblem.Hiding:
-                yield return ("pan:hide-failed", Row("pan:hide-failed", "Steam Controller lässt sich nicht verstecken", "Pan versucht es gleich wieder", HealthSeverity.Warning,
-                    "Pan konnte den Steam Controller nicht vor anderen Programmen verstecken, zum Beispiel weil Windows ihn nicht neu verbinden ließ. Solange er nicht versteckt ist, emuliert Arcadia ihn nicht, damit keine Eingabe doppelt ankommt. Pan versucht es alle 10 Sekunden wieder; warum es scheitert, steht in pan.log.",
+                yield return ("pan:hide-failed", Row("pan:hide-failed", AppTexts.PanSteamControllerNotHiddenTitle, AppTexts.PanRetriesSoon, HealthSeverity.Warning,
+                    AppTexts.PanSteamControllerNotHiddenInfo,
                     RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.CopyFailed:
-                yield return ("pan:start-failed", Row("pan:start-failed", "Emulation startet nicht", "Arcadia versucht es gleich wieder", HealthSeverity.Warning,
+                yield return ("pan:start-failed", Row("pan:start-failed", AppTexts.PanEmulationNotStarting, AppTexts.ArcadiaRetriesSoon, HealthSeverity.Warning,
                     StartFailedText, RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.TooManyFailures:
-                yield return ("pan:stopped", Row("pan:stopped", "Emulation angehalten", "Mehr als 3 Ausfälle in 5 Minuten, Arcadia versucht es nicht mehr von selbst", HealthSeverity.Error,
-                    "Die Emulation ist mehrmals kurz hintereinander ausgefallen. Damit Spiele nicht ständig Controller verlieren und wiederbekommen, wartet Arcadia jetzt auf dich. „Erneut versuchen“ startet sie neu. Hilft das nicht, „Controller wiederherstellen“.",
+                yield return ("pan:stopped", Row("pan:stopped", AppTexts.PanEmulationStoppedTitle, AppTexts.PanEmulationGaveUpSubtitle, HealthSeverity.Error,
+                    AppTexts.PanEmulationGaveUpInfo,
                     RetryText, _pan.Retry));
                 break;
             case PanEmulationProblem.NotVisibleToArcadia:
                 yield return ("pan:not-visible", NotVisibleRow());
                 break;
             case PanEmulationProblem.CleaningUp:
-                yield return ("pan:cleaning-up", Row("pan:cleaning-up", "Pan räumt noch auf", "Gleich geht es von selbst weiter", HealthSeverity.Info,
-                    "Pan gibt gerade nach dem letzten Ende der Emulation die echten Controller zurück. Danach richtet Arcadia die Emulation von selbst neu ein; das dauert wenige Sekunden.",
+                yield return ("pan:cleaning-up", Row("pan:cleaning-up", AppTexts.PanCleaningUp, AppTexts.PanCleaningUpSubtitle, HealthSeverity.Info,
+                    AppTexts.PanCleaningUpInfo,
                     null, null));
                 break;
         }
@@ -485,7 +485,7 @@ public sealed class PanRows
         ];
         if (game is not null)
         {
-            row.Subtitle = $"Erst möglich, wenn „{game}“ beendet ist";
+            row.Subtitle = AppTexts.PanRestartGameRunning(game);
             row.IsEnabled = false;
         }
 
@@ -498,12 +498,12 @@ public sealed class PanRows
         foreach (var vendor in _pan.WaitingForTool.GroupBy(waiting => waiting.Model.Vendor))
         {
             var (tool, controller, it) = vendor.Key == ControllerList.Sony
-                ? ("PlayStation Accessories", "den DualSense", "ihn")
-                : ("Xbox Zubehör", "den Xbox Controller", "es");
-            var row = Row($"pan:firmware-tool:{vendor.Key:X4}", $"{tool} ist geöffnet", $"Arcadia übernimmt {controller}, sobald du {it} schließt", HealthSeverity.Warning,
-                $"Mit {tool} aktualisierst du die Firmware {(vendor.Key == ControllerList.Sony ? "deines DualSense" : "deines Xbox Controllers")}. Damit ein Update nicht abbricht, übernimmt Arcadia den Controller erst, wenn {tool} geschlossen ist.",
+                ? ("PlayStation Accessories", AppTexts.FirmwareToolTheDualSense, AppTexts.FirmwareToolItMasculine)
+                : (AppTexts.FirmwareToolXboxAccessories, AppTexts.FirmwareToolTheXboxController, AppTexts.FirmwareToolItNeuter);
+            var row = Row($"pan:firmware-tool:{vendor.Key:X4}", AppTexts.FirmwareToolOpen(tool), AppTexts.FirmwareToolWaiting(controller: controller, it: it), HealthSeverity.Warning,
+                vendor.Key == ControllerList.Sony ? AppTexts.FirmwareToolInfoDualSense(tool) : AppTexts.FirmwareToolInfoXbox(tool),
                 null, null);
-            row.Info = [.. row.Info, new InfoSection("WARTET AUF ÜBERNAHME", [.. vendor.Select(waiting => new InfoText(waiting.Name))])];
+            row.Info = [.. row.Info, new InfoSection(AppTexts.FirmwareToolGroup, [.. vendor.Select(waiting => new InfoText(waiting.Name))])];
             yield return row;
         }
     }
@@ -520,16 +520,16 @@ public sealed class PanRows
             return null;
         }
 
-        var title = notHidden.Count == 1 ? $"{notHidden[0].Name} lässt sich nicht verstecken" : $"{notHidden.Count} Controller lassen sich nicht verstecken";
-        var row = Row("pan:not-hidden", title, "Spiele sehen sie direkt, Arcadias Tastenkombinationen kommen dort mit an", HealthSeverity.Info,
-            "Pan konnte diese Controller nicht vor Spielen verstecken. Damit keine Eingabe doppelt ankommt, emuliert Arcadia sie nicht: Spiele sehen sie direkt, so als liefe Arcadia nicht.",
+        var title = notHidden.Count == 1 ? AppTexts.PanNotHiddenOne(notHidden[0].Name) : AppTexts.PanNotHiddenMany(notHidden.Count);
+        var row = Row("pan:not-hidden", title, AppTexts.PanNotHiddenSubtitle, HealthSeverity.Info,
+            AppTexts.PanNotHiddenInfo,
             null, null);
         row.Info =
         [
             .. row.Info,
-            new InfoText("In Arcadia funktionieren sie wie gewohnt. Nur Tastenkombinationen wie „Zurück zu Arcadia“ kommen dabei auch im Spiel an."),
+            new InfoText(AppTexts.PanNotHiddenInArcadia),
             new InfoSection("BETROFFEN", [.. notHidden.Select(controller => new InfoCard(controller.Name, NotHiddenReason(controller.Reason), string.Empty))]),
-            new InfoText("Steckst du den Controller neu ein, versucht Pan es erneut. Wer gar keine Emulation möchte, schaltet den Controller-Wächter aus."),
+            new InfoText(AppTexts.PanNotHiddenReplug),
         ];
         return row;
     }
@@ -546,33 +546,33 @@ public sealed class PanRows
         row.Info =
         [
             .. row.Info,
-            new InfoSection("NICHT MEHR SICHTBAR FÜR ARCADIA", [.. _pan.NotVisibleToArcadia.Select(name => new InfoText(name))]),
+            new InfoSection(AppTexts.PanNotVisibleGroup, [.. _pan.NotVisibleToArcadia.Select(name => new InfoText(name))]),
             new InfoText(NotVisibleAgainText),
         ];
         return row;
     }
 
-    public const string NotVisibleTitle = "Arcadia sieht deine Controller nicht mehr";
-    public const string NotVisibleSubtitle = "Pan hat sie wieder freigegeben. Ein Neustart von Arcadia behebt das";
-    public const string NotVisibleText = "Pan hat diese Controller vor anderen Programmen versteckt. Arcadia selbst müsste sie danach weiter sehen, um sie für Steam und Spiele zu kopieren, sieht sie aber seit dem Verstecken nicht mehr. Das passiert, wenn HidHide installiert wurde, während Arcadia lief. Pan hat die Controller deshalb wieder freigegeben: Steam und Spiele sehen sie direkt. Bis Arcadia neu gestartet ist, versteckt Pan nichts mehr.";
-    public const string NotVisibleAgainText = "Kommt diese Meldung nach dem Neustart von Arcadia wieder, starte Windows neu.";
-    public const string RestartText = "Arcadia neu starten";
-    public const string RestartPendingTitle = "Arcadia startet nach der HidHide-Installation neu";
-    public const string RestartPendingSubtitle = "Bis dahin versteckt Pan keine Controller";
-    public const string RestartPendingInfo = "Erst ein neu gestartetes Arcadia sieht die Controller, die Pan vor anderen Programmen versteckt. Startet Arcadia nicht von selbst neu, starte es hier neu.";
-    private const string RestartReason = "„Arcadia neu starten“: Arcadia sieht die versteckten Controller nicht";
+    public static string NotVisibleTitle => AppTexts.PanNotVisibleTitle;
+    public static string NotVisibleSubtitle => AppTexts.PanNotVisibleSubtitle;
+    public static string NotVisibleText => AppTexts.PanNotVisibleInfo;
+    public static string NotVisibleAgainText => AppTexts.PanNotVisibleAgain;
+    public static string RestartText => AppTexts.RestartArcadia;
+    public static string RestartPendingTitle => AppTexts.PanRestartPendingTitle;
+    public static string RestartPendingSubtitle => AppTexts.PanRestartPendingSubtitle;
+    public static string RestartPendingInfo => AppTexts.PanRestartPendingInfo;
+    private static string RestartReason => AppTexts.PanRestartReason;
 
     /// <summary>Why Pan didn't hide a controller, in the player's words (#335's findings A1–A3).</summary>
     private static string NotHiddenReason(PanReason reason) => reason switch
     {
-        PanReason.ControllerNeedsReplug => "Windows gibt diesen Controller erst frei, wenn du ihn neu verbindest. Bis dahin sehen Programme, die ihn schon geöffnet haben, ihn direkt.",
-        PanReason.ControllerNotHideable => "Pan findet an diesem Controller nichts, was es vor Spielen verstecken kann.",
-        PanReason.ControllerNotConnected => "Pan findet diesen Controller nicht unter den Geräten von Windows.",
+        PanReason.ControllerNeedsReplug => AppTexts.PanNotHiddenReasonReconnect,
+        PanReason.ControllerNotHideable => AppTexts.PanNotHiddenReasonNothing,
+        PanReason.ControllerNotConnected => AppTexts.PanNotHiddenReasonNotFound,
         // HidingFailed has several causes (a failed restart, an unknown image path, HidHide's errors): no guess at which.
-        _ => "Pan konnte diesen Controller nicht verstecken. Was dabei schiefging, steht in pan.log.",
+        _ => AppTexts.PanNotHiddenReasonFailed,
     };
 
-    private const string StartFailedText = "Arcadia konnte die emulierten Controller nicht anlegen. Pan hat die echten Controller deshalb wieder freigegeben, Steam und Spiele sehen sie direkt. Arcadia versucht es beim nächsten Durchlauf von selbst; Details stehen in arcadia.log.";
+    private static string StartFailedText => AppTexts.PanStartFailedInfo;
 
     private ActionRowViewModel IssueRow(HealthIssue issue, string? failed)
     {
@@ -614,7 +614,7 @@ public sealed class PanRows
         return row;
     }
 
-    private const string RetryText = "Erneut versuchen";
+    private static string RetryText => AppTexts.TryAgain;
 
     /// <summary>The row whose "Erneut versuchen" was pressed last; it shows the attempt while it runs.</summary>
     private string? _retried;
@@ -627,7 +627,7 @@ public sealed class PanRows
 
     private static void ShowRetrying(ActionRowViewModel row)
     {
-        row.ActionText = "Wird versucht …";
+        row.ActionText = AppTexts.Retrying;
         row.IsWorking = true;
         row.IsEnabled = false;
     }
@@ -646,59 +646,59 @@ public sealed class PanRows
     /// <summary>The designs' line and explanation for a part's row (T242Warnzeilen); a row they don't name keeps its own.</summary>
     private static (string Subtitle, string Text, HealthSeverity Severity) Texts(HealthIssue issue) => issue.Id switch
     {
-        "usbip-missing" => ("Erzeugt die emulierten Controller",
-            $"Über den usbip-Treiber (usbip-win2) erzeugt Arcadia die emulierten Controller, die Spiele und Steam sehen. „Installieren“ richtet alle fehlenden Teile in einem Schritt ein. {Admin}", issue.Severity),
+        "usbip-missing" => (AppTexts.PanUsbipSubtitle,
+            AppTexts.PanUsbipInfo(Admin), issue.Severity),
         "usbip-outdated" => (issue.Detail.TrimEnd('.'),
-            $"Arcadia ist mit usbip-win2 ab {UsbipRelease.MinimumVersion} geprüft. „Aktualisieren“ installiert diese Version. {Admin}", issue.Severity),
-        "usbip-stopped" => ("Meist hilft ein Neustart des PCs",
-            $"Der Treiber ist installiert, aber Windows hat ihn nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation. {Admin}", issue.Severity),
-        "viiper-missing" => ("Leitet die Signale der Controller an Spiele und Programme weiter", issue.Detail, issue.Severity),
-        "pan-missing" => ("Gibt deine Controller zurück, falls Arcadia abstürzt",
-            $"Pan läuft als Windows-Dienst und passt auf: Stürzt Arcadia ab oder hängt, beendet Pan die Emulation und gibt allen Programmen die echten Controller zurück. Ohne Pan emuliert Arcadia nichts. {Admin}", issue.Severity),
-        "pan-failing" => ("„Neu einrichten“ behebt das meist",
-            $"Pan beendet sich gleich nach dem Start. „Neu einrichten“ installiert Pan neu und legt seinen Ordner neu an. Warum es sich beendet hat, steht in {PanPaths.LogPath}. {Admin}", issue.Severity),
-        "hidhide-missing" => ("Versteckt die echten Controller vor anderen Programmen",
-            $"HidHide versteckt Geräte vor Programmen. Pan trägt dort deine echten Controller ein, solange Arcadia sie emuliert, und nimmt sie wieder heraus, wenn Arcadia endet. Bis dahin sieht nur Arcadia sie. {Admin}", issue.Severity),
-        "hidhide-unsupported" => ($"Arcadia braucht HidHide {HidHideRelease.Version} oder neuer", $"{issue.Detail} {Admin}", issue.Severity),
-        "hidhide-inactive" => ("Meist hilft ein Neustart des PCs",
-            "HidHide ist installiert, sein Treiber läuft aber noch nicht. Meist hilft ein Neustart des PCs.", issue.Severity),
-        "hidhide-interface" => ($"HidHide {HidHideRelease.Version} neu installieren hilft",
-            $"Der HidHide-Treiber kennt eine Anfrage nicht, die Pan braucht. HidHide {HidHideRelease.Version} neu installieren hilft: {HidHideRelease.ManualInstallUrl}", issue.Severity),
-        "hidhide-busy" => ("Bitte schließe sie. Danach geht es von selbst weiter.",
-            "Die HidHide-Konfiguration ist geöffnet. Solange sie offen ist, kann Pan deine Controller nicht überwachen, und Arcadias Controller-Verwaltung ist pausiert. Schließe das Fenster der HidHide-Konfiguration, danach geht es von selbst weiter.", issue.Severity),
-        "hidhide-inverse" => ("Schalte „Inverse application cloak“ in HidHide aus",
-            "In HidHide ist „Inverse application cloak“ eingeschaltet. Dann versteckt HidHide die Geräte vor Arcadia statt vor allen anderen. Schalte es in der HidHide-Konfiguration aus.", issue.Severity),
-        "hidhide-cloaking-off" => ("Sonst würde Pan auch deine anderen Geräte dort verstecken",
-            "In HidHide sind Geräte eingetragen, aber „Enable device hiding“ ist aus. Pan müsste es einschalten und würde diese Geräte dann mit verstecken, deshalb tut es das nicht. Schalte es in der HidHide-Konfiguration ein oder trage die Geräte dort aus.", issue.Severity),
+            AppTexts.PanUsbipOutdatedInfo(minimumVersion: UsbipRelease.MinimumVersion, admin: Admin), issue.Severity),
+        "usbip-stopped" => (AppTexts.PanRestartPcHelps,
+            AppTexts.PanUsbipNotLoadedInfo(Admin), issue.Severity),
+        "viiper-missing" => (AppTexts.PanViiperSubtitle, issue.Detail, issue.Severity),
+        "pan-missing" => (AppTexts.PanServiceSubtitle,
+            AppTexts.PanServiceInfo(Admin), issue.Severity),
+        "pan-failing" => (AppTexts.PanServiceReinstallHelps,
+            AppTexts.PanServiceEndsInfo(logPath: PanPaths.LogPath, admin: Admin), issue.Severity),
+        "hidhide-missing" => (AppTexts.PanHidHideSubtitle,
+            AppTexts.PanHidHideInfo(Admin), issue.Severity),
+        "hidhide-unsupported" => (AppTexts.PanHidHideNeedsVersion(HidHideRelease.Version), $"{issue.Detail} {Admin}", issue.Severity),
+        "hidhide-inactive" => (AppTexts.PanRestartPcHelps,
+            AppTexts.PanHidHideNotRunningInfo, issue.Severity),
+        "hidhide-interface" => (AppTexts.PanHidHideReinstallHelps(HidHideRelease.Version),
+            AppTexts.PanHidHideUnknownRequestInfo(version: HidHideRelease.Version, url: HidHideRelease.ManualInstallUrl), issue.Severity),
+        "hidhide-busy" => (AppTexts.PanHidHideCloseIt,
+            AppTexts.PanHidHideConfigOpenInfo, issue.Severity),
+        "hidhide-inverse" => (AppTexts.PanHidHideInverseSubtitle,
+            AppTexts.PanHidHideInverseInfo, issue.Severity),
+        "hidhide-cloaking-off" => (AppTexts.PanHidHideHidingOffSubtitle,
+            AppTexts.PanHidHideHidingOffInfo, issue.Severity),
         _ => (issue.ShortText, issue.Detail, issue.Severity),
     };
 
     /// <summary>What each Steam Controller mode brings, here and on every launcher's page (#178).</summary>
     public static IReadOnlyList<InfoBlock> ModeCards { get; } =
     [
-        new InfoCard(ControllerModes.Arcadia, "+ In jedem Spiel, auch ohne Steam\n+ Das Spiel sieht einen Xbox Controller\n− Keine Steam-Belegungen, kein Gyro, keine Trackpads", string.Empty),
-        new InfoCard(ControllerModes.Steam, "+ Belegungen aus Steam, auch Community, Gyro und Trackpads\n− Außerhalb von Steam nur Steams Desktop-Belegung", string.Empty),
+        new InfoCard(ControllerModes.Arcadia, AppTexts.PanModeArcadiaCard, string.Empty),
+        new InfoCard(ControllerModes.Steam, AppTexts.PanModeSteamCard, string.Empty),
     ];
 
     /// <summary>The switch's info panel (T242Settings).</summary>
     private static readonly InfoBlock[] MainInfo =
     [
-        new InfoText("Pan ist der Controller-Wächter von Arcadia. Er stellt sicher, dass Arcadia alle Controller im vollen Umfang nutzen kann, und bestimmt, wie andere Launcher, Spiele und Programme mit ihnen umgehen."),
-        new InfoText("So funktionieren Arcadias Features wie der Mausmodus oder „Zurück zu Arcadia“ überall, ohne dass andere Launcher ebenfalls darauf reagieren, etwa Steams Desktop-Steuerung. Arcadia wird so zum Kontrollzentrum deiner Controller. Pan überwacht, dass echte und emulierte Controller fehlerfrei zusammenspielen, und gibt deine Controller sofort zurück, falls Arcadia unerwartet beendet wird."),
-        new InfoText("Pan versteckt deine echten Controller vor Spielen. Spiele sehen stattdessen für jeden einen emulierten Controller derselben Art, zum Beispiel einen DualSense als DualSense. So kommen Arcadias Tastenkombinationen nie im Spiel an."),
-        new InfoSection("STEAM CONTROLLER",
+        new InfoText(AppTexts.PanMainInfo1),
+        new InfoText(AppTexts.PanMainInfo2),
+        new InfoText(AppTexts.PanMainInfo3),
+        new InfoSection(AppTexts.SteamControllerGroup,
         [
-            new InfoText("Von Haus aus funktioniert der Steam Controller nur in Steam als echter Controller. Arcadia betreibt ihn deshalb in zwei Modi, „Steam-Eingabe“ und „Arcadia“, damit er auch außerhalb von Steam funktioniert, zum Beispiel in Spielen aus dem Epic Games Launcher oder dem Xbox Game Pass. Welchen Modus die Spiele eines Launchers bekommen, wählst du auf seiner Seite unter Launcher vor; pro Spiel stellst du ihn in seinen Details um."),
+            new InfoText(AppTexts.PanMainInfo4),
             .. ModeCards,
-            new InfoNote("Solange Arcadia den Steam Controller übernommen hat, hält es Firmware-Updates von Steam auf und gibt ihn dafür frei, sobald Steam aufgegeben hat. Läuft Steam beim Start der Emulation, fragt Arcadia vorher, ob gerade ein Update läuft.", HealthSeverity.Info),
+            new InfoNote(AppTexts.PanMainInfo5, HealthSeverity.Info),
         ]),
-        new InfoSection("WAS PAN BRAUCHT",
+        new InfoSection(AppTexts.PanWhatItNeeds,
         [
-            new InfoText("Pan braucht einige Treiber und Programme von Drittanbietern, die vor dem ersten Start eingerichtet werden:"),
-            new InfoCard("usbip-win2", "Erzeugt die emulierten Controller", "github.com/vadimgrn/usbip-win2"),
-            new InfoCard("VIIPER", "Leitet die Signale der Controller an Spiele und Programme weiter", "github.com/Alia5/VIIPER"),
-            new InfoCard("HidHide", "Versteckt die echten Controller, damit nichts doppelt ankommt", "github.com/nefarius/HidHide"),
-            new InfoText("Die Installation fragt einmal nach Administratorrechten. Danach ist ein Neustart des PCs empfohlen."),
+            new InfoText(AppTexts.PanMainInfoDrivers),
+            new InfoCard("usbip-win2", AppTexts.PanUsbipSubtitle, "github.com/vadimgrn/usbip-win2"),
+            new InfoCard("VIIPER", AppTexts.PanViiperSubtitle, "github.com/Alia5/VIIPER"),
+            new InfoCard("HidHide", AppTexts.PanHidHideMainSubtitle, "github.com/nefarius/HidHide"),
+            new InfoText(AppTexts.PanMainInfoAdmin),
         ]),
     ];
 }

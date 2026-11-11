@@ -49,12 +49,12 @@ public sealed class StatusModalTests
         var entry = Assert.Single(modal.Entries);
         Assert.Same(entry, modal.Focused);
         Assert.True(entry.IsWarning);
-        Assert.Equal("HidHide fehlt", entry.Title);
-        Assert.Equal("Versteckt die echten Controller vor anderen Programmen", entry.ShortText);
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, entry.Title);
+        Assert.Equal(AppTexts.PanHidHideSubtitle, entry.ShortText);
         Assert.Equal($"seit {Formatting.Clock(arcadia.Time.GetLocalNow())}", entry.SinceText);
-        Assert.Equal("Installieren", entry.FixLabel);
+        Assert.Equal(ControllerSupportTexts.Install, entry.FixLabel);
         Assert.Equal("1 Meldung", modal.CountText);
-        Assert.Equal("Installieren", modal.AcceptText);
+        Assert.Equal(AppTexts.Install, modal.AcceptText);
 
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsStatusModalOpen);
@@ -204,7 +204,7 @@ public sealed class StatusModalTests
         arcadia.Press(UiAction.Status);
         var update = Assert.Single(Modal(arcadia).Entries);
         Assert.True(update.IsUpdate);
-        Assert.Equal(("Arcadia 0.3.0 verfügbar", StatusBarViewModel.UpdateShortText, "Jetzt aktualisieren"), (update.Title, update.ShortText, update.FixLabel));
+        Assert.Equal(("Arcadia 0.3.0 verfügbar", StatusBarViewModel.UpdateShortText, AppTexts.UpdateNow), (update.Title, update.ShortText, update.FixLabel));
 
         // The tests' feed refuses every download, as a failing one on the player's PC.
         arcadia.Press(UiAction.Accept);
@@ -271,14 +271,14 @@ public sealed class StatusModalTests
         arcadia.Press(UiAction.Status);
         var modal = Modal(arcadia);
         Assert.Equal(StatusModalViewModel.UrgencyText, modal.OrderText);
-        Assert.Equal(["HidHide fehlt", "Windows-Neustart ausstehend"], Titles(arcadia));
+        Assert.Equal([ControllerSupportTexts.HidHideMissingTitle, ControllerSupportTexts.WindowsRestartPendingTitle], Titles(arcadia));
         arcadia.Press(UiAction.Down);
-        Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
 
         arcadia.Press(UiAction.ViewOptions);
         Assert.Equal(StatusModalViewModel.NewestText, modal.OrderText);
-        Assert.Equal(["HidHide fehlt", "Windows-Neustart ausstehend"], Titles(arcadia));
-        Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
+        Assert.Equal([ControllerSupportTexts.HidHideMissingTitle, ControllerSupportTexts.WindowsRestartPendingTitle], Titles(arcadia));
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
         Assert.True(arcadia.Settings.Current.SortsStatusByNewest);
         arcadia.Press(UiAction.Back);
 
@@ -297,11 +297,11 @@ public sealed class StatusModalTests
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status.Entries.Count == 2, "zwei Meldungen");
 
         arcadia.Press(UiAction.Status);
-        Assert.Equal(["HidHide fehlt", "Windows-Neustart ausstehend"], Titles(arcadia));
-        Assert.Equal("HidHide fehlt", Modal(arcadia).Focused?.Title);
+        Assert.Equal([ControllerSupportTexts.HidHideMissingTitle, ControllerSupportTexts.WindowsRestartPendingTitle], Titles(arcadia));
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, Modal(arcadia).Focused?.Title);
         arcadia.Press(UiAction.ViewOptions);
-        Assert.Equal(["Windows-Neustart ausstehend", "HidHide fehlt"], Titles(arcadia));
-        Assert.Equal("HidHide fehlt", Modal(arcadia).Focused?.Title);
+        Assert.Equal([ControllerSupportTexts.WindowsRestartPendingTitle, ControllerSupportTexts.HidHideMissingTitle], Titles(arcadia));
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, Modal(arcadia).Focused?.Title);
     }
 
     [AvaloniaFact]
@@ -312,18 +312,18 @@ public sealed class StatusModalTests
         using var arcadia = await StartAsync(steam);
         arcadia.Press(UiAction.Status);
         var modal = Modal(arcadia);
-        Assert.Equal(["Windows-Neustart ausstehend"], Titles(arcadia));
+        Assert.Equal([ControllerSupportTexts.WindowsRestartPendingTitle], Titles(arcadia));
 
         // A warning comes: it stands first, the focus stays on its entry.
         await ChangePartsAsync(arcadia, () => steam.HidHideVersion = null);
         await arcadia.WaitUntilAsync(() => modal.Entries.Count == 2, "die neue Meldung im Modal");
-        Assert.Equal(["HidHide fehlt", "Windows-Neustart ausstehend"], Titles(arcadia));
-        Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
+        Assert.Equal([ControllerSupportTexts.HidHideMissingTitle, ControllerSupportTexts.WindowsRestartPendingTitle], Titles(arcadia));
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
 
         // The focused one goes: the focus moves to the next.
         await ChangePartsAsync(arcadia, () => steam.UsbipRebootPending = false);
         await arcadia.WaitUntilAsync(() => modal.Entries.Count == 1, "die Meldung ist weg");
-        Assert.Equal("HidHide fehlt", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, modal.Focused?.Title);
 
         // The last one goes: "Alles erledigt!", and only B is left.
         await ChangePartsAsync(arcadia, () => steam.HidHideVersion = HidHideRelease.Version);
@@ -348,21 +348,21 @@ public sealed class StatusModalTests
         var modal = Modal(arcadia);
         Assert.True(modal.HasSeveral);
 
-        Assert.Equal("HidHide fehlt", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, modal.Focused?.Title);
         Assert.True(modal.Focused!.IsFixFocused);
         arcadia.Press(UiAction.Right);
         Assert.True(modal.Focused.IsSettingsFocused);
         Assert.Equal(StatusEntryViewModel.SettingsLabel, modal.AcceptText);
         arcadia.Press(UiAction.Left);
-        Assert.Equal("Installieren", modal.AcceptText);
+        Assert.Equal(AppTexts.Install, modal.AcceptText);
 
         // ▲ ▼ stop at the ends. The restart's info offers "Windows neu starten" too (#382).
         arcadia.Press(UiAction.Down, times: 3);
-        Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
         Assert.True(modal.FocusedHasFix);
-        Assert.Equal("Windows neu starten", modal.AcceptText);
+        Assert.Equal(AppTexts.ErrorContextRestartWindows, modal.AcceptText);
         arcadia.Press(UiAction.Up, times: 3);
-        Assert.Equal("HidHide fehlt", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, modal.Focused?.Title);
         Assert.True(modal.Focused!.IsFixFocused, "ein neu gewählter Eintrag steht auf seinem ersten Knopf");
 
         // "Zu den Einstellungen" on the info: its row, no question.

@@ -21,9 +21,9 @@ public sealed class DemoIntegration : ILauncherIntegration
 
     private static readonly IReadOnlyList<LibraryTypeOption> OtherTypeOptions =
     [
-        new("tools", "Werkzeuge einbeziehen", "Demo-Werkzeuge", "Zeigt die Werkzeuge der Demo-Bibliothek.", [], [GameType.Tool]),
-        new("software", "Software einbeziehen", "Demo-Software", "Zeigt die Software der Demo-Bibliothek.", [], [GameType.Software]),
-        new("soundtracks", "Soundtracks einbeziehen", "Demo-Soundtracks", "Zeigt die Soundtracks der Demo-Bibliothek.", [], [GameType.Soundtrack]),
+        new("tools", DemoTexts.DemoToolsTitle, "Demo-Werkzeuge", DemoTexts.DemoToolsInfo, [], [GameType.Tool]),
+        new("software", DemoTexts.DemoSoftwareTitle, "Demo-Software", DemoTexts.DemoSoftwareInfo, [], [GameType.Software]),
+        new("soundtracks", DemoTexts.DemoSoundtracksTitle, "Demo-Soundtracks", DemoTexts.DemoSoundtracksInfo, [], [GameType.Soundtrack]),
     ];
 
     public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; }

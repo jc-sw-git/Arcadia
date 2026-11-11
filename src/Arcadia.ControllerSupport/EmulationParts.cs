@@ -18,44 +18,44 @@ public static class EmulationParts
     /// <summary>The parts as the user knows them, by the rows that say one is missing.</summary>
     private static readonly (string Prefix, string Name)[] Parts =
     [
-        ("usbip-", "usbip-Treiber"), ("viiper-", "VIIPER"), ("pan-", "Wächterdienst Pan"), ("hidhide-", "HidHide"),
+        ("usbip-", ControllerSupportTexts.PartUsbip), ("viiper-", "VIIPER"), ("pan-", ControllerSupportTexts.PartPan), ("hidhide-", "HidHide"),
     ];
 
-    public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, "VIIPER fehlt",
-        "VIIPER leitet die Signale der emulierten Controller an Spiele und Programme weiter. „Installieren“ lädt die geprüfte Version herunter, ohne Administratorrechte.",
-        HealthFix.InstallDrivers, "Installieren", Summary: "Leitet die Signale der Controller an Spiele und Programme weiter");
+    public static HealthIssue ViiperMissing { get; } = new("viiper-missing", HealthSeverity.Warning, ControllerSupportTexts.ViiperMissingTitle,
+        ControllerSupportTexts.ViiperMissingText,
+        HealthFix.InstallDrivers, ControllerSupportTexts.Install, Summary: ControllerSupportTexts.ViiperSubtitle);
 
     /// <summary>
     /// Pan is installed but its last run ended with an error: it crashed, or its data folder was untrusted and couldn't be
     /// made anew (owner's B2 test, 2026-10-27). Its install makes the folder anew, so the fix is the same as for a
     /// missing Pan.
     /// </summary>
-    public static HealthIssue PanFailing { get; } = new("pan-failing", HealthSeverity.Warning, "Wächterdienst Pan startet nicht",
-        $"Pan beendet sich gleich nach dem Start. „Neu einrichten“ installiert Pan neu und legt seinen Ordner neu an; warum es sich beendet hat, steht in {PanPaths.LogPath}. Die Installation fragt einmalig nach Administratorrechten.",
-        HealthFix.InstallDrivers, "Neu einrichten", Summary: "„Neu einrichten“ behebt das meist.");
+    public static HealthIssue PanFailing { get; } = new("pan-failing", HealthSeverity.Warning, ControllerSupportTexts.PanFailingTitle,
+        ControllerSupportTexts.PanFailingText(PanPaths.LogPath),
+        HealthFix.InstallDrivers, ControllerSupportTexts.SetUpAgain, Summary: ControllerSupportTexts.PanFailingSubtitle);
 
     /// <summary>
     /// HidHide was uninstalled and is still there until Windows restarts. Counts as a missing part (so "Treiber
     /// installieren" knows every part is gone) but never shows: the restart row stands for it (#382, D2).
     /// </summary>
-    public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Info, "HidHide: Neustart ausstehend",
-        "HidHide wurde deinstalliert, Windows entfernt es beim nächsten Neustart.");
+    public static HealthIssue HidHideRemovalPending { get; } = new("hidhide-removal-pending", HealthSeverity.Info, ControllerSupportTexts.HidHideRestartPending,
+        ControllerSupportTexts.HidHideRemovalPending);
 
     public const string WindowsRestartId = "windows-restart";
-    public const string WindowsRestartTitle = "Windows-Neustart ausstehend";
-    public const string WindowsRestartLabel = "Windows neu starten";
+    public static string WindowsRestartTitle => ControllerSupportTexts.WindowsRestartPendingTitle;
+    public static string WindowsRestartLabel => ControllerSupportTexts.RestartWindows;
 
-    public const string PausedSummary = "Starte Windows neu, danach kannst du die fehlenden Teile installieren.";
-    public const string PausedText = "Ein Treiber wurde deinstalliert. Windows entfernt ihn ganz erst beim nächsten Neustart.";
-    public const string PausedMore = "Bis dahin pausiert Pan: Arcadia emuliert und versteckt keine Controller, Spiele und Steam sehen deine Controller direkt. Der Schalter bleibt an, nach dem Neustart läuft Pan von selbst weiter.";
-    public const string PausedBoxTitle = "NACH DEM NEUSTART";
-    public const string PausedBoxText = "Fehlt dann noch etwas, steht es hier mit „Installieren“. Ein Druck richtet alles Fehlende in einem Durchgang ein, mit einer Windows-Abfrage.";
+    public static string PausedSummary => ControllerSupportTexts.PausedSummary;
+    public static string PausedText => ControllerSupportTexts.PausedText;
+    public static string PausedMore => ControllerSupportTexts.PausedMore;
+    public static string PausedBoxTitle => ControllerSupportTexts.PausedBoxTitle;
+    public static string PausedBoxText => ControllerSupportTexts.PausedBoxText;
 
-    public const string RecommendedSummary = "Starte Windows neu, damit der neue Treiber ganz aktiv ist.";
-    public const string RecommendedText = "Ein Treiber wurde neu installiert. Pan läuft schon, ganz aktiv ist der Treiber aber erst nach einem Neustart von Windows.";
-    public const string RecommendedMore = "Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.";
-    public const string RecommendedBoxTitle = "KEINE EILE";
-    public const string RecommendedBoxText = "Der Neustart kann warten, bis es dir passt. Die Zeile bleibt, bis Windows neu gestartet ist.";
+    public static string RecommendedSummary => ControllerSupportTexts.RecommendedSummary;
+    public static string RecommendedText => ControllerSupportTexts.RecommendedText;
+    public static string RecommendedMore => ControllerSupportTexts.RecommendedMore;
+    public static string RecommendedBoxTitle => ControllerSupportTexts.RecommendedBoxTitle;
+    public static string RecommendedBoxText => ControllerSupportTexts.RecommendedBoxText;
 
     /// <summary>
     /// The one restart row (#382, D2, artboards T382F01, T382F04): a driver removal pauses Pan until the restart, a fresh
@@ -92,17 +92,17 @@ public static class EmulationParts
     public static bool HidHideUsable(IEnumerable<HealthIssue> issues) => !issues.Any(issue => IsMissingPart(issue) && issue.Id.StartsWith("hidhide-", StringComparison.Ordinal));
 
     /// <summary>"Treiber installieren" waits while a controller's firmware is flashed (#407): the install restarts the puck and controllers.</summary>
-    public static HealthIssue FirmwareUpdateRuns { get; } = new("install-firmware-update", HealthSeverity.Info, "Controller-Update wird durchgeführt",
-        "Um die Sicherheit deiner Controller zu gewährleisten, können die Treiber nicht installiert werden, so lange ein Firmware-Update deiner Controller durchgeführt wird. Schließe das Update erst ab, bevor du die Treiber installierst.",
-        Summary: "Treiber kann während eines Firmware-Updates nicht installiert werden");
+    public static HealthIssue FirmwareUpdateRuns { get; } = new("install-firmware-update", HealthSeverity.Info, ControllerSupportTexts.FirmwareUpdateRunsTitle,
+        ControllerSupportTexts.FirmwareUpdateRunsText,
+        Summary: ControllerSupportTexts.FirmwareUpdateRunsSubtitle);
 
     /// <summary>
     /// An SISR runs while Pan is on (#214 decision 5): both take the Steam Controller, so games get input twice or not at
     /// all. Shown also while the group "SISR" is hidden; Arcadia doesn't stop an SISR the user started.
     /// </summary>
-    public static HealthIssue SisrRunning { get; } = new("sisr-running", HealthSeverity.Warning, "SISR läuft",
-        "SISR läuft, während Pan an ist. Beide greifen auf den Steam Controller zu, Spiele bekommen dann Eingaben doppelt oder gar nicht. Beende SISR, oder schalte Pan aus, solange du SISR brauchst.",
-        Summary: "Beende SISR, damit Eingaben nicht doppelt ankommen");
+    public static HealthIssue SisrRunning { get; } = new("sisr-running", HealthSeverity.Warning, ControllerSupportTexts.SisrRunningTitle,
+        ControllerSupportTexts.SisrRunningText,
+        Summary: ControllerSupportTexts.SisrRunningSubtitle);
 
     /// <summary>True if <paramref name="issue"/> says a part is missing or too old (not how a present part is set).</summary>
     public static bool IsMissingPart(HealthIssue issue) => MissingIds.Contains(issue.Id);
@@ -137,19 +137,19 @@ public static class EmulationParts
     /// </summary>
     public static HealthIssue? FromHidingCheck(PanReason? reason, Version? installed = null) => reason switch
     {
-        PanReason.HidHideMissing => new("hidhide-inactive", HealthSeverity.Warning, "HidHide ist nicht aktiv",
-            "HidHide ist installiert, sein Treiber läuft aber noch nicht. Meist hilft ein Neustart des PCs."),
-        PanReason.HidHideUnsupported => new("hidhide-interface", HealthSeverity.Warning, "HidHide antwortet unerwartet",
-            $"Der HidHide-Treiber kennt eine Anfrage nicht, die Pan braucht. „Neu installieren“ installiert HidHide {HidHideRelease.Version}; was dort eingestellt ist, bleibt erhalten. Windows fragt einmal nach Administratorrechten.",
+        PanReason.HidHideMissing => new("hidhide-inactive", HealthSeverity.Warning, ControllerSupportTexts.HidHideInactiveTitle,
+            ControllerSupportTexts.HidHideInactiveText),
+        PanReason.HidHideUnsupported => new("hidhide-interface", HealthSeverity.Warning, ControllerSupportTexts.HidHideUnexpectedAnswer,
+            ControllerSupportTexts.HidHideUnknownRequestText(HidHideRelease.Version),
             installed is { } version && HidHideRelease.IsPinnedDriver(version) ? HealthFix.ReinstallHidHide : HealthFix.None,
-            installed is { } pinned && HidHideRelease.IsPinnedDriver(pinned) ? "Neu installieren" : null,
-            Summary: $"HidHide {HidHideRelease.Version} neu installieren hilft"),
-        PanReason.HidHideInverseMode => new("hidhide-inverse", HealthSeverity.Warning, "HidHide: Liste ist umgekehrt",
-            "In HidHide ist „Inverse application cloak“ eingeschaltet. So kann Arcadia den Steam Controller nicht verstecken. Schalte es in der HidHide-Konfiguration aus."),
-        PanReason.HidHideCloakingOffWithForeignEntries => new("hidhide-cloaking-off", HealthSeverity.Warning, "HidHide: Verstecken ist aus",
-            "In HidHide sind Geräte eingetragen, aber „Enable device hiding“ ist aus. Arcadia müsste es einschalten und würde diese Geräte dann mit verstecken, deshalb tut es das nicht. Schalte es in der HidHide-Konfiguration ein oder trage die Geräte dort aus."),
-        PanReason.HidHideBusy => new("hidhide-busy", HealthSeverity.Warning, "HidHide-Konfiguration ist geöffnet",
-            "Solange die HidHide-Konfiguration offen ist, kann Arcadia HidHide nicht nutzen. Bitte schließe sie."),
+            installed is { } pinned && HidHideRelease.IsPinnedDriver(pinned) ? ControllerSupportTexts.Reinstall : null,
+            Summary: ControllerSupportTexts.HidHideReinstallHelps(HidHideRelease.Version)),
+        PanReason.HidHideInverseMode => new("hidhide-inverse", HealthSeverity.Warning, ControllerSupportTexts.HidHideInverseTitle,
+            ControllerSupportTexts.HidHideInverseText),
+        PanReason.HidHideCloakingOffWithForeignEntries => new("hidhide-cloaking-off", HealthSeverity.Warning, ControllerSupportTexts.HidHideHidingOffTitle,
+            ControllerSupportTexts.HidHideHidingOffText),
+        PanReason.HidHideBusy => new("hidhide-busy", HealthSeverity.Warning, ControllerSupportTexts.HidHideConfigOpenTitle,
+            ControllerSupportTexts.HidHideConfigOpenText),
         _ => null,
     };
 }

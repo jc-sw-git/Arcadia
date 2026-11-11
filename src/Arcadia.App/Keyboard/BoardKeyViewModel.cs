@@ -121,7 +121,7 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
     /// <summary>The printing of a key (owner, 2026-10-22: symbol as on a real key and a name); narrow ones keep only the symbol.</summary>
     private static (string Symbol, string Text, string? Glyph) Face(BoardKey key) => key.Kind switch
     {
-        BoardKeyKind.Backspace => ("⌫", "Löschen", "X"),
+        BoardKeyKind.Backspace => ("⌫", AppTexts.KeyDelete, "X"),
         BoardKeyKind.Tab => (string.Empty, "Tab", null),
         BoardKeyKind.Enter => ("↵", "Enter", "≡"),
         BoardKeyKind.Shift => ("⇧", key.Width >= 2 ? "Umschalt" : string.Empty, "LB"),

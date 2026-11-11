@@ -34,7 +34,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         var game = tile.Game;
         Drive = Formatting.Drive(game.InstallDirectory);
         LastPlayedAt = Formatting.DateAndTime(game.LastPlayedAt);
-        PlaytimeSource = game.Playtime is null ? $"{tile.LauncherName} meldet keine" : $"Laut {tile.LauncherName}";
+        PlaytimeSource = game.Playtime is null ? AppTexts.DetailLauncherReportsNone(tile.LauncherName) : $"Laut {tile.LauncherName}";
         InstalledAt = Formatting.Date(game.IsInstalled ? game.InstalledAt : null);
         Offset = offset;
         SelectCommand = new RelayCommand(() => rotate(Math.Sign(Offset)));
@@ -94,12 +94,12 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public string RunStateUpper => Tile.RunStateText.ToUpper(Formatting.Culture);
 
     /// <summary>The launcher may install a pending update before the game starts (owner, 2026-10-12).</summary>
-    public string? UpdateNote => Tile.UpdateAvailable ? $"{Tile.LauncherName} installiert das Update eventuell, bevor das Spiel startet." : null;
+    public string? UpdateNote => Tile.UpdateAvailable ? AppTexts.DetailUpdateNote(Tile.LauncherName) : null;
 
     public bool HasUpdateNote => UpdateNote is not null;
 
     /// <summary>A soundtrack is played by its launcher, not by Arcadia (#141).</summary>
-    public string? SoundtrackNote => Tile.IsSoundtrack && Tile.IsInstalled ? $"{Tile.LauncherName} spielt den Soundtrack ab." : null;
+    public string? SoundtrackNote => Tile.IsSoundtrack && Tile.IsInstalled ? AppTexts.DetailSoundtrackNote(Tile.LauncherName) : null;
 
     public bool HasSoundtrackNote => SoundtrackNote is not null;
 

@@ -22,9 +22,9 @@ public sealed class RunningGameTests
             var running = RunningTilesOf(arcadia).ToList();
             var tile = Assert.Single(running);
             Assert.Equal(tab, arcadia.SelectedTab);
-            Assert.Equal("Läuft", tile.RunStateShortText);
+            Assert.Equal(AppTexts.TileRunning, tile.RunStateShortText);
             Assert.Equal(since, tile.RunStateText);
-            Assert.Equal("Zurück ins Spiel", tile.PrimaryActionText);
+            Assert.Equal(AppTexts.ReturnToGame, tile.PrimaryActionText);
             arcadia.Press(UiAction.NextTab);
         }
 
@@ -32,9 +32,9 @@ public sealed class RunningGameTests
         var game = FocusRunningGame(arcadia);
         arcadia.Press(UiAction.Options);
         var uninstall = arcadia.Main.GameMenu!.Actions.Single(action => action.Kind == GameActionKind.Uninstall);
-        Assert.Equal("Deinstallieren …", uninstall.Label);
+        Assert.Equal(AppTexts.ActionUninstallMore, uninstall.Label);
         Assert.False(uninstall.IsEnabled);
-        Assert.Equal("Erst wenn das Spiel beendet ist", uninstall.DisabledReason);
+        Assert.Equal(AppTexts.ActionAfterGameEnded, uninstall.DisabledReason);
         arcadia.Press(UiAction.Back);
 
         // Its detail page.
@@ -42,10 +42,10 @@ public sealed class RunningGameTests
         var page = arcadia.Detail!.Current;
         Assert.Equal(game, page.Tile.Title);
         Assert.Equal(since.ToUpperInvariant(), page.RunStateUpper);
-        Assert.Equal("Zurück ins Spiel", page.TopRow[0].ButtonLabel);
+        Assert.Equal(AppTexts.ReturnToGame, page.TopRow[0].ButtonLabel);
         Assert.True(page.TopRow[0].IsFocused);
         Assert.False(page.Uninstall!.IsEnabled);
-        Assert.Equal("Erst wenn das Spiel beendet ist", page.Uninstall.DisabledReason);
+        Assert.Equal(AppTexts.ActionAfterGameEnded, page.Uninstall.DisabledReason);
 
         // A on "Zurück ins Spiel": a demo game has no window.
         arcadia.Press(UiAction.Accept);

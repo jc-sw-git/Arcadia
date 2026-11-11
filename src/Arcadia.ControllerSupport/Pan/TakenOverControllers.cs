@@ -304,7 +304,7 @@ public sealed class TakenOverControllers
         }
     }
 
-    private void Report(Exception error, string name) => _errors.Report(name, "Controller für Spiele", error, Unexpected);
+    private void Report(Exception error, string name) => _errors.Report(name, ControllerSupportTexts.ErrorContextControllersForGames, error, Unexpected);
 
     private void NoteForwarding(bool forwarding)
     {
@@ -569,7 +569,7 @@ public sealed class TakenOverControllers
                     controller.Kind = kind;
                     if (controller.Pad is { } pad && (show || pad.Kind != kind))
                     {
-                        stale.Add((controller, show ? "nicht übernehmen" : $"Layout {PadKinds.DisplayName(kind)}"));
+                        stale.Add((controller, show ? "nicht übernehmen" : $"Layout {PadKinds.DisplayName(kind)}")); // not a UI text (log)
                     }
                 }
             }
@@ -713,7 +713,7 @@ public sealed class TakenOverControllers
             if (controller.Pad is { IsConnected: false } lost)
             {
                 var takenAway = lost.TakenAway;
-                await UnplugAsync(controller, takenAway ? "von Pan entfernt" : "Verbindung zu VIIPER verloren");
+                await UnplugAsync(controller, takenAway ? "von Pan entfernt" : "Verbindung zu VIIPER verloren"); // not a UI text (log)
                 if (!takenAway)
                 {
                     NoteLoss();
@@ -822,7 +822,7 @@ public sealed class TakenOverControllers
             }
 
             _gaveUp = true;
-            message = $"Controller für Spiele: VIIPER fiel {_losses.Count}-mal in {CrashWindow.TotalMinutes:0} Minuten aus, Arcadia versucht es erst nach einem Neustart oder „Controller wiederherstellen“ wieder";
+            message = ControllerSupportTexts.ControllersForGamesViiperGaveUp(count: _losses.Count, minutes: CrashWindow.TotalMinutes);
         }
 
         _log(message);

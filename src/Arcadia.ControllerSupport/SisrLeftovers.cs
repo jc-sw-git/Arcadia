@@ -7,7 +7,7 @@ namespace Arcadia.ControllerSupport;
 /// </summary>
 public sealed class SisrLeftovers
 {
-    public const string RemovingText = "SISR wird entfernt …";
+    public static string RemovingText => ControllerSupportTexts.SisrRemoving;
 
     private readonly ControllerSupportService _support;
 
@@ -46,7 +46,7 @@ public sealed class SisrLeftovers
 
     /// <summary>Why "SISR entfernen" can't close Steam now: it would end <paramref name="game"/>.</summary>
     public static string RemovalBlocker(string game) =>
-        $"„{game}“ läuft gerade über Steam. Beende das Spiel zuerst, dann kann Arcadia SISR entfernen.";
+        ControllerSupportTexts.SisrRemovalBlocker(game);
 
     /// <summary>
     /// "SISR entfernen": closes Steam for the marker if it runs (the settings asked), stops SISR, removes what is there
@@ -65,7 +65,7 @@ public sealed class SisrLeftovers
             SisrRemoval result;
             try
             {
-                result = await _support.WithSteamClosedAsync(sisr.Find().HasMarker, "„SISR entfernen“", RemovalBlocker,
+                result = await _support.WithSteamClosedAsync(sisr.Find().HasMarker, "„SISR entfernen“", RemovalBlocker, // not a UI text (log)
                     async t =>
                     {
                         _support.SetBusyText(RemovingText);

@@ -53,7 +53,7 @@ public sealed class RunningGamesTracker(LauncherRegistry launchers, ProcessGames
     /// <summary>How long a poll waits for a monitor; one that is late keeps its games as they were.</summary>
     public static readonly TimeSpan PollDeadline = TimeSpan.FromSeconds(10);
 
-    private readonly MonitorPolls<Report> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Laufende Spiele von {launcherId} nicht lesbar: {ex}");
+    private readonly MonitorPolls<Report> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Laufende Spiele von {launcherId} nicht lesbar: {ex}"); // not a UI text (log)
 
     // Games Arcadia handed to their launcher that weren't seen running yet.
     private readonly Dictionary<string, Start> _starting = new(StringComparer.Ordinal);

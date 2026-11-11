@@ -15,7 +15,7 @@ namespace Arcadia.App.Settings;
 /// </summary>
 internal sealed class LauncherAccountRow : IDisposable
 {
-    private const string AccountGroup = "KONTO";
+    private static string AccountGroup => AppTexts.AccountGroup;
 
     private readonly ILauncherCategory _category;
     private readonly List<(ILauncherAccount Account, EventHandler Handler)> _accounts = [];
@@ -68,21 +68,21 @@ internal sealed class LauncherAccountRow : IDisposable
         if (!isActive || !isFound)
         {
             row.IsEnabled = false;
-            row.ActionText = state.Step == AccountStep.SignedIn ? "Abmelden" : "Anmelden";
+            row.ActionText = state.Step == AccountStep.SignedIn ? AppTexts.SignOut : AppTexts.SignIn;
             row.Subtitle = (isActive, state.AccountName) switch
             {
-                (false, { } accountName) => $"{accountName} · nur bei aktivem {launcherName}",
-                (false, null) => $"Nur bei aktivem {launcherName}",
-                (true, { } accountName) => $"{accountName} · {launcherName} nicht gefunden",
-                (true, null) => $"{launcherName} nicht gefunden",
+                (false, { } accountName) => AppTexts.AccountOnlyWhenActive(account: accountName, launcher: launcherName),
+                (false, null) => AppTexts.AccountOnlyWhenActiveNoAccount(launcherName),
+                (true, { } accountName) => AppTexts.AccountLauncherNotFound(account: accountName, launcher: launcherName),
+                (true, null) => AppTexts.AccountLauncherNotFoundNoAccount(launcherName),
             };
             row.Severity = null;
             row.Info =
             [
                 new InfoText(account.About),
                 new InfoNote(isActive
-                    ? $"Anmelden und Abmelden geht erst, wenn Arcadia {launcherName} findet: Ohne {launcherName} lässt sich nichts installieren."
-                    : $"Anmelden und Abmelden geht erst, wenn {launcherName} aktiv ist. Eine gespeicherte Anmeldung bleibt erhalten.", HealthSeverity.Info),
+                    ? AppTexts.AccountNeedsLauncherFound(launcherName)
+                    : AppTexts.AccountNeedsLauncherActive(launcherName), HealthSeverity.Info),
             ];
             return;
         }
@@ -90,12 +90,12 @@ internal sealed class LauncherAccountRow : IDisposable
         row.IsEnabled = true;
         (row.ActionText, row.Subtitle) = state.Step switch
         {
-            AccountStep.SigningIn => ("Abbrechen", $"Anmeldung auf der Seite von {launcherName} …"),
-            AccountStep.Unreachable => ("Erneut versuchen", $"{launcherName} nicht erreichbar – [A] erneut versuchen"),
-            AccountStep.SignedIn => ("Abmelden", state.Problem is not null || state.Notice is not null
+            AccountStep.SigningIn => (AppTexts.Cancel, AppTexts.AccountSigningIn(launcherName)),
+            AccountStep.Unreachable => (AppTexts.TryAgain, AppTexts.AccountUnreachable(launcherName)),
+            AccountStep.SignedIn => (AppTexts.SignOut, state.Problem is not null || state.Notice is not null
                 ? $"{state.AccountName} · {state.Notice ?? FirstSentence(state.Problem!)}"
                 : state.AccountName),
-            _ => ("Anmelden", state.Problem is not null ? FirstSentence(state.Problem) : account.Purpose),
+            _ => (AppTexts.SignIn, state.Problem is not null ? FirstSentence(state.Problem) : account.Purpose),
         };
         row.Severity = state.Problem is not null ? HealthSeverity.Warning : state.Notice is not null ? HealthSeverity.Info : null;
 
@@ -107,17 +107,17 @@ internal sealed class LauncherAccountRow : IDisposable
 
         if (state.Notice is not null)
         {
-            info.Add(new InfoNote($"{launcherName} ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", HealthSeverity.Info));
+            info.Add(new InfoNote(AppTexts.AccountOtherSignedIn(launcherName), HealthSeverity.Info));
         }
 
         switch (state.Step)
         {
             case AccountStep.SigningIn:
                 info.Add(new InfoText(account.SignInMethod));
-                info.Add(new InfoText("[B] bricht die Anmeldung ab."));
+                info.Add(new InfoText(AppTexts.AccountBCancels));
                 break;
             case AccountStep.Unreachable:
-                info.Add(new InfoText($"Arcadia konnte die Anmeldeseite von {launcherName} nicht laden. Prüfe die Internetverbindung; [A] versucht es erneut."));
+                info.Add(new InfoText(AppTexts.AccountPageNotLoaded(launcherName)));
                 break;
             case AccountStep.SignedIn:
                 if (AvatarOf(state.AvatarPath) is { } avatar)
@@ -125,13 +125,13 @@ internal sealed class LauncherAccountRow : IDisposable
                     info.Add(new InfoAvatar(state.AccountName ?? launcherName, avatar));
                 }
 
-                info.Add(new InfoText($"Angemeldet als {state.AccountName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {state.AccountName} sind."));
-                info.Add(new InfoFacts("KONTO",
+                info.Add(new InfoText(AppTexts.AccountSignedInAs(state.AccountName)));
+                info.Add(new InfoFacts(AppTexts.AccountGroup,
                 [
-                    new InfoFact("Spiele im Konto", state.OwnedGames is { } count ? count.ToString(CultureInfo.CurrentCulture) : "Noch nicht geladen", IsMuted: state.OwnedGames is null),
+                    new InfoFact(AppTexts.AccountGamesInAccount, state.OwnedGames is { } count ? count.ToString(CultureInfo.CurrentCulture) : AppTexts.AccountNotLoadedYet, IsMuted: state.OwnedGames is null),
                     new InfoFact("Stand", state.ListedAt is { } at ? LauncherTexts.Ago(_category.Time, at) : "–", IsMuted: state.ListedAt is null),
                 ]));
-                info.Add(new InfoFootnote("Meldest du dich ab, werden nur noch die installierten Spiele gelistet."));
+                info.Add(new InfoFootnote(AppTexts.AccountSignOutExplained));
                 break;
             default:
                 info.Add(new InfoText(account.About));
@@ -167,10 +167,10 @@ internal sealed class LauncherAccountRow : IDisposable
             case AccountStep.SignedIn:
                 var launcherName = _category.Host.Launchers.Info(_category.PageLauncherId!).DisplayName;
                 _category.Dialog = new ConfirmationViewModel(
-                    $"Vom {account.Title} abmelden?",
-                    $"Willst du {account.State.AccountName} wirklich in Arcadia abmelden? Arcadia kann dir dann nur noch die Spiele auflisten, die auf diesem PC installiert sind. "
-                        + $"Ob du sie auch starten kannst, hängt von den Lizenzen des Benutzers ab, der in {launcherName} angemeldet ist.",
-                    "Abmelden",
+                    AppTexts.AccountAskSignOutTitle(account.Title),
+                    AppTexts.AccountAskSignOut(account.State.AccountName)
+                        + AppTexts.AccountAskSignOutLicenses(launcherName),
+                    AppTexts.SignOut,
                     account.SignOut,
                     () => _category.Dialog = null);
                 break;

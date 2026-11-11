@@ -58,7 +58,7 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
     public static InfoRelease Of(ChangelogEntry entry) => new(
         $"Version {entry.Version.ToString(3)}",
         entry.PublishedAt is { } date ? date.ToLocalTime().ToString("d. MMMM yyyy", German) : string.Empty,
-        entry.Changes.Count > 0 ? entry.Changes : ["Keine Änderungen aufgeführt."]);
+        entry.Changes.Count > 0 ? entry.Changes : [AppTexts.InfoNoChangesListed]);
 }
 
 /// <summary>
@@ -133,7 +133,7 @@ public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsT
             message switch
             {
                 { ResolvedAt: { } at } => $"Behoben {Services.Formatting.Clock(at)}",
-                { ChangedTo: { } level } => $"Jetzt {LevelName(level)}",
+                { ChangedTo: { } level } => AppTexts.LevelNow(LevelName(level)),
                 _ => string.Empty,
             });
 
@@ -141,7 +141,7 @@ public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsT
     {
         HealthSeverity.Info => "Info",
         HealthSeverity.Warning => "Warnung",
-        _ => "Fehler",
+        _ => AppTexts.LevelError,
     };
 }
 

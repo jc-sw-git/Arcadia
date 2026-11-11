@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
              xmlns:settings="using:Arcadia.App.Settings"
@@ -69,14 +70,14 @@
             <TextBlock Text="{Binding Error}" FontSize="16" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
           </Border>
           <StackPanel Orientation="Horizontal">
-            <Button Classes="plain action primaryAction focused" Command="{Binding CloseCommand}" Content="Schließen" />
+            <Button Classes="plain action primaryAction focused" Command="{Binding CloseCommand}" Content="{x:Static app:AppTexts.Close}" />
           </StackPanel>
         </StackPanel>
 
         <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
           <Panel MinHeight="28" HorizontalAlignment="Right">
             <TextBlock Classes="installCount" Text="{Binding Footer}" IsVisible="{Binding IsRunning}" VerticalAlignment="Center" />
-            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Schließen" IsVisible="{Binding IsFailed}" />
+            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Close}" IsVisible="{Binding IsFailed}" />
           </Panel>
         </Border>
       </StackPanel>

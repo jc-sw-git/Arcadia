@@ -49,7 +49,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     public event Action? FirmwareUpdateTried;
 
     /// <summary>Instead of the notice while a game is in front: Arcadia doesn't come over the game for it.</summary>
-    public const string FirmwareInGameText = "Pan: Steam kann die Firmware nicht aktualisieren, solange Arcadia den Steam Controller verwaltet. Für das Update nach dem Spiel Arcadia beenden.";
+    public static string FirmwareInGameText => AppTexts.FirmwareInGame;
 
     /// <param name="pads">The virtual pads; Pan's emulation plugs them in here.</param>
     /// <param name="copy">
@@ -201,7 +201,7 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
             {
                 forGames.FirmwareUpdateTried?.Invoke();
             }
-        }).Forget("Hinweis zum Firmware-Update");
+        }).Forget(AppTexts.ErrorContextFirmwareHint);
         return forGames;
     }
 
@@ -297,14 +297,14 @@ public sealed class SteamControllerForGames : Settings.IPanEmulationView
     private static readonly TimeSpan BeforeStartLimit = TimeSpan.FromSeconds(3);
 
     /// <summary>Pan broke off while a pad was in; the pad comes back by itself once Pan is back.</summary>
-    public const string PanLostText = "Steam Controller: Verbindung zu Pan verloren – Arcadia entfernt den Xbox Controller und verbindet sich neu";
+    public static string PanLostText => AppTexts.SteamControllerPanLost;
 
     /// <summary>Pan tore the emulation down; the next tick plugs the pad in again.</summary>
     public static string TornDownText(PanReason reason) => reason switch
     {
-        PanReason.Hang => "Steam Controller: Arcadia hat 3 Sekunden nicht reagiert, Pan hat den Xbox Controller entfernt – er kommt gleich zurück",
-        PanReason.ServiceStopping => "Steam Controller: Pan wurde beendet und hat den Xbox Controller entfernt – er kommt zurück, sobald Pan wieder läuft",
-        _ => $"Steam Controller: Pan hat den Xbox Controller entfernt ({reason}) – er kommt gleich zurück",
+        PanReason.Hang => AppTexts.SteamControllerTornDownNoAnswer,
+        PanReason.ServiceStopping => AppTexts.SteamControllerTornDownPanEnded,
+        _ => AppTexts.SteamControllerTornDown(reason),
     };
 
     /// <summary>Read on every poll; rebuilt only when the settings changed.</summary>

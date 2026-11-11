@@ -20,7 +20,7 @@ public sealed partial class SearchChipViewModel : ViewModelBase
     {
         Launcher = launcher;
         Badge = badge;
-        Name = launcher?.DisplayName ?? "Alle Launcher";
+        Name = launcher?.DisplayName ?? AppTexts.AllLaunchers;
         Keyword = launcher is null ? string.Empty : $"{SearchQuery.PrefixMarker}{launcher.SearchKeyword}";
         ToggleCommand = new RelayCommand(() => toggle(launcher));
     }
@@ -174,7 +174,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     [NotifyPropertyChangedFor(nameof(SortText))]
     public partial SortOrder? Sort { get; private set; }
 
-    public string SortText => $"Sortiert nach {Formatting.SortLabel(Sort)}";
+    public string SortText => AppTexts.SortedBy(Formatting.SortLabel(Sort));
 
     /// <summary>All hits in the chosen order; the detail page turns through these.</summary>
     public IReadOnlyList<Game> Hits { get; private set; } = [];
@@ -571,7 +571,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     /// <summary>The search's options for the shared dialog; each choice changes the search and has the dialog shown again.</summary>
     private ViewOptionsViewModel CreateFilter()
     {
-        List<(string Label, bool IsOn, Action Toggle)> launchers = [("Alle Launcher", Scope.IsAll, () => ChangeFilter(() => ToggleLauncher(null)))];
+        List<(string Label, bool IsOn, Action Toggle)> launchers = [(AppTexts.AllLaunchers, Scope.IsAll, () => ChangeFilter(() => ToggleLauncher(null)))];
         launchers.AddRange(Launchers.Select(l => (l.DisplayName, Scope.LauncherIds.Contains(l.Id), (Action)(() => ChangeFilter(() => ToggleLauncher(l))))));
         return ViewOptionsViewModel.ForSearch(launchers, Sort, sort => ChangeFilter(() => SetSort(sort)));
     }
@@ -750,23 +750,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         }
 
         var names = _launchers.Where(l => _scope.LauncherIds.Contains(l.Id)).Select(l => l.DisplayName).ToList();
-        ScopeText = _scope.IsAll ? "Suche in allen Launchern"
-            : (query.HasLauncherFilter ? "Per Kürzel gefiltert: " : "Suche in: ") + (names.Count > 0 ? string.Join(", ", names) : "–");
+        ScopeText = _scope.IsAll ? AppTexts.SearchAllLaunchers
+            : (query.HasLauncherFilter ? AppTexts.SearchFilteredByKeyword : AppTexts.SearchIn) + (names.Count > 0 ? string.Join(", ", names) : "–");
         UnknownKeywordsText = _scope.UnknownKeywords.Count switch
         {
             0 => null,
-            1 => $"Unbekanntes Kürzel: {SearchQuery.PrefixMarker}{_scope.UnknownKeywords[0]}",
-            _ => "Unbekannte Kürzel: " + string.Join(", ", _scope.UnknownKeywords.Select(k => $"{SearchQuery.PrefixMarker}{k}")),
+            1 => AppTexts.SearchUnknownKeyword(prefix: SearchQuery.PrefixMarker, keyword: _scope.UnknownKeywords[0]),
+            _ => AppTexts.SearchUnknownKeywords + string.Join(", ", _scope.UnknownKeywords.Select(k => $"{SearchQuery.PrefixMarker}{k}")),
         };
 
         Hits = _search.Find(query.Term, _scope.LauncherIds.ToHashSet(), Sort);
         _hitsChanged = true;
         var launchersHit = Hits.Select(g => g.LauncherId).Distinct().Count();
-        ResultsTitle = $"{Hits.Count} Treffer in {launchersHit} {(launchersHit == 1 ? "Launcher" : "Launchern")}";
+        ResultsTitle = launchersHit == 1 ? AppTexts.SearchHitsInOneLauncher(Hits.Count) : AppTexts.SearchHitsInLaunchers(count: Hits.Count, launchers: launchersHit);
         Empty = query.Term.Trim().Length == 0
-            ? new SearchEmptyState(false, "Tippe einen Suchbegriff ein", "Arcadia sucht in den Titeln der Spiele aller gewählten Launcher.")
+            ? new SearchEmptyState(false, AppTexts.SearchTypeTerm, AppTexts.SearchExplanation)
             : Hits.Count == 0
-                ? new SearchEmptyState(true, "Keine Treffer", $"Kein Spiel passt zu „{query.Term.Trim()}“. Prüfe die Schreibweise oder nimm weitere Launcher dazu.")
+                ? new SearchEmptyState(true, AppTexts.NoHits, AppTexts.SearchNoHit(query.Term.Trim()))
                 : null;
 
         // A rescan keeps the focus on its game; new input starts again at the first hit.
@@ -814,7 +814,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         ScrollStart = _window.Start;
         ScrollEnd = _window.LastStart;
         ScrollViewport = _window.Size;
-        RangeText = _window.CanTurn ? $"{_window.Start + 1}–{Math.Min(Hits.Count, _window.Start + _window.Size)} von {Hits.Count}" : string.Empty;
+        RangeText = _window.CanTurn ? AppTexts.SearchHitRange(first: _window.Start + 1, last: Math.Min(Hits.Count, _window.Start + _window.Size), count: Hits.Count) : string.Empty;
         ShowFocus();
         WindowMoved?.Invoke(previousStart);
     }

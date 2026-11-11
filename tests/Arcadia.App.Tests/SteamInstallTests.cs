@@ -24,7 +24,7 @@ public sealed class SteamInstallTests
         // A download as Steam writes it into the manifest: accepted, waiting, downloading, paused.
         steam.Write(Kupferwald with { StateFlags = 1030, BytesToDownload = 1000, BytesToStage = 1000 });
         await arcadia.FollowInstallsAsync();
-        Assert.Equal("In der Warteschlange", TileOf(arcadia, Kupferwald).InstallStatusText);
+        Assert.Equal(AppTexts.TileQueued, TileOf(arcadia, Kupferwald).InstallStatusText);
         Assert.True(TileOf(arcadia, Kupferwald).IsInstallQueued);
 
         // Running, the manifest's counters go stale at once, so no number (#278); paused they are exact.
@@ -147,7 +147,7 @@ public sealed class SteamInstallTests
 
         var tile = TileOf(arcadia, Kupferwald);
         Assert.Equal("Wird aktualisiert …", tile.InstallStatusText);
-        Assert.Equal("Lädt", tile.InstallShortText);
+        Assert.Equal(AppTexts.TileLoading, tile.InstallShortText);
         Assert.False(tile.IsInstallQueued);
     }
 
@@ -252,7 +252,7 @@ public sealed class SteamInstallTests
 
         steam.AppendContentLog($"AppID {Kupferwald.AppId} App update changed : Running Update,Verifying Staged,");
         await arcadia.FollowInstallsAsync();
-        Assert.Equal("Wird abgeschlossen …", TileOf(arcadia, Kupferwald).InstallStatusText);
+        Assert.Equal(AppTexts.TileFinishing, TileOf(arcadia, Kupferwald).InstallStatusText);
 
         steam.AppendContentLog(
             $"AppID {Kupferwald.AppId} finished update, 1 mounted depots (BuildID 1234568) : 9200004 (1),",
@@ -313,7 +313,7 @@ public sealed class SteamInstallTests
 
     private static void AssertWaiting(Arcadia.App.ViewModels.GameTileViewModel tile)
     {
-        Assert.Equal("In der Warteschlange", tile.InstallStatusText);
+        Assert.Equal(AppTexts.TileQueued, tile.InstallStatusText);
         Assert.True(tile.IsInstallQueued);
     }
 

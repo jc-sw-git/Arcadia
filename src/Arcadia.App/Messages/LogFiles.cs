@@ -88,11 +88,11 @@ public static class LogNames
     /// <summary>In German and without a path, unlike the system's message, which may name the user's profile.</summary>
     public static string WhyNotOpened(Exception error) => error switch
     {
-        Win32Exception { NativeErrorCode: NoAssociation } => "Windows kennt kein Programm für .log-Dateien.",
-        Win32Exception { NativeErrorCode: AccessDenied } or UnauthorizedAccessException => "Windows verweigert den Zugriff.",
-        Win32Exception { NativeErrorCode: FileNotFound } or FileNotFoundException => "Die Datei gibt es nicht mehr.",
-        TimeoutException => "Windows hat nicht rechtzeitig geantwortet.",
-        _ => "Details stehen in arcadia.log.",
+        Win32Exception { NativeErrorCode: NoAssociation } => AppTexts.LogFileNoProgram,
+        Win32Exception { NativeErrorCode: AccessDenied } or UnauthorizedAccessException => AppTexts.LogFileAccessDenied,
+        Win32Exception { NativeErrorCode: FileNotFound } or FileNotFoundException => AppTexts.FileGone,
+        TimeoutException => AppTexts.LogFileNoAnswer,
+        _ => AppTexts.DetailsInArcadiaLog,
     };
 
     public static string Of(LogKind kind) => kind switch

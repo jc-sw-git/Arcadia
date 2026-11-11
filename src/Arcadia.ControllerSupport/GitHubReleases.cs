@@ -128,7 +128,7 @@ public static class VerifiedDownload
     {
         if (asset.Sha256 is null)
         {
-            throw new InvalidOperationException($"Für {asset.Name} ist keine Prüfsumme veröffentlicht – Download abgebrochen.");
+            throw new InvalidOperationException(ControllerSupportTexts.DownloadNoChecksum(asset.Name));
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
@@ -161,7 +161,7 @@ public static class VerifiedDownload
 
             if (!string.Equals(actual, asset.Sha256, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException($"Prüfsumme von {asset.Name} stimmt nicht – Download verworfen.");
+                throw new InvalidOperationException(ControllerSupportTexts.DownloadChecksumWrong(asset.Name));
             }
         }
         catch

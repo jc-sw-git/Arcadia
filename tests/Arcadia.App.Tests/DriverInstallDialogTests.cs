@@ -44,7 +44,7 @@ public sealed class DriverInstallDialogTests
 
         var dialog = controller.InstallDialog!;
         Assert.Equal(DriverInstallProgress.RunningTitle, dialog.Title);
-        Assert.Equal("Windows-Abfrage bestätigen", dialog.Steps[0].Title);
+        Assert.Equal(ControllerSupportTexts.StepConfirmPrompt, dialog.Steps[0].Title);
         Assert.True(dialog.Steps[0].IsDone);
         Assert.StartsWith("Schritt ", dialog.StepCount, StringComparison.Ordinal);
         Assert.Equal(DriverInstallDialogViewModel.NoCancelText + " " + DriverInstallDialogViewModel.ClosesByItselfText, dialog.Footer);
@@ -112,7 +112,7 @@ public sealed class DriverInstallDialogTests
         Assert.NotNull(dialog);
         Assert.False(dialog.IsFailed);
         Assert.True(dialog.ShowsUsbHint);
-        Assert.Equal("Arcadia neu starten", dialog.Steps[^1].Title);
+        Assert.Equal(ControllerSupportTexts.StepArcadiaRestart, dialog.Steps[^1].Title);
         Assert.True(dialog.Steps[^1].IsRunning);
         Assert.All(dialog.Steps.SkipLast(1), step => Assert.True(step.IsDone, step.Title));
     }
@@ -131,7 +131,7 @@ public sealed class DriverInstallDialogTests
 
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
         Assert.True(controller.ShowsUsbLine);
-        Assert.Equal("Während der Installation können Maus, Tastatur und Controller kurz nicht reagieren. Das ist normal.", ControllerSettingsViewModel.UsbLineText);
+        Assert.Equal(AppTexts.DriversUsbLine, ControllerSettingsViewModel.UsbLineText);
         arcadia.Press(UiAction.Back);
         Assert.False(controller.ShowsUsbLine);
     }
@@ -175,7 +175,7 @@ public sealed class DriverInstallDialogTests
             return controller.InstallDialog!.Steps.Single(step => step.Title == "HidHide installieren").IsRunning;
         }, "HidHide läuft laut Bericht");
 
-        Assert.True(controller.InstallDialog!.Steps.Single(step => step.Title == "usbip-win2 installieren").IsDone);
+        Assert.True(controller.InstallDialog!.Steps.Single(step => step.Title == ControllerSupportTexts.StepUsbipInstall).IsDone);
         Assert.True(controller.InstallDialog.IsRunning);
         steam.Pan.Running.SetResult();
         await arcadia.WaitUntilAsync(() => arcadia.Restarts.Count == 1, "der Neustart");

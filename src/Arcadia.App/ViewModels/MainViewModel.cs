@@ -580,7 +580,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Launcherauswahl nicht gespeichert: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, "Die Launcherauswahl konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, AppTexts.FirstRunNotSaved);
         }
 
         AppLog.Write($"Ersteinrichtung abgeschlossen, aktive Launcher: {string.Join(", ", active)}");
@@ -899,7 +899,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         return row;
     }
 
-    void IStatusModalHost.InstallUpdate() => InstallUpdateAsync().Forget("Arcadia aktualisieren");
+    void IStatusModalHost.InstallUpdate() => InstallUpdateAsync().Forget(AppTexts.ErrorContextUpdateArcadia);
 
     /// <summary>From the status modal (#166): the settings' row shows the failure, here it is a toast.</summary>
     private async Task InstallUpdateAsync()
@@ -924,7 +924,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             launchers,
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
-            new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget("Log öffnen")),
+            new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget(AppTexts.ErrorContextOpenLog)),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
 
@@ -957,7 +957,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             // The system's message is English and may name the user's profile: only the log gets it (without the profile).
             AppLog.Write($"Log {kind} nicht geöffnet: {ex.GetType().Name}: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, $"{LogNames.Of(kind)} konnte nicht geöffnet werden: {LogNames.WhyNotOpened(ex)}");
+            Toast.Show(HealthSeverity.Error, AppTexts.LogOpenFailed(log: LogNames.Of(kind), reason: LogNames.WhyNotOpened(ex)));
             return;
         }
 
@@ -1087,7 +1087,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Individueller Mausmodus nicht gespeichert: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, "Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, AppTexts.SettingNotSaved);
         }
 
         UpdateGameMouseModeState();
@@ -1168,7 +1168,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Ansicht nicht gespeichert: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, "Die Ansicht konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.");
+            Toast.Show(HealthSeverity.Error, AppTexts.ViewNotSaved);
         }
     }
 
@@ -1235,9 +1235,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILibraryHost.OpenLauncherSettings(string? launcherId) => ShowSettings(typeof(LauncherSettingsViewModel), launcherId);
 
-    void ILibraryHost.Rescan(LauncherInfo launcher) => Session.RescanAsync(launcher).Forget("Neu einlesen");
+    void ILibraryHost.Rescan(LauncherInfo launcher) => Session.RescanAsync(launcher).Forget(AppTexts.Rescan);
 
-    void ILibraryHost.LibraryOutdated() => Session.RefreshLibraryAsync().Forget("Bibliothek aktualisieren");
+    void ILibraryHost.LibraryOutdated() => Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
 
     void ILibraryHost.PageRebuilt() => KeepHoldOnRebuiltPage();
 
@@ -1271,7 +1271,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILauncherSettingsHost.LauncherChoiceChanged() => Session.ShowChosenLaunchers();
 
-    void ILauncherSettingsHost.RescanLaunchers() => Session.RescanAsync(null).Forget("Launcher neu einlesen");
+    void ILauncherSettingsHost.RescanLaunchers() => Session.RescanAsync(null).Forget(AppTexts.ErrorContextRescanLaunchers);
 
     LauncherLogos ILauncherSettingsHost.Logos => _logos;
 
@@ -1284,7 +1284,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void ILauncherSettingsHost.LibraryTypesChanged() => Session.ShowChosenTypes();
 
     void ILauncherSettingsHost.RescanLauncher(string launcherId) =>
-        Session.RescanAsync(Session.Launchers.Info(launcherId)).Forget("Launcher neu einlesen");
+        Session.RescanAsync(Session.Launchers.Info(launcherId)).Forget(AppTexts.ErrorContextRescanLaunchers);
 
     OnScreenKeyboardViewModel ILauncherSettingsHost.TakeKeyboard(IKeyboardTarget editor) => SettingsKeyboard.Take(editor, Input.UsesController);
 

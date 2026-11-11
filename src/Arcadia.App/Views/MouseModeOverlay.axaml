@@ -1,8 +1,9 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
         xmlns:ctl="using:Arcadia.App.Controls"
         x:Class="Arcadia.App.Views.MouseModeOverlay"
-        Title="Arcadia Mausmodus"
+        Title="{x:Static app:AppTexts.MouseModeWindowTitle}"
         WindowDecorations="None"
         WindowStartupLocation="Manual"
         TransparencyLevelHint="Transparent"
@@ -22,7 +23,7 @@
     <!-- View held: the box announces the way back, its frame fills over the hold time. -->
     <Panel x:Name="ReturnBox" Classes="returnBox" IsVisible="False">
       <Border Classes="mouseModeLabel">
-        <TextBlock Text="Zurück zu Arcadia" />
+        <TextBlock Text="{x:Static app:AppTexts.BackToArcadia}" />
       </Border>
       <ctl:ScreenEdgeFill x:Name="ReturnEdge" Classes="returnEdge" />
     </Panel>

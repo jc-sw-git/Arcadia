@@ -93,7 +93,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <param name="steam">Steam is installed, and opening its launcher page: the group "Steam" at the end leads there.</param>
     public ControllerSettingsViewModel(ControllerSupportService support, SettingsChanges changes, IPanEmulationView pan, Func<string?> gameInTheWay,
         Action<HealthSeverity, string> notify, (Func<bool> IsInstalled, Action OpenPage)? steam = null)
-        : base("Controller", "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
+        : base(AppTexts.ControllerCategory, "M7 7h10a5 5 0 0 1 4.6 6.9l-1.3 3.2a2.3 2.3 0 0 1-3.9.6L14.6 16H9.4l-1.8 1.7a2.3 2.3 0 0 1-3.9-.6l-1.3-3.2A5 5 0 0 1 7 7z M8 10v3 M6.5 11.5h3 M16 10.5v.01 M17.5 12.5v.01")
     {
         _support = support;
         _changes = changes;
@@ -107,14 +107,14 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         _mouseMode = new MouseModeRows(changes);
         _returnWithView = new ReturnWithViewRows(changes);
         _steamInstalled = steam?.IsInstalled ?? (() => false);
-        _steamLauncherRow = new ActionRowViewModel(SteamLauncherKey, "Controller-Einstellungen für Steam", steam?.OpenPage ?? (() => { }))
+        _steamLauncherRow = new ActionRowViewModel(SteamLauncherKey, AppTexts.ControllerSteamSettingsTitle, steam?.OpenPage ?? (() => { }))
         {
             Group = SteamGroup,
-            Subtitle = "Weitere Controller-Einstellungen für Steam.",
-            ActionText = "Steam-Einstellungen",
+            Subtitle = AppTexts.ControllerSteamSettingsSubtitle,
+            ActionText = AppTexts.SteamSettings,
             Info =
             [
-                new InfoText("Arcadia hat erkannt, dass du Steam installiert hast. In den Launcher-Einstellungen für Steam findest du noch weitere Einstellungsmöglichkeiten für Controller in Zusammenhang mit Steam. Unter anderem zum Steam Controller und ob die Steam Desktop-Steuerung wieder zugelassen werden soll."),
+                new InfoText(AppTexts.ControllerSteamSettingsInfo),
             ],
         };
         _retryInstall = new PromptButtonViewModel(ContinueSteamStop);
@@ -130,7 +130,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         // The game can end (or start) while a prompt is open; nothing else would tell us.
         _promptCheck = new DispatcherTimer(PromptCheckInterval, DispatcherPriority.Background,
-            async (_, _) => await AppErrors.Guard(CheckPromptAsync, "Laufendes Steam-Spiel prüfen"));
+            async (_, _) => await AppErrors.Guard(CheckPromptAsync, AppTexts.ErrorContextCheckRunningSteamGame));
 
         // This DispatcherTimer constructor starts the timer; it only runs while a Steam prompt is open.
         _promptCheck.Stop();
@@ -144,7 +144,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
         // Only while the settings are open does the tick recheck the parts, HidHide's state and SISR.
         _support.WatchSetup = true;
-        Task.Run(() => _support.RefreshAsync()).Forget("Einstellungen aktualisieren");
+        Task.Run(() => _support.RefreshAsync()).Forget(AppTexts.ErrorContextRefreshSettings);
     }
 
     public PromptButtonViewModel RetryInstallItem => _retryInstall;
@@ -206,13 +206,13 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The prompts a game starting cuts short: the timer looks once a second.</summary>
     private bool WatchesGames => IsSteamPrompt || IsRestartPrompt;
 
-    public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ConfirmWindowsRestart ? "Abbrechen" : "Schließen";
+    public string PromptBackText => Prompt is SettingsPrompt.ConfirmSteamStop or SettingsPrompt.ConfirmWindowsRestart ? AppTexts.Cancel : AppTexts.Close;
 
     /// <summary>The footer's [A]: what the focused button does in "Windows neu starten?" (designs), else "Auswählen".</summary>
-    public string PromptSelectText => IsRestartPrompt ? (_cancelRestart.IsFocused ? "Abbrechen" : "Neu starten") : "Auswählen";
+    public string PromptSelectText => IsRestartPrompt ? (_cancelRestart.IsFocused ? AppTexts.Cancel : AppTexts.Restart) : AppTexts.Select;
 
-    public const string RestartTitle = "Windows neu starten?";
-    public const string RestartText = "Windows schließt dabei alle Programme, auch Arcadia. Speichere vorher offene Arbeit in anderen Programmen.";
+    public static string RestartTitle => AppTexts.RestartWindowsTitle;
+    public static string RestartText => AppTexts.RestartWindowsText;
 
     /// <summary>The fix the prompt is open for runs HidHide's installer: Arcadia restarts after it (#396).</summary>
     private bool InstallsHidHide => !_forSisr && _steamStopFix is { } fix && _support.InstallsHidHide(fix);
@@ -220,30 +220,30 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     /// <summary>The fix is "Treiber installieren" with every part missing (#407): it always asks first, what it installs.</summary>
     private bool InstallsEverything => !_forSisr && _steamStopFix == HealthFix.InstallDrivers && _support.AllPartsMissing;
 
-    public const string DriversInstallTitle = "Treiber installieren?";
+    public static string DriversInstallTitle => AppTexts.DriversInstallTitle;
 
-    public const string DriversInstallText = "Arcadia installiert jetzt Treiber und Programme von Drittanbietern: usbip-win2, HidHide und VIIPER, dazu den Wächterdienst Pan. Windows fragt dabei einmal nach Administratorrechten. Nach der Installation ist ein Neustart des PCs empfohlen.";
+    public static string DriversInstallText => AppTexts.DriversInstallText;
 
-    public const string PuckRestartText = "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren.";
+    public static string PuckRestartText => AppTexts.DriversPuckRestart;
 
-    public const string HidHideInstallTitle = "HidHide installieren?";
-    public const string HidHideRestartText = "Nach der Installation von HidHide startet Arcadia einmal neu. Erst dann sieht Arcadia die Controller, die Pan vor anderen Programmen versteckt.";
-    private const string SteamClosesText = "Für die Installation muss Steam beendet werden. Arcadia startet Steam danach wieder im Hintergrund.";
+    public static string HidHideInstallTitle => AppTexts.HidHideInstallTitle;
+    public static string HidHideRestartText => AppTexts.DriversHidHideRestart;
+    private static string SteamClosesText => AppTexts.DriversSteamCloses;
 
     /// <summary>"HidHide installieren?" before HidHide's installer runs, with Steam running or not; else "Steam beenden?".</summary>
-    public string SteamStopTitle => InstallsEverything ? DriversInstallTitle : InstallsHidHide ? HidHideInstallTitle : "Steam beenden?";
+    public string SteamStopTitle => InstallsEverything ? DriversInstallTitle : InstallsHidHide ? HidHideInstallTitle : AppTexts.SteamStopTitle;
 
     /// <summary>Why Steam has to close, or for HidHide's installer that Arcadia restarts afterwards.</summary>
     public string SteamStopText => _forSisr
-        ? "Den Eintrag „SISR Marker“ kann Arcadia nur entfernen, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet."
+        ? AppTexts.SteamStopForSisrMarker
         : InstallsEverything ? DriversInstallText
         : InstallsHidHide ? HidHideRestartText : SteamClosesText;
 
     /// <summary>For a driver fix, why it restarts the puck (and, for HidHide's installer, that Steam closes); nothing more for "SISR entfernen".</summary>
     public string SteamStopDetail => InstallsEverything ? EverythingDetail : (InstallsHidHide && StopsSteam ? SteamClosesText + " " : string.Empty) + _steamStopFix switch
     {
-        HealthFix.ReinstallHidHide => "Die Neuinstallation von HidHide startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
-        HealthFix.InstallDrivers => "Die Treiber-Installation startet den Puck des Steam Controllers neu. Steam darf ihn in dem Moment nicht aktualisieren. Windows fragt dabei einmal nach Administratorrechten.",
+        HealthFix.ReinstallHidHide => AppTexts.SteamStopDetailHidHide,
+        HealthFix.InstallDrivers => AppTexts.SteamStopDetailDrivers,
         _ => string.Empty,
     };
 
@@ -257,24 +257,24 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
 
     public bool HasSteamStopDetail => SteamStopDetail.Length > 0;
 
-    public const string UsbLineText = "Während der Installation können Maus, Tastatur und Controller kurz nicht reagieren. Das ist normal.";
+    public static string UsbLineText => AppTexts.DriversUsbLine;
 
     /// <summary>The question before an install that runs usbip-win2's installer warns of the short freeze (#413, D5, D12).</summary>
     public bool ShowsUsbLine => Prompt == SettingsPrompt.ConfirmSteamStop && !_forSisr && _steamStopFix is { } fix && _support.InstallsUsbip(fix);
 
-    public string ConfirmSteamStopText => _forSisr ? "Weiter" : StopsSteam ? "Steam beenden und installieren" : "Installieren";
+    public string ConfirmSteamStopText => _forSisr ? AppTexts.Continue : StopsSteam ? AppTexts.SteamStopAndInstall : AppTexts.Install;
 
     /// <summary>What the game prompt asks for, below the game's name.</summary>
     public string GamePromptText => _forSisr
-        ? "Beende das Spiel zuerst, dann kann Arcadia SISR entfernen."
-        : "Für die Installation muss Steam beendet und neu gestartet werden. Beende zuerst das Spiel und versuche es dann erneut.";
+        ? AppTexts.GameRunningSisr
+        : AppTexts.GameRunningInstall;
 
     /// <summary>The design for "SISR entfernen" has only "Schließen": the prompt goes on by itself when the game ends.</summary>
     public bool CanRetryGamePrompt => !_forSisr;
 
     public string RemovingSisrText => _sisrRemovalStopsSteam
-        ? "Das dauert nur einen Moment. Steam startet danach von selbst wieder."
-        : "Das dauert nur einen Moment.";
+        ? AppTexts.RemovingSisrWithSteam
+        : AppTexts.RemovingSisr;
 
     /// <summary>The step "SISR entfernen" is at, e.g. "Steam wird beendet …".</summary>
     public string RemovingSisrStep => _support.BusyText ?? SisrLeftovers.RemovingText;
@@ -383,7 +383,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
     private void ApplyLayouts(IReadOnlyList<(ControllerModel Model, ControllerLayout? Layout)> changes)
     {
         _changes.Apply(settings => changes.Aggregate(settings, (current, change) =>
-            current.WithControllerLayout(ControllerLayouts.Key(change.Model), change.Layout is { } chosen ? ControllerLayouts.Value(chosen) : null)), "Controller zuordnen");
+            current.WithControllerLayout(ControllerLayouts.Key(change.Model), change.Layout is { } chosen ? ControllerLayouts.Value(chosen) : null)), AppTexts.ErrorContextAssignControllers);
         foreach (var (model, layout) in changes)
         {
             AppLog.Write($"Controller zuordnen: {model} → {(layout is { } shown ? ControllerLayouts.DisplayName(shown) : "Vorgabe")}");
@@ -413,7 +413,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        _changes.Apply(settings => settings with { KeepSisr = true }, "SISR behalten");
+        _changes.Apply(settings => settings with { KeepSisr = true }, AppTexts.SisrKeep);
         AppLog.Write("SISR behalten: Bereich ausgeblendet");
         Refresh();
         FocusRowAboveSisr();
@@ -426,7 +426,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        _notify(HealthSeverity.Info, "SISR ist vollständig entfernt.");
+        _notify(HealthSeverity.Info, AppTexts.SisrRemoved);
         Refresh();
         FocusRowAboveSisr();
     });
@@ -473,14 +473,14 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         {
             _sisrRemovalStopsSteam = _support.Sisr.RemovalStopsSteam;
             ShowPrompt(SettingsPrompt.RemovingSisr);
-            _support.Sisr.RemoveAsync().Forget("SISR entfernen");
+            _support.Sisr.RemoveAsync().Forget(AppTexts.ErrorContextRemoveSisr);
             return;
         }
 
         ShowPrompt(SettingsPrompt.None);
         if (_steamStopFix is { } fix)
         {
-            _support.ApplyFixAsync(fix).Forget("Problem beheben");
+            _support.ApplyFixAsync(fix).Forget(AppTexts.ErrorContextFixProblem);
         }
     }
 
@@ -516,7 +516,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        _support.ApplyFixAsync(fix).Forget("Problem beheben");
+        _support.ApplyFixAsync(fix).Forget(AppTexts.ErrorContextFixProblem);
     }
 
     /// <summary>[Neu starten]: Windows restarts, and with it Arcadia; refused, a toast says so and the row stays (F07).</summary>
@@ -528,7 +528,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
             return;
         }
 
-        RestartWindowsAsync().Forget("Windows neu starten");
+        RestartWindowsAsync().Forget(AppTexts.ErrorContextRestartWindows);
     }
 
     private async Task RestartWindowsAsync()

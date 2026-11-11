@@ -59,7 +59,7 @@ internal sealed class PanInstallRun : IPanInstallRun
 
     /// <summary>Connects to the pipe of the Pan just started; throws when Pan ended first (its exit code then says why).</summary>
     public static async Task<PanInstallRun> ConnectAsync(Process process, InstallRun run, CancellationToken cancellationToken) =>
-        new(await PanHandOver.ConnectAsync(process, InstallHandOver.PipeName(run.Id), Command, "die Installation", cancellationToken), run);
+        new(await PanHandOver.ConnectAsync(process, InstallHandOver.PipeName(run.Id), Command, ControllerSupportTexts.PanWhatInstallation, cancellationToken), run);
 
     public IReadOnlyDictionary<PanInstallStep, PanStepState>? ReadReport()
     {

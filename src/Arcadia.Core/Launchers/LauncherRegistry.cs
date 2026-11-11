@@ -43,7 +43,7 @@ public sealed class LauncherRegistry
                 }
                 else if (ids.Contains(id))
                 {
-                    rejected.Add($"Launcher „{id}“ ist doppelt registriert.");
+                    rejected.Add($"Launcher „{id}“ ist doppelt registriert."); // not a UI text (log)
                 }
                 else if (integration.Scanner.Launcher.Id != id
                     || (integration.Client is { LauncherId: var clientId } && clientId != id)
@@ -51,7 +51,7 @@ public sealed class LauncherRegistry
                     || (integration.RunningGames is { LauncherId: var runningId } && runningId != id))
                 {
                     // Games, tabs and installs are matched by launcher id; a part with another id would never match.
-                    rejected.Add($"Launcher „{id}“ enthält Teile eines anderen Launchers.");
+                    rejected.Add($"Launcher „{id}“ enthält Teile eines anderen Launchers."); // not a UI text (log)
                 }
                 else
                 {
@@ -62,7 +62,7 @@ public sealed class LauncherRegistry
             catch (Exception ex)
             {
                 // A plugin's getter may throw; that plugin is left out, Arcadia starts with the others.
-                rejected.Add($"Launcher {integration.GetType().FullName} ließ sich nicht lesen: {ex}");
+                rejected.Add($"Launcher {integration.GetType().FullName} ließ sich nicht lesen: {ex}"); // not a UI text (log)
             }
         }
 

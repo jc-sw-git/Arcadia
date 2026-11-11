@@ -82,9 +82,9 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
 
     public static string PipePath => $@"\\.\pipe\{PanPaths.PipeName}";
 
-    private const string NotInstalled = "Pan ist nicht eingerichtet";
+    private static string NotInstalled => ControllerSupportTexts.PanNotInstalled;
 
-    public const string EndsAtOnce = "Pan beendet sich gleich nach dem Start";
+    public static string EndsAtOnce => ControllerSupportTexts.PanEndsAtOnce;
 
     public (string Reason, bool Permanent)? Unavailable() => ServiceExists() ? null : (NotInstalled, true);
 
@@ -112,7 +112,7 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
             var servicePid = ProcessIdOf();
             if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out var serverPid) || serverPid != servicePid)
             {
-                var message = $"{PipePath} gehört nicht dem Dienst {PanPaths.ServiceName} (Prozess {serverPid} statt {servicePid})";
+                var message = $"{PipePath} gehört nicht dem Dienst {PanPaths.ServiceName} (Prozess {serverPid} statt {servicePid})"; // not a UI text (log)
                 log($"Pan: {message} – ein anderes Programm besetzt die Pipe");
                 throw new PanUnavailableException(message, permanent: true);
             }
@@ -153,7 +153,7 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
 
                 if (DateTime.UtcNow > until)
                 {
-                    throw new PanUnavailableException($"Pan startet nicht ({service.Status})");
+                    throw new PanUnavailableException(ControllerSupportTexts.PanDoesNotStart(service.Status));
                 }
 
                 await Task.Delay(100, cancellationToken);
@@ -162,7 +162,7 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
         }
         catch (Exception ex) when (ex is (InvalidOperationException and not PanUnavailableException) or Win32Exception)
         {
-            throw new PanUnavailableException($"Pan lässt sich nicht starten: {ex.Message}");
+            throw new PanUnavailableException(ControllerSupportTexts.PanCannotStart(ex.Message));
         }
     }
 

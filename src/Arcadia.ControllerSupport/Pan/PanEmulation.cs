@@ -106,16 +106,16 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>A hide that failed (the puck didn't restart, HidHide changed nothing) is tried again after this (designs: "alle 10 Sekunden").</summary>
     public static readonly TimeSpan HideRetry = TimeSpan.FromSeconds(10);
 
-    public const string PausedText = "Pan: Controller-Wächter pausiert. Die echten Controller werden nicht mehr versteckt.";
-    public const string RunningAgainText = "Pan: Controller-Wächter läuft wieder";
-    public const string StoppedText = "Pan: Emulation angehalten – sie ist mehrmals kurz hintereinander ausgefallen. „Erneut versuchen“ in den Controller-Einstellungen startet sie neu.";
-    public const string RetryFailedText = "Pan: Erneuter Versuch ohne Erfolg. Was fehlt, steht in den Controller-Einstellungen.";
-    public const string RetryNoControllerText = "Pan: Kein Controller verbunden, es gibt nichts zu emulieren.";
-    public const string RetryExcludedText = "Pan: Steam Controller und Puck bleiben ausgenommen.";
+    public static string PausedText => ControllerSupportTexts.PanPaused;
+    public static string RunningAgainText => ControllerSupportTexts.PanRunningAgain;
+    public static string StoppedText => ControllerSupportTexts.PanEmulationStopped;
+    public static string RetryFailedText => ControllerSupportTexts.PanRetryFailed;
+    public static string RetryNoControllerText => ControllerSupportTexts.PanRetryNoController;
+    public static string RetryExcludedText => ControllerSupportTexts.PanRetryExcluded;
 
-    public const string FirmwareUpdateReason = "Steam spielt ein Firmware-Update auf";
+    public static string FirmwareUpdateReason => ControllerSupportTexts.FirmwareUpdateReason;
 
-    public const string NotVisibleText = "Pan: Arcadia sieht die versteckten Controller nicht mehr und hat sie wieder freigegeben. Starte Arcadia neu, die Controller-Einstellungen bieten das an.";
+    public static string NotVisibleText => ControllerSupportTexts.PanNotVisible;
 
     /// <summary>The name the Steam Controller has in <see cref="NotVisibleToArcadia"/>.</summary>
     public const string SteamControllerName = "Steam Controller";
@@ -181,7 +181,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// </summary>
     public Func<bool> HidHideUsable { get; init; } = () => true;
 
-    public const string WindowsRestartReason = "Pausiert bis zum Neustart von Windows";
+    public static string WindowsRestartReason => ControllerSupportTexts.PausedUntilWindowsRestart;
 
     /// <summary>The controllers Arcadia saw before a hide and no longer sees since (#396); empty while that didn't happen.</summary>
     public IReadOnlyList<string> NotVisibleToArcadia => _notVisible ?? [];
@@ -342,7 +342,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     public string? Unavailable() =>
-        _session is { Ended: false } && _status.State == PanEmulationState.Running ? null : _status.Reason ?? "Pan-Emulation läuft nicht";
+        _session is { Ended: false } && _status.State == PanEmulationState.Running ? null : _status.Reason ?? ControllerSupportTexts.PanEmulationNotRunning;
 
     public async Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
@@ -393,7 +393,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             if (_session is { } session)
             {
-                await EndAsync(session, "Arcadia wird beendet");
+                await EndAsync(session, "Arcadia wird beendet"); // not a UI text (log)
             }
 
             await _pads.ShutdownAsync();
@@ -439,7 +439,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         if (_notVisible is { } notVisible)
         {
             // A new emulation would hide them from Arcadia once more: nothing starts until Arcadia restarts.
-            await EndIfRunningAsync("Arcadia sieht die versteckten Controller nicht");
+            await EndIfRunningAsync("Arcadia sieht die versteckten Controller nicht"); // not a UI text (log)
             SetStatus(NotVisibleStatus(notVisible));
             return;
         }
@@ -447,7 +447,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         if (PausedForWindowsRestart())
         {
             // Shows what Pan hides first, as when switched off: the half removed driver may not hide for long.
-            await EndIfRunningAsync("ein Treiber wartet auf den Neustart von Windows");
+            await EndIfRunningAsync("ein Treiber wartet auf den Neustart von Windows"); // not a UI text (log)
             SetStatus(new(PanEmulationState.Ready, PanEmulationProblem.WindowsRestart, Reason: WindowsRestartReason));
             return;
         }
@@ -461,8 +461,8 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         if (_gaveUp)
         {
-            await EndIfRunningAsync("zu viele Ausfälle");
-            SetStatus(new(PanEmulationState.Stopped, PanEmulationProblem.TooManyFailures, Reason: "zu viele Ausfälle in 5 Minuten"));
+            await EndIfRunningAsync("zu viele Ausfälle"); // not a UI text (log)
+            SetStatus(new(PanEmulationState.Stopped, PanEmulationProblem.TooManyFailures, Reason: ControllerSupportTexts.PanTooManyFailures));
             return;
         }
 
@@ -501,7 +501,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         if ((puckWanted || OthersConnected) && !HidHideUsable())
         {
             // Nothing can be hidden, and the part row says so: the same pause as Pan's own answer, without asking.
-            SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, PanReason.HidHideMissing, "HidHide fehlt"));
+            SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, PanReason.HidHideMissing, ControllerSupportTexts.HidHideMissingTitle));
             return;
         }
 
@@ -510,7 +510,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             // Pan can't hide now (HidHide busy, inverse, ...): no emulation at all, the real controller stays as it is.
             SetStatus(could is null
-                ? new(PanEmulationState.Unavailable, Reason: "Pan kann den Steam Controller nicht verstecken – Pan aktualisieren")
+                ? new(PanEmulationState.Unavailable, Reason: ControllerSupportTexts.PanCannotHideSteamController)
                 : new(PanEmulationState.Paused, PanEmulationProblem.Hiding, could.Value, $"HidHide: {could}"));
             return;
         }
@@ -574,7 +574,7 @@ public sealed class PanEmulation : IVirtualXboxPads
                 }
                 else
                 {
-                    Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, $"nicht versteckt: {hidden}"));
+                    Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, ControllerSupportTexts.PanNotHidden(hidden)));
                 }
 
                 return;
@@ -635,7 +635,7 @@ public sealed class PanEmulation : IVirtualXboxPads
     }
 
     private void SetExcluded() =>
-        SetStatus(new(PanEmulationState.Ready, PanEmulationProblem.Excluded, Reason: "Steam Controller und Puck für ein Firmware-Update freigegeben"));
+        SetStatus(new(PanEmulationState.Ready, PanEmulationProblem.Excluded, Reason: ControllerSupportTexts.PanReleasedForFirmware));
 
     /// <summary>
     /// "Controller freigeben" after Steam tried a firmware update through the copy (#295): pad and copy go, the puck is
@@ -650,7 +650,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             if (_session is { } session && (session.Hidden || !OthersConnected))
             {
-                await EndAsync(session, "für ein Firmware-Update freigegeben");
+                await EndAsync(session, "für ein Firmware-Update freigegeben"); // not a UI text (log)
             }
 
             if (Enabled() && !OthersConnected)
@@ -691,7 +691,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             // ends first, and the next start tells Pan the new one before any device goes onto it (#304, decision 11).
             _log($"Pan-Emulation {session.Generation}: VIIPER verloren");
             await EndAsync(session, "VIIPER verloren");
-            Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "VIIPER verloren"));
+            Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: ControllerSupportTexts.PanViiperLost));
             return;
         }
 
@@ -700,7 +700,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             _log($"Pan-Emulation {session.Generation}: Verstecken verloren ({holds})");
             await EndAsync(session, $"Verstecken verloren ({holds})");
             _pausedByLoss = true;
-            SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, holds, $"Verstecken verloren: {holds}"));
+            SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, holds, ControllerSupportTexts.PanHidingLost(holds)));
             Notice?.Invoke(HealthSeverity.Warning, PausedText);
             return;
         }
@@ -764,7 +764,7 @@ public sealed class PanEmulation : IVirtualXboxPads
 
         _notVisible = notVisible;
         _log($"Pan-Emulation {session.Generation}: Arcadia sieht die versteckten Controller nicht mehr ({string.Join(", ", notVisible)}); HidHide lässt diesen Prozess nicht durch, erst ein Neustart von Arcadia hilft");
-        await EndAsync(session, "Arcadia sieht die versteckten Controller nicht");
+        await EndAsync(session, "Arcadia sieht die versteckten Controller nicht"); // not a UI text (log)
         SetStatus(NotVisibleStatus(notVisible));
         Notice?.Invoke(HealthSeverity.Warning, NotVisibleText);
         return false;
@@ -775,7 +775,7 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     private static PanEmulationStatus NotVisibleStatus(IReadOnlyList<string> notVisible) =>
         // Paused, not stopped: the player can act on it ("Arcadia neu starten"), so a warning, as the owner chose (#396).
-        new(PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia, Reason: $"Arcadia sieht {string.Join(", ", notVisible)} nicht mehr");
+        new(PanEmulationState.Paused, PanEmulationProblem.NotVisibleToArcadia, Reason: ControllerSupportTexts.PanNotVisibleStatus(string.Join(", ", notVisible)));
 
     /// <summary>False when the copy failed and the emulation ended with it.</summary>
     private async Task<bool> KeepCopyAsync(Session session, CancellationToken cancellationToken)
@@ -850,7 +850,7 @@ public sealed class PanEmulation : IVirtualXboxPads
         {
             // No copy, no emulation: Steam must not be left without the controller (decision 5).
             _log($"Pan-Emulation: Kopie für Steam startet nicht: {ex.Message}");
-            await EndAsync(session, "Kopie startet nicht");
+            await EndAsync(session, "Kopie startet nicht"); // not a UI text (log)
             Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: ex.Message));
             return false;
         }
@@ -859,15 +859,15 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>False when a copy that failed to go ended the emulation (its forwarding isn't confirmed stopped).</summary>
     private async Task<bool> RemoveCopyAsync(Session session, ISteamControllerCopy copy)
     {
-        if (await DisposeQuietlyAsync(copy, "Kopie entfernen"))
+        if (await DisposeQuietlyAsync(copy, "Kopie entfernen")) // not a UI text (log)
         {
             return true;
         }
 
         // Its forwarding isn't confirmed stopped: no new copy beside it; Pan's teardown ends viiper.exe first.
         session.LeftBehind = true;
-        await EndAsync(session, "Kopie lässt sich nicht sauber entfernen");
-        Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: "Kopie lässt sich nicht sauber entfernen"));
+        await EndAsync(session, "Kopie lässt sich nicht sauber entfernen"); // not a UI text (log)
+        Failed(new(PanEmulationState.Paused, PanEmulationProblem.CopyFailed, Reason: ControllerSupportTexts.PanCopyNotRemovable));
         return false;
     }
 
@@ -888,8 +888,8 @@ public sealed class PanEmulation : IVirtualXboxPads
         }
 
         _log($"Pan-Emulation {session.Generation}: Steam Controller nach dem Wechsel nicht versteckt ({hidden})");
-        await EndAsync(session, $"Steam Controller nach dem Wechsel nicht versteckt ({hidden})");
-        Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, $"Verstecken nach dem Wechsel: {hidden}"));
+        await EndAsync(session, $"Steam Controller nach dem Wechsel nicht versteckt ({hidden})"); // not a UI text (log)
+        Failed(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, hidden, ControllerSupportTexts.PanHidingAfterSwitch(hidden)));
         return false;
     }
 
@@ -1015,13 +1015,13 @@ public sealed class PanEmulation : IVirtualXboxPads
         var removed = true;
         foreach (var pad in session.End())
         {
-            removed &= await DisposeQuietlyAsync(pad, "Xbox-Pad entfernen");
+            removed &= await DisposeQuietlyAsync(pad, "Xbox-Pad entfernen"); // not a UI text (log)
         }
 
         if (session.Copy is { } copy)
         {
             session.Copy = null;
-            removed &= await DisposeQuietlyAsync(copy, "Kopie entfernen");
+            removed &= await DisposeQuietlyAsync(copy, "Kopie entfernen"); // not a UI text (log)
         }
 
         return removed;

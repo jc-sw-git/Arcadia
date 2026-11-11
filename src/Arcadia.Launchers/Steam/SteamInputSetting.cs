@@ -32,7 +32,7 @@ public sealed record SteamInputSetting(string? GameSetting, bool XboxSupport, bo
 
     /// <summary>For the log.</summary>
     public string Description =>
-        $"UseSteamControllerConfig {GameSetting ?? "nicht gesetzt"}, Xbox-Unterstützung {(XboxSupport ? "an" : "aus")}, generische Unterstützung {(GenericSupport ? "an" : "aus")}";
+        $"UseSteamControllerConfig {GameSetting ?? "nicht gesetzt"}, Xbox-Unterstützung {(XboxSupport ? "an" : "aus")}, generische Unterstützung {(GenericSupport ? "an" : "aus")}"; // not a UI text (log)
 
     /// <summary>The setting for <paramref name="appId"/>; null if the file is missing or broken.</summary>
     public static SteamInputSetting? Read(string? localConfigVdf, int appId)

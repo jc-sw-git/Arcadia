@@ -49,7 +49,7 @@ public sealed class InstallFolderCheck
         _running = request;
         Task.Run(() => _exists(request.Folder))
             .ContinueWith(check => _post(() => Finish(request, check)), TaskScheduler.Default)
-            .Forget("Installordner prüfen");
+            .Forget(AppTexts.ErrorContextCheckInstallFolder);
     }
 
     private void Finish(Request request, Task<bool> check)
@@ -57,7 +57,7 @@ public sealed class InstallFolderCheck
         _running = null;
         if (check.Exception is { } error)
         {
-            AppErrors.Report(error.GetBaseException(), "Installordner prüfen");
+            AppErrors.Report(error.GetBaseException(), AppTexts.ErrorContextCheckInstallFolder);
         }
         else if (!check.Result && request.Id == _lastId)
         {

@@ -67,12 +67,12 @@ public sealed class LibraryFilterTests
 
         var modal = Modal(arcadia);
         Assert.Equal("GOG Galaxy", modal.LauncherName);
-        Assert.Equal(["Installiert", "Typ"], modal.Categories.Select(category => category.Label));
+        Assert.Equal([AppTexts.Installed, "Typ"], modal.Categories.Select(category => category.Label));
         Assert.Equal(("7", "von 7 Einträgen"), (modal.HitsText, modal.TotalText));
         // Without a filter "Alle Filter zurücksetzen" is skipped: the focus starts on the first category, its values show.
-        Assert.Equal("Installiert", Focused(modal));
+        Assert.Equal(AppTexts.Installed, Focused(modal));
         Assert.Equal(["Alle 7", "Nur installierte 3", "Nur nicht installierte 4"], modal.Values.Select(value => $"{value.Label} {value.CountText}"));
-        Assert.Equal(["Alle", "Alle Typen"], modal.Categories.Select(category => category.Summary));
+        Assert.Equal([AppTexts.FilterAll, AppTexts.FilterAllTypes], modal.Categories.Select(category => category.Summary));
     }
 
     [AvaloniaFact]
@@ -89,14 +89,14 @@ public sealed class LibraryFilterTests
         arcadia.Press(UiAction.Right).Press(UiAction.Down).Press(UiAction.Accept);
 
         Assert.Equal("3", modal.HitsText);
-        Assert.Equal("Nur installierte", modal.Categories[0].Summary);
+        Assert.Equal(AppTexts.FilterOnlyInstalled, modal.Categories[0].Summary);
         Assert.True(modal.Categories[0].IsChosen);
         Assert.Equal(7, arcadia.PageGames.Count);
 
         // B goes back to the categories, B again closes and applies.
         arcadia.Press(UiAction.Back);
         Assert.Same(modal, arcadia.Main.FilterModal);
-        Assert.Equal("Schließen und übernehmen", modal.BackText);
+        Assert.Equal(AppTexts.FilterHintCloseAndApply, modal.BackText);
         arcadia.Press(UiAction.Back);
 
         Assert.Null(arcadia.Main.FilterModal);
@@ -135,7 +135,7 @@ public sealed class LibraryFilterTests
         Assert.Equal("Typ", Focused(modal));
         Assert.Equal(["Alle Typen 4", "Spiele 2", "Software 1", "Werkzeuge 1"], modal.Values.Select(value => $"{value.Label} {value.CountText}"));
         arcadia.Press(UiAction.Right);
-        Assert.Equal("Alle Typen", Focused(modal));
+        Assert.Equal(AppTexts.FilterAllTypes, Focused(modal));
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         Assert.Equal("Werkzeuge", Focused(modal));
         Assert.Equal("1", modal.HitsText);
@@ -161,12 +161,12 @@ public sealed class LibraryFilterTests
         arcadia.Press(UiAction.KeyboardLayout);
         var modal = Modal(arcadia);
         arcadia.Press(UiAction.Up);
-        Assert.Equal("Installiert", Focused(modal));
+        Assert.Equal(AppTexts.Installed, Focused(modal));
 
         arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Back).Press(UiAction.Up);
         Assert.True(modal.IsActive);
         Assert.Equal(FilterModalViewModel.ResetText, Focused(modal));
-        Assert.Equal("Zurücksetzen", modal.AcceptText);
+        Assert.Equal(AppTexts.FilterHintReset, modal.AcceptText);
         // The row has no values to go into: ▶ leaves the focus on it, so no second ring shows.
         arcadia.Press(UiAction.Right);
         Assert.False(modal.IsInValues);
@@ -174,7 +174,7 @@ public sealed class LibraryFilterTests
 
         arcadia.Press(UiAction.Accept);
         Assert.False(modal.IsActive);
-        Assert.Equal("Installiert", Focused(modal));
+        Assert.Equal(AppTexts.Installed, Focused(modal));
         Assert.Equal("7", modal.HitsText);
 
         arcadia.Press(UiAction.Back);
@@ -196,7 +196,7 @@ public sealed class LibraryFilterTests
         ]);
 
         arcadia.Press(UiAction.KeyboardLayout);
-        Assert.Equal(["Installiert"], Modal(arcadia).Categories.Select(category => category.Label));
+        Assert.Equal([AppTexts.Installed], Modal(arcadia).Categories.Select(category => category.Label));
         arcadia.Press(UiAction.Back).Press(UiAction.NextTab).Press(UiAction.KeyboardLayout);
         Assert.Equal(["Typ"], Modal(arcadia).Categories.Select(category => category.Label));
         arcadia.Press(UiAction.Back).Press(UiAction.NextTab);
@@ -405,7 +405,7 @@ public sealed class LibraryFilterTests
         arcadia.Click(modal.ResetCommand);
         Assert.False(modal.IsActive);
         Assert.False(modal.IsInValues);
-        Assert.Equal("Installiert", Focused(modal));
+        Assert.Equal(AppTexts.Installed, Focused(modal));
         arcadia.Click(modal.Categories[1].PickCommand);
         arcadia.Click(modal.Values.Single(value => value.Label == "Werkzeuge").PickCommand);
         arcadia.Click(modal.CloseCommand);

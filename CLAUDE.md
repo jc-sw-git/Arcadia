@@ -134,6 +134,8 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 (timer handlers, `Task`s started from sync code) runs through `AppErrors.Guard`/`.Forget(context)`: unexpected
 errors land with stack trace in `arcadia.log` and as a toast. No `_ = SomethingAsync()` in the App.
 
+**UI texts** live in `*Texts.resx` files, never as literals in code or views (`docs/architecture/ui-texts.md`).
+
 **Avalonia 12** (styles beating local values, focus rings and clipping, compiled and nullable bindings): read
 `docs/architecture/avalonia.md` before changing `.axaml` or styles.
 

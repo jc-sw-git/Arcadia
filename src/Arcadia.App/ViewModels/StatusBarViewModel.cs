@@ -23,7 +23,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     private static readonly TimeSpan ClockInterval = TimeSpan.FromSeconds(1);
 
     /// <summary>The tooltip of the triangle while Pan's emulation is on but doesn't run (#242).</summary>
-    public const string PanNotRunningText = "Pan läuft nicht";
+    public static string PanNotRunningText => AppTexts.PanNotRunning;
 
     private PanEmulationStatus _pan = PanEmulationStatus.Off;
 
@@ -31,14 +31,14 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     public const string PanStatusId = "pan-not-running";
 
     /// <summary>The line below "Pan läuft nicht" in the status modal (#166): the reason has several rows of its own.</summary>
-    public const string PanShortText = "Warum, steht in den Controller-Einstellungen.";
+    public static string PanShortText => AppTexts.PanWhyInSettings;
 
     /// <summary>The Arcadia update as an entry of the status modal (#166).</summary>
     public const string UpdateStatusId = "arcadia-update";
 
-    public const string UpdateShortText = "Arcadia schließt sich, installiert das Update und startet neu.";
+    public static string UpdateShortText => AppTexts.UpdateShortText;
 
-    public const string UpdateFixLabel = "Jetzt aktualisieren";
+    public static string UpdateFixLabel => AppTexts.UpdateNow;
 
     // When each shown message appeared, at its current level (#166); a message that goes is forgotten.
     private readonly Dictionary<string, (StatusLevel Level, DateTimeOffset Since)> _since = [];
@@ -131,7 +131,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     private void UpdateArcadiaUpdateState()
     {
         HasArcadiaUpdate = _updates.AvailableVersion is not null && !_updates.IsRestartingForUpdate;
-        ArcadiaUpdateText = _updates.AvailableVersion is { } version ? $"Arcadia {version} verfügbar" : string.Empty;
+        ArcadiaUpdateText = _updates.AvailableVersion is { } version ? AppTexts.UpdateAvailable(version) : string.Empty;
         ShowEntries();
     }
 
@@ -156,7 +156,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         IsControllerStatusInfo = !panProblem && worst == HealthSeverity.Info;
         IsControllerStatusError = worst == HealthSeverity.Error || _pan.State == PanEmulationState.Stopped && panProblem;
         const string owner = "Steam Controller";
-        var panSuffix = panProblem ? $" – {PanNotRunningText}" : string.Empty;
+        var panSuffix = panProblem ? AppTexts.StatusSuffix(PanNotRunningText) : string.Empty;
         ControllerStatusText = (issues.Count, panProblem) switch
         {
             (0, false) => string.Empty,

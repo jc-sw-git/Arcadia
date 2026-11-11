@@ -8,6 +8,7 @@ using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
 using static Arcadia.App.Tests.TestGames;
+using Arcadia.Launchers.Epic;
 
 namespace Arcadia.App.Tests;
 
@@ -52,7 +53,7 @@ public sealed class EntryTypeTests
 
         arcadia.OpenLauncherPage(KnownLaunchers.Epic.Id);
         var row = Assert.IsType<SwitchRowViewModel>(arcadia.FocusRow("library-option:epic:software"));
-        Assert.Equal(("Software und Engines einbeziehen", "Aus"), (row.Title, row.ValueText));
+        Assert.Equal((EpicTexts.EpicSoftwareTitle, AppTexts.Off), (row.Title, row.ValueText));
         arcadia.Press(UiAction.Accept);
 
         Assert.Equal("An", row.ValueText);
@@ -225,7 +226,7 @@ public sealed class EntryTypeTests
         });
 
         var tile = arcadia.FocusTile("Unreal Engine");
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
         arcadia.Press(UiAction.Accept);
 
         // Epic's install link for an engine opened no dialog on the owner's PC; its Unreal Engine library does.
@@ -298,7 +299,7 @@ public sealed class EntryTypeTests
             line.Parts);
         Assert.Equal("1.234 Spiele, davon 1 installiert · 2 Werkzeuge · 1 Soundtrack, davon 0 installiert", line.Tip);
         Assert.Equal(string.Empty, arcadia.Main.Library.CountText);
-        Assert.DoesNotContain("Seite", line.Tip, StringComparison.Ordinal);
+        Assert.DoesNotContain(AppTexts.Page, line.Tip, StringComparison.Ordinal);
 
         // The tab's number counts every entry shown.
         Assert.Equal(1237, arcadia.SelectedTab!.Count);
@@ -377,7 +378,7 @@ public sealed class EntryTypeTests
         Assert.Equal(["Hollow Knight", "Mapping Kit"], TitlesOf(restarted, KnownLaunchers.Gog.Id));
         restarted.OpenLauncherPage(KnownLaunchers.Gog.Id);
         Assert.Equal("An", Assert.IsType<SwitchRowViewModel>(restarted.FocusRow("library-option:gog:tools")).ValueText);
-        Assert.Equal("Aus", Assert.IsType<SwitchRowViewModel>(restarted.FocusRow("library-option:gog:soundtracks")).ValueText);
+        Assert.Equal(AppTexts.Off, Assert.IsType<SwitchRowViewModel>(restarted.FocusRow("library-option:gog:soundtracks")).ValueText);
         Assert.Equal("[\"tools\"]", SavedOptions(restarted, KnownLaunchers.Gog.Id));
 
         // All off: the launcher's entry holds no LibraryOptions any more.

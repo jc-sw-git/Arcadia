@@ -90,7 +90,7 @@ internal sealed class SteamWebApi(HttpClient http)
         if (!json.RootElement.TryGetProperty("response", out var response) || !response.TryGetProperty("games", out var list) || list.ValueKind != JsonValueKind.Array)
         {
             // Steam answers {"response":{}} also when it doesn't list the games right now: the cached list stays.
-            return new SteamApiError("GetOwnedGames: Antwort ohne Spiele");
+            return new SteamApiError("GetOwnedGames: Antwort ohne Spiele"); // not a UI text (log)
         }
 
         var games = new List<SteamOwnedGame>();
@@ -140,7 +140,7 @@ internal sealed class SteamWebApi(HttpClient http)
     {
         if (avatarHash.Length != 40 || !avatarHash.All(char.IsAsciiHexDigitLower))
         {
-            return new SteamApiError("Avatar: ungültiger Hash");
+            return new SteamApiError("Avatar: ungültiger Hash"); // not a UI text (log)
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -156,7 +156,7 @@ internal sealed class SteamWebApi(HttpClient http)
 
             if (response.Content.Headers.ContentLength > MaxAvatarBytes)
             {
-                return new SteamApiError("Avatar: zu groß");
+                return new SteamApiError("Avatar: zu groß"); // not a UI text (log)
             }
 
             await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
@@ -167,14 +167,14 @@ internal sealed class SteamWebApi(HttpClient http)
             {
                 if (picture.Length + read > MaxAvatarBytes)
                 {
-                    return new SteamApiError("Avatar: zu groß");
+                    return new SteamApiError("Avatar: zu groß"); // not a UI text (log)
                 }
 
                 picture.Write(buffer, 0, read);
             }
 
             var bytes = picture.ToArray();
-            return IsJpegOrPng(bytes) ? SteamApiResult<byte[]>.Ok(bytes) : new SteamApiError("Avatar: kein Bild");
+            return IsJpegOrPng(bytes) ? SteamApiResult<byte[]>.Ok(bytes) : new SteamApiError("Avatar: kein Bild"); // not a UI text (log)
         }
         catch (Exception e) when (Failure("Avatar", e, cancellationToken) is { } error)
         {
@@ -233,8 +233,8 @@ internal sealed class SteamWebApi(HttpClient http)
     private static SteamApiError? Failure(string method, Exception e, CancellationToken cancellationToken) => e switch
     {
         OperationCanceledException when cancellationToken.IsCancellationRequested => new SteamApiError($"{method}: abgebrochen", IsCancelled: true),
-        OperationCanceledException => new SteamApiError($"{method}: Zeitüberschreitung", IsNetwork: true),
-        HttpRequestException or IOException => new SteamApiError($"{method}: nicht erreichbar ({e.GetType().Name})", IsNetwork: true),
+        OperationCanceledException => new SteamApiError($"{method}: Zeitüberschreitung", IsNetwork: true), // not a UI text (log)
+        HttpRequestException or IOException => new SteamApiError($"{method}: nicht erreichbar ({e.GetType().Name})", IsNetwork: true), // not a UI text (log)
         FormatException or JsonException => new SteamApiError($"{method}: Antwort unbrauchbar ({e.Message})"),
         _ => null,
     };

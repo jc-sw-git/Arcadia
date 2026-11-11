@@ -29,10 +29,10 @@ public sealed class LoggingRowsTests : IDisposable
     [Trait("TestCase", "T433-1")]
     public void The_group_has_its_rows_in_order_with_the_switches_indented()
     {
-        Assert.Equal(["Letzte Meldungen", "Info", "Warnungen", "Fehler", "Liste leeren", "Arcadia-Log öffnen", "VIIPER-Log öffnen", "Pan-Log öffnen"],
+        Assert.Equal([AppTexts.LoggingListTitle, "Info", "Warnungen", AppTexts.LevelError, AppTexts.LoggingClearList, AppTexts.LoggingOpenArcadiaLog, AppTexts.LoggingOpenViiperLog, AppTexts.LoggingOpenPanLog],
             _rows.Rows.Select(row => row.Title));
         Assert.All(_rows.Rows, row => Assert.Equal(LoggingRows.Group, row.Group));
-        Assert.Equal(["Info", "Warnungen", "Fehler"], _rows.Rows.Where(row => row.IsIndented).Select(row => row.Title));
+        Assert.Equal(["Info", "Warnungen", AppTexts.LevelError], _rows.Rows.Where(row => row.IsIndented).Select(row => row.Title));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class LoggingRowsTests : IDisposable
 
         Assert.False(_settings.Current.ListsInfoMessages);
         Assert.Equal("2 von 3 angezeigt", Row("logging-list").Subtitle);
-        Assert.Equal(["„Nebelwald“ konnte nicht gestartet werden", "Wächterdienst Pan fehlt"], ShownEntries());
+        Assert.Equal(["„Nebelwald“ konnte nicht gestartet werden", ControllerSupportTexts.PanMissingTitle], ShownEntries());
 
         Row("logging-info").Change(-1);
         Assert.True(_settings.Current.ListsInfoMessages);
@@ -89,7 +89,7 @@ public sealed class LoggingRowsTests : IDisposable
         _rows.Refresh();
 
         Assert.Empty(_messages.Entries);
-        Assert.Equal("Noch keine Meldungen", Row("logging-list").Subtitle);
+        Assert.Equal(AppTexts.LoggingNoMessagesYet, Row("logging-list").Subtitle);
         Assert.False(_settings.Current.ListsWarnings);
         Assert.False(clear.CanActivate);
     }
@@ -105,7 +105,7 @@ public sealed class LoggingRowsTests : IDisposable
 
         Assert.Equal((false, true, LoggingRows.PanNotInstalledText), (pan.CanActivate, pan.IsDimmed, pan.Subtitle));
         Assert.Equal((false, true, LoggingRows.MissingText), (viiper.CanActivate, viiper.IsDimmed, viiper.Subtitle));
-        Assert.Contains(pan.Info, block => block is InfoSection { Title: "SPEICHERORT" });
+        Assert.Contains(pan.Info, block => block is InfoSection info && info.Title == AppTexts.LocationCaption);
 
         _logs.States[LogKind.Pan] = LogFileState.Present;
         _rows.Refresh();

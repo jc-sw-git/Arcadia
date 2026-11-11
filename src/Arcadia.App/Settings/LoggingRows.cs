@@ -11,13 +11,13 @@ namespace Arcadia.App.Settings;
 public sealed class LoggingRows
 {
     public const string Group = "LOGGING";
-    public const string ListTitle = "Letzte Meldungen";
-    public const string ListIntro = "Die letzten 50 Meldungen und Statusänderungen seit dem Start von Arcadia, die neueste oben. Alles davor steht in arcadia.log.";
-    public const string EmptyText = "Noch keine Meldungen seit dem Start von Arcadia.";
-    public const string AllHiddenText = "Alle Level sind ausgeblendet. Schalte Info, Warnungen oder Fehler an, um Meldungen zu sehen.";
-    public const string OpensWithMouseText = "Die Datei öffnet sich in dem Programm, das Windows für .log-Dateien nutzt. Dafür geht der Mausmodus an.";
-    public const string PanNotInstalledText = "Pan ist nicht installiert";
-    public const string MissingText = "Die Datei gibt es noch nicht";
+    public static string ListTitle => AppTexts.LoggingListTitle;
+    public static string ListIntro => AppTexts.LoggingListIntro;
+    public static string EmptyText => AppTexts.LoggingEmpty;
+    public static string AllHiddenText => AppTexts.LoggingAllHidden;
+    public static string OpensWithMouseText => AppTexts.LoggingOpensWithMouse;
+    public static string PanNotInstalledText => AppTexts.LoggingPanNotInstalled;
+    public static string MissingText => AppTexts.LoggingFileMissing;
 
     private static readonly string ListPanelTitle = ListTitle.ToUpperInvariant();
 
@@ -38,26 +38,26 @@ public sealed class LoggingRows
         _messages = messages;
         _changes = changes;
         _logs = logs;
-        _list = new InfoRowViewModel("logging-list", ListTitle) { Group = Group, ScrollText = "Blättern" };
-        _info = Filter("logging-info", "Info", "Hinweise und Bestätigungen", s => s.ListsInfoMessages, (s, on) => s with { ListsInfoMessages = on });
-        _warnings = Filter("logging-warnings", "Warnungen", "Etwas hat nicht geklappt und braucht dich", s => s.ListsWarnings, (s, on) => s with { ListsWarnings = on });
-        _errors = Filter("logging-errors", "Fehler", "Fehlgeschlagen oder unerwartet", s => s.ListsErrors, (s, on) => s with { ListsErrors = on });
-        _clear = new ActionRowViewModel("logging-clear", "Liste leeren", messages.Clear)
+        _list = new InfoRowViewModel("logging-list", ListTitle) { Group = Group, ScrollText = AppTexts.Browse };
+        _info = Filter("logging-info", "Info", AppTexts.LoggingInfoSubtitle, s => s.ListsInfoMessages, (s, on) => s with { ListsInfoMessages = on });
+        _warnings = Filter("logging-warnings", "Warnungen", AppTexts.LoggingWarningSubtitle, s => s.ListsWarnings, (s, on) => s with { ListsWarnings = on });
+        _errors = Filter("logging-errors", AppTexts.LevelError, AppTexts.LoggingErrorSubtitle, s => s.ListsErrors, (s, on) => s with { ListsErrors = on });
+        _clear = new ActionRowViewModel("logging-clear", AppTexts.LoggingClearList, messages.Clear)
         {
             Group = Group,
-            Subtitle = "arcadia.log behält alle Meldungen",
+            Subtitle = AppTexts.LoggingKeepsAll,
             ActionText = "Leeren",
             PanelTitle = ListPanelTitle,
-            ScrollText = "Blättern",
+            ScrollText = AppTexts.Browse,
         };
         _logRows =
         [
-            (LogKind.Arcadia, LogRow(LogKind.Arcadia, "Arcadia-Log öffnen", "ARCADIA-LOG",
-                "Alles, was Arcadia tut: Spielstarts, Tasten und Controller-Knöpfe, Fehler mit ihren Details. Diese Datei hilft bei der Fehlersuche.", openLog)),
-            (LogKind.Viiper, LogRow(LogKind.Viiper, "VIIPER-Log öffnen", "VIIPER-LOG",
-                "Was VIIPER tut, das Programm hinter den emulierten Controllern: welche Controller es anlegt und entfernt, und seine Fehler.", openLog)),
-            (LogKind.Pan, LogRow(LogKind.Pan, "Pan-Log öffnen", "PAN-LOG",
-                "Was Pan, der Controller-Wächter, tut: Treiber, versteckte Controller und Wiederherstellung. Die Datei gibt es erst, wenn Pan installiert ist.", openLog)),
+            (LogKind.Arcadia, LogRow(LogKind.Arcadia, AppTexts.LoggingOpenArcadiaLog, "ARCADIA-LOG",
+                AppTexts.LoggingArcadiaLogInfo, openLog)),
+            (LogKind.Viiper, LogRow(LogKind.Viiper, AppTexts.LoggingOpenViiperLog, "VIIPER-LOG",
+                AppTexts.LoggingViiperLogInfo, openLog)),
+            (LogKind.Pan, LogRow(LogKind.Pan, AppTexts.LoggingOpenPanLog, "PAN-LOG",
+                AppTexts.LoggingPanLogInfo, openLog)),
         ];
         Refresh();
     }
@@ -85,9 +85,9 @@ public sealed class LoggingRows
         var settings = _changes.Current;
         var shown = all.Where(entry => IsListed(entry.Level, settings)).ToList();
 
-        _list.Subtitle = all.Count == 0 ? "Noch keine Meldungen"
-            : shown.Count == all.Count ? $"{all.Count} seit dem Start von Arcadia"
-            : $"{shown.Count} von {all.Count} angezeigt";
+        _list.Subtitle = all.Count == 0 ? AppTexts.LoggingNoMessagesYet
+            : shown.Count == all.Count ? AppTexts.LoggingCountSinceStart(all.Count)
+            : AppTexts.LoggingShownOf(shown: shown.Count, total: all.Count);
         IReadOnlyList<InfoBlock> list =
         [
             new InfoText(ListIntro),
@@ -136,7 +136,7 @@ public sealed class LoggingRows
     private SwitchRowViewModel Filter(string key, string title, string subtitle, Func<AppSettings, bool> get, Func<AppSettings, bool, AppSettings> set) =>
         new(key, title, () => get(_changes.Current), on =>
         {
-            _changes.Apply(s => set(s, on), $"Letzte Meldungen: {title}");
+            _changes.Apply(s => set(s, on), AppTexts.LoggingRecentMessagesOf(title));
             Refresh();
         })
         {
@@ -144,14 +144,14 @@ public sealed class LoggingRows
             Indent = 1,
             Subtitle = subtitle,
             PanelTitle = ListPanelTitle,
-            ScrollText = "Blättern",
+            ScrollText = AppTexts.Browse,
         };
 
     private ActionRowViewModel LogRow(LogKind kind, string title, string panelTitle, string holds, Action<LogKind> openLog) =>
         new($"logging-log-{kind.ToString().ToLowerInvariant()}", title, () => openLog(kind))
         {
             Group = Group,
-            ActionText = "Öffnen",
+            ActionText = AppTexts.Open,
             PanelTitle = panelTitle,
             Info =
             [
@@ -177,8 +177,8 @@ public sealed class LoggingRows
 
     private static string SubtitleOf(LogKind kind) => kind switch
     {
-        LogKind.Arcadia => "Spielstarts, Tasten, Controller und Fehler",
-        LogKind.Viiper => "Die emulierten Controller",
-        _ => "Der Controller-Wächter",
+        LogKind.Arcadia => AppTexts.LoggingArcadiaLogSubtitle,
+        LogKind.Viiper => AppTexts.LoggingViiperLogSubtitle,
+        _ => AppTexts.LoggingPanLogSubtitle,
     };
 }

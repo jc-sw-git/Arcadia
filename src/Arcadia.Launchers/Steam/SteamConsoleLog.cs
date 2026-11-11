@@ -20,7 +20,7 @@ public sealed partial class SteamConsoleLog(Func<string?> path, TimeZoneInfo? zo
     private static readonly Dictionary<string, string> KnownReasons = new(StringComparer.Ordinal)
     {
         // Steam's own dialog said "Keine Lizenzen" (3000th Duel and another game the account doesn't own).
-        ["AppError_5"] = "Das angemeldete Steam-Konto besitzt dieses Spiel nicht.",
+        ["AppError_5"] = SteamTexts.SteamRefusedNotOwned,
     };
 
     /// <summary>

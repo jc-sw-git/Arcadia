@@ -48,33 +48,13 @@ public static partial class EpicCatalog
     /// </summary>
     public static IReadOnlyList<EpicCatalogItem> Parse(string base64)
     {
-        byte[] bytes;
-        try
-        {
-            bytes = Convert.FromBase64String(base64.Trim());
-        }
-        catch (FormatException)
-        {
-            return [];
-        }
-
-        JsonDocument document;
-        try
-        {
-            document = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
-        }
-        catch (JsonException)
+        if (Decode(base64) is not { } document)
         {
             return [];
         }
 
         using (document)
         {
-            if (document.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return [];
-            }
-
             var items = new List<EpicCatalogItem>();
             foreach (var element in document.RootElement.EnumerateArray())
             {
@@ -85,6 +65,26 @@ public static partial class EpicCatalog
             }
 
             return items;
+        }
+    }
+
+    /// <summary>The cache's JSON array; null if the content is no Base64, no JSON or no array.</summary>
+    internal static JsonDocument? Decode(string base64)
+    {
+        try
+        {
+            var document = JsonDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(base64.Trim())));
+            if (document.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                return document;
+            }
+
+            document.Dispose();
+            return null;
+        }
+        catch (Exception e) when (e is FormatException or JsonException)
+        {
+            return null;
         }
     }
 
@@ -230,6 +230,6 @@ public static partial class EpicCatalog
         return first;
     }
 
-    private static string? GetString(JsonElement element, string name) =>
+    internal static string? GetString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 }

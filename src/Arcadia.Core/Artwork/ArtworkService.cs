@@ -413,6 +413,7 @@ public sealed partial class ArtworkService : IDisposable
         Game game, ArtworkKind kind, IReadOnlyList<ArtworkCandidate> candidates, CachedImage? cached, ImageSize? cachedSize, RunState run, CancellationToken cancel)
     {
         Pick? fallback = null;
+        var replaced = IsReplaced(cached, candidates);
         foreach (var candidate in candidates)
         {
             Pick? option;
@@ -440,12 +441,12 @@ public sealed partial class ArtworkService : IDisposable
             }
             else if (candidate.Download is { } url)
             {
-                if (cached is not null && cachedSize is { } held && (ArtworkFormat.Fits(held, kind, _tolerance) || cached.Stamp == url.AbsoluteUri))
+                if (cached is not null && cachedSize is { } held && (cached.Stamp == url.AbsoluteUri || (ArtworkFormat.Fits(held, kind, _tolerance) && !replaced)))
                 {
-                    // Nothing earlier fits and the cache holds an image: no download for what is there already.
+                    // Nothing earlier fits and the cache holds an image the launcher didn't replace: no download for what is there already.
                     (option, size) = (new Pick.Keep(), held);
                 }
-                else if (run.Offline || !run.Tried.Add(url))
+                else if (run.Offline || run.Failed.Contains(url))
                 {
                     continue;
                 }
@@ -455,6 +456,7 @@ public sealed partial class ArtworkService : IDisposable
                 }
                 else
                 {
+                    run.Failed.Add(url);
                     continue;
                 }
             }
@@ -473,6 +475,15 @@ public sealed partial class ArtworkService : IDisposable
 
         return fallback ?? (cachedSize is not null ? new Pick.Keep() : null);
     }
+
+    /// <summary>
+    /// The launcher no longer offers the address the cached image came from but another one of the same origin: it changed
+    /// the image (e.g. Epic's catalog names new art, #488). A second host of the same files that is still offered is no change.
+    /// </summary>
+    private static bool IsReplaced(CachedImage? cached, IReadOnlyList<ArtworkCandidate> candidates) =>
+        cached is not null
+        && candidates.Any(c => c.Download is not null && c.Origin == cached.Origin)
+        && !candidates.Any(c => c.Download?.AbsoluteUri == cached.Stamp);
 
     /// <summary>Length and time of a launcher's file, to tell it changed; null if it is missing or too large.</summary>
     private static string? LocalStamp(string path)
@@ -700,8 +711,9 @@ public sealed partial class ArtworkService : IDisposable
 
         public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
 
-        // A server that has no image now is asked again by the next run: a rescan may find what it added meanwhile.
-        public HashSet<Uri> Tried { get; } = [];
+        // An address that gave no image is not asked again in this run, but by the next: a rescan may find what the server
+        // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
+        public HashSet<Uri> Failed { get; } = [];
 
         public bool Offline { get; set; }
 

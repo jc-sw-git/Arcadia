@@ -62,8 +62,9 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 **Artwork** (`Artwork/`, #13, #487)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
   launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
-  cut away at most), else the first at all; downloads only for what is missing, 10 s each, the run stops downloading
-  at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
+  cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
+  another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
+  the run stops downloading at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
   what the views show (`GameArtwork`), `Changed` says for which games it changed. `ReloadAll` runs it over every image
   again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben".
 - `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's

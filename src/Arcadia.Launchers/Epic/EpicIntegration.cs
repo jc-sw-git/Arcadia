@@ -2,7 +2,7 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Launchers.Epic;
 
-/// <summary>The Epic Games Launcher: library, starts through the launcher, install progress, running games.</summary>
+/// <summary>The Epic Games Launcher: library, starts through the launcher, install progress, running games, catalog images.</summary>
 /// <param name="folders">Where Epic's files are; null: where Epic keeps them on this PC. The acceptance tests pass folders of their own.</param>
 public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = null) : ILauncherIntegration
 {
@@ -27,6 +27,8 @@ public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = nu
     public IInstallMonitor? InstallMonitor { get; } = new EpicInstallMonitor(folders?.Data, folders?.CurrentLogPath);
 
     public IRunningGamesMonitor? RunningGames { get; } = new EpicRunningGames(folders?.Logs);
+
+    public ILauncherArtwork? Artwork { get; } = new EpicArtwork(folders?.CatalogPath);
 
     public IReadOnlyCollection<string> ProgramNames { get; } = ["EpicGamesLauncher.exe", "EpicWebHelper.exe"];
 

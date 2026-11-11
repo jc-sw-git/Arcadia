@@ -361,7 +361,7 @@ public sealed class ArtworkService : IDisposable
                     // Nothing earlier fits and the cache holds an image the launcher didn't replace: no download for what is there already.
                     (option, size) = (new Pick.Keep(), held);
                 }
-                else if (run.Offline || !run.Tried.Add(url))
+                else if (run.Offline || run.Failed.Contains(url))
                 {
                     continue;
                 }
@@ -371,6 +371,7 @@ public sealed class ArtworkService : IDisposable
                 }
                 else
                 {
+                    run.Failed.Add(url);
                     continue;
                 }
             }
@@ -616,8 +617,9 @@ public sealed class ArtworkService : IDisposable
     {
         public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
 
-        // A server that has no image now is asked again by the next run: a rescan may find what it added meanwhile.
-        public HashSet<Uri> Tried { get; } = [];
+        // An address that gave no image is not asked again in this run, but by the next: a rescan may find what the server
+        // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
+        public HashSet<Uri> Failed { get; } = [];
 
         public bool Offline { get; set; }
 

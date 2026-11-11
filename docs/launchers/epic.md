@@ -39,7 +39,8 @@ re-sends once if no process appears from the install directory within 30 s. If t
   `DieselStoreFrontWide`, `OfferImageTall`, `DieselGameBoxLogo`, …) are ignored. On the owner's PC: of 486 entries
   without DLCs 371 have a tall image, 364 a 16 : 9 one, 103 none.
 - An item's images are filed under each of its `releaseInfo[].appId` and its `id`; a game is found by its app name, else
-  by the catalog item id in its launch address. A base game wins over a DLC or edition naming the same app.
+  by the catalog item id in its launch address. A base game wins over a DLC or edition naming the same app, also when it
+  has no images itself (it keeps its placeholder).
 - The cache can be written by any local program, so only `https` addresses on `epicgames.com` or `unrealengine.com`
   (or a subdomain, e.g. `cdn1.epicgames.com`, `cdn2.unrealengine.com`), on the default port and without user data, are
   downloaded; any other is skipped with the log line `Epic-Katalogbilder: Bild von Katalogeintrag <id> übergangen …`

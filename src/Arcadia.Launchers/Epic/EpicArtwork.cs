@@ -72,11 +72,11 @@ public sealed class EpicArtwork(string? catalogPath = null) : ILauncherArtwork
 
     /// <summary>
     /// Files the item's images under each of its apps and its item id. A base game wins over a DLC or edition that names
-    /// the same app, so a game never shows the image of its add-on.
+    /// the same app, also when the base game has no images, so a game never shows the image of its add-on.
     /// </summary>
     private static void Index(JsonElement item, Dictionary<string, Images> byApp, Dictionary<string, Images> byItem)
     {
-        if (item.ValueKind != JsonValueKind.Object || ImagesOf(item) is not { } images)
+        if (item.ValueKind != JsonValueKind.Object)
         {
             return;
         }
@@ -84,6 +84,11 @@ public sealed class EpicArtwork(string? catalogPath = null) : ILauncherArtwork
         var isBase = !(item.TryGetProperty("mainGameItem", out var main)
             && main.ValueKind == JsonValueKind.Object
             && !string.IsNullOrEmpty(EpicCatalog.GetString(main, "id")));
+        if ((ImagesOf(item) ?? (isBase ? None : null)) is not { } images)
+        {
+            return;
+        }
+
         if (EpicCatalog.GetString(item, "id") is { Length: > 0 } id)
         {
             Add(byItem, id, images, isBase);
@@ -176,6 +181,9 @@ public sealed class EpicArtwork(string? catalogPath = null) : ILauncherArtwork
     }
 
     private sealed record Images(Uri? Cover, Uri? Hero, bool OfBaseGame);
+
+    /// <summary>A base game without images: it keeps its placeholders rather than take an edition's images.</summary>
+    private static readonly Images None = new(null, null, OfBaseGame: true);
 
     private sealed class Lookup(Dictionary<string, Images> byApp, Dictionary<string, Images> byItem) : IArtworkLookup
     {

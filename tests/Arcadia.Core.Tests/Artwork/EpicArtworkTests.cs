@@ -256,13 +256,17 @@ public sealed class EpicArtworkTests : IDisposable
             Entry("cc02", Images(("DieselGameBoxTall", dlcUrl)), mainGame: "itemcc02", id: "dlc-of-cc02"),
             Entry("cc02", Images(("DieselGameBoxTall", TallUrl))),
             Entry("cc03dlc", Images(("DieselGameBoxTall", dlcUrl)), mainGame: "itemcc04"),
-            Entry("cc04", images: null));
+            Entry("cc04", images: null),
+            Entry("cc06", Images(("DieselGameBoxTall", dlcUrl)), mainGame: "itemcc06", id: "edition-of-cc06"),
+            Entry("cc06", images: null));
 
         var lookup = Look();
 
         // The first DLC names the game's app as its own release (an edition) and comes first: the base game's image still wins.
         Assert.Equal(TallUrl, Assert.Single(lookup.For(GameOf("cc02"), ArtworkKind.Cover)).Download!.AbsoluteUri);
         Assert.Empty(lookup.For(GameOf("cc04"), ArtworkKind.Cover));
+        // A base game without images keeps its placeholder rather than its edition's image.
+        Assert.Empty(lookup.For(GameOf("cc06"), ArtworkKind.Cover));
         Assert.Empty(lookup.For(GameOf("cc05", installed: true), ArtworkKind.Cover));
     }
 
@@ -343,6 +347,20 @@ public sealed class EpicArtworkTests : IDisposable
 
         Assert.True(ArtworkFormat.Fits(new ImageSize(1200, 1600), ArtworkKind.Cover, ArtworkFormat.NormalTolerance));
         Assert.False(ArtworkFormat.Fits(new ImageSize(2560, 1440), ArtworkKind.Hero, ArtworkFormat.NormalTolerance));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T488-6")]
+    public async Task Two_entries_naming_the_same_image_both_show_it_after_one_scan()
+    {
+        // Unreal Engine's versions and a game's editions share their catalog art.
+        WriteCatalog(Entry("UE_5.3", Images(("DieselGameBoxTall", TallUrl))), Entry("UE_5.4", Images(("DieselGameBoxTall", TallUrl))));
+        _server.Serve(TallUrl, TestImages.Jpeg(1200, 1600));
+
+        await ScanAsync(GameOf("UE_5.3") with { Type = GameType.Tool }, GameOf("UE_5.4") with { Type = GameType.Tool });
+
+        Assert.NotNull(_service.Of("epic:UE_5.3")?.Cover);
+        Assert.NotNull(_service.Of("epic:UE_5.4")?.Cover);
     }
 
     [Fact]

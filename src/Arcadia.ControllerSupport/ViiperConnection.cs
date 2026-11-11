@@ -167,7 +167,7 @@ public static class ViiperConnection
 }
 
 /// <summary>VIIPER answered the handshake with an error: the key is wrong, or it takes none.</summary>
-public sealed class ViiperRefusedException() : IOException("VIIPER hat die Anmeldung abgelehnt");
+public sealed class ViiperRefusedException() : IOException("VIIPER hat die Anmeldung abgelehnt"); // not a UI text (exception)
 
 /// <summary>
 /// VIIPER's encrypted framing after the handshake: each write is one packet (4-byte big-endian length, 12-byte nonce

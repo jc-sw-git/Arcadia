@@ -10,7 +10,7 @@ namespace Arcadia.App.Settings;
 /// </summary>
 public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
 {
-    private const string Group = "VERSION";
+    private static string Group => AppTexts.VersionGroup;
 
     /// <summary>"Jetzt aktualisieren"; the status modal's update entry leads there (#166).</summary>
     public const string InstallKey = "arcadia-install";
@@ -40,7 +40,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
         _updates = updates;
         _messages = messages;
         _logging = new LoggingRows(messages, changes, logs, openLog);
-        _version = new InfoRowViewModel("arcadia-version", $"Arcadia {updates.CurrentVersion}") { Group = Group };
+        _version = new InfoRowViewModel("arcadia-version", AppTexts.ArcadiaVersion(updates.CurrentVersion)) { Group = Group };
         _check = new ActionRowViewModel("arcadia-check", AppTexts.AboutCheckForUpdates, () => updates.CheckNowAsync().Forget(AppTexts.ErrorContextUpdateCheck))
         {
             Group = Group,

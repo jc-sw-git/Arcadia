@@ -10,7 +10,7 @@ namespace Arcadia.App.Settings;
 /// </summary>
 internal sealed class LauncherGeneralRows
 {
-    private const string GeneralGroup = "ALLGEMEIN";
+    private static string GeneralGroup => AppTexts.GeneralGroup;
 
     private readonly ILauncherCategory _category;
     private readonly TextRowViewModel _nameRow;
@@ -53,7 +53,7 @@ internal sealed class LauncherGeneralRows
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
-        _defaultLogoRow = new ActionRowViewModel("launcher-logo-default", "Standardlogo", RestoreLogo)
+        _defaultLogoRow = new ActionRowViewModel("launcher-logo-default", AppTexts.DefaultLogo, RestoreLogo)
         {
             Group = GeneralGroup,
             Indent = 1,
@@ -116,7 +116,7 @@ internal sealed class LauncherGeneralRows
         [
             new InfoText(AppTexts.LauncherLogoOwnInfo),
             new InfoText(AppTexts.LauncherLogoFitInfo),
-            new InfoFootnote($"Standard: {defaultLogo}."),
+            new InfoFootnote(AppTexts.DefaultLogoNamed(defaultLogo)),
         ];
         _defaultLogoRow.Subtitle = AppTexts.LauncherLogoRemove;
         _defaultLogoRow.Preview = [tabBar];
@@ -193,7 +193,7 @@ internal sealed class LauncherGeneralRows
         try
         {
             var name = host.Launchers.Info(id).DisplayName;
-            if (await dialogs.PickFileAsync(AppTexts.LauncherPickLogo(name), "Bilder", LogoFile.Extensions) is not { } path)
+            if (await dialogs.PickFileAsync(AppTexts.LauncherPickLogo(name), AppTexts.Images, LogoFile.Extensions) is not { } path)
             {
                 return;
             }
@@ -206,7 +206,7 @@ internal sealed class LauncherGeneralRows
             }
 
             var previous = _category.Changes.Current.PreferencesOf(id).LogoFile;
-            _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { LogoFile = fileName }), "Launcher-Logo");
+            _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { LogoFile = fileName }), "Launcher-Logo"); // not a UI text (log)
             if (previous != fileName)
             {
                 host.Logos.Delete(previous);
@@ -229,7 +229,7 @@ internal sealed class LauncherGeneralRows
             return;
         }
 
-        _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { LogoFile = null }), "Launcher-Logo");
+        _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { LogoFile = null }), "Launcher-Logo"); // not a UI text (log)
         _category.Host.Logos.Delete(fileName);
         AppLog.Write($"Standardlogo für {id}");
         LooksChanged();

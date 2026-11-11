@@ -832,4 +832,85 @@
   <data name="Found" xml:space="preserve"><value>Gefunden</value></data>
   <data name="FoundWithGames" xml:space="preserve"><value>Gefunden · {games}</value></data>
   <data name="CountOfThemInstalled" xml:space="preserve"><value>{count} · {installed} installiert</value></data>
+  <data name="StatusTitle" xml:space="preserve"><value>Status</value></data>
+  <data name="StatusUrgency" xml:space="preserve"><value>Dringlichkeit</value></data>
+  <data name="MessageCountOne" xml:space="preserve"><value>1 Meldung</value></data>
+  <data name="MessageCountMany" xml:space="preserve"><value>{count} Meldungen</value></data>
+  <data name="KeyShift" xml:space="preserve"><value>Umschalt</value></data>
+  <data name="KeySpace" xml:space="preserve"><value>Leertaste</value></data>
+  <data name="Hide" xml:space="preserve"><value>Ausblenden</value></data>
+  <data name="ControllerModeSteam" xml:space="preserve"><value>Steam-Eingabe</value></data>
+  <data name="ControllerModeDefault" xml:space="preserve"><value>Standard ({mode})</value></data>
+  <data name="TileBadgeStarting" xml:space="preserve"><value>Startet</value></data>
+  <data name="TileBadgePaused" xml:space="preserve"><value>Pausiert</value></data>
+  <data name="TilePausedAt" xml:space="preserve"><value>Pausiert · {percent}</value></data>
+  <data name="TileBadgeWaiting" xml:space="preserve"><value>Wartet</value></data>
+  <data name="TileBadgeWaitingAt" xml:space="preserve"><value>Wartet · {position}</value></data>
+  <data name="DetailPlaytimeFrom" xml:space="preserve"><value>Laut {launcher}</value></data>
+  <data name="SortInstalledAt" xml:space="preserve"><value>Installationsdatum</value></data>
+  <data name="SortRelevance" xml:space="preserve"><value>Relevanz</value></data>
+  <data name="MinutesAgo" xml:space="preserve"><value>vor {minutes} Min.</value></data>
+  <data name="AtTime" xml:space="preserve"><value>um {time} Uhr</value></data>
+  <data name="MessageResolvedAt" xml:space="preserve"><value>Behoben {time}</value></data>
+  <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
+  <data name="LevelWarning" xml:space="preserve"><value>Warnung</value></data>
+  <data name="LauncherActiveTab" xml:space="preserve"><value>Aktiv · Tab {tab}</value></data>
+  <data name="FactInstalls" xml:space="preserve"><value>Installationen</value></data>
+  <data name="FactsLocation" xml:space="preserve"><value>ORT</value></data>
+  <data name="MouseModeAutomatic" xml:space="preserve"><value>Automatisch</value></data>
+  <data name="MouseModeIndividual" xml:space="preserve"><value>Individuell</value></data>
+  <data name="HoldTime" xml:space="preserve"><value>Haltedauer</value></data>
+  <data name="PointerSpeed" xml:space="preserve"><value>Zeigergeschwindigkeit</value></data>
+  <data name="MouseModeHelpArrowKeys" xml:space="preserve"><value>Pfeiltasten</value></data>
+  <data name="MouseModeHelpHoldView" xml:space="preserve"><value>⧉ halten</value></data>
+  <data name="MouseModeHelpHoldViewMenu" xml:space="preserve"><value>⧉ + ≡ halten</value></data>
+  <data name="MouseModeLimitsHeading" xml:space="preserve"><value>GRENZEN</value></data>
+  <data name="GameMouseAllowed" xml:space="preserve"><value>Erlaubt</value></data>
+  <data name="GameMouseBlocked" xml:space="preserve"><value>Deaktiviert</value></data>
+  <data name="Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="FactListedAt" xml:space="preserve"><value>Stand</value></data>
+  <data name="LoggingWarnings" xml:space="preserve"><value>Warnungen</value></data>
+  <data name="Clear" xml:space="preserve"><value>Leeren</value></data>
+  <data name="Folder" xml:space="preserve"><value>Ordner</value></data>
+  <data name="Edit" xml:space="preserve"><value>Bearbeiten</value></data>
+  <data name="Assign" xml:space="preserve"><value>Zuordnen</value></data>
+  <data name="Fix" xml:space="preserve"><value>Beheben</value></data>
+  <data name="DefaultLogo" xml:space="preserve"><value>Standardlogo</value></data>
+  <data name="DefaultLogoNamed" xml:space="preserve"><value>Standard: {logo}.</value></data>
+  <data name="Images" xml:space="preserve"><value>Bilder</value></data>
+  <data name="InfoTextScroll" xml:space="preserve"><value>Infotext</value></data>
+  <data name="SecondOne" xml:space="preserve"><value>1 Sekunde</value></data>
+  <data name="HoldToAct" xml:space="preserve"><value>Halten ({seconds} s): {action}</value></data>
+  <data name="Today" xml:space="preserve"><value>Heute</value></data>
+  <data name="Yesterday" xml:space="preserve"><value>Gestern</value></data>
+  <data name="DaysAgo" xml:space="preserve"><value>Vor {days} Tagen</value></data>
+  <data name="WeeksAgo" xml:space="preserve"><value>Vor {weeks} Wochen</value></data>
+  <data name="MonthsAgo" xml:space="preserve"><value>Vor {months} Monaten</value></data>
+  <data name="Hours" xml:space="preserve"><value>{hours} Std.</value></data>
+  <data name="Drive" xml:space="preserve"><value>Laufwerk {letter}:</value></data>
+  <data name="GameTypeTool" xml:space="preserve"><value>Werkzeug</value></data>
+  <data name="GameTypeTools" xml:space="preserve"><value>Werkzeuge</value></data>
+  <data name="GameTypeSoundtrack" xml:space="preserve"><value>Soundtrack</value></data>
+  <data name="GameTypeSoundtracks" xml:space="preserve"><value>Soundtracks</value></data>
+  <data name="GameTypeSoftware" xml:space="preserve"><value>Software</value></data>
+  <data name="GameTypePlay" xml:space="preserve"><value>Spielen</value></data>
+  <data name="GameTypeRock" xml:space="preserve"><value>Abrocken</value></data>
+  <data name="FilterSeveral" xml:space="preserve"><value>Mehrere</value></data>
+  <data name="FilterType" xml:space="preserve"><value>Typ</value></data>
+  <data name="FilterValue" xml:space="preserve"><value>Wert</value></data>
+  <data name="FilterValues" xml:space="preserve"><value>Werte</value></data>
+  <data name="LauncherOrderHeading" xml:space="preserve"><value>LAUNCHER-REIHENFOLGE</value></data>
+  <data name="SteamDesktopGroup" xml:space="preserve"><value>DESKTOP-STEUERUNG</value></data>
+  <data name="ControllerGroup" xml:space="preserve"><value>CONTROLLER</value></data>
+  <data name="LauncherDetailsHeading" xml:space="preserve"><value>LAUNCHER-DETAILS</value></data>
+  <data name="LoggingGroup" xml:space="preserve"><value>LOGGING</value></data>
+  <data name="ArcadiaLogHeading" xml:space="preserve"><value>ARCADIA-LOG</value></data>
+  <data name="ViiperLogHeading" xml:space="preserve"><value>VIIPER-LOG</value></data>
+  <data name="PanLogHeading" xml:space="preserve"><value>PAN-LOG</value></data>
+  <data name="VersionGroup" xml:space="preserve"><value>VERSION</value></data>
+  <data name="AffectedHeading" xml:space="preserve"><value>BETROFFEN</value></data>
+  <data name="GeneralGroup" xml:space="preserve"><value>ALLGEMEIN</value></data>
+  <data name="ReleaseVersion" xml:space="preserve"><value>Version {version}</value></data>
+  <data name="ArcadiaVersion" xml:space="preserve"><value>Arcadia {version}</value></data>
+  <data name="KeyLayout" xml:space="preserve"><value>Layout: {code}</value></data>
 </root>

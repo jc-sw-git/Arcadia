@@ -21,7 +21,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
     private static string ActiveGroup => AppTexts.LauncherGroupActive;
     private static string InactiveGroup => AppTexts.LauncherGroupInactive;
     private static string DropGroup => AppTexts.LauncherGroupDrop;
-    private const string ListL3Action = "Verschieben";
+    private static string ListL3Action => AppTexts.Move;
 
     private static string ListXAction => AppTexts.RescanAll;
 
@@ -44,7 +44,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
 
     /// <param name="focus">The launcher to show first, e.g. from its empty tab's "Launcher-Einstellungen".</param>
     public LauncherSettingsViewModel(ILauncherSettingsHost host, SettingsChanges changes, TimeProvider time, string? focus = null)
-        : base("Launcher", "M4.5 3h4A1.5 1.5 0 0 1 10 4.5v4A1.5 1.5 0 0 1 8.5 10h-4A1.5 1.5 0 0 1 3 8.5v-4A1.5 1.5 0 0 1 4.5 3z M15.5 3h4A1.5 1.5 0 0 1 21 4.5v4a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 14 8.5v-4A1.5 1.5 0 0 1 15.5 3z M4.5 14h4a1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 1 8.5 21h-4A1.5 1.5 0 0 1 3 19.5v-4A1.5 1.5 0 0 1 4.5 14z M15.5 14h4a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a1.5 1.5 0 0 1-1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5z")
+        : base(AppTexts.Launcher, "M4.5 3h4A1.5 1.5 0 0 1 10 4.5v4A1.5 1.5 0 0 1 8.5 10h-4A1.5 1.5 0 0 1 3 8.5v-4A1.5 1.5 0 0 1 4.5 3z M15.5 3h4A1.5 1.5 0 0 1 21 4.5v4a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 14 8.5v-4A1.5 1.5 0 0 1 15.5 3z M4.5 14h4a1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 1 8.5 21h-4A1.5 1.5 0 0 1 3 19.5v-4A1.5 1.5 0 0 1 4.5 14z M15.5 14h4a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a1.5 1.5 0 0 1-1.5-1.5v-4a1.5 1.5 0 0 1 1.5-1.5z")
     {
         _host = host;
         _changes = changes;
@@ -393,7 +393,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _head.Badge = row.Badge;
         _head.Name = row.Launcher.DisplayName;
         _head.IsActive = isActive;
-        _head.StateText = isActive ? $"Aktiv · Tab {tabs.ToList().IndexOf(row) + 1}" : isFound ? AppTexts.NotActive : AppTexts.NotInstalled;
+        _head.StateText = isActive ? AppTexts.LauncherActiveTab(tabs.ToList().IndexOf(row) + 1) : isFound ? AppTexts.NotActive : AppTexts.NotInstalled;
         var order = _order.ListOrder();
         var place = order.ToList().IndexOf(row.Launcher.Id);
         LauncherNeighbour? Neighbour(int delta) => order.Count < 2 ? null

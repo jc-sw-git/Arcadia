@@ -129,7 +129,7 @@ internal sealed class LauncherAccountRow : IDisposable
                 info.Add(new InfoFacts(AppTexts.AccountGroup,
                 [
                     new InfoFact(AppTexts.AccountGamesInAccount, state.OwnedGames is { } count ? count.ToString(CultureInfo.CurrentCulture) : AppTexts.AccountNotLoadedYet, IsMuted: state.OwnedGames is null),
-                    new InfoFact("Stand", state.ListedAt is { } at ? LauncherTexts.Ago(_category.Time, at) : "–", IsMuted: state.ListedAt is null),
+                    new InfoFact(AppTexts.FactListedAt, state.ListedAt is { } at ? LauncherTexts.Ago(_category.Time, at) : "–", IsMuted: state.ListedAt is null),
                 ]));
                 info.Add(new InfoFootnote(AppTexts.AccountSignOutExplained));
                 break;

@@ -31,7 +31,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public string? PanelTitle { get; init; }
 
     /// <summary>What RS does on the info panel, for the footer: "Blättern" where it holds a list (#433).</summary>
-    public string ScrollText { get; init; } = "Infotext";
+    public string ScrollText { get; init; } = AppTexts.InfoTextScroll;
 
     /// <summary>One short line below the title; the long explanation goes into <see cref="Info"/>.</summary>
     [ObservableProperty]
@@ -267,7 +267,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     }
 
     /// <summary>"1 Sekunde", "3 Sekunden".</summary>
-    public static string Seconds(int value) => value == 1 ? "1 Sekunde" : AppTexts.Seconds(value);
+    public static string Seconds(int value) => value == 1 ? AppTexts.SecondOne : AppTexts.Seconds(value);
 
     protected virtual void OnValueShown()
     {
@@ -365,7 +365,7 @@ public sealed class HoldRowViewModel : ActionRowViewModel, IDisposable
 
     public HoldButtonViewModel Hold { get; }
 
-    public override string ActivateText => $"Halten ({Hold.HoldTime.TotalSeconds:0} s): {ActionText}";
+    public override string ActivateText => AppTexts.HoldToAct(action: ActionText, seconds: Hold.HoldTime.TotalSeconds.ToString("0", Services.Formatting.Culture));
 
     public override void Activate() => Hold.Press();
 

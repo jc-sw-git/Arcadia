@@ -13,7 +13,7 @@ public sealed class SteamDesktopLayoutRowViewModel : SwitchRowViewModel
 {
     public const string RowKey = "steam-desktop-layout";
 
-    public const string GroupName = "DESKTOP-STEUERUNG";
+    public static string GroupName => AppTexts.SteamDesktopGroup;
 
     public static string RowTitle => AppTexts.SteamDesktopTitle;
 

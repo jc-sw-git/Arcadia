@@ -18,7 +18,7 @@ public enum FilterCategory
 public sealed partial class FilterCategoryViewModel(FilterCategory category, string label, string iconKey, Action<FilterCategoryViewModel> pick) : ViewModelBase
 {
     /// <summary>The summary when the chosen values don't fit their line (#44: "Mehrere", never cut).</summary>
-    public const string SeveralText = "Mehrere";
+    public static string SeveralText => AppTexts.FilterSeveral;
 
     public FilterCategory Category => category;
 

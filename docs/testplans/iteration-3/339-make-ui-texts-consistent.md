@@ -1,6 +1,6 @@
 # #339 Make UI texts consistent
 
-**Status:** Automated: T339-1 to -6, T339-12 to -15 · QE: T339-7 to -11, T339-16, T339-17 · Open for the owner: T339-18
+**Status:** Automated: T339-1 to -6, T339-12 to -15, T339-19 · QE: T339-7 to -11, T339-16, T339-17 · Open for the owner: T339-18
 
 "Resource files" means every `*Texts.resx` under `src/` (App, ControllerSupport, Core, Input, each launcher folder).
 
@@ -10,20 +10,21 @@
 - [x] **T339-4** In the running app, a text with a count and one with a game name, both reworded in this PR: the launcher rows' game count shows the right singular and plural for 1 and several games, and the game start text shows the game's name in „…“ quotes; no placeholder or key is visible · E2E: yes
 - [x] **T339-5** The check goes red on each forbidden spelling, one fixture each, and names file, key and spelling: "emuliert" (the stem "emulier" in any form and case), "z. B.", "ggf.", "Windows neu starten", "neustarten", straight quotes `"…"`, "...", " - ". A fixture in a launcher folder's resource file is found too · E2E: no (script test in `tools/ci/tests`)
 - [x] **T339-6** The check stays green on what is allowed: "Emulation", "Controller-Emulation", "virtueller Controller", „…“ quotes, "Wird geladen …", " – ", "PC neu starten", units ("Std.", "Min.", "GB", "%"), a hyphen inside a word ("Steam-Controller-Modus"), keys that contain a forbidden word (`RestartWindows`), XML comments and the resx header · E2E: no (script test)
-- [x] **T339-7** On a PR by `jc-sw-git` the check runs and is green on the PR's head; on a PR by anyone else the job is skipped, not failed · E2E: no (workflow condition, review and the PR's own run)
-- [x] **T339-8** Every value the PR changes is listed in the PR's old → new list, grouped by page, and every listed change is in the diff; code changes beyond the resource files are named in the PR · E2E: no (mechanical check of the diff, QE review)
-- [x] **T339-9** Each changed value equals its approved Doc cell, or differs from it only where a glossary or typography rule requires it; texts added after `0cb2b7c` are marked as such in the list · E2E: no (QE review, text by text against the Doc)
-- [x] **T339-10** Judgement rules the CI check can't see, checked on every occurrence in the resource files: "Windows" only where the player acts in a Windows place or something exists only on Windows; "HidHide", "usbip-win2", "VIIPER" only in rows that install, update or repair them or where the player changes something in HidHide; "SISR" only in its settings group and the "Beende SISR" warning; "Steam Input", "Steam-Controller" (alone), "Wächterdienst", "Features", "Computer" and other abbreviations gone; "aktualisieren" only for new versions, a rescan says "neu einlesen"; no "Wir" · E2E: no (QE review of a grep per word)
-- [x] **T339-11** "Controller-Wächter (Pan)" at the first mention on each page, "Pan" after it: Settings › Controller, the first-run page, the driver installation dialog · E2E: no (QE review of the screenshots)
+- [ ] **T339-7** On a PR by `jc-sw-git` the check runs and is green on the PR's head; on a PR by anyone else the job is skipped, not failed · E2E: no (workflow condition, review and the PR's own run)
+- [ ] **T339-8** Every value the PR changes is listed in the PR's old → new list, grouped by page, and every listed change is in the diff; code changes beyond the resource files are named in the PR · E2E: no (mechanical check of the diff, QE review)
+- [ ] **T339-9** Each changed value equals its approved Doc cell, or differs from it only where a glossary or typography rule requires it; texts added after `0cb2b7c` are marked as such in the list · E2E: no (QE review, text by text against the Doc)
+- [ ] **T339-10** Judgement rules the CI check can't see, checked on every occurrence in the resource files: "Windows" only where the player acts in a Windows place (Startmenü, Windows-Einstellungen → Apps); "HidHide", "usbip-win2", "VIIPER" only in rows that install, update or repair them or where the player changes something in HidHide; "SISR" only in its settings group and the "Beende SISR" warning; "Steam Input", "Steam-Controller" (alone), "Wächterdienst", "Features", "Computer" and other abbreviations gone; "aktualisieren" only for new versions, a rescan says "neu einlesen"; no "Wir" · E2E: no (QE review of a grep per word)
+- [ ] **T339-11** "Controller-Wächter (Pan)" at the first mention on each page, "Pan" after it: Settings › Controller, the first-run page, the driver installation dialog · E2E: no (QE review of the screenshots)
 - [x] **T339-12** Restart: a driver change waits for a restart (fake driver state). In Settings › Controller, with the gamepad only, the row, its button, the question before the restart and the message for a refused restart all say "PC" and none says "Windows"; B closes the question and focus is back on the row · E2E: yes
 - [x] **T339-13** Technical names: the controller emulation fails several times (fake). The toast names "die Controller-Emulation" and no visible part of it names VIIPER · E2E: yes
-- [x] **T339-14** Same term everywhere: in Settings › Controller (every row and its info text), the first-run page and the driver installation dialog, no visible text contains "emulier" · E2E: yes
+- [x] **T339-14** Same term everywhere: in Settings › Controller (every row and its info text), the first-run page and the driver installation dialog, no visible text contains "emulier"; the copy games see is called "virtueller Controller" · E2E: yes
 - [x] **T339-15** Subtitles fit: at 1920×1080, every row subtitle in every settings category and on the launcher page takes one line, not wrapped and not cut off · E2E: yes (window test, measured line count)
-- [x] **T339-16** Screenshots at 1920×1080 with `--demo` of each page whose subtitle got longer (the PR lists them): one line each, looked at · E2E: no (real rendering, Linux, `arcadia-verify`)
-- [x] **T339-17** `docs/product/ui-texts.md` holds the glossary, the rules and the note that the designs' texts are examples; every UI text quoted in `docs/product/` is quoted as it now stands in a resource file; every doc stays within 10 KB · E2E: no (QE review, grep, `Doc sizes` check)
-- [ ] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the system's prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
+- [ ] **T339-16** Screenshots at 1920×1080 with `--demo` of each page whose subtitle got longer (the PR lists them): one line each, looked at · E2E: no (real rendering, Linux, `arcadia-verify`)
+- [ ] **T339-17** `docs/product/ui-texts.md` holds the glossary, the rules and the note that the designs' texts are examples; every UI text quoted in `docs/product/` is quoted as it now stands in a resource file; every doc stays within 10 KB · E2E: no (QE review, grep, `Doc sizes` check)
+- [ ] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the Windows prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
+- [x] **T339-19** No German UI text is left in the code: the check of #480 also finds the forms it missed (a badge such as "Pausiert", a relative date such as "Vor {days} Tagen", a heading in capitals such as "GRENZEN"), and every text it finds now comes from a resource file · E2E: no (unit test `UiTextsStayInResourcesTests`)
 
-Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App).
+Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App); T339-19 `UiTextsStayInResourcesTests` (Core).
 
 History:
 
@@ -35,5 +36,5 @@ History:
 | T339-5, -6 | 2026-11-11 | Claude | branch, Linux, `tools/ci/tests/run.sh` | ✅ | – |
 | T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless | ✅ | – |
 | T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless, one text each broken on purpose ("Windows neu starten", "VIIPER fiel", "emuliert", a subtitle twice as long) | ❌ each, then ✅ with the texts restored | – |
-| T339-7 to -11, -17 | 2026-11-11 | Claude | the diff, a grep per word over all resource files, `Doc sizes` | ✅ | – |
-| T339-16 | 2026-11-11 | Claude | branch, Linux, Xvfb 1920×1080, `--demo`: launcher list, launcher page, Controller with its info panel | ✅ one line each | – |
+| T339-14 | 2026-11-11 | Claude | branch, Linux, headless, "virtuelle" and "Controller-Wächter (Pan)" each removed from the texts on purpose | ❌ each, then ✅ | – |
+| T339-19 | 2026-11-11 | Claude | branch, Linux | ❌ 88 texts found in code, then ✅ after moving them | – |

@@ -140,7 +140,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
                 {
                     EndSignIn(run);
                 }
-            }, "Anmeldung");
+            }, "Anmeldung"); // not a UI text (log)
         }
     }
 

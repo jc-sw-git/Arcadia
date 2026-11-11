@@ -37,7 +37,7 @@ its file.
 | [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-8 to T476-13 (part 1) |
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
-| [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-18 (owner: T339-18) |
+| [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
 
 ## Release candidate tests (restart or installation)
 

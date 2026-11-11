@@ -55,7 +55,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase
 
         if (offer.HasTypes)
         {
-            categories.Add(new FilterCategoryViewModel(FilterCategory.Type, "Typ", "IconTypeGame", PickCategory));
+            categories.Add(new FilterCategoryViewModel(FilterCategory.Type, AppTexts.FilterType, "IconTypeGame", PickCategory));
         }
 
         Categories = categories;
@@ -108,12 +108,12 @@ public sealed partial class FilterModalViewModel : ViewModelBase
     [ObservableProperty]
     public partial string TotalText { get; private set; } = string.Empty;
 
-    public string MoveText => IsInValues ? "Wert" : "Kategorie";
+    public string MoveText => IsInValues ? AppTexts.FilterValue : AppTexts.Category;
 
     /// <summary>The type grid moves on all four directions.</summary>
     public bool MovesInGrid => IsInValues && ShowsTypes;
 
-    public string AcceptText => !IsInValues ? (IsResetFocused ? AppTexts.FilterHintReset : "Werte") : ShowsTypes ? AppTexts.FilterHintToggle : AppTexts.Select;
+    public string AcceptText => !IsInValues ? (IsResetFocused ? AppTexts.FilterHintReset : AppTexts.FilterValues) : ShowsTypes ? AppTexts.FilterHintToggle : AppTexts.Select;
 
     public string BackText => IsInValues ? AppTexts.Back : AppTexts.FilterHintCloseAndApply;
 

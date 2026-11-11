@@ -61,6 +61,11 @@ public sealed class UiTextsStayInResourcesTests
     [InlineData("""Subtitle = $"{count} Spiele gefunden";""")]
     [InlineData("""return game is null ? "Läuft" : "";""")]
     [InlineData("""Show(HealthSeverity.Info, $"„{tile.Title}“ wird gestartet");""")]
+    [InlineData("""var badge = "Pausiert";""")]
+    [InlineData("""return $"Vor {days} Tagen";""")]
+    [InlineData("""var urgency = "Dringlichkeit";""")]
+    [InlineData("""var heading = new InfoHeading("GRENZEN");""")]
+    [InlineData("""var facts = new InfoFacts("ORT", rows);""")]
     public void Code_with_a_German_text_fails(string code) =>
         Assert.NotEmpty(GermanUiLiterals.InCSharp($"class C {{ void M() {{ {code} }} }}"));
 

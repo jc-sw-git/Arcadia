@@ -193,4 +193,8 @@ Andere Programme, die sie nutzen (etwa DS4Windows mit HidHide), funktionieren da
   <data name="NoCheckedViiperVersion" xml:space="preserve"><value>Diese Arcadia-Version hat keine geprüfte VIIPER-Version.</value></data>
   <data name="ViiperMissingFile" xml:space="preserve"><value>{file} fehlt</value></data>
   <data name="UsbipNotLoaded" xml:space="preserve"><value>Treiber usbip nicht geladen</value></data>
+  <data name="SisrFolder" xml:space="preserve"><value>SISR-Ordner</value></data>
+  <data name="SisrData" xml:space="preserve"><value>SISR-Daten ({folder})</value></data>
+  <data name="SisrUninstallEntry" xml:space="preserve"><value>SISR-Deinstallationseintrag</value></data>
+  <data name="StepUsbipDownload" xml:space="preserve"><value>usbip-win2 herunterladen</value></data>
 </root>

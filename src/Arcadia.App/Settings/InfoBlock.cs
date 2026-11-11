@@ -56,7 +56,7 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
     private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
 
     public static InfoRelease Of(ChangelogEntry entry) => new(
-        $"Version {entry.Version.ToString(3)}",
+        AppTexts.ReleaseVersion(entry.Version.ToString(3)),
         entry.PublishedAt is { } date ? date.ToLocalTime().ToString("d. MMMM yyyy", German) : string.Empty,
         entry.Changes.Count > 0 ? entry.Changes : [AppTexts.InfoNoChangesListed]);
 }
@@ -130,22 +130,22 @@ public sealed record InfoMessage(string TimeText, HealthSeverity Level, bool IsT
 
     public bool IsError => Level == HealthSeverity.Error;
 
-    public string KindText => IsToast ? "Meldung" : "Status";
+    public string KindText => IsToast ? AppTexts.Message : AppTexts.StatusTitle;
 
     public static InfoMessage Of(Messages.RecentMessage message) =>
         new(Services.Formatting.Clock(message.Time), message.Level, message.Kind == Messages.MessageKind.Toast, message.Text,
             message.Repeats?.Repeats is > 0 and var repeats ? $"×{repeats}" : string.Empty,
             message switch
             {
-                { ResolvedAt: { } at } => $"Behoben {Services.Formatting.Clock(at)}",
+                { ResolvedAt: { } at } => AppTexts.MessageResolvedAt(Services.Formatting.Clock(at)),
                 { ChangedTo: { } level } => AppTexts.LevelNow(LevelName(level)),
                 _ => string.Empty,
             });
 
     private static string LevelName(HealthSeverity level) => level switch
     {
-        HealthSeverity.Info => "Info",
-        HealthSeverity.Warning => "Warnung",
+        HealthSeverity.Info => AppTexts.LevelInfo,
+        HealthSeverity.Warning => AppTexts.LevelWarning,
         _ => AppTexts.LevelError,
     };
 }

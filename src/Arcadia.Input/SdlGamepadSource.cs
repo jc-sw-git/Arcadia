@@ -155,7 +155,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     }
 
     /// <summary>What a throwing handler was doing, in German for the log and the toast.</summary>
-    private const string HandlerContext = "Controller-Eingabe";
+    private static string HandlerContext => InputTexts.ErrorContextControllerInput;
 
     // Each handler on its own (GuardedHandlers): one that throws must not cost every controller (Lose).
     public event Action<GamepadButton>? ButtonPressed

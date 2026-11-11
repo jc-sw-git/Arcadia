@@ -141,7 +141,7 @@ public sealed class PanRows
             Group = Group,
             Indent = 1,
             Subtitle = AppTexts.PanLayoutsSubtitle,
-            ActionText = "Zuordnen",
+            ActionText = AppTexts.Assign,
         };
     }
 
@@ -528,7 +528,7 @@ public sealed class PanRows
         [
             .. row.Info,
             new InfoText(AppTexts.PanNotHiddenInArcadia),
-            new InfoSection("BETROFFEN", [.. notHidden.Select(controller => new InfoCard(controller.Name, NotHiddenReason(controller.Reason), string.Empty))]),
+            new InfoSection(AppTexts.AffectedHeading, [.. notHidden.Select(controller => new InfoCard(controller.Name, NotHiddenReason(controller.Reason), string.Empty))]),
             new InfoText(AppTexts.PanNotHiddenReplug),
         ];
         return row;
@@ -638,7 +638,7 @@ public sealed class PanRows
     public static string IssueKey(string issueId) => $"issue:{issueId}";
 
     /// <summary>The button of a fix that names none of its own.</summary>
-    public const string DefaultFixLabel = "Beheben";
+    public static string DefaultFixLabel => AppTexts.Fix;
 
     /// <summary>The line below a message's title, the same in its row and in the status modal (#166).</summary>
     public static string SubtitleOf(HealthIssue issue) => Texts(issue).Subtitle;

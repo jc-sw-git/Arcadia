@@ -61,7 +61,7 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
     /// <summary>A launcher that isn't installed and isn't active has nothing to switch: "Nicht installiert".</summary>
     public bool HasSwitch => IsActive || IsFound;
 
-    public string ValueText => IsActive ? "Aktiv" : AppTexts.Off;
+    public string ValueText => IsActive ? AppTexts.Active : AppTexts.Off;
 
     /// <summary>A choice of two wraps like every ◀ ▶ selector, so both arrows switch it (owner, 2026-10-24).</summary>
     public bool CanDecrease => HasSwitch;
@@ -77,7 +77,7 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override string PreviewSubtitle => LauncherTexts.OrderPreviewSubtitle;
 
-    public override string InfoTitle => "LAUNCHER-DETAILS";
+    public override string InfoTitle => AppTexts.LauncherDetailsHeading;
 
     public override bool CanActivate => true;
 

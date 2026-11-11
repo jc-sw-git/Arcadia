@@ -74,7 +74,14 @@ public sealed class ConsistentTextsViewTests
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Arcadia.Main.Settings!.Selected);
         await arcadia.Arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row is PanRowViewModel { IsInstall: true }), "„Treiber installieren“");
 
-        EveryRow(arcadia, row => AssertNoEmulier(VisibleTexts(arcadia), $"Zeile {row.Key}"));
+        var sawVirtual = false;
+        EveryRow(arcadia, row =>
+        {
+            var texts = VisibleTexts(arcadia);
+            AssertNoEmulier(texts, $"Zeile {row.Key}");
+            sawVirtual |= texts.Any(text => text.Contains("virtuelle", StringComparison.Ordinal));
+        });
+        Assert.True(sawVirtual, "Die Controller-Seite nennt die Kopie für Spiele nirgends „virtuelle Controller“");
 
         // The driver installation: its question and the progress dialog.
         Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey)).Activate();
@@ -85,7 +92,7 @@ public sealed class ConsistentTextsViewTests
         arcadia.Settle();
         Assert.NotNull(controller.InstallDialog);
         AssertNoEmulier(VisibleTexts(arcadia), "Installationsdialog");
-        Assert.Contains(VisibleTexts(arcadia), text => text.Contains("Controller-Wächter (Pan)", StringComparison.Ordinal) || text.Contains("Pan", StringComparison.Ordinal));
+        Assert.Contains(VisibleTexts(arcadia), text => text.Contains("Controller-Wächter (Pan)", StringComparison.Ordinal));
         steam.Pan.Running.SetResult();
     }
 

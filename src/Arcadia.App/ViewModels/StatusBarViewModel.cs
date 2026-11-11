@@ -162,7 +162,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
             (0, false) => string.Empty,
             (0, true) => PanNotRunningText,
             (1, _) => $"{owner}: {issues[0].Title}{panSuffix}",
-            (var n, _) => $"{owner}: {n} Meldungen{panSuffix}",
+            (var n, _) => $"{owner}: {AppTexts.MessageCountMany(n)}{panSuffix}",
         };
 
         // What the header stands for, message by message: their changes are entries of "Letzte Meldungen" (#433).

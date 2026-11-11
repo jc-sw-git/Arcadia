@@ -34,7 +34,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         var game = tile.Game;
         Drive = Formatting.Drive(game.InstallDirectory);
         LastPlayedAt = Formatting.DateAndTime(game.LastPlayedAt);
-        PlaytimeSource = game.Playtime is null ? AppTexts.DetailLauncherReportsNone(tile.LauncherName) : $"Laut {tile.LauncherName}";
+        PlaytimeSource = game.Playtime is null ? AppTexts.DetailLauncherReportsNone(tile.LauncherName) : AppTexts.DetailPlaytimeFrom(tile.LauncherName);
         InstalledAt = Formatting.Date(game.IsInstalled ? game.InstalledAt : null);
         Offset = offset;
         SelectCommand = new RelayCommand(() => rotate(Math.Sign(Offset)));

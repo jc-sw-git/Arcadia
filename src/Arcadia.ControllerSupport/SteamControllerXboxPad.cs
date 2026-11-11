@@ -209,7 +209,7 @@ public sealed class SteamControllerXboxPad
             // Each step on its own: a pad that can't be unplugged must not keep VIIPER's server running.
             if (_pad is { } pad)
             {
-                await Guarded(async () => await UnplugAsync(pad), "Abstecken");
+                await Guarded(async () => await UnplugAsync(pad), "Abstecken"); // not a UI text (log)
             }
 
             await Guarded(_pads.ShutdownAsync, "VIIPER beenden"); // not a UI text (log)

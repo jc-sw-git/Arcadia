@@ -21,9 +21,9 @@ public sealed class DemoIntegration : ILauncherIntegration
 
     private static readonly IReadOnlyList<LibraryTypeOption> OtherTypeOptions =
     [
-        new("tools", DemoTexts.DemoToolsTitle, "Demo-Werkzeuge", DemoTexts.DemoToolsInfo, [], [GameType.Tool]),
-        new("software", DemoTexts.DemoSoftwareTitle, "Demo-Software", DemoTexts.DemoSoftwareInfo, [], [GameType.Software]),
-        new("soundtracks", DemoTexts.DemoSoundtracksTitle, "Demo-Soundtracks", DemoTexts.DemoSoundtracksInfo, [], [GameType.Soundtrack]),
+        new("tools", DemoTexts.DemoToolsTitle, DemoTexts.DemoToolsSubtitle, DemoTexts.DemoToolsInfo, [], [GameType.Tool]),
+        new("software", DemoTexts.DemoSoftwareTitle, DemoTexts.DemoSoftwareSubtitle, DemoTexts.DemoSoftwareInfo, [], [GameType.Software]),
+        new("soundtracks", DemoTexts.DemoSoundtracksTitle, DemoTexts.DemoSoundtracksSubtitle, DemoTexts.DemoSoundtracksInfo, [], [GameType.Soundtrack]),
     ];
 
     public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; }
@@ -40,7 +40,7 @@ public sealed class DemoIntegration : ILauncherIntegration
 
     public IReadOnlyCollection<string> ProgramNames => [];
 
-    public string? Locate() => "Demo-Daten";
+    public string? Locate() => DemoTexts.DemoLocation;
 }
 
 /// <summary>The first installed game of a demo library runs, since 25 minutes before Arcadia started.</summary>

@@ -20,16 +20,16 @@ public sealed class MouseModeSettingsTests
         var mode = arcadia.FocusRow("mouse-mode");
 
         // Von Hand (default) → Automatisch → Aus → Von Hand, with ▶; ◀ goes back; A counts on like ▶.
-        Assert.Equal("Von Hand", ValueOf(mode));
+        Assert.Equal(AppTexts.MouseModeManual, ValueOf(mode));
         Assert.StartsWith("Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus.", FirstText(mode));
         arcadia.Press(UiAction.Right);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Settings.Current.MouseMode.Activation);
         Assert.StartsWith("Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus", FirstText(mode));
         arcadia.Press(UiAction.Accept);
-        Assert.Equal("Aus", ValueOf(mode));
-        Assert.Equal("Der Controller bleibt immer ein Controller.", FirstText(mode));
+        Assert.Equal(AppTexts.Off, ValueOf(mode));
+        Assert.Equal(AppTexts.MouseModeActivationOff, FirstText(mode));
         arcadia.Press(UiAction.Left).Press(UiAction.Left);
-        Assert.Equal("Von Hand", ValueOf(mode));
+        Assert.Equal(AppTexts.MouseModeManual, ValueOf(mode));
         Assert.Equal(MouseModeActivation.Manual, arcadia.Settings.Current.MouseMode.Activation);
 
         // Haltedauer from 3 to 1 with ◀, A counts up and after 9 starts again at 1.
@@ -57,7 +57,7 @@ public sealed class MouseModeSettingsTests
         arcadia.Press(UiAction.Back);
         using var restarted = await arcadia.RestartAsync();
         OpenController(restarted);
-        Assert.Equal("Von Hand", ValueOf(restarted.FocusRow("mouse-mode")));
+        Assert.Equal(AppTexts.MouseModeManual, ValueOf(restarted.FocusRow("mouse-mode")));
         Assert.Equal("9 Sekunden", ValueOf(restarted.FocusRow("mouse-mode-hold")));
         Assert.Equal("5", ValueOf(restarted.FocusRow("mouse-mode-speed")));
     }
@@ -72,11 +72,11 @@ public sealed class MouseModeSettingsTests
         var help = HelpOf(arcadia.FocusRow("mouse-mode"));
 
         var keys = help.Blocks.OfType<InfoKey>().ToDictionary(key => key.Input, key => key.Effect);
-        Assert.Equal("Mauszeiger", keys["LS"]);
-        Assert.Equal("Linke Maustaste (gedrückt halten = ziehen)", keys["RT oder A"]);
-        Assert.Equal("Rechte Maustaste", keys["LT oder X"]);
+        Assert.Equal(AppTexts.MousePointer, keys["LS"]);
+        Assert.Equal(AppTexts.MouseModeHelpLeftClick, keys[AppTexts.MouseModeHelpRtOrA]);
+        Assert.Equal(AppTexts.MouseModeHelpRightClick, keys[AppTexts.MouseModeHelpLtOrX]);
         Assert.Equal("Esc", keys["B"]);
-        Assert.Equal("Bildschirmtastatur ([B] blendet sie aus)", keys["Y"]);
+        Assert.Equal(AppTexts.MouseModeHelpKeyboard, keys["Y"]);
         Assert.Contains(help.Blocks, block => block is InfoHeading { Text: "GRENZEN" });
         var limits = help.Blocks.OfType<InfoBullet>().Select(bullet => bullet.Text).ToList();
         Assert.Contains(limits, limit => limit.Contains("Administratorrechten (UAC)", StringComparison.Ordinal));
@@ -164,6 +164,6 @@ public sealed class MouseModeSettingsTests
     private static void OpenController(ArcadiaDriver arcadia)
     {
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
-        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, arcadia.Main.Settings!.Selected.Name);
     }
 }

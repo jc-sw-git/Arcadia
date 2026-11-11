@@ -55,7 +55,7 @@ public sealed class WebPages : IWebPages
         if (!page.MayRead(page.Page))
         {
             AppLog.Write($"Browser: {page.Page.Host} gehört nicht zu {string.Join(", ", page.Domains)}, nicht geöffnet.");
-            return Task.FromResult(WebPageResult.Failed("Die Seite gehört nicht zum Launcher."));
+            return Task.FromResult(WebPageResult.Failed(AppTexts.WebPageNotOfLauncher));
         }
 
         return RunAsync(page, timeout, cancellationToken);
@@ -75,7 +75,7 @@ public sealed class WebPages : IWebPages
             }
             catch (TimeoutException)
             {
-                return WebPageResult.Failed("Die Seite hat nicht rechtzeitig geantwortet.");
+                return WebPageResult.Failed(AppTexts.WebPageNoAnswer);
             }
             finally
             {
@@ -89,11 +89,11 @@ public sealed class WebPages : IWebPages
         }
         catch (TimeoutException)
         {
-            return WebPageResult.Failed("Das Fenster für Webseiten ist nicht bereit.");
+            return WebPageResult.Failed(AppTexts.WebPageWindowNotReady);
         }
         catch (Exception ex)
         {
-            AppErrors.Report(ex, "Webseite laden");
+            AppErrors.Report(ex, AppTexts.ErrorContextLoadWebPage);
             return WebPageResult.Failed(ex.Message);
         }
     }

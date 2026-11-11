@@ -39,7 +39,7 @@ public partial class ToastViewModel(TimeProvider time, RecentMessages history) :
 
         var expiry = new CancellationTokenSource();
         _expiry = expiry;
-        HideLaterAsync(expiry).Forget("Meldung ausblenden");
+        HideLaterAsync(expiry).Forget(AppTexts.ErrorContextHideToast);
     }
 
     /// <summary>Hides this message after <see cref="Duration"/>, unless a newer one replaced it first.</summary>

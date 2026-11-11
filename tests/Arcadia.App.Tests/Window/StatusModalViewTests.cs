@@ -9,6 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Arcadia.ControllerSupport;
 
 namespace Arcadia.App.Tests;
 
@@ -80,7 +81,7 @@ public sealed class StatusModalViewTests
         arcadia.AssertRingAround(EntryBorder(arcadia, modal.Focused!), "erster Eintrag");
         Keep(arcadia, "status-modal-first");
         arcadia.Key(Key.S).Settle();
-        Assert.Equal("Windows-Neustart ausstehend", modal.Focused?.Title);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
         arcadia.AssertRingAround(EntryBorder(arcadia, modal.Focused!), "letzter Eintrag");
         RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Status");
         arcadia.Key(Key.C).Settle();

@@ -56,8 +56,8 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
         var hidHide = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing"));
-        Assert.Equal("HidHide fehlt", hidHide.Title);
-        Assert.Equal("Installieren", hidHide.ActionText);
+        Assert.Equal(ControllerSupportTexts.HidHideMissingTitle, hidHide.Title);
+        Assert.Equal(ControllerSupportTexts.Install, hidHide.ActionText);
         Assert.Equal(HealthSeverity.Warning, hidHide.Severity);
         // The switch stays a switch (on by default); the row below says what is missing (#242).
         var pan = Switch(controller);
@@ -65,7 +65,7 @@ public sealed class EmulationSetupTests
         Assert.True(pan.IsOn);
         Assert.Equal(ProblemText, pan.Subtitle);
         Assert.True(pan.IsLampProblem);
-        Assert.Equal("Versteckt die echten Controller vor anderen Programmen", hidHide.Subtitle);
+        Assert.Equal(AppTexts.PanHidHideSubtitle, hidHide.Subtitle);
 
         hidHide.Activate();
         ConfirmHidHideInstall(arcadia, controller);
@@ -94,7 +94,7 @@ public sealed class EmulationSetupTests
         Assert.Equal(ControllerSettingsViewModel.HidHideInstallTitle, controller.SteamStopTitle);
         Assert.Equal(ControllerSettingsViewModel.HidHideRestartText, controller.SteamStopText);
         Assert.DoesNotContain("Steam beendet", controller.SteamStopDetail, StringComparison.Ordinal);
-        Assert.Equal("Installieren", controller.ConfirmSteamStopText);
+        Assert.Equal(ControllerSupportTexts.Install, controller.ConfirmSteamStopText);
         Assert.True(controller.ConfirmSteamStopItem.IsFocused);
         arcadia.Press(UiAction.Back);
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
@@ -187,8 +187,8 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => Switch(controller).IsInstall, "„Treiber installieren“ an der Einstellung");
         var pan = Switch(controller);
-        Assert.Equal("Treiber installieren", pan.ActivateText);
-        Assert.Equal("Pan verwaltet, wie Spiele, Programme und Launcher deine Controller nutzen", pan.Subtitle);
+        Assert.Equal(AppTexts.DriversInstall, pan.ActivateText);
+        Assert.Equal(AppTexts.PanSubtitleDescription, pan.Subtitle);
         Assert.False(pan.HasLamp);
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:", StringComparison.Ordinal));
         Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.RestoreKey);
@@ -236,7 +236,7 @@ public sealed class EmulationSetupTests
         Assert.Null(controller.InstallDialog);
         var pan = Switch(controller);
         Assert.Equal(PanRows.MainKey, controller.FocusedRow?.Key);
-        Assert.Equal("Erneut versuchen", pan.InstallText);
+        Assert.Equal(AppTexts.TryAgain, pan.InstallText);
         Assert.Equal(error, arcadia.ControllerSupport.LastError);
     }
 
@@ -261,10 +261,10 @@ public sealed class EmulationSetupTests
         Assert.True(pan.IsLocked);
         Assert.True(pan.IsDimmed);
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
-        Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Starte Windows neu, danach kannst du die fehlenden Teile installieren.", row.Subtitle);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, row.Title);
+        Assert.Equal(ControllerSupportTexts.PausedSummary, row.Subtitle);
         Assert.True(row.IsInfo);
-        Assert.Equal("Windows neu starten", row.ActionText);
+        Assert.Equal(AppTexts.ErrorContextRestartWindows, row.ActionText);
         Assert.Equal(row.Key, controller.PanWarningKey);
         Assert.Equal(1, controller.Rows.IndexOf(row));
 
@@ -299,8 +299,8 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:install-firmware-update"), "die Zeile „Controller-Update wird durchgeführt“");
         Assert.True(Switch(controller).IsLocked);
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:install-firmware-update"));
-        Assert.Equal("Controller-Update wird durchgeführt", row.Title);
-        Assert.Equal("Treiber kann während eines Firmware-Updates nicht installiert werden", row.Subtitle);
+        Assert.Equal(ControllerSupportTexts.FirmwareUpdateRunsTitle, row.Title);
+        Assert.Equal(ControllerSupportTexts.FirmwareUpdateRunsSubtitle, row.Subtitle);
         Assert.True(row.IsInfo);
         Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
 
@@ -344,10 +344,10 @@ public sealed class EmulationSetupTests
         Switch(controller).Activate();
 
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
-        Assert.Equal("Treiber installieren?", controller.SteamStopTitle);
+        Assert.Equal(AppTexts.DriversInstallTitle, controller.SteamStopTitle);
         Assert.Contains("Nach der Installation ist ein Neustart des PCs empfohlen.", controller.SteamStopText);
         Assert.Equal(plugged, controller.SteamStopDetail.Contains(ControllerSettingsViewModel.PuckRestartText, StringComparison.Ordinal));
-        Assert.Equal("Installieren", controller.ConfirmSteamStopText);
+        Assert.Equal(ControllerSupportTexts.Install, controller.ConfirmSteamStopText);
 
         // B goes back: nothing installed.
         arcadia.Press(UiAction.Back);
@@ -427,8 +427,8 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:viiper-missing"), "die Meldung „VIIPER fehlt“");
         var viiper = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:viiper-missing"));
-        Assert.Equal("VIIPER fehlt", viiper.Title);
-        Assert.Equal("Installieren", viiper.ActionText);
+        Assert.Equal(ControllerSupportTexts.ViiperMissingTitle, viiper.Title);
+        Assert.Equal(ControllerSupportTexts.Install, viiper.ActionText);
         Assert.True(Switch(controller).IsOn);
         Assert.True(arcadia.Main.Status.HasControllerStatus);
 
@@ -468,8 +468,8 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-unsupported"), "die Meldung zur HidHide-Version");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-unsupported"));
-        Assert.Equal("HidHide-Version wird nicht unterstützt", row.Title);
-        Assert.Equal("Aktualisieren", row.ActionText);
+        Assert.Equal(ControllerSupportTexts.HidHideUnsupportedTitle, row.Title);
+        Assert.Equal(AppTexts.Update, row.ActionText);
         Assert.Contains("Installiert ist ein älteres HidHide (Treiber 1.2.93), Arcadia braucht HidHide 1.5.230 oder neuer.", row.Info.OfType<InfoText>().Single().Text);
 
         row.Activate();
@@ -495,16 +495,16 @@ public sealed class EmulationSetupTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
         await arcadia.TickControllerSupportAsync();
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
-        Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Starte Windows neu, danach kannst du die fehlenden Teile installieren.", row.Subtitle);
-        Assert.Equal("Windows neu starten", row.ActionText);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, row.Title);
+        Assert.Equal(ControllerSupportTexts.PausedSummary, row.Subtitle);
+        Assert.Equal(AppTexts.ErrorContextRestartWindows, row.ActionText);
         Assert.True(row.IsInfo);
-        Assert.Contains(row.Info, block => block is InfoSection { Title: "NACH DEM NEUSTART" });
+        Assert.Contains(row.Info, block => block is InfoSection info && info.Title == ControllerSupportTexts.PausedBoxTitle);
         // #382, D1: the switch stays on and says it waits; no part row, and Pan isn't asked about a HidHide on its way out.
         Assert.True(arcadia.Settings.Current.PanEnabled);
-        Assert.Equal("Pausiert bis zum Neustart von Windows", Switch(controller).Subtitle);
+        Assert.Equal(ControllerSupportTexts.PausedUntilWindowsRestart, Switch(controller).Subtitle);
         Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
-        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel { ActionText: "Installieren" });
+        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel actionRow && actionRow.ActionText == ControllerSupportTexts.Install);
 
         // After the restart HidHide is gone and can be installed again.
         steam.HidHideRemovalPending = false;
@@ -512,7 +512,7 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
         Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
-        Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
+        Assert.Equal(ControllerSupportTexts.Install, Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
     }
 
     [AvaloniaFact]
@@ -526,13 +526,13 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
-        Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Starte Windows neu, damit der neue Treiber ganz aktiv ist.", row.Subtitle);
-        Assert.Equal("Windows neu starten", row.ActionText);
+        Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, row.Title);
+        Assert.Equal(ControllerSupportTexts.RecommendedSummary, row.Subtitle);
+        Assert.Equal(AppTexts.ErrorContextRestartWindows, row.ActionText);
         Assert.True(row.IsInfo);
-        Assert.Contains(row.Info, block => block is InfoSection { Title: "KEINE EILE" });
+        Assert.Contains(row.Info, block => block is InfoSection info && info.Title == ControllerSupportTexts.RecommendedBoxTitle);
         Assert.DoesNotContain(row.Info.OfType<InfoText>(), text => text.Text.Contains("SISR", StringComparison.Ordinal));
-        Assert.NotEqual("Pausiert bis zum Neustart von Windows", Switch(controller).Subtitle);
+        Assert.NotEqual(ControllerSupportTexts.PausedUntilWindowsRestart, Switch(controller).Subtitle);
     }
 
     [AvaloniaFact]
@@ -546,8 +546,8 @@ public sealed class EmulationSetupTests
 
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-failing"), "die Meldung „Wächterdienst Pan startet nicht“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-failing"));
-        Assert.Equal("Wächterdienst Pan startet nicht", row.Title);
-        Assert.Equal("Neu einrichten", row.ActionText);
+        Assert.Equal(ControllerSupportTexts.PanFailingTitle, row.Title);
+        Assert.Equal(ControllerSupportTexts.SetUpAgain, row.ActionText);
         Assert.Contains(PanPaths.DataDirectory, row.Info.OfType<InfoText>().Single().Text);
         Assert.Equal(ProblemText, Switch(controller).Subtitle);
         await arcadia.TickControllerSupportAsync();
@@ -572,7 +572,7 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-busy"), "die Bitte, die HidHide-Konfiguration zu schließen");
         var busy = controller.Rows.Single(row => row.Key == "issue:hidhide-busy");
-        Assert.Equal("HidHide-Konfiguration ist geöffnet", busy.Title);
+        Assert.Equal(ControllerSupportTexts.HidHideConfigOpenTitle, busy.Title);
         Assert.Contains("Bitte schließe sie", busy.Subtitle);
         // Nothing to install: HidHide is there, the user closes its window.
         Assert.Equal(string.Empty, Assert.IsType<ActionRowViewModel>(busy).ActionText);
@@ -601,9 +601,9 @@ public sealed class EmulationSetupTests
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-interface"), "die Meldung „HidHide antwortet unerwartet“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-interface"));
-        Assert.Equal("HidHide antwortet unerwartet", row.Title);
+        Assert.Equal(ControllerSupportTexts.HidHideUnexpectedAnswer, row.Title);
         Assert.Equal($"HidHide {HidHideRelease.Version} neu installieren hilft", row.Subtitle);
-        Assert.Equal("Neu installieren", row.ActionText);
+        Assert.Equal(ControllerSupportTexts.Reinstall, row.ActionText);
 
         row.Activate();
         ConfirmHidHideInstall(arcadia, controller);

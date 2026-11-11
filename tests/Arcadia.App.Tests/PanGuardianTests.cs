@@ -139,13 +139,13 @@ public sealed class PanGuardianTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
         var warning = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing"));
         Assert.Equal(HealthSeverity.Warning, warning.Severity);
-        Assert.Equal("Installieren", warning.ActionText);
+        Assert.Equal(AppTexts.Install, warning.ActionText);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
         Assert.DoesNotContain(controller.Rows, row => row.Key == PanRows.RestoreKey);
         // One install button: the switch above stays a switch and points down to the row (#243 B2, #242).
         var pan = Assert.IsType<PanRowViewModel>(controller.Rows.Single(row => row.Key == PanRows.MainKey));
         Assert.True(pan.IsSwitch);
-        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", pan.Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleProblem, pan.Subtitle);
 
         warning.Activate();
         await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Treiber installiert");

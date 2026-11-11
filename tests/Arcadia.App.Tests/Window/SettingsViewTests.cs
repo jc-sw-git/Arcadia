@@ -84,23 +84,23 @@ public sealed class SettingsViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
         arcadia.Press(UiAction.Settings);
         var settings = arcadia.Arcadia.Main.Settings!;
-        Assert.Equal(["Launcher", "Controller", "Über Arcadia"], settings.Categories.Select(category => category.Name));
+        Assert.Equal([AppTexts.Launcher, AppTexts.ControllerCategory, AppTexts.AboutTitle], settings.Categories.Select(category => category.Name));
 
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         AssertSelectedTabDrawn(arcadia, "Controller");
         arcadia.Press(UiAction.NextTab, times: 2);
-        Assert.Equal("Launcher", settings.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
         arcadia.Press(UiAction.PreviousTab);
-        Assert.Equal("Über Arcadia", settings.Selected.Name);
+        Assert.Equal(AppTexts.AboutTitle, settings.Selected.Name);
 
         arcadia.Key(Key.E, KeyModifiers.Shift);
-        Assert.Equal("Launcher", settings.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
         arcadia.Key(Key.Q, KeyModifiers.Shift);
-        Assert.Equal("Über Arcadia", settings.Selected.Name);
+        Assert.Equal(AppTexts.AboutTitle, settings.Selected.Name);
 
         arcadia.Click(arcadia.Showing(settings.Categories[1]));
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         AssertSelectedTabDrawn(arcadia, "Controller");
 
         // Three categories fit: the strip stands in the middle of the header, as wide as they need, not faded.
@@ -121,7 +121,7 @@ public sealed class SettingsViewTests
         var main = first.Arcadia.Main;
         first.Press(UiAction.Settings).Press(UiAction.NextTab);
         var settings = main.Settings!;
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         var rows = settings.Selected.Rows;
 
         // ▲ ▼ row by row, stopping at both ends, each row in view with its group's heading.
@@ -151,12 +151,12 @@ public sealed class SettingsViewTests
         Assert.Equal("5 Sekunden", first.ValueShown(settings.FocusedRow!));
         first.Arcadia.FocusRow("mouse-mode-for-dialogs");
         first.Press(UiAction.Accept);
-        Assert.Equal("Aus", first.ValueShown(settings.FocusedRow!));
+        Assert.Equal(AppTexts.Off, first.ValueShown(settings.FocusedRow!));
 
         // "Aus" dims the rows that need the mouse mode; they keep their values.
         first.Arcadia.FocusRow("mouse-mode");
         first.Press(UiAction.Left);
-        Assert.Equal("Aus", first.ValueShown(settings.FocusedRow!));
+        Assert.Equal(AppTexts.Off, first.ValueShown(settings.FocusedRow!));
         var hold = rows.Single(row => row.Key == "mouse-mode-hold");
         Assert.Contains("unavailable", first.RowButton(hold).Classes);
         Assert.True(first.RowButton(hold).Opacity < 1, "Abhängige Zeile ausgegraut");
@@ -167,7 +167,7 @@ public sealed class SettingsViewTests
         // and actions are rows.
         first.Arcadia.FocusRow("sisr-remove");
         var boxes = first.InfoPanel().GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("infoSection") && border.IsEffectivelyVisible).ToList();
-        Assert.Equal(["WAS ENTFERNT WIRD", "BLEIBT ERHALTEN"], boxes.OrderBy(box => first.Bounds(box).Top).Select(box => box.GetVisualDescendants().OfType<TextBlock>().First().Text));
+        Assert.Equal([AppTexts.SisrWhatIsRemoved, AppTexts.SisrWhatStays], boxes.OrderBy(box => first.Bounds(box).Top).Select(box => box.GetVisualDescendants().OfType<TextBlock>().First().Text));
         var description = first.InfoPanel().GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("infoText") && text.IsEffectivelyVisible);
         Assert.True(first.Bounds(description).Bottom <= first.Bounds(boxes[0]).Top, "Die Boxen stehen unter der Beschreibung");
         Assert.All(rows, row => Assert.IsNotType<InfoRowViewModel>(row));
@@ -175,9 +175,9 @@ public sealed class SettingsViewTests
         using var restarted = await first.RestartAsync();
         restarted.Press(UiAction.Settings).Press(UiAction.NextTab);
         var again = restarted.Arcadia.Main.Settings!.Selected.Rows;
-        Assert.Equal("Aus", restarted.ValueShown(again.Single(row => row.Key == "mouse-mode")));
+        Assert.Equal(AppTexts.Off, restarted.ValueShown(again.Single(row => row.Key == "mouse-mode")));
         Assert.Equal("5 Sekunden", restarted.ValueShown(again.Single(row => row.Key == "mouse-mode-hold")));
-        Assert.Equal("Aus", restarted.ValueShown(again.Single(row => row.Key == "mouse-mode-for-dialogs")));
+        Assert.Equal(AppTexts.Off, restarted.ValueShown(again.Single(row => row.Key == "mouse-mode-for-dialogs")));
     }
 
     [AvaloniaFact]
@@ -191,7 +191,7 @@ public sealed class SettingsViewTests
 
         // The description, below it the box "So funktioniert es"; faded at the bottom, the footer names RS.
         var box = Assert.Single(arcadia.InfoPanel().GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("infoSection") && border.IsEffectivelyVisible);
-        Assert.Equal("SO FUNKTIONIERT ES", box.GetVisualDescendants().OfType<TextBlock>().First().Text);
+        Assert.Equal(AppTexts.MouseModeHowItWorks, box.GetVisualDescendants().OfType<TextBlock>().First().Text);
         Assert.StartsWith("Durch Halten von", arcadia.InfoPanel().GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("infoText")).Inlines!.Text, StringComparison.Ordinal);
         AssertInfoFades(arcadia, top: false, bottom: true);
         Assert.Contains("RS Infotext", arcadia.SettingsFooter());
@@ -232,7 +232,7 @@ public sealed class SettingsViewTests
         arcadia.Key(Key.Enter);
         var settings = main.Settings!;
         arcadia.Key(Key.E, KeyModifiers.Shift);
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         arcadia.Key(Key.S);
         Assert.Equal("mouse-mode", settings.FocusedRow?.Key);
         arcadia.Key(Key.D);
@@ -254,7 +254,7 @@ public sealed class SettingsViewTests
         arcadia.Click(arcadia.ButtonWithTip("Einstellungen"));
         settings = main.Settings!;
         arcadia.Click(arcadia.Showing(settings.Categories[1]));
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         var speed = settings.Selected.Rows.Single(row => row.Key == "mouse-mode-speed");
         var before = arcadia.ValueShown(speed);
         var resting = arcadia.CentreOf(arcadia.RowButton(speed));
@@ -269,7 +269,7 @@ public sealed class SettingsViewTests
         arcadia.Click(arcadia.ValueArrows(speed)[0]);
         Assert.Equal(before, arcadia.ValueShown(speed));
         var forDialogs = settings.Selected.Rows.Single(row => row.Key == "mouse-mode-for-dialogs");
-        Assert.Equal("Aus", arcadia.ValueShown(forDialogs));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(forDialogs));
         arcadia.Click(arcadia.RowButton(forDialogs));
         Assert.Equal("An", arcadia.ValueShown(forDialogs));
 

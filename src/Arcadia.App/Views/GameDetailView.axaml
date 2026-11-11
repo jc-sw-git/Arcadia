@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.GameDetailView"
@@ -87,7 +88,7 @@
                               <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Path Data="M12 4v12M6 10l6 6 6-6M5 20h14" Stroke="{StaticResource OnAccent}" StrokeThickness="2.8" StrokeLineCap="Round" StrokeJoin="Round"
                                       Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" />
-                                <TextBlock Text="UPDATE VERFÜGBAR" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Static app:AppTexts.UpdateAvailableCaption}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnAccent}" VerticalAlignment="Center" />
                               </StackPanel>
                             </Border>
                             <Border Classes="detailChip running" IsVisible="{Binding Tile.IsRunning}">
@@ -113,28 +114,28 @@
                     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,*,*,*" ColumnSpacing="16" Margin="48,16,48,36">
                       <Border Classes="detailStat">
                         <StackPanel Spacing="6">
-                          <TextBlock Classes="label" Text="ZULETZT GESPIELT" FontSize="13" />
+                          <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="13" />
                           <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
                           <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
                         </StackPanel>
                       </Border>
                       <Border Grid.Column="1" Classes="detailStat">
                         <StackPanel Spacing="6">
-                          <TextBlock Classes="label" Text="SPIELZEIT" FontSize="13" />
+                          <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="13" />
                           <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
                           <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
                         </StackPanel>
                       </Border>
                       <Border Grid.Column="2" Classes="detailStat">
                         <StackPanel Spacing="6">
-                          <TextBlock Classes="label" Text="INSTALLIERT AM" FontSize="13" />
+                          <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="13" />
                           <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
                           <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
                         </StackPanel>
                       </Border>
                       <Border Grid.Column="3" Classes="detailStat">
                         <StackPanel Spacing="6">
-                          <TextBlock Classes="label" Text="GRÖSSE" FontSize="13" />
+                          <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="13" />
                           <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
                           <TextBlock Classes="statSource" Text="{Binding DriveText}" />
                         </StackPanel>
@@ -198,12 +199,12 @@
     <ctl:EdgeFade Name="NeighbourFade" Orientation="Horizontal" Size="384" Duration="0:0:0" Condition="{Binding HasNeighbours}" />
     <Button Classes="plain glyphButton keycap carouselNav" Classes.kbd="{Binding !$parent[Window].((vm:MainViewModel)DataContext)?.Input.UsesController, TargetNullValue=False}"
             HorizontalAlignment="Left" Margin="80,0,0,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding PreviousCommand}" ToolTip.Tip="Vorheriges Spiel (Q, Bild ↑ oder Mausrad)">
+            Command="{Binding PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousGameTip}">
       <ctl:KeyText Pad="LT" Keys="Q" />
     </Button>
     <Button Classes="plain glyphButton keycap carouselNav" Classes.kbd="{Binding !$parent[Window].((vm:MainViewModel)DataContext)?.Input.UsesController, TargetNullValue=False}"
             HorizontalAlignment="Right" Margin="0,0,80,0" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding NextCommand}" ToolTip.Tip="Nächstes Spiel (E, Bild ↓ oder Mausrad)">
+            Command="{Binding NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextGameTip}">
       <ctl:KeyText Pad="RT" Keys="E" />
     </Button>
   </Panel>

@@ -51,35 +51,35 @@ public static class ControllerSupportRemoval
         var lines = new List<string>();
         if (parts.Usbip)
         {
-            lines.Add("usbip-win2 (Treiber)");
+            lines.Add(ControllerSupportTexts.RemovalUsbip);
         }
 
         if (parts.HidHide)
         {
-            lines.Add("HidHide (Treiber)");
+            lines.Add(ControllerSupportTexts.RemovalHidHide);
         }
 
         if (parts.Sisr || parts.Viiper)
         {
-            lines.Add(parts.Sisr && parts.Viiper ? "SISR und VIIPER" : parts.Sisr ? "SISR" : "VIIPER");
+            lines.Add(parts.Sisr && parts.Viiper ? ControllerSupportTexts.RemovalSisrAndViiper : parts.Sisr ? "SISR" : "VIIPER");
         }
 
-        return "Arcadia wird deinstalliert.\n\n"
-            + "Treiber für die Controller-Emulation auch entfernen?\n\n"
+        return ControllerSupportTexts.RemovalIntro
+            + ControllerSupportTexts.RemovalAsk
             + string.Concat(lines.Select(l => $"•  {l}\n"))
-            + "\nAndere Programme, die sie nutzen (etwa DS4Windows mit HidHide), funktionieren danach nicht mehr. "
-            + (parts.Drivers ? "Windows fragt dafür einmal nach Administratorrechten. " : string.Empty)
-            + (parts.Sisr && steamRunning ? "Steam wird dafür kurz beendet und wieder gestartet. " : string.Empty)
-            + $"Ohne Antwort innerhalb von {timeoutSeconds} Sekunden bleibt alles installiert; Arcadia wird trotzdem deinstalliert.";
+            + ControllerSupportTexts.RemovalOtherPrograms
+            + (parts.Drivers ? ControllerSupportTexts.RemovalAdmin : string.Empty)
+            + (parts.Sisr && steamRunning ? ControllerSupportTexts.RemovalSteamRestarts : string.Empty)
+            + ControllerSupportTexts.RemovalTimeout(timeoutSeconds);
     }
 
     /// <summary>
     /// The last message of the uninstall when Windows removes a driver only at the next restart (#407). Without it, a
     /// player who installs Arcadia again before restarting can't install the drivers until then.
     /// </summary>
-    public const string RestartNotice = "Arcadia ist deinstalliert.\n\n"
-        + "Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz. "
-        + "Starte den PC neu, bevor du Arcadia wieder installierst.";
+    public static string RestartNotice => ControllerSupportTexts.RemovalDone
+        + ControllerSupportTexts.RemovalRestartNeeded
+        + ControllerSupportTexts.RemovalRestartBeforeReinstall;
 
     /// <summary>
     /// Whether <see cref="RestartNotice"/> is due (#423): the player chose to remove a driver and Pan's elevated uninstall

@@ -219,10 +219,10 @@ public sealed class EveryControllerForGamesTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Zeile „HidHide fehlt“");
 
         Assert.Equal(["issue:hidhide-missing"], RowsBelow(controller).Where(key => key != PanRows.RestoreKey));
-        Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
+        Assert.Equal(ControllerSupportTexts.Install, Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
         Assert.Equal(0, arcadia.XboxPads.Plugged);
         // On, but not as running: the switch points to the problem below.
-        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", controller.Rows.OfType<SetupSwitchRowViewModel>().Single().Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleProblem, controller.Rows.OfType<SetupSwitchRowViewModel>().Single().Subtitle);
     }
 
     /// <summary>
@@ -300,7 +300,7 @@ public sealed class EveryControllerForGamesTests
         Assert.Equal(["pan:not-hidden", PanRows.LayoutsKey], RowsBelow(controller));
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:not-hidden"));
         Assert.Equal("2 Controller lassen sich nicht verstecken", row.Title);
-        Assert.Equal("Spiele sehen sie direkt, Arcadias Tastenkombinationen kommen dort mit an", row.Subtitle);
+        Assert.Equal(AppTexts.PanNotHiddenSubtitle, row.Subtitle);
         Assert.Equal(HealthSeverity.Info, row.Severity);
         var affected = Assert.IsType<InfoSection>(row.Info.Single(block => block is InfoSection));
         Assert.Equal("BETROFFEN", affected.Title);
@@ -506,7 +506,7 @@ public sealed class EveryControllerForGamesTests
 
         FocusDownTo(arcadia, controller, PanRows.LayoutsKey);
         var info = Assert.Single(controller.FocusedRow!.Info.OfType<InfoFacts>());
-        Assert.Equal("SPIELE SEHEN", info.Title);
+        Assert.Equal(AppTexts.PanGamesSee, info.Title);
         Assert.Equal(
             ["Steam Controller (Modus „Arcadia“) → Xbox 360 Controller", "DualSense Wireless Controller → DualSense", "Nintendo GameCube Controller → Xbox 360 Controller"],
             info.Facts.Select(fact => $"{fact.Label} → {fact.Value}"));
@@ -557,7 +557,7 @@ public sealed class EveryControllerForGamesTests
         // GameCube ▶ once more: "Nicht übernehmen". Its pad goes, then Pan shows the real controller to games.
         layouts = OpenLayouts(arcadia, controller);
         arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Right);
-        Assert.Equal("Nicht übernehmen", layouts.Rows[2].ValueText);
+        Assert.Equal(ControllerSupportTexts.LayoutNotApplied, layouts.Rows[2].ValueText);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal([PadKind.Xbox360], PluggedKinds(arcadia, steamControllerPad));

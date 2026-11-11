@@ -9,6 +9,7 @@ using Arcadia.Core.Tests;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers;
 using Avalonia.Headless.XUnit;
+using Arcadia.Launchers.Steam;
 
 namespace Arcadia.App.Tests;
 
@@ -37,10 +38,10 @@ public sealed class SteamAccountTests
         Assert.Equal([Installed.Name], TitlesOf(arcadia));
 
         var row = OpenAccountRow(arcadia);
-        Assert.Equal("KONTO", row.Group);
-        Assert.Equal("Steam-Konto", row.Title);
-        Assert.Equal("Anmelden", row.ActionText);
-        Assert.Equal("Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben", row.Subtitle);
+        Assert.Equal(AppTexts.AccountGroup, row.Group);
+        Assert.Equal(SteamTexts.SteamAccountTitle, row.Title);
+        Assert.Equal(AppTexts.SignIn, row.ActionText);
+        Assert.Equal(SteamTexts.SteamAccountPurpose, row.Subtitle);
         Assert.Equal(2, row.Info.OfType<InfoText>().Count());
         Assert.StartsWith("Die Anmeldung erfolgt auf der Anmeldeseite von Steam", row.Info.OfType<InfoText>().Last().Text, StringComparison.Ordinal);
         Assert.Empty(row.Info.OfType<InfoFootnote>());
@@ -48,7 +49,7 @@ public sealed class SteamAccountTests
         // Steam's own page over the whole window, its address shown like in a browser.
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitOnClockUntilAsync(() => arcadia.Main.IsWebSignInOpen && files.SteamWeb.IsSignInPageShown, "Steams Anmeldeseite", SignInLimit);
-        Assert.Equal("Bei Steam anmelden", arcadia.Main.WebPage!.Title);
+        Assert.Equal(SteamTexts.SteamSignInTitle, arcadia.Main.WebPage!.Title);
         Assert.Equal("https://store.steampowered.com", arcadia.Main.WebPage.Address);
         Assert.Equal("Anmeldung auf der Seite von Steam …", row.Subtitle);
 
@@ -57,9 +58,9 @@ public sealed class SteamAccountTests
 
         Assert.False(arcadia.Main.IsWebSignInOpen);
         Assert.Equal(FakeSteamWeb.ProfileName, row.Subtitle);
-        Assert.Equal("Abmelden", row.ActionText);
+        Assert.Equal(AppTexts.SignOut, row.ActionText);
         Assert.Equal($"Angemeldet als {FakeSteamWeb.ProfileName}. Arcadia zeigt neben deinen installierten Spielen auch die Spiele, die im Besitz von {FakeSteamWeb.ProfileName} sind.", row.Info.OfType<InfoText>().First().Text);
-        Assert.Equal("Meldest du dich ab, werden nur noch die installierten Spiele gelistet.", Assert.Single(row.Info.OfType<InfoFootnote>()).Text);
+        Assert.Equal(AppTexts.AccountSignOutExplained, Assert.Single(row.Info.OfType<InfoFootnote>()).Text);
         Assert.Equal(["Leuchtturm", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
         Assert.False(TabOf(arcadia).Games.Single(game => game.Title == "Leuchtturm").IsInstalled);
 
@@ -93,7 +94,7 @@ public sealed class SteamAccountTests
         arcadia.Press(UiAction.Down);
         Dispatcher();
         Assert.True(arcadia.Main.IsWebSignInOpen);
-        Assert.Equal("Abbrechen", row.ActionText);
+        Assert.Equal(AppTexts.Cancel, row.ActionText);
         Assert.True(row.IsFocused);
 
         // …B closes it and nothing else, so the settings stay open.
@@ -108,7 +109,7 @@ public sealed class SteamAccountTests
         arcadia.Wait(TimeSpan.FromSeconds(15));
         await arcadia.SteamAccount!.WhenIdleAsync();
         Dispatcher();
-        Assert.Equal("Anmelden", row.ActionText);
+        Assert.Equal(AppTexts.SignIn, row.ActionText);
         Assert.Equal([Installed.Name], TitlesOf(arcadia));
     }
 
@@ -124,7 +125,7 @@ public sealed class SteamAccountTests
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitOnClockUntilAsync(() => row.Subtitle == "Steam nicht erreichbar – [A] erneut versuchen", "„nicht erreichbar“", SignInLimit);
         Assert.False(arcadia.Main.IsWebSignInOpen);
-        Assert.Equal("Erneut versuchen", row.ActionText);
+        Assert.Equal(AppTexts.TryAgain, row.ActionText);
         Assert.Contains(row.Info.OfType<InfoText>(), text => text.Text.StartsWith("Arcadia konnte die Anmeldeseite von Steam nicht laden.", StringComparison.Ordinal));
 
         files.SteamWeb.IsOffline = false;
@@ -220,9 +221,9 @@ public sealed class SteamAccountTests
         arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(1.2));
         var page = arcadia.Detail!.Current;
         var install = page.TopRow[0];
-        Assert.Equal("Installieren", install.ButtonLabel);
+        Assert.Equal(AppTexts.Install, install.ButtonLabel);
         Assert.False(install.IsEnabled);
-        Assert.Equal("In Steam ist ein anderes Konto angemeldet", install.DisabledReason);
+        Assert.Equal(SteamTexts.SteamOtherAccountInstall, install.DisabledReason);
         Assert.Equal(OtherAccountUninstalledNotice, page.Tile.Notice);
     }
 
@@ -268,7 +269,7 @@ public sealed class SteamAccountTests
         await arcadia.WaitOnClockUntilAsync(() => row.Severity == HealthSeverity.Warning, "die Statusmeldung", SignInLimit);
 
         Assert.Equal($"{FakeSteamWeb.ProfileName} · Steam ist nicht erreichbar", row.Subtitle);
-        Assert.Contains(row.Info.OfType<InfoNote>(), note => note.Text == "Steam ist nicht erreichbar. Arcadia zeigt die zuletzt geladene Liste deiner Spiele.");
+        Assert.Contains(row.Info.OfType<InfoNote>(), note => note.Text == SteamTexts.SteamUnreachableWithList);
         Assert.Null(arcadia.Main.Toast.Text);
         Assert.Equal(["Leuchtturm", "Salzwiesen", "Tidenhub"], TitlesOf(arcadia));
     }
@@ -316,7 +317,7 @@ public sealed class SteamAccountTests
         Assert.True(question.IsCancelFocused);
         arcadia.Press(UiAction.Back);
         Assert.Null(settings.Dialog);
-        Assert.Equal("Abmelden", row.ActionText);
+        Assert.Equal(AppTexts.SignOut, row.ActionText);
 
         arcadia.Press(UiAction.Accept);
         arcadia.Press(UiAction.Left);
@@ -325,7 +326,7 @@ public sealed class SteamAccountTests
         await arcadia.WaitOnClockUntilAsync(() => TitlesOf(arcadia).Count == 1, "die nicht installierten Spiele verschwinden", SignInLimit);
 
         Assert.Equal([Installed.Name], TitlesOf(arcadia));
-        Assert.Equal("Anmelden", row.ActionText);
+        Assert.Equal(AppTexts.SignIn, row.ActionText);
         Assert.Empty(Directory.GetFiles(files.AccountFolder));
 
         // Steam's cookies in Arcadia's browser go too, unseen: the next sign-in asks Steam's page again.
@@ -400,7 +401,7 @@ public sealed class SteamAccountTests
 
         Assert.Null(settings.Dialog);
         Assert.Equal(AccountStep.SignedIn, arcadia.SteamAccount!.State.Step);
-        Assert.Equal("Abmelden", row.ActionText);
+        Assert.Equal(AppTexts.SignOut, row.ActionText);
     }
 
     [AvaloniaFact]

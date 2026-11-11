@@ -15,11 +15,11 @@ public sealed class SteamDesktopLayoutRowViewModel : SwitchRowViewModel
 
     public const string GroupName = "DESKTOP-STEUERUNG";
 
-    public const string RowTitle = "Steams Desktop-Steuerung zulassen";
+    public static string RowTitle => AppTexts.SteamDesktopTitle;
 
-    public const string IgnoredSubtitle = "Steams Desktop-Steuerung wird momentan ignoriert";
+    public static string IgnoredSubtitle => AppTexts.SteamDesktopIgnored;
 
-    public const string AllowedSubtitle = "Steams Desktop-Steuerung ist momentan aktiviert";
+    public static string AllowedSubtitle => AppTexts.SteamDesktopAllowed;
 
     private readonly SettingsChanges _changes;
 
@@ -31,12 +31,12 @@ public sealed class SteamDesktopLayoutRowViewModel : SwitchRowViewModel
         Group = GroupName;
         Info =
         [
-            new InfoText("Steam bietet allen Controllern die Möglichkeit den Desktop zu steuern; zum Beispiel wird bei gedrückter Guide-Taste ([Guide]) mit dem rechten Stick ([RS]) der Mauszeiger bewegt oder mit ⧉ + ≡ ein Alt+Tab ausgelöst."),
-            new InfoText("Das lohnt sich vor allem, wenn du dir in Steam eine eigene Desktop-Belegung eingerichtet hast, etwa mit Tastenkürzeln, Makros oder Gyro-Steuerung, und sie auch neben Arcadia nutzen willst."),
-            new InfoText("Diese Steam-Funktion kann in manchen Fällen bestimmte Arcadia-Funktionen wie den Mausmodus oder „Zurück zu Arcadia“ beeinträchtigen."),
-            new InfoNote("Beim Steam Controller können darüber hinaus (wenn er im Aktionsset „Desktop“ betrieben wird) Eingaben in Arcadia doppelt ausgeführt werden – wie zum Beispiel die Navigation in der Bibliothek oder ein Druck auf [A] löst sowohl [A] als auch Enter aus. Es wird daher empfohlen den Steam Controller im Aktionsset \"Gamepad\" zu betreiben, wenn \"Steams Desktop-Steuerung zulassen\" eingeschaltet ist.", HealthSeverity.Info) { IsBold = true, Symbols = ButtonSymbols.SteamController },
-            new InfoText("Ist „Steams Desktop-Steuerung zulassen“ ausgeschaltet, wird diese Funktion von Steam von Arcadia unterbunden."),
-            new InfoText("Um den Wechsel des Aktionssets (⧉ + ≡) für den Steam Controller zu unterbinden, muss zusätzlich auch der Controller-Wächter (Pan) aktiviert sein: Einstellungen → Controller → Pan.") { Symbols = ButtonSymbols.SteamController },
+            new InfoText(AppTexts.SteamDesktopInfo1),
+            new InfoText(AppTexts.SteamDesktopInfo2),
+            new InfoText(AppTexts.SteamDesktopInfo3),
+            new InfoNote(AppTexts.SteamDesktopInfo4, HealthSeverity.Info) { IsBold = true, Symbols = ButtonSymbols.SteamController },
+            new InfoText(AppTexts.SteamDesktopInfo5),
+            new InfoText(AppTexts.SteamDesktopInfo6) { Symbols = ButtonSymbols.SteamController },
         ];
         ShowState();
     }

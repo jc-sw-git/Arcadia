@@ -53,7 +53,7 @@ public sealed class SearchViewTests
         var placeholder = One(arcadia, page, "Spiele suchen …");
         var field = placeholder.GetVisualAncestors().OfType<Border>().First(border => border.Height == 76);
         Assert.DoesNotContain(Texts(field), text => text.Contains('/', StringComparison.Ordinal));
-        Assert.True(arcadia.Bounds(One(arcadia, page, "Suche in allen Launchern")).Top > arcadia.Bounds(placeholder).Bottom);
+        Assert.True(arcadia.Bounds(One(arcadia, page, AppTexts.SearchAllLaunchers)).Top > arcadia.Bounds(placeholder).Bottom);
 
         // One row of chips, each launcher with its keyword, the sort order with L3 on the right.
         var chips = new[] { "Alle Launcher", "GOG Galaxy", "Xbox", "Amazon Games" }.Select(name => arcadia.Bounds(One(arcadia, page, name))).ToList();
@@ -139,7 +139,7 @@ public sealed class SearchViewTests
         Assert.Equal(["Amazon Games"], ChipsOn(search));
         Assert.Empty(search.Hits);
         arcadia.Click(Chip(arcadia, "Alle Launcher"));
-        Assert.Equal(["Alle Launcher", "GOG Galaxy", "Xbox", "Amazon Games"], ChipsOn(search, all: true));
+        Assert.Equal([AppTexts.AllLaunchers, "GOG Galaxy", "Xbox", "Amazon Games"], ChipsOn(search, all: true));
         Assert.Equal(105, search.Hits.Count);
 
         // A typed prefix is rewritten by a chip, and "Alle Launcher" takes it away.
@@ -158,7 +158,7 @@ public sealed class SearchViewTests
         arcadia.Click(FilterLauncher(arcadia, "GOG Galaxy")).Click(FilterLauncher(arcadia, "Amazon Games"));
         Assert.Equal(["Amazon Games"], ChipsOn(search));
         arcadia.Click(FilterLauncher(arcadia, "Alle Launcher"));
-        Assert.Equal(["Alle Launcher", "GOG Galaxy", "Xbox", "Amazon Games"], ChipsOn(search, all: true));
+        Assert.Equal([AppTexts.AllLaunchers, "GOG Galaxy", "Xbox", "Amazon Games"], ChipsOn(search, all: true));
     }
 
     [AvaloniaFact]
@@ -358,7 +358,7 @@ public sealed class SearchViewTests
         Assert.Contains(search.Slots, slot => slot.IsShown && slot.Tile is { } tile && arcadia.Bounds(HitButton(arcadia, tile)).Left > viewport.Center.X + (3.5 * 210));
         Assert.Equal(["LT", "RT"], TurnButtons(arcadia).Select(button => VisibleTexts(button).Single()));
         var stick = Assert.Single(Page(arcadia).GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("stickHint") && border.IsEffectivelyVisible);
-        Assert.Equal(["RS", "Treffer wählen"], VisibleTexts(stick));
+        Assert.Equal(["RS", AppTexts.ChooseHit], VisibleTexts(stick));
         Assert.True(arcadia.Bounds(stick).Bottom <= arcadia.Bounds(HitButton(arcadia, search.Results[0])).Top);
         AssertRowFadesToBackground(arcadia);
 
@@ -490,7 +490,7 @@ public sealed class SearchViewTests
         Assert.Equal("Klick Eingeben", Legend(arcadia)[0]);
         Assert.Empty(GlyphTexts(KeyButton(arcadia, erase)));
         Assert.Empty(GlyphTexts(Tab(arcadia)));
-        Assert.Empty(GlyphTexts((Control)One(arcadia, Page(arcadia), "Schließen").Parent!));
+        Assert.Empty(GlyphTexts((Control)One(arcadia, Page(arcadia), AppTexts.Close).Parent!));
         AssertDrawer(arcadia, isOut: true);
 
         // A button brings the controller's legend and glyphs back.

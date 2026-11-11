@@ -55,8 +55,8 @@ public sealed class WindowsRestartViewTests
         using var _ = arcadia;
 
         Keep(arcadia, "382-restart-row-paused");
-        Assert.Equal("Pausiert bis zum Neustart von Windows", controller.Rows.Single(row => row.Key == PanRows.MainKey).Subtitle);
-        Assert.Contains(arcadia.FooterHints(), hint => hint.EndsWith("Windows neu starten", StringComparison.Ordinal));
+        Assert.Equal(ControllerSupportTexts.PausedUntilWindowsRestart, controller.Rows.Single(row => row.Key == PanRows.MainKey).Subtitle);
+        Assert.Contains(arcadia.FooterHints(), hint => hint.EndsWith(AppTexts.ErrorContextRestartWindows, StringComparison.Ordinal));
         Keep(arcadia, "382-restart-row-paused");
 
         arcadia.Press(UiAction.Accept).Settle();

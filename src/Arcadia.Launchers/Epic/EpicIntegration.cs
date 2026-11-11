@@ -35,10 +35,10 @@ public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = nu
     [
         new(
             "software",
-            "Software und Engines einbeziehen",
-            "Startbare Einträge, die keine Spiele sind",
-            "Epic zeigt in seiner Bibliothek auch Programme, die keine Spiele sind. Eingeschaltet erscheinen sie auch in Arcadia:",
-            ["Unreal Engine, alle Versionen als ein Eintrag", "Unreal Editor für Fortnite", "weitere startbare Add-ons"],
+            EpicTexts.EpicSoftwareTitle,
+            EpicTexts.EpicSoftwareSubtitle,
+            EpicTexts.EpicSoftwareInfo,
+            [EpicTexts.EpicUnrealEngine, EpicTexts.EpicUnrealEditorForFortnite, EpicTexts.EpicMoreAddOns],
             [GameType.Tool]),
     ];
 

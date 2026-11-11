@@ -142,7 +142,7 @@ public sealed class MouseModeHost : IDisposable
             Dispatcher.UIThread.Post(() =>
             {
                 AppLog.Write($"Back + Start an Controller #{padId}: Mausmodus in diesem Spiel deaktiviert");
-                _overlay.ShowSwitched("Mausmodus ist in diesem Spiel deaktiviert", flash: false);
+                _overlay.ShowSwitched(AppTexts.MouseModeDisabledInGame, flash: false);
             });
         };
         _returnWithView.HoldStarted += fillTime => Dispatcher.UIThread.Post(() => _overlay.ShowReturnHold(fillTime));
@@ -298,7 +298,7 @@ public sealed class MouseModeHost : IDisposable
         {
             // An error here would end the poll thread and with it every controller input; this way only the mouse mode goes.
             _failed = true;
-            AppErrors.Report(ex, "Mausmodus");
+            AppErrors.Report(ex, AppTexts.MouseMode);
             try
             {
                 _mode.Stop();
@@ -370,7 +370,7 @@ public sealed class MouseModeHost : IDisposable
 
     private void ReturnToArcadia()
     {
-        CloseKeyboard("Arcadia kommt nach vorne");
+        CloseKeyboard("Arcadia kommt nach vorne"); // not a UI text (log)
         _overlay.EndReturnHold();
         AppLog.Write("View gehalten: Arcadia kommt nach vorne");
         ForegroundGuard.BringBack(_window);
@@ -392,7 +392,7 @@ public sealed class MouseModeHost : IDisposable
 
         _loggedForeground = foreground;
         _loggedActive = active;
-        var mismatch = active != (foreground == ArcadiaInFront) ? " (widerspricht dem Vordergrund)" : string.Empty;
+        var mismatch = active != (foreground == ArcadiaInFront) ? " (widerspricht dem Vordergrund)" : string.Empty; // not a UI text (log)
         AppLog.Write($"Vordergrund: {foreground}; Arcadia laut Fenster {(active ? "aktiv" : "inaktiv")}{mismatch}");
     }
 
@@ -404,7 +404,7 @@ public sealed class MouseModeHost : IDisposable
     {
         if (ProcessWatch.ForegroundProcessId() is not { } id)
         {
-            return "kein Fenster";
+            return "kein Fenster"; // not a UI text (log)
         }
 
         if (id == Environment.ProcessId)
@@ -412,7 +412,7 @@ public sealed class MouseModeHost : IDisposable
             return ArcadiaInFront;
         }
 
-        return GameInFront() ? "Spiel" : "kein Spiel";
+        return GameInFront() ? "Spiel" : "kein Spiel"; // not a UI text (log)
     }
 
     private void OnSwitched(MouseModeSwitch change)
@@ -439,16 +439,16 @@ public sealed class MouseModeHost : IDisposable
 
             var text = (change.IsOn, change.IsAutomatic, gameInFront) switch
             {
-                (true, _, _) when change.ForDialog => "Mausmodus an, solange das Windows-Fenster offen ist",
-                (false, _, _) when change.ByGame => "Mausmodus aus – in diesem Spiel deaktiviert",
-                (true, false, true) => "Mausmodus an – das Spiel sieht die Eingaben weiterhin",
-                (true, _, _) => "Mausmodus an",
-                _ => "Mausmodus aus",
+                (true, _, _) when change.ForDialog => AppTexts.MouseModeOnForDialog,
+                (false, _, _) when change.ByGame => AppTexts.MouseModeOffByGame,
+                (true, false, true) => AppTexts.MouseModeOnGameSeesInput,
+                (true, _, _) => AppTexts.MouseModeOn,
+                _ => AppTexts.MouseModeOff,
             };
             _overlay.ShowSwitched(text, flash: !change.IsAutomatic);
             if (!change.IsOn)
             {
-                CloseKeyboard("Mausmodus aus");
+                CloseKeyboard("Mausmodus aus"); // not a UI text (log)
             }
 
             UpdateForegroundCheck();
@@ -491,8 +491,8 @@ public sealed class MouseModeHost : IDisposable
         }
         catch (Exception ex)
         {
-            AppErrors.Report(ex, "Bildschirmtastatur öffnen");
-            CloseKeyboard("Fehler beim Öffnen");
+            AppErrors.Report(ex, AppTexts.ErrorContextOpenKeyboard);
+            CloseKeyboard("Fehler beim Öffnen"); // not a UI text (log)
         }
     }
 
@@ -501,7 +501,7 @@ public sealed class MouseModeHost : IDisposable
     {
         if (_keyboard is null || _keyboardWindow is null)
         {
-            var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked);
+            var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked); // not a UI text (log)
             _keyboard = new OnScreenKeyboardViewModel(
                 KeyboardLayout.Find(_settings.Current.KeyboardLayout), target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
             _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
@@ -534,7 +534,7 @@ public sealed class MouseModeHost : IDisposable
                 catch (Exception ex)
                 {
                     // Only a head start: Y builds the keyboard itself.
-                    AppErrors.Report(ex, "Tastatur des Mausmodus vorbereiten");
+                    AppErrors.Report(ex, AppTexts.ErrorContextPrepareMouseModeKeyboard);
                 }
             },
             DispatcherPriority.Background);
@@ -562,7 +562,7 @@ public sealed class MouseModeHost : IDisposable
     }
 
     /// <summary>B, the search closing or its keyboard put away by other means: the buttons are the mouse's again.</summary>
-    private void OnSearchKeyboardClosed() => CloseKeyboard("Tastatur der Suche weg");
+    private void OnSearchKeyboardClosed() => CloseKeyboard("Tastatur der Suche weg"); // not a UI text (log)
 
     /// <summary>
     /// A game coming to the front closes the keyboard; one that was in front when it opened doesn't, and any other
@@ -573,7 +573,7 @@ public sealed class MouseModeHost : IDisposable
     {
         if (_typingSearch is not null && !IsArcadiaActive)
         {
-            CloseKeyboard("Arcadia nicht mehr vorne");
+            CloseKeyboard("Arcadia nicht mehr vorne"); // not a UI text (log)
             return;
         }
 
@@ -585,7 +585,7 @@ public sealed class MouseModeHost : IDisposable
         var gameInFront = GameInFront();
         if (gameInFront && !_gameWasInFront)
         {
-            CloseKeyboard("Spiel vorne");
+            CloseKeyboard("Spiel vorne"); // not a UI text (log)
         }
         else
         {

@@ -52,11 +52,11 @@ public sealed class CancelledInstallDialogTests
         // "After 1 minute" allows one poll (2 s) on top.
         await PollForAsync(arcadia, TimeSpan.FromSeconds(4));
         Assert.Null(tile.InstallState);
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
         Assert.True(tile.CanActivate);
 
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        Assert.Equal("Installieren", arcadia.Detail!.Current.TopRow[0].ButtonLabel);
+        Assert.Equal(AppTexts.Install, arcadia.Detail!.Current.TopRow[0].ButtonLabel);
         Assert.True(arcadia.Detail.Current.TopRow[0].IsEnabled);
     }
 
@@ -86,7 +86,7 @@ public sealed class CancelledInstallDialogTests
         Assert.Equal("Bitte in Epic Games starten", engine.InstallStatusText);
 
         await PollForAsync(arcadia, TimeSpan.FromSeconds(4));
-        Assert.Equal(("Installieren", "Installieren"), (game.PrimaryActionText, engine.PrimaryActionText));
+        Assert.Equal((AppTexts.Install, AppTexts.Install), (game.PrimaryActionText, engine.PrimaryActionText));
         Assert.Null(game.InstallState);
         Assert.Null(engine.InstallState);
     }
@@ -112,7 +112,7 @@ public sealed class CancelledInstallDialogTests
         await PollForAsync(arcadia, TimeSpan.FromSeconds(50));
         Assert.Equal("Bitte in GOG Galaxy bestätigen", tile.InstallStatusText);
         await PollForAsync(arcadia, TimeSpan.FromSeconds(12));
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
     }
 
     [AvaloniaFact]
@@ -148,7 +148,7 @@ public sealed class CancelledInstallDialogTests
         arcadia.FocusTile(Leuchtturm.Name);
         arcadia.Press(UiAction.Accept);
         await PollForAsync(arcadia, TimeSpan.FromSeconds(62));
-        Assert.Equal("Installieren", TileOf(arcadia, Leuchtturm).PrimaryActionText);
+        Assert.Equal(AppTexts.Install, TileOf(arcadia, Leuchtturm).PrimaryActionText);
 
         // Confirmed in Steam's still open dialog: the new install's manifest appears and downloads.
         files.Steam.Write(Leuchtturm);
@@ -186,7 +186,7 @@ public sealed class CancelledInstallDialogTests
 
         Assert.NotNull(tile.InstallState);
         Assert.NotEqual(InstallPhase.AwaitingConfirmation, tile.InstallState!.Phase);
-        Assert.DoesNotContain("Installieren", shown);
+        Assert.DoesNotContain(AppTexts.Install, shown);
     }
 
     [AvaloniaFact]
@@ -224,7 +224,7 @@ public sealed class CancelledInstallDialogTests
         arcadia.Dispose();
         var tile = restarted.PageGames.Single(t => t.Title == Bravo.Title);
         Assert.Null(tile.InstallState);
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
     }
 
     [AvaloniaFact]
@@ -244,7 +244,7 @@ public sealed class CancelledInstallDialogTests
         // The minute of the first A runs on: "Installieren" at 1:00 (+ one poll), not at 1:50.
         await PollForAsync(arcadia, TimeSpan.FromSeconds(12));
         Assert.Null(tile.InstallState);
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
     }
 
     /// <summary>The install timer ticks every 2 s for <paramref name="duration"/>.</summary>

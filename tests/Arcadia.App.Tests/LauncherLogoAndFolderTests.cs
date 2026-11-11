@@ -34,7 +34,7 @@ public sealed class LauncherLogoAndFolderTests
         var copy = Path.Combine(arcadia.Folder, "logos", arcadia.Settings.Current.PreferencesOf("gog").LogoFile!);
         Assert.True(File.Exists(copy));
         Assert.Contains("launcher-logo-default", Keys(settings));
-        Assert.Equal("Eigenes Bild · im Tab auf 24 × 24 px eingepasst", settings.Rows.Single(row => row.Key == "launcher-logo").Subtitle);
+        Assert.Equal(AppTexts.LauncherLogoOwnFitted, settings.Rows.Single(row => row.Key == "launcher-logo").Subtitle);
         Assert.NotNull(arcadia.Main.LauncherTabs.Items.Single(tab => tab.Name == "GOG Galaxy").Badge.Picture);
 
         arcadia.FocusRow("launcher-logo-default");

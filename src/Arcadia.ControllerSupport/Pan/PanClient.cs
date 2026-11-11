@@ -49,7 +49,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
     private PanLink? _link;
     private TaskCompletionSource<PanMessage>? _pending;
-    private string? _unavailable = "Pan ist noch nicht verbunden";
+    private string? _unavailable = ControllerSupportTexts.PanNotConnectedYet;
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
@@ -122,7 +122,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     }
 
     /// <summary>What Arcadia says while Pan's teardown still runs: no pad until Pan is done, and no loss counted for it.</summary>
-    public const string CleaningUp = "Pan räumt noch auf";
+    public static string CleaningUp => ControllerSupportTexts.PanCleaningUp;
 
     public string? Unavailable()
     {
@@ -174,7 +174,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
 
         if (reply.Reply != PanReply.Started)
         {
-            throw new InvalidOperationException($"Pan lehnt die Emulation ab: {reply}");
+            throw new InvalidOperationException(ControllerSupportTexts.PanRefusesEmulation(reply));
         }
 
         lock (_lock)
@@ -468,7 +468,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested && !_disposed.IsCancellationRequested)
         {
             // The request before this one is still waiting for its reply; it drops the link itself when its time is up.
-            throw new InvalidOperationException("Pan antwortet nicht", ex);
+            throw new InvalidOperationException(ControllerSupportTexts.PanNotAnswering, ex);
         }
 
         try
@@ -477,7 +477,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             var pending = new TaskCompletionSource<PanMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_lock)
             {
-                link = _link ?? throw new InvalidOperationException(_unavailable ?? "Pan ist nicht verbunden");
+                link = _link ?? throw new InvalidOperationException(_unavailable ?? ControllerSupportTexts.PanNotConnected);
                 _pending = pending;
             }
 
@@ -490,14 +490,14 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested && !_disposed.IsCancellationRequested)
             {
                 // Timed out or the pipe broke: Pan hangs or is gone; the keeper reconnects.
-                Drop(ex is OperationCanceledException ? $"Pan antwortet nicht innerhalb von {replyTimeout.TotalSeconds:0} s" : $"Verbindung zu Pan verloren: {ex.Message}");
-                throw new InvalidOperationException("Pan antwortet nicht", ex);
+                Drop(ex is OperationCanceledException ? ControllerSupportTexts.PanNoAnswerWithin(replyTimeout.TotalSeconds) : ControllerSupportTexts.PanConnectionLost(ex.Message));
+                throw new InvalidOperationException(ControllerSupportTexts.PanNotAnswering, ex);
             }
             catch (OperationCanceledException) when (!_disposed.IsCancellationRequested)
             {
                 // The caller gave up after the request may have reached Pan. Its reply would still come and would pass
                 // for the next request's (review point 5), so this link goes; the keeper connects anew.
-                Drop("Anfrage an Pan abgebrochen", link);
+                Drop(ControllerSupportTexts.PanRequestCancelled, link);
                 throw;
             }
             finally
@@ -527,7 +527,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
             {
-                ReportUnexpected(ex, "Verbindung zu Pan halten");
+                ReportUnexpected(ex, ControllerSupportTexts.ErrorContextKeepPanConnected);
                 _firstAttempt.TrySetResult();
                 wait = Retry;
             }
@@ -572,7 +572,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
         {
-            SetUnavailable($"Pan nicht erreichbar: {ex.Message}");
+            SetUnavailable(ControllerSupportTexts.PanUnreachable(ex.Message));
         }
 
         _firstAttempt.TrySetResult();
@@ -604,8 +604,8 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         if (hello.Reply != PanReply.HelloOk)
         {
             var reason = hello.Reason == PanReason.WrongProtocolVersion
-                ? $"Pan spricht ein anderes Protokoll (Arcadia: {PanMessage.ProtocolVersion}); ein Update von Pan ist nötig"
-                : $"Pan weist Arcadia ab ({hello.Reason})";
+                ? ControllerSupportTexts.PanOtherProtocol(PanMessage.ProtocolVersion)
+                : ControllerSupportTexts.PanRejectsArcadia(hello.Reason);
             Drop(null);
             // Another client may be on its way out: that is retried soon; a wrong protocol or session is not.
             throw new PanUnavailableException(reason, permanent: hello.Reason != PanReason.OtherClient);
@@ -641,7 +641,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         catch (Exception ex)
         {
             _log($"Pan: Fehler beim Lesen der Verbindung: {ex}");
-            Drop("Verbindung zu Pan nach einem Fehler geschlossen", link);
+            Drop(ControllerSupportTexts.PanClosedAfterError, link);
         }
     }
 
@@ -658,7 +658,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                     var n = await link.Stream.ReadAsync(buffer.AsMemory(read), _disposed.Token);
                     if (n == 0)
                     {
-                        Drop("Pan hat die Verbindung geschlossen", link);
+                        Drop(ControllerSupportTexts.PanClosedConnection, link);
                         return;
                     }
 
@@ -673,7 +673,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
         {
-            Drop(_disposed.IsCancellationRequested ? null : $"Verbindung zu Pan verloren: {ex.Message}", link);
+            Drop(_disposed.IsCancellationRequested ? null : ControllerSupportTexts.PanConnectionLost(ex.Message), link);
         }
     }
 
@@ -812,7 +812,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _pending?.TrySetException(new IOException(reason ?? "Verbindung geschlossen"));
             _pending = null;
             _teardownPending = false;
-            _unavailable = reason ?? "Pan ist nicht verbunden";
+            _unavailable = reason ?? ControllerSupportTexts.PanNotConnected;
             puckRestarting = _puckRestart is not null;
             _puckRestart = null;
         }
@@ -862,7 +862,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
             {
-                ReportUnexpected(ex, "Heartbeat an Pan");
+                ReportUnexpected(ex, ControllerSupportTexts.ErrorContextPanHeartbeat);
             }
         }
     }

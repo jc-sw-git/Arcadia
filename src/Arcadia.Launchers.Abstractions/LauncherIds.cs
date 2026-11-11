@@ -9,8 +9,8 @@ public static class LauncherIds
 {
     /// <summary>Why <paramref name="id"/> can't be a launcher id, or null if it can.</summary>
     public static string? Problem(string? id) =>
-        string.IsNullOrEmpty(id) ? "Die Launcher-Id ist leer."
-        : !id.All(IsIdCharacter) ? $"Die Launcher-Id „{id}“ darf nur a–z, 0–9 und - enthalten."
+        string.IsNullOrEmpty(id) ? "Die Launcher-Id ist leer." // not a UI text (log)
+        : !id.All(IsIdCharacter) ? $"Die Launcher-Id „{id}“ darf nur a–z, 0–9 und - enthalten." // not a UI text (log)
         : null;
 
     private static bool IsIdCharacter(char c) => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-';

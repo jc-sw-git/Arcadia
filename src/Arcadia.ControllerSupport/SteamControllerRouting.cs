@@ -44,7 +44,7 @@ public static class SteamControllerCopyRules
     {
         if (now.ArcadiaActive || now.MouseModeOn)
         {
-            var who = now.MouseModeOn ? "Mausmodus an" : "Arcadia vorne";
+            var who = now.MouseModeOn ? "Mausmodus an" : "Arcadia vorne"; // not a UI text (log)
             return desktopLayoutIgnored ? (false, $"{who}, Steams Desktop-Belegung ignoriert") : (true, $"{who}, Steams Desktop-Belegung aktiv");
         }
 
@@ -56,15 +56,15 @@ public static class SteamControllerCopyRules
         if (route.GameRunning)
         {
             // Only games on "Arcadia" run here; Steam in front gets the controller, the pad rests there (#357).
-            return now.SteamInFront ? (true, "Steam vorne, Spiele auf Arcadia") : (false, route.Why);
+            return now.SteamInFront ? (true, "Steam vorne, Spiele auf Arcadia") : (false, route.Why); // not a UI text (log)
         }
 
         if (now.SteamInFront)
         {
-            return (true, "Steam vorne, kein Spiel");
+            return (true, "Steam vorne, kein Spiel"); // not a UI text (log)
         }
 
-        return desktopLayoutIgnored ? (false, "kein Spiel, Steams Desktop-Belegung ignoriert") : (true, "kein Spiel, Steams Desktop-Belegung aktiv");
+        return desktopLayoutIgnored ? (false, "kein Spiel, Steams Desktop-Belegung ignoriert") : (true, "kein Spiel, Steams Desktop-Belegung aktiv"); // not a UI text (log)
     }
 
     /// <summary>
@@ -118,7 +118,7 @@ public sealed class SteamControllerCopyGate(Func<SteamControllerRoute?> route, F
         {
             if (route() is not { } current)
             {
-                (passes, why) = (false, "noch nicht entschieden");
+                (passes, why) = (false, "noch nicht entschieden"); // not a UI text (log)
             }
             else
             {
@@ -127,7 +127,7 @@ public sealed class SteamControllerCopyGate(Func<SteamControllerRoute?> route, F
         }
         catch (Exception ex)
         {
-            (passes, why) = (false, $"Fehler: {ex}");
+            (passes, why) = (false, $"Fehler: {ex}"); // not a UI text (log)
         }
 
         var state = passes ? 2 : 1;
@@ -162,7 +162,7 @@ public sealed class SteamControllerRouting(
     Action<string> log)
 {
     private readonly Lock _lock = new();
-    private volatile SteamControllerRoute _current = new(PadWanted: false, SteamUsesController: true, "noch nicht entschieden");
+    private volatile SteamControllerRoute _current = new(PadWanted: false, SteamUsesController: true, "noch nicht entschieden"); // not a UI text (log)
     private bool _decided;
     private volatile bool _driverReady;
 
@@ -185,17 +185,17 @@ public sealed class SteamControllerRouting(
         var running = games.ToList();
         if (running.FirstOrDefault(key => !usesArcadiaPad(key)) is { } steamInputGame)
         {
-            return new(PadWanted: false, SteamUsesController: true, $"{steamInputGame} auf Steam-Eingabe") { GameRunning = true };
+            return new(PadWanted: false, SteamUsesController: true, $"{steamInputGame} auf Steam-Eingabe") { GameRunning = true }; // not a UI text (log)
         }
 
         if (!driverReady)
         {
             return running.Count > 0
-                ? new(PadWanted: false, SteamUsesController: true, "ohne Treiber, ein Spiel läuft") { GameRunning = true }
-                : new(PadWanted: false, SteamUsesController: false, "ohne Treiber, kein Spiel");
+                ? new(PadWanted: false, SteamUsesController: true, "ohne Treiber, ein Spiel läuft") { GameRunning = true } // not a UI text (log)
+                : new(PadWanted: false, SteamUsesController: false, "ohne Treiber, kein Spiel"); // not a UI text (log)
         }
 
-        return new(PadWanted: true, SteamUsesController: false, running.Count > 0 ? "Spiele auf Arcadia" : "kein Spiel") { GameRunning = running.Count > 0 };
+        return new(PadWanted: true, SteamUsesController: false, running.Count > 0 ? "Spiele auf Arcadia" : "kein Spiel") { GameRunning = running.Count > 0 }; // not a UI text (log)
     }
 
     /// <summary>Decides anew and applies a change; never throws (an error keeps the last route).</summary>

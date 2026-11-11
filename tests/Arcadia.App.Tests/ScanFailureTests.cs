@@ -21,8 +21,8 @@ public sealed class ScanFailureTests
 
         var empty = arcadia.Main.Library.EmptyTab!;
         Assert.True(empty.IsScanFailed);
-        Assert.Equal(("Steam konnte nicht eingelesen werden", "Einlesen fehlgeschlagen", "Erneut versuchen"), (empty.Title, empty.Summary, empty.RescanText));
-        Assert.Equal("Einlesen fehlgeschlagen", arcadia.Main.Library.CountText);
+        Assert.Equal(("Steam konnte nicht eingelesen werden", AppTexts.EmptyTabScanFailedSummary, AppTexts.TryAgain), (empty.Title, empty.Summary, empty.RescanText));
+        Assert.Equal(AppTexts.EmptyTabScanFailedSummary, arcadia.Main.Library.CountText);
 
         // Tried again with the controller, while Steam still holds the file.
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
@@ -73,7 +73,7 @@ public sealed class ScanFailureTests
         using (new FileStream(Path.Combine(steam.Root, "steamapps", "libraryfolders.vdf"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
             await arcadia.ActivateWindowAsync();
-            Assert.Equal(("Steam konnte nicht eingelesen werden", "Erneut versuchen"), (arcadia.Main.Library.EmptyTab?.Title, arcadia.Main.Library.EmptyTab?.RescanText));
+            Assert.Equal(("Steam konnte nicht eingelesen werden", AppTexts.TryAgain), (arcadia.Main.Library.EmptyTab?.Title, arcadia.Main.Library.EmptyTab?.RescanText));
         }
 
         await arcadia.ActivateWindowAsync();

@@ -18,16 +18,16 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
     public FirmwareAttemptViewModel(Func<Task> release, Action quit, TimeProvider time, Action<Action> post)
     {
         _post = post;
-        ReleaseButton = new HoldButtonViewModel("Controller freigeben", TimeSpan.FromSeconds(1), () => ReleaseAsync(release).Forget("Controller für das Firmware-Update freigeben"), time, post);
-        QuitButton = new HoldButtonViewModel("Arcadia beenden", TimeSpan.FromSeconds(1), quit, time, post);
-        CloseButton = new HoldButtonViewModel("Schließen", TimeSpan.Zero, () => Closed?.Invoke(), time, post) { IsFocused = true };
+        ReleaseButton = new HoldButtonViewModel(AppTexts.FirmwareRelease, TimeSpan.FromSeconds(1), () => ReleaseAsync(release).Forget(AppTexts.ErrorContextReleaseForFirmware), time, post);
+        QuitButton = new HoldButtonViewModel(AppTexts.QuitArcadia, TimeSpan.FromSeconds(1), quit, time, post);
+        CloseButton = new HoldButtonViewModel(AppTexts.Close, TimeSpan.Zero, () => Closed?.Invoke(), time, post) { IsFocused = true };
         _order = [ReleaseButton, QuitButton, CloseButton];
         UpdateTexts();
     }
 
-    public string Title => "Steam will die Firmware aktualisieren";
+    public string Title => AppTexts.FirmwareAttemptTitle;
 
-    public string Message => "Solange Arcadia Steam Controller und Puck verwaltet, kommt kein Firmware-Update bei ihnen an. Steam meldet deshalb einen Fehler. Für das Update gib die Controller frei oder beende Arcadia, und starte es dann in Steam erneut.";
+    public string Message => AppTexts.FirmwareAttemptMessage;
 
     /// <summary>"Schließen" or [B]: the notice goes, the controllers stay taken over.</summary>
     public event Action? Closed;
@@ -51,11 +51,11 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
     [ObservableProperty]
     public partial string Legend { get; private set; } = string.Empty;
 
-    public string ReleasedTitle => "Steam Controller und Puck freigegeben";
+    public string ReleasedTitle => AppTexts.FirmwareReleasedTitle;
 
-    public string ReleasedText => "Steam sieht sie jetzt direkt. Starte das Firmware-Update in Steam erneut und warte, bis es fertig ist.";
+    public string ReleasedText => AppTexts.FirmwareReleasedText;
 
-    public string ReleasedNext => "Damit Arcadia sie wieder übernimmt: Pan in den Controller-Einstellungen aus- und wieder einschalten, oder Arcadia neu starten.";
+    public string ReleasedNext => AppTexts.FirmwareReleasedNext;
 
     /// <summary>True while the notice stays; false once it is closed.</summary>
     public bool Handle(UiAction action)
@@ -140,10 +140,10 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
     private void UpdateTexts()
     {
         var focused = Focused;
-        FocusText = focused == ReleaseButton ? "Controller freigeben: Steam sieht Steam Controller und Puck wieder direkt, Arcadia läuft weiter."
-            : focused == QuitButton ? "Arcadia beenden: Arcadia gibt alle Controller frei und beendet sich."
-            : "Schließen: Arcadia behält Steam Controller und Puck. Das Firmware-Update geht dann erst, wenn du sie freigibst oder Arcadia beendest.";
-        Legend = focused == CloseButton ? "Schließen" : "Halten (1 s): Auswählen";
+        FocusText = focused == ReleaseButton ? AppTexts.FirmwareHelpRelease
+            : focused == QuitButton ? AppTexts.FirmwareHelpQuit
+            : AppTexts.FirmwareHelpClose;
+        Legend = focused == CloseButton ? AppTexts.Close : AppTexts.HoldToSelect;
     }
 
     public void Dispose()

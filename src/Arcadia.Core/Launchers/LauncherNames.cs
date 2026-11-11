@@ -21,9 +21,9 @@ public static class LauncherNames
     public static string? NameProblem(string name)
     {
         var trimmed = name.Trim();
-        return trimmed.Length == 0 ? "Der Name darf nicht leer sein."
-            : trimmed.Length > MaxNameLength ? $"Höchstens {MaxNameLength} Zeichen."
-            : trimmed.Any(char.IsControl) ? "Der Name enthält ein Steuerzeichen."
+        return trimmed.Length == 0 ? CoreTexts.NameEmpty
+            : trimmed.Length > MaxNameLength ? CoreTexts.NameTooLong(MaxNameLength)
+            : trimmed.Any(char.IsControl) ? CoreTexts.NameControlCharacter
             : null;
     }
 
@@ -34,26 +34,26 @@ public static class LauncherNames
     {
         if (keyword.Length == 0)
         {
-            return "Das Kürzel darf nicht leer sein.";
+            return CoreTexts.KeywordEmpty;
         }
 
         if (keyword.Contains(SearchQuery.KeywordSeparator))
         {
-            return $"Kein „{SearchQuery.KeywordSeparator}“: Er trennt mehrere Launcher.";
+            return CoreTexts.KeywordNoSeparator(SearchQuery.KeywordSeparator);
         }
 
         if (!keyword.All(IsKeywordCharacter))
         {
-            return "Nur Kleinbuchstaben und Ziffern.";
+            return CoreTexts.KeywordOnlyLowercaseAndDigits;
         }
 
         if (keyword.Length > MaxKeywordLength)
         {
-            return $"Höchstens {MaxKeywordLength} Zeichen.";
+            return CoreTexts.KeywordTooLong(MaxKeywordLength);
         }
 
         return launchers.FirstOrDefault(l => l.Id != launcherId && string.Equals(l.SearchKeyword, keyword, StringComparison.OrdinalIgnoreCase)) is { } other
-            ? $"{SearchQuery.PrefixMarker}{keyword} hat schon {other.DisplayName}."
+            ? CoreTexts.KeywordTaken(prefix: SearchQuery.PrefixMarker, keyword: keyword, launcher: other.DisplayName)
             : null;
     }
 

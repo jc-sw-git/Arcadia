@@ -199,11 +199,11 @@ sealed partial class Program
 
     private static bool AskToRemoveData(uint timeoutMs)
     {
-        var text = "Arcadia wird deinstalliert.\n\n"
-            + "Sollen auch Arcadias Einstellungen, eigene Logos und Logs gelöscht werden?\n\n"
+        var text = AppTexts.UninstallIntro
+            + AppTexts.UninstallAskRemoveData
             + $"{LogLocation.DataFolder}\n\n"
-            + "Bleiben sie, sind die Einstellungen bei einer neuen Installation wieder da. "
-            + $"Ohne Antwort innerhalb von {timeoutMs / 1000} Sekunden bleiben sie erhalten.";
+            + AppTexts.UninstallKeepExplained
+            + AppTexts.UninstallTimeout(timeoutMs / 1000);
         return Ask(text, timeoutMs);
     }
 
@@ -211,13 +211,13 @@ sealed partial class Program
     {
         const uint YesNo = 0x4, IconQuestion = 0x20, DefaultNo = 0x100, SetForeground = 0x10000, TopMost = 0x40000;
         const int Yes = 6;
-        return MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", YesNo | IconQuestion | DefaultNo | SetForeground | TopMost, 0, timeoutMs) == Yes;
+        return MessageBoxTimeout(IntPtr.Zero, text, AppTexts.UninstallCaption, YesNo | IconQuestion | DefaultNo | SetForeground | TopMost, 0, timeoutMs) == Yes;
     }
 
     private static void Inform(string text, uint timeoutMs)
     {
         const uint Ok = 0x0, IconInformation = 0x40, SetForeground = 0x10000, TopMost = 0x40000;
-        MessageBoxTimeout(IntPtr.Zero, text, "Arcadia deinstallieren", Ok | IconInformation | SetForeground | TopMost, 0, timeoutMs);
+        MessageBoxTimeout(IntPtr.Zero, text, AppTexts.UninstallCaption, Ok | IconInformation | SetForeground | TopMost, 0, timeoutMs);
     }
 
     private static void RemoveData()

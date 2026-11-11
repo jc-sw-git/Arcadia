@@ -27,7 +27,7 @@ public sealed partial class SettingsChanges(SettingsService settings) : ViewMode
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"Einstellung „{what}“ nicht gespeichert: {ex.Message}");
-            Error = "Die Änderung konnte nicht gespeichert werden und gilt nur bis zum Beenden – Details stehen in arcadia.log.";
+            Error = AppTexts.SettingNotSaved;
         }
     }
 }

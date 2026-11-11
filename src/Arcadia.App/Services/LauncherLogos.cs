@@ -131,7 +131,7 @@ public sealed class LauncherLogos(SettingsService settings, string folder)
             var file = new FileInfo(path);
             if (!file.Exists)
             {
-                return new LogoImport(null, "Die Datei gibt es nicht mehr.");
+                return new LogoImport(null, AppTexts.FileGone);
             }
 
             if (LogoFile.SizeProblem(file.Length) is { } sizeProblem)
@@ -159,7 +159,7 @@ public sealed class LauncherLogos(SettingsService settings, string folder)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return new LogoImport(null, $"Die Datei ließ sich nicht lesen: {ex.Message}");
+            return new LogoImport(null, AppTexts.LogoFileUnreadable(ex.Message));
         }
     }
 
@@ -169,26 +169,26 @@ public sealed class LauncherLogos(SettingsService settings, string folder)
         using var codec = SKCodec.Create(data);
         if (codec is null || codec.EncodedFormat is not (SKEncodedImageFormat.Png or SKEncodedImageFormat.Ico or SKEncodedImageFormat.Webp))
         {
-            return (null, "Das Bild ließ sich nicht lesen.");
+            return (null, AppTexts.LogoImageUnreadable);
         }
 
         // Checked before decoding: a few kilobytes can claim a picture of gigabytes.
         var (width, height) = (codec.Info.Width, codec.Info.Height);
         if (width < MinSide || height < MinSide)
         {
-            return (null, $"Das Bild ist kleiner als {MinSide} × {MinSide} Pixel.");
+            return (null, AppTexts.LogoImageTooSmall(MinSide));
         }
 
         if (width > MaxSide || height > MaxSide)
         {
-            return (null, $"Das Bild ist größer als {MaxSide} × {MaxSide} Pixel.");
+            return (null, AppTexts.LogoImageTooLarge(MaxSide));
         }
 
         var info = new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var full = new SKBitmap(info);
         if (codec.GetPixels(info, full.GetPixels()) is not (SKCodecResult.Success or SKCodecResult.IncompleteInput))
         {
-            return (null, "Das Bild ließ sich nicht lesen.");
+            return (null, AppTexts.LogoImageUnreadable);
         }
 
         var (fitWidth, fitHeight) = Fit(width, height);
@@ -201,7 +201,7 @@ public sealed class LauncherLogos(SettingsService settings, string folder)
         using var stream = new MemoryStream(content, writable: false);
         if (svg.Load(stream) is not { } drawing || drawing.CullRect is not { Width: > 0, Height: > 0 } bounds)
         {
-            return (null, "Das SVG zeigt nichts.");
+            return (null, AppTexts.LogoSvgEmpty);
         }
 
         var (width, height) = Fit(bounds.Width, bounds.Height);

@@ -55,7 +55,7 @@ public sealed class DriverInstallDialogViewTests
         }
 
         Assert.True(arcadia.OneWithText(DriverInstallDialogViewModel.UsbHintTitle).IsEffectivelyVisible);
-        Assert.DoesNotContain(arcadia.FooterHints(), hint => hint.Contains("Zurück", StringComparison.Ordinal));
+        Assert.DoesNotContain(arcadia.FooterHints(), hint => hint.Contains(AppTexts.Back, StringComparison.Ordinal));
 
         arcadia.Click(new Point(box.X / 2, box.Center.Y)).Settle();
 

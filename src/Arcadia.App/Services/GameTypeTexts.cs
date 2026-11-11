@@ -11,7 +11,7 @@ public static class GameTypeTexts
     /// <summary>"Werkzeug", for the preview's line; the detail page's chip writes it in capitals.</summary>
     public static string Name(GameType type) => type switch
     {
-        GameType.Game => "Spiel",
+        GameType.Game => AppTexts.GameTypeGame,
         GameType.Tool => "Werkzeug",
         GameType.Soundtrack => "Soundtrack",
         _ => "Software",
@@ -20,7 +20,7 @@ public static class GameTypeTexts
     /// <summary>"Werkzeuge", for the filter's values and its summary (#44).</summary>
     public static string PluralName(GameType type) => type switch
     {
-        GameType.Game => "Spiele",
+        GameType.Game => AppTexts.GameTypeGames,
         GameType.Tool => "Werkzeuge",
         GameType.Soundtrack => "Soundtracks",
         _ => "Software",
@@ -31,8 +31,8 @@ public static class GameTypeTexts
     {
         var name = (type, count == 1) switch
         {
-            (GameType.Game, true) => "Spiel",
-            (GameType.Game, false) => "Spiele",
+            (GameType.Game, true) => AppTexts.GameTypeGame,
+            (GameType.Game, false) => AppTexts.GameTypeGames,
             (GameType.Tool, true) => "Werkzeug",
             (GameType.Tool, false) => "Werkzeuge",
             (GameType.Soundtrack, true) => "Soundtrack",
@@ -56,12 +56,12 @@ public static class GameTypeTexts
     {
         GameType.Game => "Spielen",
         GameType.Soundtrack => "Abrocken",
-        _ => "Tüfteln",
+        _ => AppTexts.GameTypeTinker,
     };
 
     /// <summary>
     /// What A does while the entry runs: its window comes back to the front. A tool is no game (owner, 2026-10-27); a
     /// soundtrack never runs in Arcadia, its launcher plays it.
     /// </summary>
-    public static string ReturnAction(GameType type) => type == GameType.Game ? "Zurück ins Spiel" : "Weiter tüfteln";
+    public static string ReturnAction(GameType type) => type == GameType.Game ? AppTexts.ReturnToGame : AppTexts.ContinueTinkering;
 }

@@ -32,7 +32,7 @@ public sealed class LibraryViewTests
         Assert.False(Shade(installed).IsEffectivelyVisible);
         Assert.True(Shade(missing).IsEffectivelyVisible, "Nicht installiert: ausgegraut");
         Assert.Empty(VisibleBadges(installed));
-        Assert.Equal("Nicht installiert – A installiert", ToolTip.GetTip(Assert.Single(VisibleBadges(missing))));
+        Assert.Equal(AppTexts.NotInstalledATip, ToolTip.GetTip(Assert.Single(VisibleBadges(missing))));
 
         // Greyed for real: the shade draws the cover darker than the same colour without it.
         using (var frame = arcadia.Capture())
@@ -43,8 +43,8 @@ public sealed class LibraryViewTests
         }
 
         arcadia.Press(UiAction.Right);
-        Assert.NotEmpty(arcadia.WithText("Nicht installiert"));
-        Assert.Contains(arcadia.WithText("Installieren"), text => text.GetVisualAncestors().OfType<Button>().Any());
+        Assert.NotEmpty(arcadia.WithText(AppTexts.NotInstalled));
+        Assert.Contains(arcadia.WithText(AppTexts.Install), text => text.GetVisualAncestors().OfType<Button>().Any());
     }
 
     [AvaloniaFact]

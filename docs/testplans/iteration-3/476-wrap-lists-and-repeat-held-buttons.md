@@ -1,6 +1,6 @@
 # #476 Wrap round at the ends of every list and repeat LT/RT and LB/RB while held
 
-**Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: T476-15
+**Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: –
 
 Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5, added with it. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now).
 
@@ -20,7 +20,7 @@ Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release thres
 - [x] **T476-14** A held RT (or stick) that dips a little below half way and back while held is no fresh press: at the end of the search grid or the library it stays there instead of going round; only below a quarter (stick 0.3) it lets go · E2E: yes
 - [x] **T476-16** Detail page: held RT (LT) turns on past the last (first) game round to the first (last) without a stop · E2E: yes
 - [x] **T476-17** Library: a held stick or D-pad stops at the page's edge (also at the last game of a page); a fresh press crosses onto the next page, from the last page round to the first · E2E: yes
-- [ ] **T476-15** **Owner:** On the real PC with the Steam Controller and an Xbox pad: in the library and the search, D-pad/stick and LT/RT go round at the ends and across the library's pages as described; RT held half way at the last page or window, pulled a little less and more again, doesn't jump to the first · E2E: no (feel of the real triggers and sticks)
+- [x] **T476-15** **Owner:** On the real PC with the Steam Controller and an Xbox pad: in the library and the search, D-pad/stick and LT/RT go round at the ends and across the library's pages as described; RT held half way at the last page or window, pulled a little less and more again, doesn't jump to the first · E2E: no (feel of the real triggers and sticks)
 
 History:
 
@@ -35,3 +35,4 @@ History:
 | T476-1 to -4, -6, -7, -9, -14 | 2026-11-11 | Claude | PR #481, Linux container, unit and acceptance tests (`GridFocusTests`, `HitWindowTests`, `GamepadPollsTests`, `SearchWrapTests`, `LibraryTests`, `SearchViewTests`); each new or changed acceptance test red once without the change, `A_held_RT_wobbling_round_half_way_stays_at_the_last_window` red with only the release threshold taken out | ✅ | – |
 | T476-2 to -4, -6 | 2026-11-11 | QE | PR #481, real app under Xvfb, `--demo`, keys only (no gamepad); `LibraryTests.The_page_buttons_below_the_grid_turn_round_at_the_ends` red with `PreviousPage` back on `GoToPage(_requestedPage - 1)` | ✅ library: down from the bottom row onto page 2, up from page 1's top row onto page 2's row, Page Down on page 2 back to 1; search "e" (112 hits): both turn buttons on the first window, left on the first hit to the last (99–112), up and down within the last rows, right on the last hit back to 1–14; no line under the first row's last hit | – |
 | T476-16, T476-17 | 2026-11-11 | Claude | PR #481, Linux container, `HeldButtonsTests.Held_RT_turns_the_detail_page_round_past_the_last_game_without_stopping`, `LibraryTests.The_D_pad_held_repeats_the_move_and_stops_at_the_pages_edge_until_a_fresh_press`, each red without the change | ✅ | – |
+| T476-15 | 2026-11-11 | owner | PR #481 | ✅ ticked by the owner for the merge | – |

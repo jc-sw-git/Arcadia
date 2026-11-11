@@ -174,9 +174,9 @@ public sealed class SearchHitTests
 
         arcadia.Press(UiAction.ViewOptions);
         var filter = Assert.IsType<ViewOptionsViewModel>(main.ViewOptions);
-        Assert.Equal("Filter und Sortierung", filter.Title);
-        Assert.Equal(["Alle Launcher", "GOG Galaxy", "Xbox"], filter.LauncherRows.Single().Select(option => option.Label));
-        Assert.Equal(["Relevanz", "Name", "Installationsdatum", "Zuletzt gespielt"], filter.SortRows.Select(row => row.Label));
+        Assert.Equal(AppTexts.ViewOptionsSearchTitle, filter.Title);
+        Assert.Equal([AppTexts.AllLaunchers, "GOG Galaxy", "Xbox"], filter.LauncherRows.Single().Select(option => option.Label));
+        Assert.Equal(["Relevanz", AppTexts.SortName, "Installationsdatum", AppTexts.SortLastPlayed], filter.SortRows.Select(row => row.Label));
         Assert.All(filter.SortRows.Skip(1), row => Assert.Equal(2, row.Options.Count));
         Assert.True(filter.SortRows[0].Options.Single().IsSelected);
         Assert.Equal("Sortiert nach Relevanz", search.SortText);

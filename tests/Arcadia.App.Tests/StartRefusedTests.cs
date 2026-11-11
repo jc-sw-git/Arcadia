@@ -80,7 +80,7 @@ public sealed class StartRefusedTests
         await arcadia.FollowRunningGamesAsync();
 
         Assert.True(tile.IsRunning);
-        Assert.Equal("Zurück ins Spiel", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.ReturnToGame, tile.PrimaryActionText);
         Assert.Equal(startToast, arcadia.Main.Toast.Text);
         Assert.Empty(arcadia.BroughtToFrontFor);
     }

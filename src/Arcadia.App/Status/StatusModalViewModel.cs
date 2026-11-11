@@ -31,14 +31,14 @@ public sealed partial class StatusModalViewModel : ViewModelBase
 
     public const string UrgencyText = "Dringlichkeit";
 
-    public const string NewestText = "Neueste zuerst";
+    public static string NewestText => AppTexts.NewestFirst;
 
     // The empty state's text (owner), "Alles erledigt!" set large (design T166Empty).
-    public const string EmptyLead = "Hier gibt es nichts zu sehen.";
+    public static string EmptyLead => AppTexts.StatusEmpty;
 
-    public const string EmptyHeadline = "Alles erledigt!";
+    public static string EmptyHeadline => AppTexts.StatusAllDone;
 
-    public const string EmptyPraise = "Das hast du wunderbar gemacht!";
+    public static string EmptyPraise => AppTexts.StatusPraise;
 
     private readonly IStatusModalHost _host;
     private readonly Dictionary<string, StatusEntryViewModel> _byId = [];

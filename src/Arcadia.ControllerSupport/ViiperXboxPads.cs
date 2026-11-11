@@ -22,15 +22,15 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
     {
         if (!OperatingSystem.IsWindows())
         {
-            return "nur unter Windows";
+            return ControllerSupportTexts.OnlyOnWindows;
         }
 
         if (!File.Exists(server.Executable))
         {
-            return $"{server.Executable} fehlt";
+            return ControllerSupportTexts.ViiperMissingFile(server.Executable);
         }
 
-        return UsbipDriver.IsRunning() ? null : "Treiber usbip nicht geladen";
+        return UsbipDriver.IsRunning() ? null : ControllerSupportTexts.UsbipNotLoaded;
     }
 
     /// <summary>The usbip port of the VIIPER that runs now, or null; a new one means a new emulation (#304, decision 11).</summary>
@@ -56,7 +56,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
                 return running.UsbipPort;
             }
 
-            StopServer(_server is { HasExited: true } ? "viiper.exe hat sich beendet" : null);
+            StopServer(_server is { HasExited: true } ? "viiper.exe hat sich beendet" : null); // not a UI text (log)
             _server = await server.StartAsync(cancellationToken);
             return _server.UsbipPort;
         }

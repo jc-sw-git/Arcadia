@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
              xmlns:settings="using:Arcadia.App.Settings"
@@ -78,14 +79,14 @@
           </StackPanel>
           <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="Auswählen" />
-              <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="Ändern" IsVisible="{Binding CanChange}" />
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Übernehmen" IsVisible="{Binding IsApplyFocused}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="Abbrechen" />
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.Select}" />
+              <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding CanChange}" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Apply}" IsVisible="{Binding IsApplyFocused}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
             </StackPanel>
           </Border>
         </StackPanel>
-        <Button Classes="plain dialogClose" Margin="0,-16,-24,0" ToolTip.Tip="Schließen"
+        <Button Classes="plain dialogClose" Margin="0,-16,-24,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
                 IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
           <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
         </Button>

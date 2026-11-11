@@ -210,7 +210,7 @@ public sealed class EntryTypeViewTests
         var name = Assert.Single(arcadia.WithText("Ubisoft Connect").OfType<TextBlock>(), text => text.IsEffectivelyVisible && text.FontSize == 34);
         var beside = (Panel)name.GetVisualParent()!;
         var header = (Grid)beside.GetVisualParent()!;
-        Assert.DoesNotContain(beside.GetVisualDescendants().OfType<TextBlock>(), text => text.IsEffectivelyVisible && text.Text?.Contains("Seite", StringComparison.Ordinal) == true);
+        Assert.DoesNotContain(beside.GetVisualDescendants().OfType<TextBlock>(), text => text.IsEffectivelyVisible && text.Text?.Contains(AppTexts.Page, StringComparison.Ordinal) == true);
         // "Ansicht" is the first button of the view line; the filter's funnel follows it (#44).
         var view = header.GetVisualDescendants().OfType<Button>().Where(button => button.IsEffectivelyVisible).MinBy(button => arcadia.Bounds(button).Left)!;
         Assert.True(arcadia.Bounds(line).Left > arcadia.Bounds(name).Right, "Die Zeile steht rechts vom Namen");

@@ -102,8 +102,8 @@ public sealed class RepeatedErrors<TKey>(TimeProvider time, Action<string> log, 
     }
 
     private static string SummaryLine(string context, string? name, long count, Exception latest) =>
-        $"Unerwarteter Fehler ({context}{(name is null ? "" : $", {name}")}) wiederholt: {count}× seit der letzten Zeile, "
-        + $"zuletzt {latest.GetType().Name}: {latest.Message}";
+        $"Unerwarteter Fehler ({context}{(name is null ? "" : $", {name}")}) wiederholt: {count}× seit der letzten Zeile, " // not a UI text (log)
+        + $"zuletzt {latest.GetType().Name}: {latest.Message}"; // not a UI text (log)
 
     /// <summary>One source's state; its own lock, so sources on different threads don't wait for each other.</summary>
     private sealed class Source(string? name)

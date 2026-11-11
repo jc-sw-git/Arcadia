@@ -17,7 +17,7 @@ public sealed partial class StatusEntryViewModel : ViewModelBase
         Entry = entry;
     }
 
-    public const string SettingsLabel = "Zu den Einstellungen";
+    public static string SettingsLabel => AppTexts.ToSettings;
 
     /// <summary>The message as the header shows it now; replaced when its text or time changes.</summary>
     [ObservableProperty]

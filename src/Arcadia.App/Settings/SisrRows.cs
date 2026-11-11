@@ -19,18 +19,18 @@ public sealed class SisrRows
     public SisrRows(ControllerSupportService support, Action remove, Action keep)
     {
         _support = support;
-        Remove = new ActionRowViewModel(RemoveKey, "SISR entfernen", remove) { Group = Group, ActionText = "Entfernen" };
-        Keep = new ActionRowViewModel(KeepKey, "SISR behalten", keep)
+        Remove = new ActionRowViewModel(RemoveKey, AppTexts.SisrRemove, remove) { Group = Group, ActionText = AppTexts.Remove };
+        Keep = new ActionRowViewModel(KeepKey, AppTexts.SisrKeep, keep)
         {
             Group = Group,
             Indent = 1,
             ActionText = "Ausblenden",
-            Subtitle = "Blendet diesen Bereich aus, SISR bleibt installiert",
+            Subtitle = AppTexts.SisrHideSubtitle,
             Info =
             [
-                new InfoText("Nutzt du SISR für andere Programme, blende diesen Bereich aus. SISR, sein Eintrag in Steam und Steams Fernsteuerung bleiben dann, wie sie sind."),
-                new InfoText("Läuft SISR, während Pan an ist, warnt Arcadia trotzdem unter Pan."),
-                new InfoFootnote("Der Bereich erscheint wieder nach „Auf Werkseinstellungen zurücksetzen“. Beim Deinstallieren von Arcadia fragt Arcadia weiterhin, ob SISR mit entfernt werden soll."),
+                new InfoText(AppTexts.SisrHideInfo),
+                new InfoText(AppTexts.SisrHideInfoWarns),
+                new InfoFootnote(AppTexts.SisrHideInfoReturns),
             ],
         };
     }
@@ -49,26 +49,26 @@ public sealed class SisrRows
 
         var cause = _support.Sisr.RemovalCause;
         var busy = _support.BusyText is not null;
-        Remove.Subtitle = cause is not null ? (_support.Sisr.RemovedNothing ? "SISR wurde nicht entfernt" : "Nicht alles ließ sich entfernen")
-            : found.Program ? "Pan ersetzt SISR. Arcadia braucht es nicht mehr."
-            : "Übrig ist noch ein Eintrag in Steam";
+        Remove.Subtitle = cause is not null ? (_support.Sisr.RemovedNothing ? AppTexts.SisrNotRemoved : AppTexts.SisrNotAllRemoved)
+            : found.Program ? AppTexts.SisrReplacedByPan
+            : AppTexts.SisrSteamEntryLeft;
         Remove.Severity = cause is null ? null : HealthSeverity.Warning;
         Remove.IsEnabled = !busy;
         Keep.IsEnabled = !busy;
         Remove.Info =
         [
-            new InfoText("Früher hat Arcadia den Steam Controller mit SISR in Spielen außerhalb von Steam nutzbar gemacht. Das übernimmt jetzt Pan, Arcadia startet SISR nicht mehr. Brauchst du SISR für ein anderes Programm, kannst du es behalten."),
-            new InfoNote("Nutze SISR und Pan nicht gleichzeitig. Beide greifen auf den Steam Controller zu, Spiele bekommen dann Eingaben doppelt oder gar nicht."),
+            new InfoText(AppTexts.SisrInfoPast),
+            new InfoNote(AppTexts.SisrInfoNotBoth),
             .. cause is not null ? [new InfoNote(cause)] : Array.Empty<InfoBlock>(),
             // Empty when only something the cause names is left.
             .. Removed(found).Select(item => new InfoBullet(item)).ToList() is { Count: > 0 } removed
-                ? [new InfoSection("WAS ENTFERNT WIRD", [.. removed])]
+                ? [new InfoSection(AppTexts.SisrWhatIsRemoved, [.. removed])]
                 : Array.Empty<InfoBlock>(),
             .. found.HasMarker
-                ? [new InfoText("Den Eintrag in Steam kann Arcadia nur ändern, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet.")]
+                ? [new InfoText(AppTexts.SisrSteamEntryInfo)]
                 : Array.Empty<InfoBlock>(),
-            new InfoSection("BLEIBT ERHALTEN", [new InfoText("Der Modus pro Spiel („Arcadia“ oder „Steam-Eingabe“) und der Treiber usbip-win2, den Pan braucht.")]),
-            new InfoFootnote("Ist alles entfernt, verschwindet dieser Bereich."),
+            new InfoSection(AppTexts.SisrWhatStays, [new InfoText(AppTexts.SisrKeeps)]),
+            new InfoFootnote(AppTexts.SisrDisappearsWhenRemoved),
         ];
         return [Remove, Keep];
     }
@@ -77,17 +77,17 @@ public sealed class SisrRows
     {
         if (found.Program)
         {
-            yield return "SISR mit seinen Dateien und Einstellungen";
+            yield return AppTexts.SisrRemovedFiles;
         }
 
         if (found.HasMarker)
         {
-            yield return "Der Eintrag „SISR Marker“ in deiner Steam-Bibliothek";
+            yield return AppTexts.SisrRemovedMarker;
         }
 
         if (found.CefFlag)
         {
-            yield return "Steams Fernsteuerung (CEF-Debugging), die SISR eingeschaltet hat";
+            yield return AppTexts.SisrRemovedRemoteControl;
         }
     }
 }

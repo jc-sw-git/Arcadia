@@ -75,13 +75,13 @@ public sealed partial class ControllerLayoutRowViewModel : ViewModelBase
 /// </summary>
 public sealed partial class ControllerLayoutsViewModel : ViewModelBase
 {
-    public const string Title = "Controller zuordnen";
-    public const string Text = "Lege fest, welches Controller-Layout deine verbundenen Controller erhalten. Das Layout gilt pro Modell, nicht pro Controller: Alle DualSense Controller bekommen also dasselbe Layout.";
-    public const string Hint = "Erst „Übernehmen“ wendet die Änderungen an. Läuft gerade ein Spiel, verbindet sich der Controller dort einmal neu.";
-    public const string ApplyText = "Übernehmen";
+    public static string Title => AppTexts.LayoutsTitle;
+    public static string Text => AppTexts.LayoutsText;
+    public static string Hint => AppTexts.LayoutsHint;
+    public static string ApplyText => AppTexts.Apply;
     private const string ApplyKey = "apply";
-    public const string LockNote = "Der Arcadia-Modus für den Steam Controller ist bisher auf das Xbox 360 Layout begrenzt. Ein Update wird das ändern.";
-    public const string SteamControllerTitle = "Steam Controller (Modus „Arcadia“)";
+    public static string LockNote => AppTexts.LayoutsLockNote;
+    public static string SteamControllerTitle => AppTexts.LayoutsSteamControllerTitle;
     public const string SteamControllerKey = "steam-controller";
 
     private readonly Func<IReadOnlyList<ConnectedModel>> _models;
@@ -223,7 +223,7 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         _close();
     }
 
-    private static string Default(PadKind kind) => $"Vorgabe: {PadKinds.DisplayName(kind)}";
+    private static string Default(PadKind kind) => AppTexts.LayoutDefault(PadKinds.DisplayName(kind));
 
     /// <summary>What the model is now: its stored choice where the model may be that, else its own kind.</summary>
     private ControllerLayout Current(ConnectedModel model) => ControllerLayouts.Effective(_chosen(model.Model), model.DefaultKind);

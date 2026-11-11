@@ -6,6 +6,7 @@ using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers;
 using Arcadia.Tests.Sdl;
 using Avalonia.Headless.XUnit;
+using Arcadia.ControllerSupport;
 
 namespace Arcadia.App.Tests;
 
@@ -25,7 +26,7 @@ public sealed class ControllerSupportTests
         // Since #166 the symbols open the modal, no longer their category.
         arcadia.Click(arcadia.Main.OpenStatusModalCommand);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        Assert.Equal(["Wächterdienst Pan fehlt", "Arcadia 0.2.0 verfügbar"], arcadia.Main.StatusModal!.Entries.Select(entry => entry.Title));
+        Assert.Equal([ControllerSupportTexts.PanMissingTitle, "Arcadia 0.2.0 verfügbar"], arcadia.Main.StatusModal!.Entries.Select(entry => entry.Title));
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsStatusModalOpen);
     }

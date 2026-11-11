@@ -21,7 +21,7 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     /// <summary>How long a poll waits for a monitor; a launcher folder on a share that went away can hang one.</summary>
     public static readonly TimeSpan PollDeadline = TimeSpan.FromSeconds(10);
 
-    private readonly MonitorPolls<InstallSnapshot> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Installationen von {launcherId} nicht lesbar: {ex}");
+    private readonly MonitorPolls<InstallSnapshot> _monitors = new(time, PollDeadline, (launcherId, ex) => $"Installationen von {launcherId} nicht lesbar: {ex}"); // not a UI text (log)
 
     // What each launcher reported last; a monitor that fails or is late keeps showing it.
     private readonly Dictionary<string, InstallSnapshot> _last = new(StringComparer.Ordinal);

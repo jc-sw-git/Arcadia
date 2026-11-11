@@ -30,8 +30,8 @@ public sealed class FirstRunTests
         Assert.Equal(["Gefunden · 31 Spiele", "Gefunden · 62 Spiele"], firstRun.Found.Select(row => row.StatusText));
         Assert.Equal(["Amazon Games"], firstRun.Missing.Select(row => row.Name));
         Assert.All(firstRun.Missing, row => Assert.False(row.IsOn));
-        Assert.Equal(["Nicht installiert"], firstRun.Missing.Select(row => row.StateText));
-        Assert.Equal(["Auf diesem PC nicht gefunden"], firstRun.Missing.Select(row => row.StatusText));
+        Assert.Equal([AppTexts.NotInstalled], firstRun.Missing.Select(row => row.StateText));
+        Assert.Equal([AppTexts.FirstRunNotFound], firstRun.Missing.Select(row => row.StatusText));
     }
 
     [AvaloniaFact]
@@ -102,7 +102,7 @@ public sealed class FirstRunTests
 
         arcadia.Press(UiAction.Accept);
         Assert.Equal(["GOG Galaxy"], firstRun.TabBar.Tabs.Select(tab => tab.Name));
-        Assert.Equal("Aus · bekommt keinen Tab", firstRun.FocusedRow?.StateText);
+        Assert.Equal(AppTexts.FirstRunOffNoTab, firstRun.FocusedRow?.StateText);
 
         // No launcher on: the preview says the library stays empty.
         arcadia.Press(UiAction.Up).Press(UiAction.Left);
@@ -176,7 +176,7 @@ public sealed class FirstRunTests
 
         Assert.False(arcadia.Main.IsFirstRunShown);
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
-        Assert.Equal("Kein Launcher aktiv", arcadia.Main.Library.EmptyTab?.Title);
+        Assert.Equal(AppTexts.NoLauncherActive, arcadia.Main.Library.EmptyTab?.Title);
     }
 
     [AvaloniaFact]
@@ -190,6 +190,6 @@ public sealed class FirstRunTests
         arcadia.Press(UiAction.Settings);
 
         Assert.False(arcadia.Main.IsFirstRunShown);
-        Assert.Equal("Kein Launcher aktiv", arcadia.Main.Library.EmptyTab?.Title);
+        Assert.Equal(AppTexts.NoLauncherActive, arcadia.Main.Library.EmptyTab?.Title);
     }
 }

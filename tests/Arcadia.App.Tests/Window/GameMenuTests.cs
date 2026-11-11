@@ -59,11 +59,11 @@ public sealed class GameMenuTests
         // Down skips the two disabled entries (favourites, artwork) after "Details anzeigen", Up skips them back.
         Assert.Equal("Spielen", FocusedEntry(arcadia));
         arcadia.Press(UiAction.Down);
-        Assert.Equal("Details anzeigen", FocusedEntry(arcadia));
+        Assert.Equal(AppTexts.ActionShowDetails, FocusedEntry(arcadia));
         arcadia.Press(UiAction.Down);
         Assert.Equal("In GOG Galaxy öffnen", FocusedEntry(arcadia));
         arcadia.Press(UiAction.Up);
-        Assert.Equal("Details anzeigen", FocusedEntry(arcadia));
+        Assert.Equal(AppTexts.ActionShowDetails, FocusedEntry(arcadia));
         arcadia.Press(UiAction.Back);
 
         // ≡ opens the settings, not the menu.
@@ -140,14 +140,14 @@ public sealed class GameMenuTests
             entries.Select(entry => entry.Label));
         Assert.Equal([true, true, false, false, true, true], entries.Select(entry => entry.IsEnabled));
         Assert.Equal("GOG Galaxy installiert ggf. vorher das Update", entries[0].Note);
-        Assert.All(entries.Where(entry => !entry.IsEnabled), entry => Assert.Equal("Folgt in einer späteren Version", entry.Note));
+        Assert.All(entries.Where(entry => !entry.IsEnabled), entry => Assert.Equal(AppTexts.ActionNotYetAvailable, entry.Note));
         Assert.DoesNotContain(entries, entry => entry.Label.Contains("Update", StringComparison.Ordinal) || entry.Label.Contains("Controller-Layout", StringComparison.Ordinal));
 
         // Disabled entries are drawn faint, "Deinstallieren …" in the danger colour and alone after a line.
         var faint = ArcadiaWindow.ThemeResource<ISolidColorBrush>("TextFaint").Color;
         var danger = ArcadiaWindow.ThemeResource<ISolidColorBrush>("Danger").Color;
         Assert.All(entries.Where(entry => !entry.IsEnabled), entry => Assert.Equal(faint, entry.Colour));
-        Assert.All(entries.Where(entry => entry.IsEnabled && entry.Label != "Deinstallieren …"), entry => Assert.NotEqual(faint, entry.Colour));
+        Assert.All(entries.Where(entry => entry.IsEnabled && entry.Label != AppTexts.ActionUninstallMore), entry => Assert.NotEqual(faint, entry.Colour));
         Assert.Equal(danger, entries[^1].Colour);
         Assert.Equal([false, false, false, false, false, true], entries.Select(entry => entry.HasLineAbove));
         Assert.True(HasDrawn(arcadia, entries[^1].Text, danger), "„Deinstallieren …“ ist rot zu sehen.");

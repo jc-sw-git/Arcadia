@@ -64,10 +64,10 @@ public partial class GameTileViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(UpdateAvailable))]
     public partial bool? LauncherReportsUpdate { get; set; }
 
-    public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? "Wird deinstalliert …"
-        : InstallState is not null ? $"{InstallVerb} …"
-        : !Game.IsInstalled ? "Installieren"
-        : IsStarting ? "Wird gestartet …"
+    public string PrimaryActionText => InstallState?.Phase == InstallPhase.Uninstalling ? AppTexts.TileUninstalling
+        : InstallState is not null ? AppTexts.TileInstallVerb(InstallVerb)
+        : !Game.IsInstalled ? AppTexts.Install
+        : IsStarting ? AppTexts.TileStarting
         : IsRunning ? GameTypeTexts.ReturnAction(Game.Type)
         : GameTypeTexts.PrimaryAction(Game.Type);
 
@@ -96,9 +96,9 @@ public partial class GameTileViewModel : ViewModelBase
     public string RunStateText => RunState switch
     {
         null => string.Empty,
-        { Phase: RunPhase.Starting } => "Wird gestartet …",
-        { Since: { } since } => $"Läuft seit {Formatting.TimeOfDay(since, _now)}",
-        _ => "Läuft",
+        { Phase: RunPhase.Starting } => AppTexts.TileStarting,
+        { Since: { } since } => AppTexts.TileRunningSince(Formatting.TimeOfDay(since, _now)),
+        _ => AppTexts.TileRunning,
     };
 
     /// <summary>Fits the badge on a cover.</summary>
@@ -106,7 +106,7 @@ public partial class GameTileViewModel : ViewModelBase
     {
         null => string.Empty,
         RunPhase.Starting => "Startet",
-        _ => "Läuft",
+        _ => AppTexts.TileRunning,
     };
 
     /// <summary>The running installation of this game, or null.</summary>
@@ -158,34 +158,34 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallStatusText => InstallState switch
     {
         null => string.Empty,
-        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => $"Bitte in {LauncherName} starten",
-        { Phase: InstallPhase.AwaitingConfirmation } => $"Bitte in {LauncherName} bestätigen",
-        { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"In der Warteschlange · Platz {position}",
-        { Phase: InstallPhase.Queued } => "In der Warteschlange",
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => AppTexts.TileStartInLauncher(LauncherName),
+        { Phase: InstallPhase.AwaitingConfirmation } => AppTexts.TileConfirmInLauncher(LauncherName),
+        { Phase: InstallPhase.Queued, QueuePosition: { } position } => AppTexts.TileQueuedAt(position),
+        { Phase: InstallPhase.Queued } => AppTexts.TileQueued,
         { Phase: InstallPhase.Paused, Fraction: { } f } => $"Pausiert · {Formatting.Percent(f)}",
         { Phase: InstallPhase.Paused } => "Pausiert",
-        { Phase: InstallPhase.Finishing } => "Wird abgeschlossen …",
-        { Phase: InstallPhase.Uninstalling } => "Wird deinstalliert …",
+        { Phase: InstallPhase.Finishing } => AppTexts.TileFinishing,
+        { Phase: InstallPhase.Uninstalling } => AppTexts.TileUninstalling,
         { Fraction: { } f } => $"{InstallVerb} · {Formatting.Percent(f)}",
-        _ => $"{InstallVerb} …",
+        _ => AppTexts.TileInstallVerb(InstallVerb),
     };
 
     // An installation of a game that is already installed is an update.
-    private string InstallVerb => Game.IsInstalled ? "Wird aktualisiert" : "Wird installiert";
+    private string InstallVerb => Game.IsInstalled ? AppTexts.TileUpdatingVerb : AppTexts.TileInstallingVerb;
 
     /// <summary>Fits the badge on a cover.</summary>
     public string InstallShortText => InstallState switch
     {
         null => string.Empty,
         { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => "Wartet",
-        { Phase: InstallPhase.AwaitingConfirmation } => "Bestätigen",
+        { Phase: InstallPhase.AwaitingConfirmation } => AppTexts.TileConfirm,
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"Wartet · {position}",
         { Phase: InstallPhase.Queued } => "Wartet",
         { Phase: InstallPhase.Paused } => "Pausiert",
-        { Phase: InstallPhase.Finishing } => "Fast fertig",
-        { Phase: InstallPhase.Uninstalling } => "Entfernen",
+        { Phase: InstallPhase.Finishing } => AppTexts.TileAlmostDone,
+        { Phase: InstallPhase.Uninstalling } => AppTexts.TileRemoving,
         { Fraction: { } f } => Formatting.Percent(f),
-        _ => "Lädt",
+        _ => AppTexts.TileLoading,
     };
 
     public string LauncherName { get; }
@@ -199,7 +199,7 @@ public partial class GameTileViewModel : ViewModelBase
 
     public string SizeText { get; }
 
-    public string LocationText => Game.IsInstalled ? Game.InstallDirectory ?? "–" : "Nicht installiert";
+    public string LocationText => Game.IsInstalled ? Game.InstallDirectory ?? "–" : AppTexts.NotInstalled;
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }

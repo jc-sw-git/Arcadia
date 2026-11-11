@@ -28,7 +28,7 @@ public sealed class SettingsRowsFadeTests
             [new LauncherSpec(KnownLaunchers.Steam, 3), new LauncherSpec(KnownLaunchers.Gog, 3)],
             new AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true }, width, height, scaling, steam: new FakeSteam());
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
-        Assert.Equal("Controller", arcadia.Arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, arcadia.Arcadia.Main.Settings!.Selected.Name);
         return arcadia.Settle();
     }
 
@@ -118,7 +118,7 @@ public sealed class SettingsRowsFadeTests
 
         // The category before fits: no fade, from its top.
         arcadia.Press(UiAction.PreviousTab).Settle();
-        Assert.NotEqual("Controller", settings.Selected.Name);
+        Assert.NotEqual(AppTexts.ControllerCategory, settings.Selected.Name);
         Assert.Equal(0, arcadia.Named<ScrollViewer>("SettingsRowsScroller").Offset.Y, 1);
         AssertFades(arcadia, top: false, bottom: false);
 

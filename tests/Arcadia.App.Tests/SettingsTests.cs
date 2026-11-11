@@ -20,7 +20,7 @@ public sealed class SettingsTests
 
         // The controller drives the settings, not the library underneath.
         arcadia.Press(UiAction.Down).Press(UiAction.NextTab);
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         Assert.Equal(focused, arcadia.FocusedGame?.Game.Key);
         Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
 
@@ -38,7 +38,7 @@ public sealed class SettingsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Settings);
         var settings = arcadia.Main.Settings!;
-        Assert.Equal("Launcher", settings.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
         Assert.Equal("gog", settings.FocusedRow?.Key);
 
         // Rows: down to Xbox and switch it off with ◀.
@@ -49,7 +49,7 @@ public sealed class SettingsTests
 
         // Categories with RB, after the last one back to the first.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Controller", settings.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
 
         // A choice: "Mausmodus" (right below Pan) from "Von Hand" one step on with ▶.
         arcadia.Press(UiAction.Down);
@@ -59,7 +59,7 @@ public sealed class SettingsTests
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Settings.Current.MouseMode.Activation);
 
         arcadia.Press(UiAction.NextTab, times: 2);
-        Assert.Equal("Launcher", settings.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
 
         // B closes; the library shows the launcher switched off as gone.
         arcadia.Press(UiAction.Back);

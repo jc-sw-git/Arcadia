@@ -66,13 +66,13 @@ public sealed class RecentMessagesAndLogsTests
         OpenAbout(arcadia);
 
         var list = arcadia.FocusRow("logging-list");
-        Assert.Equal("Blättern", list.ScrollText);
+        Assert.Equal(AppTexts.Browse, list.ScrollText);
         Assert.False(list.ShowsActivateHint);
         Assert.Equal("LETZTE MELDUNGEN", list.InfoTitle);
 
         var info = arcadia.FocusRow("logging-info");
         Assert.True(info.CanChange);
-        Assert.Equal("Blättern", info.ScrollText);
+        Assert.Equal(AppTexts.Browse, info.ScrollText);
         Assert.Equal("LETZTE MELDUNGEN", info.InfoTitle);
         Assert.Equal(list.Info, info.Info);
 
@@ -83,10 +83,10 @@ public sealed class RecentMessagesAndLogsTests
 
         var log = arcadia.FocusRow("logging-log-arcadia");
         Assert.True(log.ShowsActivateHint);
-        Assert.Equal("Öffnen", log.ActivateText);
+        Assert.Equal(AppTexts.Open, log.ActivateText);
         Assert.Equal("ARCADIA-LOG", log.InfoTitle);
         Assert.Contains(log.Info.OfType<InfoText>(), text => text.Text == LoggingRows.OpensWithMouseText);
-        var where = Assert.Single(log.Info.OfType<InfoSection>(), section => section.Title == "SPEICHERORT");
+        var where = Assert.Single(log.Info.OfType<InfoSection>(), section => section.Title == AppTexts.LocationCaption);
         Assert.Contains(where.Blocks.OfType<InfoText>(), text => text.Text == @"C:\Beispiel\arcadia.log");
 
         var pan = arcadia.FocusRow("logging-log-pan");
@@ -120,7 +120,7 @@ public sealed class RecentMessagesAndLogsTests
         var top = Entries(list)[0];
         Assert.Equal(HealthSeverity.Error, top.Level);
         Assert.True(top.IsError);
-        Assert.Equal("Meldung", top.KindText);
+        Assert.Equal(AppTexts.Message, top.KindText);
         Assert.Matches(@"^\d\d:\d\d$", top.TimeText);
         Assert.Equal($"„{tile.Title}“ konnte nicht gestartet werden: Die Datei ist gesperrt.", top.Text);
     }
@@ -133,7 +133,7 @@ public sealed class RecentMessagesAndLogsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         OpenAbout(arcadia);
         var list = arcadia.FocusRow("logging-list");
-        Assert.Equal("Noch keine Meldungen", list.Subtitle);
+        Assert.Equal(AppTexts.LoggingNoMessagesYet, list.Subtitle);
 
         Services.AppErrors.Report(new InvalidOperationException("kaputt"), "Testablauf 433");
         await arcadia.WaitUntilAsync(() => list.Subtitle == "1 seit dem Start von Arcadia", "der Zähler zählt die neue Meldung");
@@ -151,7 +151,7 @@ public sealed class RecentMessagesAndLogsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         OpenAbout(arcadia);
         var list = arcadia.FocusRow("logging-list");
-        Assert.Equal("Noch keine Meldungen", list.Subtitle);
+        Assert.Equal(AppTexts.LoggingNoMessagesYet, list.Subtitle);
         Assert.Contains(list.Info.OfType<InfoEmpty>(), empty => empty.Text == LoggingRows.EmptyText);
 
         var tile = arcadia.FocusedGame!;
@@ -178,7 +178,7 @@ public sealed class RecentMessagesAndLogsTests
 
         // Arcadia has no status "Steam läuft nicht" (PR #437): the missing Pan stands in for a warning that comes and goes.
         var appeared = Assert.Single(arcadia.Main.Messages.Entries);
-        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"), (appeared.Level, appeared.Kind, appeared.Text));
+        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, ControllerSupportTexts.PanMissingTitle), (appeared.Level, appeared.Kind, appeared.Text));
 
         var controller = OpenController(arcadia);
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Zeile „Wächterdienst Pan fehlt“");
@@ -188,7 +188,7 @@ public sealed class RecentMessagesAndLogsTests
         await arcadia.WaitUntilAsync(() => !arcadia.Main.Status.HasControllerStatus, "der Header ist wieder leer");
         // The entry itself is marked "Behoben" (owner): no second line.
         var resolved = Assert.Single(arcadia.Main.Messages.Entries);
-        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"), (resolved.Level, resolved.Kind, resolved.Text));
+        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, ControllerSupportTexts.PanMissingTitle), (resolved.Level, resolved.Kind, resolved.Text));
         Assert.NotNull(resolved.ResolvedAt);
 
         arcadia.Press(UiAction.Back);
@@ -295,7 +295,7 @@ public sealed class RecentMessagesAndLogsTests
 
         using var restarted = await arcadia.RestartAsync();
         OpenAbout(restarted);
-        Assert.Equal(["Aus", "An", "Aus"], new[] { "logging-info", "logging-warnings", "logging-errors" }
+        Assert.Equal([AppTexts.Off, "An", AppTexts.Off], new[] { "logging-info", "logging-warnings", "logging-errors" }
             .Select(key => Assert.IsType<SwitchRowViewModel>(Row(restarted, key)).ValueText));
     }
 
@@ -338,7 +338,7 @@ public sealed class RecentMessagesAndLogsTests
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => Row(arcadia, "logging-list").Subtitle == "Noch keine Meldungen", "die Liste ist leer");
         Assert.Equal(LoggingRows.EmptyText, Assert.Single(clear.Info.OfType<InfoEmpty>()).Text);
-        Assert.Equal("Aus", Assert.IsType<SwitchRowViewModel>(Row(arcadia, "logging-warnings")).ValueText);
+        Assert.Equal(AppTexts.Off, Assert.IsType<SwitchRowViewModel>(Row(arcadia, "logging-warnings")).ValueText);
         Assert.True(clear.IsDimmed);
         Assert.False(clear.CanActivate);
 
@@ -438,7 +438,7 @@ public sealed class RecentMessagesAndLogsTests
             .Where(text => !string.IsNullOrEmpty(text))
             .ToList();
         Assert.DoesNotContain(texts, text => text!.Contains("Toast", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(["Status", "Meldung"], Entries(Row(arcadia, "logging-list")).Select(entry => entry.KindText));
+        Assert.Equal(["Status", AppTexts.Message], Entries(Row(arcadia, "logging-list")).Select(entry => entry.KindText));
     }
 
     [AvaloniaFact]
@@ -475,7 +475,7 @@ public sealed class RecentMessagesAndLogsTests
 
         var pan = arcadia.FocusRow("logging-log-pan");
         Assert.Equal((true, LoggingRows.PanNotInstalledText), (pan.IsDimmed, pan.Subtitle));
-        Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == "SPEICHERORT");
+        Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == AppTexts.LocationCaption);
         arcadia.Press(UiAction.Accept);
         var viiper = arcadia.FocusRow("logging-log-viiper");
         Assert.Equal((true, LoggingRows.MissingText), (viiper.IsDimmed, viiper.Subtitle));
@@ -501,11 +501,11 @@ public sealed class RecentMessagesAndLogsTests
 
         // The same settings page: RB moves between the categories it already built.
         arcadia.Press(UiAction.PreviousTab);
-        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, arcadia.Main.Settings!.Selected.Name);
         arcadia.Logs.States[LogKind.Pan] = LogFileState.Present;
         arcadia.Press(UiAction.NextTab);
 
-        Assert.Equal("Über Arcadia", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.AboutTitle, arcadia.Main.Settings!.Selected.Name);
         Assert.False(Row(arcadia, "logging-log-pan").IsDimmed);
         Assert.True(Row(arcadia, "logging-log-pan").CanActivate);
     }
@@ -549,7 +549,7 @@ public sealed class RecentMessagesAndLogsTests
     {
         arcadia.Press(UiAction.Settings).Press(UiAction.PreviousTab);
         var about = arcadia.Main.Settings!.Selected;
-        Assert.Equal("Über Arcadia", about.Name);
+        Assert.Equal(AppTexts.AboutTitle, about.Name);
         return about;
     }
 

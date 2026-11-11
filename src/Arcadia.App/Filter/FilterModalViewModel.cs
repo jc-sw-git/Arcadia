@@ -16,20 +16,20 @@ namespace Arcadia.App.Filter;
 /// </summary>
 public sealed partial class FilterModalViewModel : ViewModelBase
 {
-    public const string Title = "Filter";
+    public static string Title => AppTexts.FilterTitle;
 
-    public const string ResetText = "Alle Filter zurücksetzen";
+    public static string ResetText => AppTexts.FilterResetAll;
 
-    public const string AllTypesText = "Alle Typen";
+    public static string AllTypesText => AppTexts.FilterAllTypes;
 
     /// <summary>The type values stand in a grid of this many columns (design T44Modal).</summary>
     public const int TypeColumns = 3;
 
     private static readonly (InstalledChoice Choice, string Label)[] InstalledOptions =
     [
-        (InstalledChoice.All, "Alle"),
-        (InstalledChoice.Installed, "Nur installierte"),
-        (InstalledChoice.NotInstalled, "Nur nicht installierte"),
+        (InstalledChoice.All, AppTexts.FilterAll),
+        (InstalledChoice.Installed, AppTexts.FilterOnlyInstalled),
+        (InstalledChoice.NotInstalled, AppTexts.FilterOnlyNotInstalled),
     ];
 
     private readonly IReadOnlyList<Game> _games;
@@ -50,7 +50,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase
         var categories = new List<FilterCategoryViewModel>();
         if (offer.HasInstalled)
         {
-            categories.Add(new FilterCategoryViewModel(FilterCategory.Installed, "Installiert", "IconInstalled", PickCategory));
+            categories.Add(new FilterCategoryViewModel(FilterCategory.Installed, AppTexts.Installed, "IconInstalled", PickCategory));
         }
 
         if (offer.HasTypes)
@@ -113,9 +113,9 @@ public sealed partial class FilterModalViewModel : ViewModelBase
     /// <summary>The type grid moves on all four directions.</summary>
     public bool MovesInGrid => IsInValues && ShowsTypes;
 
-    public string AcceptText => !IsInValues ? (IsResetFocused ? "Zurücksetzen" : "Werte") : ShowsTypes ? "An/Aus" : "Auswählen";
+    public string AcceptText => !IsInValues ? (IsResetFocused ? AppTexts.FilterHintReset : "Werte") : ShowsTypes ? AppTexts.FilterHintToggle : AppTexts.Select;
 
-    public string BackText => IsInValues ? "Zurück" : "Schließen und übernehmen";
+    public string BackText => IsInValues ? AppTexts.Back : AppTexts.FilterHintCloseAndApply;
 
     /// <summary>A press while the modal is open; it takes every one.</summary>
     public void Handle(UiAction action)
@@ -354,7 +354,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase
     {
         var counts = Chosen.Count(_games);
         HitsText = Formatting.Count(counts.Hits);
-        TotalText = $"von {Formatting.Count(counts.Total)} Einträgen";
+        TotalText = AppTexts.FilterOfTotal(Formatting.Count(counts.Total));
         foreach (var value in Values)
         {
             var (selected, count) = _show[value](Chosen, counts);

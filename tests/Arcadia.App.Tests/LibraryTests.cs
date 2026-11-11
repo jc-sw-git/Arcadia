@@ -131,7 +131,7 @@ public sealed class LibraryTests
         arcadia.Press(UiAction.Right);
         preview = arcadia.FocusedGame!;
         Assert.Equal("Bravo", preview.Title);
-        Assert.Equal("Nie gespielt", preview.LastPlayedText);
+        Assert.Equal(AppTexts.NeverPlayed, preview.LastPlayedText);
         Assert.Equal("–", preview.PlaytimeText);
         Assert.Equal("–", preview.SizeText);
     }
@@ -321,7 +321,7 @@ public sealed class LibraryTests
         var main = arcadia.Main;
 
         arcadia.Press(UiAction.ViewOptions);
-        Assert.Equal("Sortierung und Einträge pro Seite, gültig für alle Launcher", main.ViewOptions!.Subtitle);
+        Assert.Equal(AppTexts.ViewOptionsSubtitle, main.ViewOptions!.Subtitle);
         arcadia.Press(UiAction.Right).Press(UiAction.Accept)                                                            // Name Z → A
             .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept) // 64
             .Press(UiAction.Back);

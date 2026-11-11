@@ -59,20 +59,20 @@ public sealed class PanEmulationTests
         var controller = OpenControllerSettings(arcadia);
 
         var pan = Switch(controller);
-        Assert.Equal("Controller-Wächter (Pan)", pan.Title);
+        Assert.Equal(AppTexts.PanTitle, pan.Title);
         Assert.Equal("PAN", pan.Group);
-        Assert.Equal("An – deine Controller werden von Arcadia verwaltet", pan.Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleOn, pan.Subtitle);
         Assert.True(pan.IsLampWorking);
         Assert.Equal("An", pan.ValueText);
-        Assert.Equal("Ändern", pan.ActivateText);
-        Assert.Equal("PAN, DER CONTROLLER-WÄCHTER", pan.InfoTitle);
-        Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == "WAS PAN BRAUCHT");
+        Assert.Equal(AppTexts.Change, pan.ActivateText);
+        Assert.Equal(AppTexts.PanInfoTitle, pan.InfoTitle);
+        Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == AppTexts.PanWhatItNeeds);
         Assert.Empty(RowsBelow(controller));
         Assert.Contains(controller.Rows, row => row.Key == PanRows.RestoreKey);
 
         pan.Activate();
         Assert.False(arcadia.Settings.Current.PanEnabled);
-        Assert.Equal("Aus – Spiele und Launcher sehen deine echten Controller direkt", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleOff, Switch(controller).Subtitle);
         Assert.Contains(controller.Rows, row => row.Key == PanRows.RestoreKey);
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(PanEmulationState.Off, arcadia.ForGames.Status.State);
@@ -169,9 +169,9 @@ public sealed class PanEmulationTests
         Assert.Equal(PanEmulation.PausedText, arcadia.Main.Toast.Text);
         Assert.Equal(["pan:hide-failed"], RowsBelow(controller));
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:hide-failed"));
-        Assert.Equal("Steam Controller lässt sich nicht verstecken", row.Title);
-        Assert.Equal("Erneut versuchen", row.ActionText);
-        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSteamControllerNotHiddenTitle, row.Title);
+        Assert.Equal(AppTexts.TryAgain, row.ActionText);
+        Assert.Equal(AppTexts.PanSubtitleProblem, Switch(controller).Subtitle);
         Assert.True(Switch(controller).IsLampProblem);
         Assert.Equal(HealthSeverity.Warning, controller.Marker);
         Assert.True(arcadia.Main.Status.HasControllerStatus);
@@ -300,11 +300,11 @@ public sealed class PanEmulationTests
         var states = new List<PanEmulationState>();
         arcadia.ForGames.Changed += () => states.Add(arcadia.ForGames.Status.State);
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:hide-failed"));
-        Assert.Equal(("Erneut versuchen", false), (row.ActionText, row.IsWorking));
+        Assert.Equal((AppTexts.TryAgain, false), (row.ActionText, row.IsWorking));
 
         row.Activate();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(("Wird versucht …", true, false), (row.ActionText, row.IsWorking, row.CanActivate));
+        Assert.Equal((AppTexts.Retrying, true, false), (row.ActionText, row.IsWorking, row.CanActivate));
 
         // Mid-attempt the emulation sets up anew, which has no warning of its own: the pressed row stays and shows it.
         (IReadOnlyList<string> Rows, bool Working)? during = null;
@@ -320,7 +320,7 @@ public sealed class PanEmulationTests
         Assert.Equal(["pan:hide-failed"], during!.Value.Rows);
         Assert.True(during.Value.Working);
         Assert.Equal(["pan:hide-failed"], RowsBelow(controller));
-        Assert.Equal(("Erneut versuchen", false, true), (row.ActionText, row.IsWorking, row.CanActivate));
+        Assert.Equal((AppTexts.TryAgain, false, true), (row.ActionText, row.IsWorking, row.CanActivate));
         Assert.Equal(PanEmulation.RetryFailedText, arcadia.Main.Toast.Text);
         Assert.False(arcadia.ForGames.Retrying);
 
@@ -375,16 +375,16 @@ public sealed class PanEmulationTests
         arcadia.SteamControllerCopy.Current!.Lose();
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(["pan:start-failed"], RowsBelow(controller));
-        Assert.Equal("Emulation startet nicht", controller.Rows.Single(r => r.Key == "pan:start-failed").Title);
+        Assert.Equal(AppTexts.PanEmulationNotStarting, controller.Rows.Single(r => r.Key == "pan:start-failed").Title);
         await arcadia.TickSteamControllerAsync();
         await arcadia.TickSteamControllerAsync();
         await arcadia.TickSteamControllerAsync();
 
         Assert.Equal(PanEmulationState.Stopped, arcadia.ForGames.Status.State);
         var stopped = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(r => r.Key == "pan:stopped"));
-        Assert.Equal("Emulation angehalten", stopped.Title);
+        Assert.Equal(AppTexts.PanEmulationStoppedTitle, stopped.Title);
         Assert.True(stopped.IsError);
-        Assert.Equal("Angehalten – der Grund steht darunter", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSubtitlePaused, Switch(controller).Subtitle);
         Assert.True(Switch(controller).IsLampFailure);
         Assert.Equal(HealthSeverity.Error, controller.Marker);
         Assert.True(arcadia.Main.Status.IsControllerStatusError);
@@ -410,9 +410,9 @@ public sealed class PanEmulationTests
         Assert.Equal(PanEmulationState.SettingUp, arcadia.ForGames.Status.State);
         Assert.True(arcadia.Main.Status.IsControllerStarting);
         var row = controller.Rows.Single(r => r.Key == "pan:cleaning-up");
-        Assert.Equal("Pan räumt noch auf", row.Title);
+        Assert.Equal(AppTexts.PanCleaningUp, row.Title);
         Assert.True(row.IsInfo);
-        Assert.Equal("Wird eingerichtet …", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleSettingUp, Switch(controller).Subtitle);
         Assert.False(arcadia.Main.ControllerMode.ControllerModeBroken, "kein Problem, es geht von selbst weiter");
 
         arcadia.Pan.Missing = null;
@@ -443,7 +443,7 @@ public sealed class PanEmulationTests
         arcadia.Press(UiAction.Accept);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings?.Selected);
         Assert.Equal("pan:start-failed", controller.Rows.Single(row => row.IsFocused).Key);
-        Assert.Equal("Pan antwortet nicht", controller.Rows.Single(row => row.IsFocused).Subtitle);
+        Assert.Equal(ControllerSupportTexts.PanNotAnswering, controller.Rows.Single(row => row.IsFocused).Subtitle);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
         Assert.Same(detail, arcadia.Main.Detail);
@@ -499,9 +499,9 @@ public sealed class PanEmulationTests
         using var arcadia = await StartUpdateAttemptAsync();
         arcadia.Main.PanDialogs.PanDialogShown += (_, _) => shown++;
         var notice = arcadia.Main.PanDialogs.FirmwareAttempt!;
-        Assert.Equal("Steam will die Firmware aktualisieren", notice.Title);
+        Assert.Equal(AppTexts.FirmwareAttemptTitle, notice.Title);
         Assert.True(notice.CloseButton.IsFocused);
-        Assert.Equal("Schließen", notice.Legend);
+        Assert.Equal(AppTexts.Close, notice.Legend);
         Assert.True(notice.ReleaseButton.IsEnabled && notice.QuitButton.IsEnabled && notice.CloseButton.IsEnabled, "kein Warten");
 
         // Steam repeats the message: still the one notice.
@@ -529,7 +529,7 @@ public sealed class PanEmulationTests
 
         arcadia.Press(UiAction.Left, 2);
         Assert.True(notice.ReleaseButton.IsFocused);
-        Assert.Equal("Halten (1 s): Auswählen", notice.Legend);
+        Assert.Equal(AppTexts.HoldToSelect, notice.Legend);
         arcadia.Hold(UiAction.Accept, OneSecondHold);
         await arcadia.WaitUntilAsync(() => notice.IsReleased, "„Steam Controller und Puck freigegeben“");
         Assert.Single(arcadia.Pan.Unhidden);
@@ -625,7 +625,7 @@ public sealed class PanEmulationTests
         Assert.Equal(PanRows.NotVisibleSubtitle, row.Subtitle);
         Assert.Equal(HealthSeverity.Warning, row.Severity);
         Assert.Equal(PanRows.RestartText, row.ActionText);
-        var listed = Assert.Single(row.Info.OfType<InfoSection>(), section => section.Title == "NICHT MEHR SICHTBAR FÜR ARCADIA");
+        var listed = Assert.Single(row.Info.OfType<InfoSection>(), section => section.Title == AppTexts.PanNotVisibleGroup);
         Assert.Equal([PanEmulation.SteamControllerName], listed.Blocks.OfType<InfoText>().Select(item => item.Text));
         Assert.Contains(row.Info.OfType<InfoText>(), text => text.Text == PanRows.NotVisibleAgainText);
         Assert.True(Switch(controller).IsLampProblem);

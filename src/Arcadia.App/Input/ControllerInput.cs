@@ -13,7 +13,7 @@ namespace Arcadia.App.Input;
 /// </summary>
 public static class ControllerInput
 {
-    public const string UnavailableText = "Controller werden nicht erkannt (SDL3 fehlt oder startet nicht). Tastatur und Maus funktionieren – Details stehen in arcadia.log.";
+    public static string UnavailableText => AppTexts.ControllersUnavailable;
 
     public static IGamepadSource Create(MainViewModel viewModel, OwnPadModels ownPads, TimeProvider time)
     {

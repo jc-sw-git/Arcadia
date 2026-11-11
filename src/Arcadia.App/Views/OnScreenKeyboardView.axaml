@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:kb="using:Arcadia.App.Keyboard"
              xmlns:ctl="using:Arcadia.App.Controls"
              x:Class="Arcadia.App.Views.OnScreenKeyboardView"
@@ -96,7 +97,7 @@
     <!-- Layout menu (R3) over the right block, inside the keyboard: the mouse mode's window is only as large as it. -->
     <Border Classes="keyboardLayoutMenu" IsVisible="{Binding LayoutMenu.IsOpen}" HorizontalAlignment="Right" VerticalAlignment="Top">
       <StackPanel Spacing="2">
-        <TextBlock Text="TASTATURLAYOUT" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,6,12,8" />
+        <TextBlock Text="{x:Static app:AppTexts.KeyboardLayoutCaption}" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,6,12,8" />
         <ItemsControl ItemsSource="{Binding LayoutMenu.Items}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>

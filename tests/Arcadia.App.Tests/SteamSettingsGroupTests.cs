@@ -30,7 +30,7 @@ public sealed class SteamSettingsGroupTests
         // "Steams Desktop-Belegung ignorieren" moved to Steam's launcher page (#315).
         Assert.Equal(["pan", "pan-restore", "mouse-mode"], keys.Take(3));
         Assert.All(controller.Rows.Take(2), row => Assert.Equal("PAN", row.Group));
-        Assert.DoesNotContain(controller.Rows, row => row.Group == "STEAM CONTROLLER");
+        Assert.DoesNotContain(controller.Rows, row => row.Group == AppTexts.SteamControllerGroup);
 
         // ▼ walks the rows in this order, ▲ back; B leaves the settings.
         foreach (var key in keys.Skip(1))

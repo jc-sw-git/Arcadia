@@ -103,7 +103,7 @@ public sealed class RecentMessagesTests
         status.Show([]);
 
         var entry = Assert.Single(messages.Entries);
-        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt"), (entry.Level, entry.Kind, entry.Text));
+        Assert.Equal((HealthSeverity.Warning, MessageKind.Status, ControllerSupportTexts.PanMissingTitle), (entry.Level, entry.Kind, entry.Text));
         Assert.Equal(_time.GetLocalNow(), entry.ResolvedAt);
         Assert.StartsWith("Behoben ", InfoMessage.Of(entry).EndText, StringComparison.Ordinal);
     }

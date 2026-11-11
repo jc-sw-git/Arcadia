@@ -40,7 +40,7 @@ public sealed class LauncherPageTests
 
         // LB/RB still change the category, also on a launcher's page.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Controller", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, arcadia.Main.Settings!.Selected.Name);
         arcadia.Press(UiAction.PreviousTab);
         Assert.Same(settings, arcadia.Main.Settings.Selected);
     }
@@ -74,7 +74,7 @@ public sealed class LauncherPageTests
 
         arcadia.Press(UiAction.Left);
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.TabNames());
-        Assert.Equal("Nicht aktiv", head.StateText);
+        Assert.Equal(AppTexts.NotActive, head.StateText);
 
         // Switched on, it goes to the end and is read again.
         arcadia.Press(UiAction.Right);
@@ -92,13 +92,13 @@ public sealed class LauncherPageTests
 
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         var head = Assert.IsType<LauncherPageHeadViewModel>(settings.Head);
-        Assert.Equal(("Amazon Games", "Nicht installiert"), (head.Name, head.StateText));
+        Assert.Equal(("Amazon Games", AppTexts.NotInstalled), (head.Name, head.StateText));
 
         foreach (var action in new[] { UiAction.Right, UiAction.Left, UiAction.Accept })
         {
             arcadia.Press(action);
             Assert.Equal(["GOG Galaxy"], arcadia.TabNames());
-            Assert.Equal("Nicht installiert", head.StateText);
+            Assert.Equal(AppTexts.NotInstalled, head.StateText);
         }
     }
 
@@ -294,7 +294,7 @@ public sealed class LauncherPageTests
         foreach (var key in new[] { "launcher-active", "launcher-name", "launcher-logo" })
         {
             var row = arcadia.FocusRow(key);
-            Assert.Equal(("LAUNCHER-REIHENFOLGE", "Eine Vorschau der Reihenfolge, in der die Launcher aufgeführt werden"), (row.PreviewTitle, row.PreviewSubtitle));
+            Assert.Equal(("LAUNCHER-REIHENFOLGE", AppTexts.LauncherOrderPreviewSubtitle), (row.PreviewTitle, row.PreviewSubtitle));
             var tabs = Assert.IsType<InfoTabBar>(Assert.Single(row.Preview));
             Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], tabs.Tabs.Select(tab => tab.Name));
             Assert.Equal(["GOG Galaxy"], tabs.Tabs.Where(tab => tab.IsHighlighted).Select(tab => tab.Name));
@@ -326,7 +326,7 @@ public sealed class LauncherPageTests
         // The other launchers weren't read.
         arcadia.Press(UiAction.Back);
         var xbox = settings.Rows.OfType<LauncherRowViewModel>().Single(row => row.Key == "xbox");
-        Assert.Equal("vor 10 Min.", xbox.Fact("Zuletzt eingelesen"));
+        Assert.Equal("vor 10 Min.", xbox.Fact(AppTexts.FactLastScanned));
     }
 
     [AvaloniaFact]
@@ -345,11 +345,11 @@ public sealed class LauncherPageTests
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         Assert.Equal("xbox", settings.PageLauncherId);
         var rescan = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow("launcher-rescan"));
-        Assert.Equal((false, "Nicht gefunden"), (rescan.IsEnabled, rescan.Subtitle));
+        Assert.Equal((false, AppTexts.NotFound), (rescan.IsEnabled, rescan.Subtitle));
 
         arcadia.Press(UiAction.NextPage);
         Assert.Equal("amazon", settings.PageLauncherId);
-        Assert.Equal((false, "Nur für einen aktiven Launcher"), (rescan.IsEnabled, rescan.Subtitle));
+        Assert.Equal((false, AppTexts.OnlyForActiveLauncher), (rescan.IsEnabled, rescan.Subtitle));
 
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Toast.Text);

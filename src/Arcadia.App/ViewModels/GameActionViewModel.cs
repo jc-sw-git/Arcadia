@@ -65,10 +65,10 @@ public interface IGameActionHost
 /// </summary>
 public sealed partial class GameActionViewModel : ViewModelBase
 {
-    private const string NotYetAvailable = "Folgt in einer späteren Version";
+    private static string NotYetAvailable => AppTexts.ActionNotYetAvailable;
 
     /// <summary>Why a game's setting that applies when it starts can't be changed while it runs (#95).</summary>
-    public const string NextStartOnly = "Gilt erst beim nächsten Start – änderbar, wenn das Spiel beendet ist";
+    public static string NextStartOnly => AppTexts.ActionNextStartOnly;
 
     private readonly Action _invoke;
 
@@ -95,8 +95,8 @@ public sealed partial class GameActionViewModel : ViewModelBase
     /// <summary>A small heading above the button text, e.g. "STEAM CONTROLLER" above the mode.</summary>
     public string? Caption => Kind switch
     {
-        GameActionKind.ControllerMode => "STEAM CONTROLLER",
-        GameActionKind.MouseMode => "INDIVIDUELLER MAUSMODUS",
+        GameActionKind.ControllerMode => AppTexts.SteamControllerGroup,
+        GameActionKind.MouseMode => AppTexts.IndividualMouseModeCaption,
         _ => null,
     };
 
@@ -171,25 +171,25 @@ public sealed partial class GameActionViewModel : ViewModelBase
         actions.Add(tile.InstallState is { Phase: InstallPhase.AwaitingConfirmation }
             ? new(GameActionKind.Play, tile.InstallStatusText, null, true, () => host.Play(tile))
             : busy
-            ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? $"Pausieren und Abbrechen in {launcher}" : null, false, () => { })
+            ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? AppTexts.ActionPauseAndCancelIn(launcher) : null, false, () => { })
             : !game.IsInstalled
                 ? game.InstallBlockedReason is { } blocked
-                    ? new(GameActionKind.Play, "Installieren", blocked, false, () => { })
-                    : new(GameActionKind.Play, "Installieren", $"Die Installation wird in {launcher} geöffnet", true, () => host.Play(tile))
+                    ? new(GameActionKind.Play, AppTexts.Install, blocked, false, () => { })
+                    : new(GameActionKind.Play, AppTexts.Install, AppTexts.ActionInstallOpensIn(launcher), true, () => host.Play(tile))
                 : tile.IsRunningOrStarting
                     ? new(GameActionKind.Play, tile.PrimaryActionText, null, true, () => host.Play(tile))
-                    : new(GameActionKind.Play, tile.PrimaryActionText, tile.UpdateAvailable ? $"{launcher} installiert ggf. vorher das Update" : null, true, () => host.Play(tile)));
+                    : new(GameActionKind.Play, tile.PrimaryActionText, tile.UpdateAvailable ? AppTexts.ActionLauncherMayUpdate(launcher) : null, true, () => host.Play(tile)));
 
-        actions.Add(new(GameActionKind.Details, "Details anzeigen", null, true, () => host.ShowDetails(tile)));
-        actions.Add(new(GameActionKind.Favorite, "Zu Favoriten hinzufügen", NotYetAvailable, false, () => { }, "Zu Favoriten"));
+        actions.Add(new(GameActionKind.Details, AppTexts.ActionShowDetails, null, true, () => host.ShowDetails(tile)));
+        actions.Add(new(GameActionKind.Favorite, AppTexts.ActionAddToFavorites, NotYetAvailable, false, () => { }, AppTexts.ActionToFavorites));
         if (game.IsInstalled)
         {
-            actions.Add(new(GameActionKind.Artwork, "Artwork ändern …", NotYetAvailable, false, () => { }, "Artwork ändern"));
+            actions.Add(new(GameActionKind.Artwork, AppTexts.ActionChangeArtworkMore, NotYetAvailable, false, () => { }, AppTexts.ActionChangeArtwork));
         }
 
         actions.Add(game.OpenInLauncher is null
-            ? new(GameActionKind.OpenInLauncher, $"In {launcher} öffnen", $"{launcher} lässt sich nicht von Arcadia aus öffnen", false, () => { })
-            : new(GameActionKind.OpenInLauncher, $"In {launcher} öffnen", null, true, () => host.OpenInLauncher(tile)));
+            ? new(GameActionKind.OpenInLauncher, AppTexts.ActionOpenIn(launcher), AppTexts.ActionLauncherNotOpenable(launcher), false, () => { })
+            : new(GameActionKind.OpenInLauncher, AppTexts.ActionOpenIn(launcher), null, true, () => host.OpenInLauncher(tile)));
 
         if (!game.IsInstalled)
         {
@@ -240,14 +240,14 @@ public sealed partial class GameActionViewModel : ViewModelBase
         }
 
         actions.Add(busy
-            ? new(GameActionKind.Uninstall, "Deinstallieren …", "Erst wenn die laufende Installation fertig ist", false, () => { })
+            ? new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.ActionAfterInstall, false, () => { })
             : tile.IsRunningOrStarting
-                ? new(GameActionKind.Uninstall, "Deinstallieren …", "Erst wenn das Spiel beendet ist", false, () => { })
+                ? new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.ActionAfterGameEnded, false, () => { })
                 : game.Uninstall is not null
-                    ? new(GameActionKind.Uninstall, "Deinstallieren …", null, true, () => host.Uninstall(tile))
+                    ? new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, null, true, () => host.Uninstall(tile))
                     : game.OpenInLauncher is not null
-                        ? new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich – öffnet {launcher}", true, () => host.Uninstall(tile))
-                        : new(GameActionKind.Uninstall, "Deinstallieren …", $"Nur in {launcher} möglich", false, () => { }));
+                        ? new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.ActionOnlyInLauncherOpens(launcher), true, () => host.Uninstall(tile))
+                        : new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.ActionOnlyInLauncher(launcher), false, () => { }));
 
         return actions;
     }
@@ -255,16 +255,16 @@ public sealed partial class GameActionViewModel : ViewModelBase
     private void ShowGameMouseMode(bool? choice, bool defaultAllowed)
     {
         var mode = GameMouseModes.Of(choice, defaultAllowed);
-        Label = $"Mausmodus: {mode}";
+        Label = AppTexts.ActionMouseMode(mode);
         ButtonLabel = mode;
-        Note = $"Wechselt zu „{GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed)}“";
+        Note = AppTexts.ActionSwitchesTo(GameMouseModes.Of(GameMouseModes.Next(choice), defaultAllowed));
     }
 
     private void ShowControllerMode(string mode, string next)
     {
-        Label = $"Steam Controller: {mode}";
+        Label = AppTexts.ActionSteamControllerMode(mode);
         ButtonLabel = mode;
-        Note = $"Wechselt zu „{next}“";
+        Note = AppTexts.ActionSwitchesTo(next);
     }
 }
 
@@ -278,7 +278,7 @@ public static class ControllerModes
     public const string Steam = "Steam-Eingabe";
 
     /// <summary>Why the mode is greyed out while Pan's emulation is on but doesn't run (#242); [A] leads to the reason.</summary>
-    public const string PanNotRunning = "Pan läuft nicht – öffnet die Controller-Einstellungen, die sagen, warum";
+    public static string PanNotRunning => AppTexts.ActionPanNotRunning;
 
     public static string Of(bool useArcadiaPad) => useArcadiaPad ? Arcadia : Steam;
 

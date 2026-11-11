@@ -81,5 +81,5 @@ Charter: –. Time box: –. Findings: –.
 | T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
 | T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
-| T490-1, -3, -4, -6, -8, -10, -12 to -15, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -19, -23 to -26 in `ArtworkByHandTests` (Core) |
+| T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |

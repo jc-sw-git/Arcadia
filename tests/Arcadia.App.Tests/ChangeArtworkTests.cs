@@ -192,6 +192,132 @@ public sealed class ChangeArtworkTests
         Assert.Equal("second.jpg", modal.Tiles[0].Caption);
     }
 
+    /// <summary>
+    /// T490-6 and T490-10 as the player sees them (quality engineer): both images set by hand in the modal are on the disk
+    /// as set by hand, B leads back to "Artwork ändern" on the detail page, and after a restart the modal still shows them.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T490-6")]
+    [Trait("TestCase", "T490-10")]
+    public async Task Images_set_by_hand_are_kept_on_disk_and_after_a_restart()
+    {
+        var alpha = Installed("Alpha");
+        using var images = new LauncherImages();
+        images.Set(alpha, ArtworkKind.Cover, TestImages.Png(600, 900));
+        images.Set(alpha, ArtworkKind.Hero, TestImages.Png(1550, 500));
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 1, Library: [alpha], Artwork: images)]);
+        await SettledAsync(arcadia);
+        var dialogs = UseDialogs(arcadia);
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var modal = await OpenFromDetailPageAsync(arcadia);
+
+        // Cover: an own file. Background: the launcher's image, taken by hand.
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        dialogs.Answer(Picture(arcadia, "Leuchtturm.png", TestImages.Png(400, 600)));
+        await SettledAsync(arcadia, modal);
+        arcadia.Press(UiAction.NextTab);
+        await SettledAsync(arcadia, modal);
+        arcadia.Press(UiAction.Accept);
+        await SettledAsync(arcadia, modal);
+
+        var stored = new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(alpha.Key)!;
+        Assert.True(stored.Cover is { Source: ArtworkSource.File, SetByHand: true }, "Das Cover steht nicht als von Hand gesetzt im JSON.");
+        Assert.True(stored.Hero is { Source: ArtworkSource.Launcher, SetByHand: true }, "Der Hintergrund steht nicht als von Hand gesetzt im JSON.");
+
+        arcadia.Press(UiAction.Back);
+        Assert.Null(arcadia.Main.ChangeArtwork);
+        Assert.Equal(GameActionKind.Artwork, arcadia.Detail!.Current.FocusedKind);
+
+        using var restarted = await arcadia.RestartAsync();
+        await SettledAsync(restarted);
+        var cover = Assert.Single(restarted.PageGames).Cover;
+        Assert.Equal((400, 600), (cover!.Size.Width, cover.Size.Height));
+        restarted.Hold(UiAction.Accept, PastHoldTime);
+        var again = await OpenFromDetailPageAsync(restarted);
+        Assert.True(again.Tiles[0] is { IsInUse: true, Caption: "Leuchtturm.png" });
+        Assert.Contains(again.Facts, fact => fact.Label == "Gesetzt" && fact.Value == "von Hand");
+        restarted.Press(UiAction.NextTab);
+        await SettledAsync(restarted, again);
+        Assert.True(again.Tiles[1].IsInUse);
+        Assert.Contains(again.Facts, fact => fact.Label == "Gesetzt" && fact.Value == "von Hand");
+    }
+
+    /// <summary>
+    /// The acceptance criterion of #490 (T490-23, T490-24; quality engineer): images set in the modal survive "Alle Artworks
+    /// neu laden" while "Von Hand gesetzte Artworks überschreiben" is off, and give way when it is on. The settings rows
+    /// land with #489, so the reload is started the way they will start it.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T490-23")]
+    [Trait("TestCase", "T490-24")]
+    public async Task Reloading_all_keeps_images_set_by_hand_unless_the_switch_is_on()
+    {
+        var alpha = Installed("Alpha");
+        var beta = Installed("Beta");
+        using var images = new LauncherImages();
+        images.Set(alpha, ArtworkKind.Cover, TestImages.Png(600, 900));
+        images.Set(alpha, ArtworkKind.Hero, TestImages.Png(1550, 500));
+        images.Set(beta, ArtworkKind.Cover, TestImages.Png(600, 900));
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 2, Library: [alpha, beta], Artwork: images)]);
+        await SettledAsync(arcadia);
+        var dialogs = UseDialogs(arcadia);
+        while (arcadia.FocusedGame?.Title != "Alpha")
+        {
+            arcadia.Press(UiAction.Right);
+        }
+
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var modal = await OpenFromDetailPageAsync(arcadia);
+
+        // Cover: the launcher's image taken by hand. Background: an own file.
+        arcadia.Press(UiAction.Accept);
+        await SettledAsync(arcadia, modal);
+        arcadia.Press(UiAction.NextTab);
+        await SettledAsync(arcadia, modal);
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        dialogs.Answer(Picture(arcadia, "Kueste.png", TestImages.Png(1240, 400)));
+        await SettledAsync(arcadia, modal);
+        arcadia.Press(UiAction.Back);
+
+        // The launchers' images change; the switch is off.
+        images.Set(alpha, ArtworkKind.Cover, TestImages.Png(300, 450));
+        images.Set(alpha, ArtworkKind.Hero, TestImages.Png(3100, 1000));
+        images.Set(beta, ArtworkKind.Cover, TestImages.Png(300, 450));
+        Assert.True(arcadia.Artwork.ReloadAll(overwriteSetByHand: false));
+        await SettledAsync(arcadia);
+
+        Assert.Equal(900, Shown(arcadia, "Alpha").Cover!.Size.Height);
+        Assert.Equal(400, Shown(arcadia, "Alpha").Hero!.Size.Height);
+        Assert.Equal(450, Shown(arcadia, "Beta").Cover!.Size.Height);
+        var kept = new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(alpha.Key)!;
+        Assert.True(kept is { Cover.SetByHand: true, Hero: { Source: ArtworkSource.File, SetByHand: true } });
+
+        // The switch on: both give way to Arcadia's own choice; the own file stays offered.
+        Assert.True(arcadia.Artwork.ReloadAll(overwriteSetByHand: true));
+        await SettledAsync(arcadia);
+
+        Assert.Equal(450, Shown(arcadia, "Alpha").Cover!.Size.Height);
+        Assert.Equal(1000, Shown(arcadia, "Alpha").Hero!.Size.Height);
+        var replaced = new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(alpha.Key)!;
+        Assert.True(replaced is { Cover.SetByHand: false, Hero: { Source: ArtworkSource.Launcher, SetByHand: false } });
+        arcadia.Press(UiAction.Back);
+        while (arcadia.FocusedGame?.Title != "Alpha")
+        {
+            arcadia.Press(UiAction.Right);
+        }
+
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var again = await OpenFromDetailPageAsync(arcadia);
+        Assert.Contains(again.Facts, fact => fact.Label == "Gesetzt" && fact.Value == "automatisch (Standard)");
+        arcadia.Press(UiAction.NextTab);
+        await SettledAsync(arcadia, again);
+        Assert.True(again.Tiles[0] is { IsEmptyOwnFile: false, IsInUse: false, Caption: "Kueste.png" });
+        Assert.True(again.Tiles[1].IsInUse);
+        Assert.Contains(again.Facts, fact => fact.Label == "Gesetzt" && fact.Value == "automatisch (Standard)");
+    }
+
+    private static GameTileViewModel Shown(ArcadiaDriver arcadia, string title) => arcadia.PageGames.Single(tile => tile.Title == title);
+
     private static async Task<ChangeArtworkViewModel> OpenFromDetailPageAsync(ArcadiaDriver arcadia)
     {
         var page = arcadia.Detail!.Current;

@@ -249,6 +249,29 @@ public sealed class ArtworkByHandTests : IDisposable
         Assert.DoesNotContain(_log, line => line.Contains("Made-up User", StringComparison.Ordinal) || line.Contains("weird", StringComparison.Ordinal));
     }
 
+    /// <summary>T490-20 (quality engineer): the copy can't be written; the image in use stays, nothing half is left.</summary>
+    [Fact]
+    [Trait("TestCase", "T490-20")]
+    public async Task An_own_file_that_cannot_be_copied_leaves_the_image_in_use_and_no_half_file()
+    {
+        LauncherImages();
+        await ScanAsync();
+        var folder = Cache.FolderOf(Key);
+        var blocker = Directory.CreateDirectory(Path.Combine(folder, "own-cover.png"));
+        var picture = File("picture.png", TestImages.Png(200, 300));
+
+        Assert.Equal(OwnFileResult.Unreadable, await _service.UseFileAsync(Game, ArtworkKind.Cover, picture));
+        Assert.Equal(new ImageSize(600, 900), _service.Of(Key)!.Cover!.Size);
+        Assert.Null(Stored.OwnCover);
+        Assert.False(Stored.Cover!.SetByHand);
+
+        // Whatever the failed copy left behind is gone with the game's next write.
+        blocker.Delete();
+        Assert.Equal(OwnFileResult.Taken, await _service.UseFileAsync(Game, ArtworkKind.Cover, picture));
+        Assert.Empty(Directory.EnumerateFiles(folder, "*.tmp"));
+        Assert.Equal(new ImageSize(200, 300), _service.Of(Key)!.Cover!.Size);
+    }
+
     [Fact]
     [Trait("TestCase", "T490-14")]
     public async Task The_own_file_stays_offered_after_another_choice_and_a_new_one_replaces_it()

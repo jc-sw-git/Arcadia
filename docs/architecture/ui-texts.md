@@ -26,7 +26,8 @@ description is translated by Windows' own means (`ServiceDescriptions`).
 - The generator makes a static class per file: a property per text without placeholders (`AppTexts.Cancel`), a
   method per text with placeholders whose parameters are the placeholders (`AppTexts.GameStarting(game)`).
 - Both read through `UiText` in `Arcadia.Launchers.Abstractions` (the plugin contract), the one place texts are
-  filled. It never throws: a placeholder without a value stays visible (`{game}`), a missing text shows its key; each
+  filled. It never throws: a placeholder without a value stays visible (`{game}`), a format the value doesn't know
+  is left out, a missing text shows its key; each
   is logged once per run to `arcadia.log` (`UI-Text …`), with the key and the placeholder's name, never the values,
   and no toast.
 - Placeholders are English names in braces, with an optional .NET format: `{count}`, `{seconds:0}`, `{time:HH:mm}`.

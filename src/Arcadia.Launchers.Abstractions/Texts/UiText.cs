@@ -10,8 +10,8 @@ namespace Arcadia.Launchers.Abstractions.Texts;
 /// classes generated from them (<c>AppTexts</c>, <c>SteamTexts</c>, …) call this. It lives in the launcher contract so a
 /// plugin can bring its own resource file and fill it the same way.
 /// <para>
-/// It never throws: a placeholder without a value stays visible as written (<c>{game}</c>), a missing text shows its
-/// key. A text can break like this only after a change slipped past the tests, e.g. in a later translation, so each
+/// It never throws: a placeholder without a value stays visible as written (<c>{game}</c>), a format the value doesn't
+/// know is left out, a missing text shows its key. A text can break like this only after a change slipped past the tests, e.g. in a later translation, so each
 /// break is logged once per run, with the key and the placeholder's name but never the values, which can be game
 /// names, paths or account names.
 /// </para>

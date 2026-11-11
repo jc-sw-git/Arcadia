@@ -12,6 +12,37 @@ namespace Arcadia.App.Tests;
 /// <summary>Arcadia's on-screen keyboard (#110, #129) as drawn: clicked with the mouse, and the mouse mode's own window.</summary>
 public sealed class OnScreenKeyboardViewTests
 {
+    /// <summary>
+    /// The mouse mode builds its keyboard's keys when it first comes on, before the window shows (#477); the first Y shows
+    /// those same controls.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T477-9")]
+    public void The_mouse_modes_keyboard_builds_its_keys_before_its_window_shows_and_keeps_them()
+    {
+        var keyboard = new OnScreenKeyboardViewModel(
+            KeyboardLayout.Find("DE"), new MouseModeKeyboard.TypedText(), new Microsoft.Extensions.Time.Testing.FakeTimeProvider(ArcadiaDriver.Now),
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+        var window = new Views.MouseModeKeyboardWindow { DataContext = keyboard };
+        try
+        {
+            window.BuildKeys();
+            var view = window.FindControl<Views.OnScreenKeyboardView>("KeyboardView")!;
+            var keys = view.GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("boardKey")).ToList();
+            Assert.False(window.IsVisible);
+            Assert.Equal(keyboard.Keys.Count, keys.Count);
+
+            window.Open(lastAtTop: false);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Assert.Equal(keys, view.GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("boardKey")));
+        }
+        finally
+        {
+            window.Close();
+            keyboard.Dispose();
+        }
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T129-7")]
     public async Task A_click_on_a_key_types_the_character_shown_and_clicks_on_shift_and_AltGr_switch_the_level()

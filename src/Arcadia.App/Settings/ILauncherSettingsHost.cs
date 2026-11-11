@@ -37,8 +37,14 @@ public interface ILauncherSettingsHost
     /// <summary>"Neu einlesen" on a launcher's page, or its folder was chosen (#138): reads it again and says what came of it.</summary>
     void RescanLauncher(string launcherId);
 
-    /// <summary>The on-screen keyboard for a text of the settings, in the layout last chosen.</summary>
-    OnScreenKeyboardViewModel CreateKeyboard(IKeyboardTarget target);
+    /// <summary>
+    /// The settings' one on-screen keyboard (#477), typing into <paramref name="editor"/> until it gives it back; it starts
+    /// as a new one, in the layout last chosen.
+    /// </summary>
+    OnScreenKeyboardViewModel TakeKeyboard(IKeyboardTarget editor);
+
+    /// <summary>The text is done; the keyboard types into nothing until the next one takes it.</summary>
+    void GiveBackKeyboard(IKeyboardTarget editor);
 
     /// <summary>
     /// "Controller-Wächter (Pan)" is on and can run here: only then is there a Steam Controller mode (#242), so only then

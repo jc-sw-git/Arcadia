@@ -40,6 +40,16 @@ public partial class MouseModeKeyboardWindow : Window
     }
 
     /// <summary>
+    /// Builds the keys' controls before the window is first shown (#477), so the first Y in the mouse mode doesn't wait
+    /// half a second for them. A hidden window isn't laid out; its keyboard measured on its own builds them.
+    /// </summary>
+    public void BuildKeys()
+    {
+        ApplyTemplate();
+        KeyboardView.Measure(Size.Infinity);
+    }
+
+    /// <summary>
     /// Shows the keyboard on the monitor of the window in front: at the edge chosen last, or at the other one
     /// when the caret Windows knows lies under it there. Returns the edge it took (true: the top).
     /// </summary>

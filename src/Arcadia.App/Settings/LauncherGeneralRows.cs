@@ -149,7 +149,8 @@ internal sealed class LauncherGeneralRows
                 return true;
             },
             () => CloseEditor(row, editor!),
-            host.CreateKeyboard,
+            host.TakeKeyboard,
+            host.GiveBackKeyboard,
             // A keyword offers only the keys it may hold (owner, 2026-10-23); a name takes any character.
             isName ? null : LauncherNames.IsKeywordCharacter);
         row.Editor = editor;

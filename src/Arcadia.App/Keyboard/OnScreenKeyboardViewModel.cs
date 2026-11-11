@@ -38,8 +38,11 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private Func<char, bool> _takes = _ => true;
     private FullKeyboard _board;
     private KeyboardButton _moveDirection;
-    private int _row = 2;
-    private int _column = 1;
+    private const int StartRow = 2;
+    private const int StartColumn = 1;
+
+    private int _row = StartRow;
+    private int _column = StartColumn;
 
     /// <param name="controllerInUse">
     /// For a keyboard outside Arcadia: whether a click came from the controller's pointer rather than a real mouse,
@@ -108,6 +111,9 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
             SetLayout(layout);
         }
     }
+
+    /// <summary>The focus goes back to the key a new keyboard starts on.</summary>
+    public void FocusStart() => SetFocus(StartRow, StartColumn);
 
     /// <summary>Put away, by any means: nothing may repeat on, shift and AltGr start off next time.</summary>
     public void Closed()

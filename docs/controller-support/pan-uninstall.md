@@ -43,6 +43,6 @@ How Pan ([pan.md](pan.md)) leaves the PC with Arcadia; the install: [pan-setup.m
   a single file), Pan uninstalls in place and Arcadia gets its exit code only if it ends within the 40 s.
 - An uninstalled HidHide stays until Windows restarts: its service key and driver file remain, so its version still
   reads. `HidHideInstallation.IsRemovalPending` (`DeleteFlag` on the service, or the driver file in
-  `PendingFileRenameOperations`) gives the row "HidHide: Neustart ausstehend" without a fix, and Pan isn't asked about
-  it. The usbip restart row offers no fix either (`EmulationParts.RebootPending`).
+  `PendingFileRenameOperations`) and `UsbipDriver.IsRemovalPending` give `PendingRestart.Required`: one restart row with
+  "Windows neu starten", Pan pauses and isn't asked about HidHide (`docs/product/settings-controller-restart.md`).
 

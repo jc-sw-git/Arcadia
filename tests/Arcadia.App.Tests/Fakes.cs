@@ -85,6 +85,15 @@ internal sealed class FixedRunningGames(string launcherId, IReadOnlyList<string>
         }
     }
 
+    /// <summary>The game ended: the launcher no longer reports it as running.</summary>
+    public void End(string gameId)
+    {
+        lock (_running)
+        {
+            _running.RemoveAll(game => game.GameId == gameId);
+        }
+    }
+
     public void Refuse(RefusedStart refusal)
     {
         lock (_refused)

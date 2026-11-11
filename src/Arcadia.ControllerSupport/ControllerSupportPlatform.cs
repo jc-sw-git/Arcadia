@@ -62,10 +62,15 @@ public interface IControllerSupportPlatform
     IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now);
 
     /// <summary>
-    /// A driver change waits for the PC's restart (#407): HidHide or usbip-win2 was uninstalled, or usbip-win2 was
-    /// installed since the PC started. An install before the restart would meet a half removed or half set up driver.
+    /// Whether a driver change waits for the Windows restart (#382): HidHide or usbip-win2 uninstalled and still half there
+    /// (<see cref="PendingRestart.Required"/>), or usbip-win2 installed since Windows started (<see cref="PendingRestart.Recommended"/>).
     /// </summary>
-    bool DriverChangePending(AppSettings settings, DateTimeOffset now) => false;
+    PendingRestart CheckPendingRestart(AppSettings settings, DateTimeOffset now) => PendingRestart.None;
+
+    /// <summary>
+    /// "Windows neu starten" (#382, D2): asks Windows to restart now; throws when Windows refuses or doesn't answer in time.
+    /// </summary>
+    Task RestartWindowsAsync(CancellationToken cancellationToken) => Task.FromException(new PlatformNotSupportedException("Windows-Neustart gibt es nur unter Windows"));
 
     /// <summary>
     /// A controller's firmware may be flashed now (#407): a Steam Controller or puck is in its bootloader, or a vendor's
@@ -118,9 +123,14 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public static bool HidHideNeedsInstaller(Version? installed) =>
         installed is null || (installed.Major <= SteamControllerHiding.SupportedMajorVersion && !HidHideRelease.IsSupported(installed));
 
-    public bool DriverChangePending(AppSettings settings, DateTimeOffset now) =>
-        OperatingSystem.IsWindows()
-        && (HidHideRemovalPending || UsbipDriver.IsRemovalPending() || settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now));
+    public PendingRestart CheckPendingRestart(AppSettings settings, DateTimeOffset now) =>
+        !OperatingSystem.IsWindows() ? PendingRestart.None
+        : HidHideRemovalPending || UsbipDriver.IsRemovalPending() ? PendingRestart.Required
+        : settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now) ? PendingRestart.Recommended
+        : PendingRestart.None;
+
+    public Task RestartWindowsAsync(CancellationToken cancellationToken) =>
+        OperatingSystem.IsWindows() ? WindowsRestart.RequestAsync(cancellationToken) : Task.FromException(new PlatformNotSupportedException());
 
     public bool FirmwareUpdateRuns =>
         OperatingSystem.IsWindows()
@@ -169,10 +179,6 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         else if (!UsbipDriver.IsRunning())
         {
             issues.Add(new("usbip-stopped", HealthSeverity.Warning, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallDrivers, "Neu installieren"));
-        }
-        else if (settings.UsbipInstalledAt is { } installedAt && installedAt > LastBootTime(now))
-        {
-            issues.Add(EmulationParts.RebootPending);
         }
 
         if (CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide)

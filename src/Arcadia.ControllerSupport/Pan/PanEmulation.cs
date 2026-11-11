@@ -59,6 +59,12 @@ public enum PanEmulationProblem
     TooManyFailures,
 
     /// <summary>
+    /// A driver removal waits for the Windows restart (#382, D1): nothing is emulated or hidden until then, no problem to
+    /// fix but the restart, which its own row offers. The switch stays on, so Pan runs again after the restart.
+    /// </summary>
+    WindowsRestart,
+
+    /// <summary>
     /// Controllers Arcadia saw before a hide didn't come back for Arcadia itself (#396): HidHide doesn't let this process
     /// see them, e.g. as it was installed while Arcadia ran. They are shown again; only a restart of Arcadia helps.
     /// </summary>
@@ -165,6 +171,17 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// (#396): this process would not see what Pan hides.
     /// </summary>
     public Func<string?> HeldBack { get; init; } = () => null;
+
+    /// <summary>A driver removal waits for the Windows restart (#382, D1): Pan pauses; read on every tick.</summary>
+    public Func<bool> PausedForWindowsRestart { get; init; } = () => false;
+
+    /// <summary>
+    /// HidHide is installed in a version Pan can use (#382, S1): without it nothing can be hidden, so Pan isn't asked
+    /// (it would answer "HidHide missing" every tick); read before every start.
+    /// </summary>
+    public Func<bool> HidHideUsable { get; init; } = () => true;
+
+    public const string WindowsRestartReason = "Pausiert bis zum Neustart von Windows";
 
     /// <summary>The controllers Arcadia saw before a hide and no longer sees since (#396); empty while that didn't happen.</summary>
     public IReadOnlyList<string> NotVisibleToArcadia => _notVisible ?? [];
@@ -427,6 +444,14 @@ public sealed class PanEmulation : IVirtualXboxPads
             return;
         }
 
+        if (PausedForWindowsRestart())
+        {
+            // Shows what Pan hides first, as when switched off: the half removed driver may not hide for long.
+            await EndIfRunningAsync("ein Treiber wartet auf den Neustart von Windows");
+            SetStatus(new(PanEmulationState.Ready, PanEmulationProblem.WindowsRestart, Reason: WindowsRestartReason));
+            return;
+        }
+
         if (HeldBack() is { } heldBack)
         {
             await EndIfRunningAsync(heldBack);
@@ -473,6 +498,13 @@ public sealed class PanEmulation : IVirtualXboxPads
     private async Task StartAsync(CancellationToken cancellationToken)
     {
         var puckWanted = Hides && SteamControllerPresent() && !_released;
+        if ((puckWanted || OthersConnected) && !HidHideUsable())
+        {
+            // Nothing can be hidden, and the part row says so: the same pause as Pan's own answer, without asking.
+            SetStatus(new(PanEmulationState.Paused, PanEmulationProblem.Hiding, PanReason.HidHideMissing, "HidHide fehlt"));
+            return;
+        }
+
         if ((puckWanted || OthersConnected)
             && await _guardian.CheckHidingAsync(0, cancellationToken) is var could && could != PanReason.None)
         {

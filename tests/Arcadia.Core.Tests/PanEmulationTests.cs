@@ -861,4 +861,62 @@ public sealed class PanEmulationTests
         Assert.Equal([1u], _pan.Unhidden);
         Assert.Equal([1u], _pan.Started);
     }
+
+    [Fact]
+    [Trait("TestCase", "T382-1")]
+    [Trait("TestCase", "T382-2")]
+    public async Task Without_a_usable_HidHide_Pan_is_never_asked_whether_it_can_hide()
+    {
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            HidHideUsable = () => false,
+        };
+
+        for (var tick = 0; tick < 15; tick++)
+        {
+            await emulation.TickAsync();
+            _time.Advance(TimeSpan.FromSeconds(2));
+        }
+
+        Assert.Equal(0, _pan.HidingChecks);
+        Assert.Empty(_pan.Started);
+        Assert.Equal((PanEmulationState.Paused, PanEmulationProblem.Hiding, PanReason.HidHideMissing),
+            (emulation.Status.State, emulation.Status.Problem, emulation.Status.Hiding));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T382-15")]
+    [Trait("TestCase", "T382-17")]
+    public async Task A_removal_waiting_for_the_restart_shows_what_Pan_hid_pauses_and_its_end_lets_the_emulation_run_again()
+    {
+        var paused = false;
+        var emulation = new PanEmulation(_pads, _pan, _copy, _time, _log.Add)
+        {
+            SteamControllerPresent = () => _present,
+            PausedForWindowsRestart = () => paused,
+        };
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Hidden);
+        _events.Clear();
+
+        paused = true;
+        await emulation.TickAsync();
+
+        // Shown first, then the emulation ends: as when switched off. Not a problem, no "nicht mehr sichtbar".
+        Assert.Equal(["copy detached", "unhide 1", "stopped 1"], _events);
+        Assert.Equal((PanEmulationState.Ready, PanEmulationProblem.WindowsRestart, PanEmulation.WindowsRestartReason),
+            (emulation.Status.State, emulation.Status.Problem, emulation.Status.Reason));
+        Assert.False(emulation.Status.HasProblem);
+        Assert.Empty(emulation.NotVisibleToArcadia);
+
+        _time.Advance(TimeSpan.FromSeconds(10));
+        await emulation.TickAsync();
+        Assert.Equal([1u], _pan.Started);
+
+        paused = false;
+        await emulation.TickAsync();
+        Assert.Equal(PanEmulationState.Running, emulation.Status.State);
+        Assert.Equal([1u, 2u], _pan.Started);
+    }
 }

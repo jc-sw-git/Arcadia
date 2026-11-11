@@ -29,6 +29,9 @@ public enum HealthFix
 
     /// <summary>The pinned HidHide over the installed one (#242): its driver doesn't answer a request Pan needs.</summary>
     ReinstallHidHide,
+
+    /// <summary>"Windows neu starten" (#382): the settings ask first, then <see cref="ControllerSupportService.RestartWindowsAsync"/>.</summary>
+    RestartWindows,
 }
 
 /// <param name="Detail">The whole explanation, for the info panel.</param>
@@ -165,6 +168,37 @@ public sealed class ControllerSupportService
     private volatile bool _hidHideInstalling;
     private volatile bool _restartPending;
 
+    /// <summary>
+    /// Whether a driver change waits for the Windows restart (#382, D1): checked with the parts and, cheap registry reads
+    /// only, on every tick, so a removal outside Arcadia pauses Pan also while the settings are closed. A failed check
+    /// counts as none and is logged.
+    /// </summary>
+    public PendingRestart PendingRestart
+    {
+        get => (PendingRestart)Volatile.Read(ref _pendingRestart);
+        private set => Volatile.Write(ref _pendingRestart, (int)value);
+    }
+
+    private int _pendingRestart;
+
+    /// <summary>
+    /// A driver removal waits for the restart (D1): Pan's emulation pauses, nothing is emulated or hidden, while the
+    /// switch keeps its state, so Pan runs again after the restart without the player.
+    /// </summary>
+    public bool PausesForWindowsRestart => PendingRestart == PendingRestart.Required;
+
+    /// <summary>
+    /// HidHide is installed in a version Pan can use, as of the last check of the parts (#382, S1): without it Pan's
+    /// emulation doesn't ask Pan whether it can hide. True until the first check.
+    /// </summary>
+    public bool HidHideUsable { get; private set; } = true;
+
+    /// <summary>Every part of the emulation is missing (a removal waiting for the restart counts), as of the last check.</summary>
+    public bool AllPartsMissing { get; private set; }
+
+    /// <summary>The rows as the platform and Pan found them, before the restart row takes their place (<see cref="EmulationParts.WithRestart"/>).</summary>
+    private IReadOnlyList<HealthIssue> _foundIssues = [];
+
     /// <summary><paramref name="fix"/> runs HidHide's installer now: the settings say first that Arcadia restarts afterwards (#396).</summary>
     public bool InstallsHidHide(HealthFix fix) => RestartsPuck(fix);
 
@@ -266,12 +300,20 @@ public sealed class ControllerSupportService
             // Pan's HidHide states are asked only while the settings are open, so they go with them: "Bitte schließe
             // sie" must not stay in the header after the user closed HidHide's configuration (QE review of PR #264).
             var checkParts = WatchSetup || !_driversChecked;
-            var issues = checkParts
-                ? await CheckEmulationPartsAsync(cancellationToken)
-                : Issues.Where(issue => !EmulationParts.IsSettingsOnly(issue)).ToList();
+            IReadOnlyList<HealthIssue> issues;
+            if (checkParts)
+            {
+                issues = await CheckEmulationPartsAsync(cancellationToken);
+            }
+            else
+            {
+                _foundIssues = _foundIssues.Where(issue => !EmulationParts.IsSettingsOnly(issue)).ToList();
+                issues = EmulationParts.WithRestart(_foundIssues, CheckPendingRestart());
+            }
+
             _driversChecked = true;
             // Process list, device list and HID enumeration: only when the parts are checked, not beside a game.
-            var installStateChanged = checkParts && UpdateInstallState(issues);
+            var installStateChanged = checkParts && UpdateInstallState();
             if (!issues.SequenceEqual(Issues) || sisrChanged || installStateChanged)
             {
                 Issues = issues;
@@ -313,7 +355,14 @@ public sealed class ControllerSupportService
             throw new InvalidOperationException(firmware);
         }
 
-        var needsPan = !(_platform.IsUsbipReady && _platform.IsPanReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion));
+        // Checked fresh (D1): a setup would meet the half removed driver; the row offers the restart instead.
+        if (CheckPendingRestart() == PendingRestart.Required)
+        {
+            throw new InvalidOperationException(WindowsRestartFirstText);
+        }
+
+        var panWasReady = _platform.IsPanReady;
+        var needsPan = !(_platform.IsUsbipReady && panWasReady && !ControllerSupportPlatform.HidHideNeedsInstaller(_platform.HidHideVersion));
         var installsHidHide = needsPan && _platform.InstallsHidHide;
         var plan = new DriverInstallPlan(
             Prompt: needsPan,
@@ -350,8 +399,30 @@ public sealed class ControllerSupportService
 
         if (plan.Prompt)
         {
-            Log?.Invoke("Treiber eingerichtet (usbip-win2, HidHide und Pan)");
+            Log?.Invoke($"Treiber eingerichtet ({InstalledParts(plan, panWasReady)})");
         }
+    }
+
+    public const string WindowsRestartFirstText = "Ein deinstallierter Treiber wartet auf den Neustart von Windows. Starte Windows neu, danach lassen sich die fehlenden Teile installieren.";
+
+    /// <summary>
+    /// What a successful run set up, for the log (#382, S7): the drivers the plan installed, and Pan when it wasn't ready
+    /// before; an unchanged Pan keeps its exe and service.
+    /// </summary>
+    internal static string InstalledParts(DriverInstallPlan plan, bool panWasReady)
+    {
+        string[] parts =
+        [
+            .. plan.Usbip ? ["usbip-win2"] : Array.Empty<string>(),
+            .. plan.HidHide ? ["HidHide"] : Array.Empty<string>(),
+            .. panWasReady ? Array.Empty<string>() : ["Pan"],
+        ];
+        return parts.Length switch
+        {
+            0 => "nichts Neues",
+            1 => parts[0],
+            _ => $"{string.Join(", ", parts[..^1])} und {parts[^1]}",
+        };
     }
 
     /// <summary>"Neu installieren" for a HidHide that answers unexpectedly (#242), with the progress dialog (#413, D3).</summary>
@@ -717,7 +788,7 @@ public sealed class ControllerSupportService
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         Issues = IsSupportedPlatform ? await CheckEmulationPartsAsync(cancellationToken) : [];
-        UpdateInstallState(Issues);
+        UpdateInstallState();
         _panInstalled = CheckPanInstalled();
         Sisr.Refresh(IsSupportedPlatform);
         OnChanged();
@@ -730,14 +801,19 @@ public sealed class ControllerSupportService
     /// </summary>
     private async Task<IReadOnlyList<HealthIssue>> CheckEmulationPartsAsync(CancellationToken cancellationToken)
     {
+        var restart = CheckPendingRestart();
         var issues = _platform.CheckDrivers(Settings, _time.GetUtcNow()).ToList();
         if (Viiper is { IsInstalled: false })
         {
             issues.Add(EmulationParts.ViiperMissing);
         }
 
-        // Only while the settings are open: asking Pan costs a pipe round trip and HidHide's lock.
-        if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady
+        HidHideUsable = EmulationParts.HidHideUsable(issues);
+        AllPartsMissing = EmulationParts.AllMissing(issues);
+
+        // Only while the settings are open: asking Pan costs a pipe round trip and HidHide's lock. Not while a removal
+        // waits for the restart: Pan pauses then, and its answer would only follow from the half removed driver.
+        if (WatchSetup && HidingCheck is { } check && _platform.IsPanReady && restart != PendingRestart.Required
             && _platform.HidHideVersion is { } hidHide && HidHideRelease.IsSupported(hidHide)
             && !issues.Contains(EmulationParts.HidHideRemovalPending)
             && EmulationParts.FromHidingCheck(await check.CheckHidingAsync(cancellationToken), hidHide) is { } hiding)
@@ -752,12 +828,79 @@ public sealed class ControllerSupportService
             issues.Add(EmulationParts.SisrRunning);
         }
 
-        return EmulationParts.InRowOrder(issues);
+        _foundIssues = EmulationParts.InRowOrder(issues);
+        return EmulationParts.WithRestart(_foundIssues, restart);
+    }
+
+    /// <summary>Reads the pending restart fresh and keeps it (<see cref="PendingRestart"/>); a failed check counts as none (failure case).</summary>
+    private PendingRestart CheckPendingRestart()
+    {
+        PendingRestart restart;
+        try
+        {
+            restart = _platform.CheckPendingRestart(Settings, _time.GetUtcNow());
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Log?.Invoke($"Nicht geprüft, ob ein Windows-Neustart aussteht: {ex}");
+            restart = PendingRestart.None;
+        }
+
+        if (restart != PendingRestart)
+        {
+            Log?.Invoke(restart switch
+            {
+                PendingRestart.Required => "Windows-Neustart ausstehend: ein Treiber wurde deinstalliert, Pan pausiert bis dahin",
+                PendingRestart.Recommended => "Windows-Neustart empfohlen: usbip-win2 wurde seit dem Start von Windows installiert",
+                _ => "Kein Windows-Neustart mehr ausstehend",
+            });
+            PendingRestart = restart;
+        }
+
+        return restart;
+    }
+
+    public const string RestartRefusedTitle = "Windows lässt den Neustart nicht zu";
+    public const string RestartRefusedText = "Ein anderes Programm oder eine Einstellung von Windows verhindert ihn. Versuch es gleich noch einmal oder starte Windows über das Startmenü neu.";
+
+    private int _restartingWindows;
+
+    /// <summary>
+    /// "Windows neu starten" after the question (#382, S4): asks Windows to restart now. False when Windows refused or
+    /// didn't answer (logged; the settings show a toast and keep the row); true when the restart is under way, also for a
+    /// second press meanwhile, which asks nothing more. Not while an action runs (its row is greyed out then).
+    /// </summary>
+    public async Task<bool> RestartWindowsAsync(CancellationToken cancellationToken = default)
+    {
+        if (IsSettling || !IsSupportedPlatform)
+        {
+            return false;
+        }
+
+        if (Interlocked.Exchange(ref _restartingWindows, 1) == 1)
+        {
+            return true;
+        }
+
+        try
+        {
+            Log?.Invoke("Windows-Neustart angefordert");
+            await _platform.RestartWindowsAsync(cancellationToken);
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or TimeoutException or IOException
+                                       or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            Log?.Invoke($"Windows-Neustart abgelehnt: {ex.Message}");
+            Volatile.Write(ref _restartingWindows, 0);
+            return false;
+        }
     }
 
     /// <summary>
-    /// What keeps "Treiber installieren" from running now (#407), as rows: a driver change waiting for the PC's restart, a
-    /// controller's firmware update. Checked while every part is missing (only then is the button there), else empty.
+    /// What keeps "Treiber installieren" from running now (#407), as rows: a controller's firmware update (a removal
+    /// waiting for the restart is the restart row, #382). Checked while every part is missing (only then is the button
+    /// there), else empty.
     /// </summary>
     public IReadOnlyList<HealthIssue> InstallBlockers { get; private set; } = [];
 
@@ -765,9 +908,9 @@ public sealed class ControllerSupportService
     public bool SteamControllerPlugged { get; private set; }
 
     /// <summary>True if <see cref="InstallBlockers"/> or <see cref="SteamControllerPlugged"/> changed.</summary>
-    private bool UpdateInstallState(IReadOnlyList<HealthIssue> issues)
+    private bool UpdateInstallState()
     {
-        var allMissing = IsSupportedPlatform && EmulationParts.AllMissing(issues);
+        var allMissing = IsSupportedPlatform && AllPartsMissing;
         var blockers = allMissing ? CheckInstallBlockers() : [];
         var plugged = allMissing && SafeCheck(() => _platform.SteamControllerPlugged, "ob ein Steam Controller angeschlossen ist");
         var changed = !blockers.SequenceEqual(InstallBlockers) || plugged != SteamControllerPlugged;
@@ -777,10 +920,7 @@ public sealed class ControllerSupportService
     }
 
     private List<HealthIssue> CheckInstallBlockers() =>
-    [
-        .. SafeCheck(() => _platform.DriverChangePending(Settings, _time.GetUtcNow()), "ob Treiberänderungen ausstehen") ? [EmulationParts.DriverChangesPending] : Array.Empty<HealthIssue>(),
-        .. SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? [EmulationParts.FirmwareUpdateRuns] : Array.Empty<HealthIssue>(),
-    ];
+        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? [EmulationParts.FirmwareUpdateRuns] : [];
 
     /// <summary>A check that fails counts as false and is logged: the install itself checks the firmware again.</summary>
     private bool SafeCheck(Func<bool> check, string what)

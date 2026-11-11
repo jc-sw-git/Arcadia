@@ -173,6 +173,20 @@ public sealed class LibraryTests
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
+    /// <summary>The LT/Q and RT/E buttons below the grid go round like LT/RT; GOG's 31 games are two pages.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-4")]
+    public async Task The_page_buttons_below_the_grid_turn_round_at_the_ends()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        var library = arcadia.Main.Library;
+
+        library.PreviousPageCommand.Execute(null);
+        Assert.Equal("2", CurrentPage(arcadia));
+        library.NextPageCommand.Execute(null);
+        Assert.Equal("1", CurrentPage(arcadia));
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "G-12")]
     [Trait("TestCase", "G-14")]

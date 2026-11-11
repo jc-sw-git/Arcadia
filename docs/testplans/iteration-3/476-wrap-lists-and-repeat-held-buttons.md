@@ -1,6 +1,6 @@
 # #476 Wrap round at the ends of every list and repeat LT/RT and LB/RB while held
 
-**Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14 · QE: T476-8, T476-9 (app run) · Open for the owner: T476-15
+**Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: T476-15
 
 Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5, added with it. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now).
 
@@ -31,3 +31,4 @@ History:
 | T476-8, -9 | 2026-11-11 | QE | PR #479, real app under Xvfb, `--demo`, held E, Shift+E, Page Down (no gamepad) | ✅ library stops on the last page, tabs on the last tab, 34 to 84 repeats each | – |
 | T476-13 | 2026-11-11 | owner | PR #479 | ✅ ticked by the owner for the merge | – |
 | T476-1 to -4, -6, -7, -9, -14 | 2026-11-11 | Claude | PR (part 2), Linux container, unit and acceptance tests (`GridFocusTests`, `HitWindowTests`, `GamepadPollsTests`, `SearchWrapTests`, `LibraryTests`, `SearchViewTests`); each new or changed acceptance test red once without the change, `A_held_RT_wobbling_round_half_way_stays_at_the_last_window` red with only the release threshold taken out | ✅ | – |
+| T476-2 to -4, -6 | 2026-11-11 | QE | PR #481, real app under Xvfb, `--demo`, keys only (no gamepad); `LibraryTests.The_page_buttons_below_the_grid_turn_round_at_the_ends` red with `PreviousPage` back on `GoToPage(_requestedPage - 1)` | ✅ library: down from the bottom row onto page 2, up from page 1's top row onto page 2's row, Page Down on page 2 back to 1; search "e" (112 hits): both turn buttons on the first window, left on the first hit to the last (99–112), up and down within the last rows, right on the last hit back to 1–14; no line under the first row's last hit | – |

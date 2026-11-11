@@ -32,6 +32,21 @@ public sealed class ImageCheckTests
         Assert.Null(Check(webp[..40]));
     }
 
+    [Theory]
+    [InlineData(6000, 6000, true)]
+    [InlineData(7000, 7000, false)]
+    [InlineData(16384, 16384, false)]
+    [InlineData(20000, 100, false)]
+    public void An_image_with_more_than_40_megapixels_is_none(int width, int height, bool taken)
+    {
+        // A small file whose header names a huge image: decoding it would take gigabytes.
+        var png = TestImages.Png(60, 90);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(16), width);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(20), height);
+
+        Assert.Equal(taken ? new ImageSize(width, height) : null, Check(png));
+    }
+
     [Fact]
     public void A_cut_off_image_is_none()
     {

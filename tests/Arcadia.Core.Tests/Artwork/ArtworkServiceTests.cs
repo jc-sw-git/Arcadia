@@ -157,6 +157,23 @@ public sealed class ArtworkServiceTests : IDisposable
         Assert.Single(_log, l => l.Contains("steam:4000001", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.Gone)]
+    public async Task An_image_the_server_adds_later_comes_with_the_next_scan(HttpStatusCode status)
+    {
+        _server.Fail(CoverUrl, status);
+        _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
+        await ScanAsync(GameOf("4000001"));
+
+        _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
+        await ScanAsync(GameOf("4000001"));
+
+        Assert.Equal(2, RequestCount);
+        Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+    }
+
     [Fact]
     public async Task Without_network_nothing_is_shown_and_the_next_scan_asks_again()
     {

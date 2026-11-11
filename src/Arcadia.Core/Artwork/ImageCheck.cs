@@ -18,6 +18,12 @@ public static class ImageCheck
     /// <summary>The largest side Arcadia takes; larger is no cover or background but a mistake or an attack.</summary>
     private const int MaxSide = 16384;
 
+    /// <summary>
+    /// The most pixels Arcadia takes: a small file can name a huge image, and a PNG is decoded whole before it is scaled
+    /// (16384² px would be 1 GB). 40 MP is eight times a 4K background.
+    /// </summary>
+    private const long MaxPixels = 40_000_000;
+
     // Enough for the size in a PNG's or WebP's header; a JPEG's segments are read where they lie.
     private const int HeadBytes = 32;
 
@@ -61,7 +67,9 @@ public static class ImageCheck
             [(byte)'R', (byte)'I', (byte)'F', (byte)'F', _, _, _, _, (byte)'W', (byte)'E', (byte)'B', (byte)'P', ..] => WebP(head, length),
             _ => null,
         };
-        return size is { Width: > 0 and <= MaxSide, Height: > 0 and <= MaxSide } ? size : null;
+        return size is { Width: > 0 and <= MaxSide, Height: > 0 and <= MaxSide } shown && (long)shown.Width * shown.Height <= MaxPixels
+            ? size
+            : null;
     }
 
     private static ImageSize? Png(ReadOnlySpan<byte> head, ReadOnlySpan<byte> tail)

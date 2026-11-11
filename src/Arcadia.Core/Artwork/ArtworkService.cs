@@ -40,7 +40,6 @@ public sealed class ArtworkService : IDisposable
     // The run's own state: only the run touches it.
     private readonly Dictionary<string, CachedArtwork> _records = new(StringComparer.Ordinal);
     private readonly Dictionary<(string Key, ArtworkKind Kind), ImageSize> _checked = [];
-    private readonly HashSet<Uri> _triedThisSession = [];
     private readonly Dictionary<(string Key, ArtworkKind Kind), long> _versions = [];
     private bool _indexed;
 
@@ -361,7 +360,7 @@ public sealed class ArtworkService : IDisposable
                     // Nothing earlier fits and the cache holds an image: no download for what is there already.
                     (option, size) = (new Pick.Keep(), held);
                 }
-                else if (run.Offline || !_triedThisSession.Add(url))
+                else if (run.Offline || !run.Tried.Add(url))
                 {
                     continue;
                 }
@@ -444,7 +443,6 @@ public sealed class ArtworkService : IDisposable
             if (!response.IsSuccessStatusCode)
             {
                 LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: {url.Host} antwortet {(int)response.StatusCode}");
-                _triedThisSession.Remove(url);
                 return null;
             }
 
@@ -480,20 +478,20 @@ public sealed class ArtworkService : IDisposable
         catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
         {
             LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: {url.Host} antwortet nicht in {DownloadTimeout.TotalSeconds:0} s");
-            GoOffline(url, run);
+            GoOffline(run);
             return null;
         }
         catch (HttpRequestException e)
         {
             LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: keine Verbindung zu {url.Host} ({e.HttpRequestError})");
-            GoOffline(url, run);
+            GoOffline(run);
             return null;
         }
         catch (IOException e)
         {
             // The connection broke off during the answer.
             LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: Verbindung zu {url.Host} abgebrochen ({e.GetType().Name})");
-            GoOffline(url, run);
+            GoOffline(run);
             return null;
         }
     }
@@ -508,9 +506,8 @@ public sealed class ArtworkService : IDisposable
     }
 
     /// <summary>A failed connection is tried again at the next scan; this run downloads nothing more.</summary>
-    private void GoOffline(Uri url, RunState run)
+    private static void GoOffline(RunState run)
     {
-        _triedThisSession.Remove(url);
         run.Offline = true;
     }
 
@@ -608,6 +605,9 @@ public sealed class ArtworkService : IDisposable
     private sealed class RunState
     {
         public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
+
+        // A server that has no image now is asked again by the next run: a rescan may find what it added meanwhile.
+        public HashSet<Uri> Tried { get; } = [];
 
         public bool Offline { get; set; }
 

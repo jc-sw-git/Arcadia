@@ -240,11 +240,12 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
+        var scans = _refresher.Scans;
         if (await _refresher.RefreshAsync(() => _scanned, force) is { } libraries)
         {
             Show(libraries);
         }
-        else
+        else if (_refresher.Scans != scans)
         {
             // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
             UpdateArtwork();
@@ -356,11 +357,12 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
+        var scans = _refresher.Scans;
         if (await _refresher.RefreshAsync(() => _scanned, launcherId) is { } libraries)
         {
             Show(libraries);
         }
-        else
+        else if (_refresher.Scans != scans)
         {
             // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
             UpdateArtwork();

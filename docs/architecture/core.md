@@ -67,7 +67,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   what the views show (`GameArtwork`), `Changed` says for which games it changed.
 - `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), every file
   through a temporary file and a rename; folder names from the key that never leave the cache; unreadable metadata
-  makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB, and its size.
+  makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
 
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per

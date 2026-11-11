@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 
 namespace Arcadia.App.Controls;
 
@@ -153,9 +152,21 @@ public sealed class ArtworkImage : Control
 
         _loadingFile = file;
         _loadingWidth = width;
-        Task.Run(() => loader.DecodeAsync(file, width)).ContinueWith(
-            decoded => Dispatcher.UIThread.Post(() => Take(file, width, decoded.IsCompletedSuccessfully ? decoded.Result : null)),
-            TaskScheduler.Default);
+        DecodeAsync(loader, file, width).Forget(AppTexts.ErrorContextArtwork);
+    }
+
+    private async Task DecodeAsync(ArtworkLoader loader, ArtworkFile file, int width)
+    {
+        Bitmap? bitmap = null;
+        try
+        {
+            bitmap = await Task.Run(() => loader.DecodeAsync(file, width));
+        }
+        finally
+        {
+            // Started on the UI thread, so this goes on there; a decode that threw counts as failed.
+            Take(file, width, bitmap);
+        }
     }
 
     private void Take(ArtworkFile file, int width, Bitmap? bitmap)

@@ -47,6 +47,18 @@ public sealed class UiTextTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T480-2")]
+    public void A_format_the_value_does_not_know_shows_the_value_plainly_and_is_logged()
+    {
+        var texts = Texts("T2BadFormat", "Noch {minutes:Q} Minuten");
+
+        var shown = UiText.Fill(texts, "T2BadFormat", ("minutes", 5));
+
+        Assert.Equal("Noch 5 Minuten", shown);
+        Assert.Equal("UI-Text T2BadFormat: ungültiges Format für {minutes}", Assert.Single(_logged));
+    }
+
+    [Fact]
     [Trait("TestCase", "T480-3")]
     public void A_missing_text_shows_its_key_and_is_logged()
     {

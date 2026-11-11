@@ -73,7 +73,7 @@ public static class UiText
             var format = colon < 0 ? null : placeholder[(colon + 1)..].ToString();
             if (TryFind(values, name, out var value))
             {
-                filled.Append(Format(value, format));
+                filled.Append(Format(value, format, key, name));
             }
             else
             {
@@ -105,12 +105,25 @@ public static class UiText
         return false;
     }
 
-    private static string Format(object? value, string? format) => value switch
+    // A format the value's type doesn't know (a later translation writing {minutes:Q}) must not break the text: the
+    // value is shown without it.
+    private static string Format(object? value, string? format, string key, ReadOnlySpan<char> name)
     {
-        null => string.Empty,
-        IFormattable formattable => formattable.ToString(format, CultureInfo.CurrentCulture),
-        _ => value.ToString() ?? string.Empty,
-    };
+        if (value is not IFormattable formattable)
+        {
+            return value?.ToString() ?? string.Empty;
+        }
+
+        try
+        {
+            return formattable.ToString(format, CultureInfo.CurrentCulture);
+        }
+        catch (FormatException)
+        {
+            ReportOnce($"format\n{key}\n{name}", $"UI-Text {key}: ungültiges Format für {{{name}}}"); // not a UI text (log)
+            return formattable.ToString(null, CultureInfo.CurrentCulture);
+        }
+    }
 
     // Only an identifier is a placeholder; anything else in braces is text and is neither filled nor reported.
     private static bool IsName(ReadOnlySpan<char> name)

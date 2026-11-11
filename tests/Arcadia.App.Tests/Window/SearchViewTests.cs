@@ -396,16 +396,24 @@ public sealed class SearchViewTests
         var gridFade = arcadia.Named<EdgeFade>("HitsGridFade");
         Assert.True(gridFade.ShowsStart && gridFade.ShowsEnd, "Oben und unten ausgeblendet");
         Assert.False(arcadia.Named<EdgeFade>("HitsRowFade").ShowsStart || arcadia.Named<EdgeFade>("HitsRowFade").ShowsEnd, "Seitlich nicht ausgeblendet");
+        // RT beside the lower row says more follow, as no row peeks in (#24); LT joins it once there are hits above.
+        var gridBarRight = arcadia.Bounds(arcadia.Named<ScrollBar>("HitsGridScrollBar")).Right;
+        var lowerRow = arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns]));
+        var down = Assert.Single(TurnButtons(arcadia));
+        Assert.Same(search.TurnOnCommand, down.Command);
+        Assert.True(arcadia.Bounds(down).Left > gridBarRight && arcadia.Bounds(down).Center.Y > lowerRow.Top && arcadia.Bounds(down).Center.Y < lowerRow.Bottom, $"RT {arcadia.Bounds(down)} rechts neben der unteren Reihe {lowerRow}");
         arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("1–14 von 105", search.RangeText);
         arcadia.Press(UiAction.NextPage);
         Assert.Equal("15–28 von 105", search.RangeText);
+        Assert.Equal([search.TurnBackCommand, search.TurnOnCommand], TurnButtons(arcadia).OrderBy(button => arcadia.Bounds(button).Top).Select(button => button.Command));
         arcadia.Key(Key.PageDown);
         Assert.Equal("29–42 von 105", search.RangeText);
         arcadia.Key(Key.PageUp).Press(UiAction.NextPage, times: 10);
         Assert.Equal("92–105 von 105", search.RangeText);
         arcadia.Key(Key.PageDown);
         Assert.Equal("92–105 von 105", search.RangeText);
+        Assert.Same(search.TurnBackCommand, Assert.Single(TurnButtons(arcadia)).Command);
 
         // The wheel scrolls as far, the bar stands beside the grid.
         for (var notch = 0; notch < 14; notch++)

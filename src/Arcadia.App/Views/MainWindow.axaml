@@ -885,6 +885,24 @@
                   </StackPanel>
                 </Button>
               </Panel>
+              <!-- The grid's LT/RT, right of its scroll bar, each beside the row it turns from (#24): the two rows fill the
+                   grid, so without them nothing on the hits says that more follow. -->
+              <Panel IsVisible="{Binding !IsKeyboardOut}">
+                <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,130,80,0"
+                        IsVisible="{Binding CanTurnUpInGrid}" Command="{Binding TurnBackCommand}" ToolTip.Tip="Vorherige Treffer (LT, Bild ↑, Mausrad)">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Classes="chevron" Data="M6 15l6-6 6 6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="LT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="plain glyphButton carouselNav turnHits" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,466,80,0"
+                        IsVisible="{Binding CanTurnDownInGrid}" Command="{Binding TurnOnCommand}" ToolTip.Tip="Weitere Treffer (RT, Bild ↓, Mausrad)">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Classes="chevron" Data="M6 9l6 6 6-6" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
+                    <ctl:KeyText Pad="RT" IsVisible="{Binding UsesController}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </Panel>
             </Panel>
             <!-- Nothing typed yet, or nothing found: a picture with the text below it; the theme draws both (ContentControl.searchEmpty). -->
             <ContentControl Grid.RowSpan="2" Classes="searchEmpty" Content="{Binding Empty}" IsVisible="{Binding !HasHits}" HorizontalAlignment="Center" VerticalAlignment="Center" />

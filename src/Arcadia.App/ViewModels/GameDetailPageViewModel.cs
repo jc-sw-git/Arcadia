@@ -195,11 +195,9 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
                 break;
             case (DetailZone.Rows, UiAction.Left or UiAction.Right):
                 FocusedRow?.Change(action == UiAction.Left ? -1 : 1);
-                UpdateValueLines();
                 break;
             case (DetailZone.Rows, UiAction.Accept):
                 FocusedRow?.Activate();
-                UpdateValueLines();
                 break;
         }
 
@@ -216,8 +214,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         var actions = GameActionViewModel.For(Tile, _host);
         Buttons = [.. new[] { GameActionKind.Play, GameActionKind.Favorite, GameActionKind.OpenInLauncher }
             .SelectMany(kind => actions.Where(a => a.Kind == kind))];
-        Area(DetailAreaViewModel.ControllerKey).Rows = DetailAreas.ControllerRows(Tile, actions, _host, Point);
-        Area(DetailAreaViewModel.ManageKey).Rows = DetailAreas.ManageRows(Tile, actions, Point);
+        Area(DetailAreaViewModel.ControllerKey).Rows = Watched(DetailAreas.ControllerRows(Tile, actions, _host, Point));
+        Area(DetailAreaViewModel.ManageKey).Rows = Watched(DetailAreas.ManageRows(Tile, actions, Point));
         UpdateValueLines();
         _button = -1;
         FocusButton(focusedKind ?? GameActionKind.Play);
@@ -316,6 +314,23 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         ShowsChangeHint = row is { IsChoice: true, IsGreyed: false };
         OnPropertyChanged(nameof(FocusedKind));
         OnPropertyChanged(nameof(FocusedRow));
+    }
+
+    /// <summary>A value changed by D-pad, A or a click on its arrows shows in the area's value line at once.</summary>
+    private IReadOnlyList<DetailRowViewModel> Watched(IReadOnlyList<DetailRowViewModel> rows)
+    {
+        foreach (var row in rows)
+        {
+            row.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(DetailRowViewModel.ValueText))
+                {
+                    UpdateValueLines();
+                }
+            };
+        }
+
+        return rows;
     }
 
     private void UpdateValueLines()

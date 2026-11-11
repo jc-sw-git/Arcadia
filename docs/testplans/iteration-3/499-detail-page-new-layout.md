@@ -9,7 +9,7 @@ Replaces T11-7 (three rows of buttons) and the layout parts of T11-1 and T11-8; 
 over" no longer holds for the rows of an area (T499-14). The owner's cases are collected for the owner's test at the
 end of the detail page work.
 
-**Status:** Automated: T499-1 to -8, -10 to -22, -24 to -26; T499-23 red until the arrows update the rail (QE finding 1) · QE: T499-27 looked at, open for finding 2 · Open: T499-9 (artwork part waits for #490), T499-23, T499-28 (only 1920 × 1080 looked at), T499-29 (measured, see History) · Open for the owner: T499-30, T499-31
+**Status:** Automated: T499-1 to -8, -10 to -26 · QE: T499-27 looked at, open for finding 2 · Open: T499-9 (artwork part waits for #490), T499-28 (only 1920 × 1080 looked at), T499-29 (measured, see History) · Open for the owner: T499-30, T499-31
 
 Page and button row
 
@@ -97,7 +97,7 @@ State changes, mouse, regression
       active), an update appears or goes, a game starts or ends, a rescan changes the tab's games: buttons, note, rows
       and value lines update in place; the page stays on its game and the focus on its button, area or row. A rescan
       that removes the shown game behaves as today. · E2E: yes
-- [ ] **T499-23** Mouse: a click on an area opens it, a click on a row focuses it, the mouse over a row focuses it, the
+- [x] **T499-23** Mouse: a click on an area opens it, a click on a row focuses it, the mouse over a row focuses it, the
       arrows beside a value change it, a click on a stack turns the carousel, the buttons click as today, the dialogs
       show ✕. · E2E: yes (window test)
 - [x] **T499-24** The library's context menu offers the same actions as the detail page (incl. "Artwork ändern",
@@ -147,3 +147,4 @@ History:
 | T499-3, -12, -13, -21, -22, -24 | 2026-11-11 | Claude (QE) | PR branch, Debug, Linux cloud container, made-up GOG libraries | ✅ new `DetailPageStateTests`, each red once (L3 rebuilding the page on `DetailFocus.Start`; the confirmation letting LT/RT/LB/RB through; no `RebuildActions` on a tile change; no backdrop; uninstall row without its action) | T499-3: the existing poll test in `DetailPageTests` now carries its ID; Y not automated: Arcadia opens the status messages only with entries; covered by the #166 tests |
 | T499-23 | 2026-11-11 | Claude (QE) | PR branch, Debug, headless window 1920 × 1080, fake Steam Controller | ❌ `The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value`: a click on ▶ changes the row's value, the rail still shows the old one | QE finding 1, fixed in this PR |
 | T499-1, -5, -6, -14, -15, -18, -27 (look) | 2026-11-11 | Claude (QE) | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ button row, rail, both areas with greyed rows and reasons, info box, RT keeping "Verwalten" and its row, one ring at a time; ⚠️ the front cover of a game not installed and without artwork has no visible edge on its backdrop (finding 2) | 1280 × 720 and 200 % not looked at; motion judged from single frames |
+| T499-23 | 2026-11-11 | Claude | PR branch, Debug, headless window, Linux cloud container | ✅ `DetailPageViewTests.The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value` green after the fix (the area's value line follows every change of a row's value) | QE finding 1 fixed |

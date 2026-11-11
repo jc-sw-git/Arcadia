@@ -71,7 +71,7 @@ internal sealed class ArcadiaDriver : IDisposable
     private ArcadiaDriver(
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
-        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null)
+        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null)
     {
         Folder = folder;
         Steam = steam;
@@ -111,7 +111,7 @@ internal sealed class ArcadiaDriver : IDisposable
         var controllerPlatform = (IControllerSupportPlatform?)steam ?? (IControllerSupportPlatform?)files?.ControllerSupport ?? new NoControllerSupportPlatform();
         // The artwork cache in the test's folder; Steam's image server is the launcher files' (kept across a restart), else
         // the fake network's, which knows no image (#487).
-        _artworkHttp = files is null ? _http : new HttpClient(files.ImageServer, disposeHandler: false);
+        _artworkHttp = (imageServer ?? files?.ImageServer) is { } images ? new HttpClient(images, disposeHandler: false) : _http;
         Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _artworkHttp, time) { Log = AppLog.Write };
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
@@ -335,9 +335,11 @@ internal sealed class ArcadiaDriver : IDisposable
     /// Starts Arcadia and waits until the library shows. Without <paramref name="settings"/>, the launchers are already
     /// chosen (as after the first start); pass settings without <see cref="AppSettings.ActiveLaunchers"/> for a fresh install.
     /// <paramref name="arguments"/> are the command line's switches; the launchers stay those of the test also with --demo.
+    /// <paramref name="imageServer"/> answers the covers' and backgrounds' downloads (#487); null: the fake network, which has none.
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
-        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default)
+        IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default,
+        HttpMessageHandler? imageServer = null)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -347,7 +349,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments, imageServer: imageServer);
         await driver.LoadAsync();
         return driver;
     }

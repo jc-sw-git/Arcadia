@@ -15,3 +15,4 @@ History:
 | T477-1 (before the fix) | 2026-11-11 | Claude | PR branch without the fix, Release, Linux cloud container | ❌ the keys are other controls after reopening | fixed |
 | T477-1, T477-2 | 2026-11-11 | Claude | PR branch, Release, Linux cloud container | ✅ | – |
 | T477-3 | 2026-11-11 | Claude | PR branch, Release, Xvfb, Linux cloud container, 1,031 demo games | ✅ `Bild: Search` 12–31 ms from the second opening on; the first after the start ~980 ms (first build of the controls and JIT) | first opening: see PR |
+| T477-3 (QE review) | 2026-11-11 | Claude (QE) | PR branch 57fd0fb, Release, Xvfb, Linux cloud container, 1,031 demo games | ✅ `Bild: Search` 18–27 ms on the 2nd to 8th opening, the first 541 ms; `Back` 5–14 ms; a reopened search with another term shows only its own hits | – |

@@ -231,7 +231,10 @@ public sealed class SearchHitTests
     /// <summary>The D-pad to the dialog's top left, then down and right to the option, and A.</summary>
     private static void Choose(ArcadiaDriver arcadia, int row, int column)
     {
-        arcadia.Press(UiAction.Up, times: 6).Press(UiAction.Left, times: 4).Press(UiAction.Down, times: row).Press(UiAction.Right, times: column);
+        // Up and left to the first cell step by step, since a step past it goes round (#476), then to the wanted one.
+        var (fromRow, fromColumn) = arcadia.Main.ViewOptions!.FocusPosition;
+        arcadia.Press(UiAction.Left, times: fromColumn).Press(UiAction.Up, times: fromRow)
+            .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column);
         Assert.True(arcadia.Main.ViewOptions!.FocusPosition == (row, column), $"Fokus auf {arcadia.Main.ViewOptions.FocusPosition}, nicht auf ({row}, {column})");
         arcadia.Press(UiAction.Accept);
     }

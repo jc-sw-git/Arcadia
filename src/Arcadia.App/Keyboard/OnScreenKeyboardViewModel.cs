@@ -38,6 +38,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private Func<char, bool> _takes = _ => true;
     private FullKeyboard _board;
     private KeyboardButton _moveDirection;
+    private int _moveSteps;
     private const int StartRow = 2;
     private const int StartColumn = 1;
 
@@ -57,7 +58,8 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         _levels = new KeyboardLevels(() => _board.Layout.HasAltGr, time);
         _levels.Changed += ShowLevel;
         _move = new RepeatGesture(MoveRepeatDelay, MoveRepeatInterval, time, post);
-        _move.Repeated += () => Move(_moveDirection);
+        // The first step of a held D-pad is its press; the ones after repeat it and stop at the keyboard's edge (#476).
+        _move.Repeated += () => Move(_moveDirection, held: _moveSteps++ > 0);
         _erase = new RepeatGesture(EraseRepeatDelay, EraseRepeatInterval, time, post);
         _erase.Repeated += Erase;
         LayoutMenu = new LayoutMenuViewModel(layout, ChooseLayout);
@@ -140,6 +142,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
             {
                 _moveDirection = button;
                 _move.Release();
+                _moveSteps = 0;
                 _move.Press();
             }
             else if (button == _moveDirection)
@@ -180,7 +183,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         switch (button)
         {
             case KeyboardButton.Up or KeyboardButton.Down or KeyboardButton.Left or KeyboardButton.Right:
-                Move(button);
+                Move(button, HeldPress.IsRepeat);
                 break;
             case KeyboardButton.Type when FocusedKey.Key.Kind == BoardKeyKind.Backspace:
                 _erase.Press();
@@ -362,15 +365,18 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         FocusClosest(centre);
     }
 
-    /// <summary>Moves the focus over the keys that do something; it stays at the keyboard's edges.</summary>
-    private void Move(KeyboardButton direction)
+    /// <summary>
+    /// Moves the focus over the keys that do something; past the keyboard's edge round to the other side, a held
+    /// button stops there (#476).
+    /// </summary>
+    private void Move(KeyboardButton direction, bool held)
     {
         (int Row, int Column)? target = direction switch
         {
-            KeyboardButton.Left => KeyGrid.Sideways(AllSpots(), _row, _column, -1),
-            KeyboardButton.Right => KeyGrid.Sideways(AllSpots(), _row, _column, 1),
-            KeyboardButton.Up => KeyGrid.Vertical(AllSpots(), _row, _column, -1),
-            KeyboardButton.Down => KeyGrid.Vertical(AllSpots(), _row, _column, 1),
+            KeyboardButton.Left => KeyGrid.Sideways(AllSpots(), _row, _column, -1, held),
+            KeyboardButton.Right => KeyGrid.Sideways(AllSpots(), _row, _column, 1, held),
+            KeyboardButton.Up => KeyGrid.Vertical(AllSpots(), _row, _column, -1, held),
+            KeyboardButton.Down => KeyGrid.Vertical(AllSpots(), _row, _column, 1, held),
             _ => null,
         };
         if (target is { } to)

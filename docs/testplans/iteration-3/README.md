@@ -34,7 +34,7 @@ its file.
 | [470](470-debugger-stops-at-restore-controllers.md) | #470 | Debugger stops Arcadia at "Controller wiederherstellen" while a virtual Xbox pad is plugged in | T470-1, T470-2 |
 | [471](471-restore-ends-emulation-despite-declined-prompt.md) | #471 | "Controller wiederherstellen" ends the emulation even when the Windows prompt is declined | T471-1 to T471-4 |
 | [024](024-design-polish-font-covers-page-sizes.md) | #24 | Design polish: Figtree font, 2:3 covers, page sizes that fill the grid | T24-1 to T24-16 |
-| [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-1 to -4, T476-6 to -17 (parts 1 and 2) |
+| [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-1 to -17 |
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 
@@ -63,6 +63,7 @@ Charter: –. Time box: –. Findings: –.
 | T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
 | T476-8 to -12 | `HeldButtonsTests`, `Window/HeldKeysTests`; variants in `GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests` |
 | T476-1 to -4, -6, -7, -14, -16, -17 | `HeldButtonsTests` (T476-16), `SearchWrapTests`, `LibraryTests` (grid, pages, page buttons), `Window/SearchViewTests.More_hits_than_fit_the_row_…_turns_by_two_rows_and_round`, `SteamControllerTests`; variants in `GridFocusTests`, `HitWindowTests`, `GamepadPollsTests` |
+| T476-5 | `ListWrapTests`, `OnScreenKeyboardTests.The_D_pad_walks_the_keys_…_goes_round_at_the_edges_…`, `LibraryFilterTests.Alle_Filter_zuruecksetzen_…`; variants in `ListFocusTests`, `KeyGridTests`, `FullKeyboardTests` |
 | T465-1 to -9, -11 to -13 | `LibraryFilterTests`, variants in `GameFilterTests` (Core) |
 | T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |

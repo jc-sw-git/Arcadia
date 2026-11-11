@@ -155,7 +155,7 @@ public sealed class FirstRunViewTests
         }
 
         AssertFades(arcadia, fade, top: true, bottom: false);
-        arcadia.Press(UiAction.Up, times: rows.Count);
+        arcadia.Press(UiAction.Up, times: rows.Count - 1);
         AssertClearOfFades(arcadia, fade, rows[0], "wieder oben");
         AssertFades(arcadia, fade, top: false, bottom: true);
     }

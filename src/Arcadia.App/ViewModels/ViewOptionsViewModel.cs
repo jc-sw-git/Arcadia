@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.Core.Library;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -216,7 +217,7 @@ public sealed class ViewOptionsViewModel : ViewModelBase
 
     private void MoveRow(int delta)
     {
-        var row = Math.Clamp(_row + delta, 0, _grid.Count - 1);
+        var row = ListFocus.Cycle(_row, delta, _grid.Count, HeldPress.IsRepeat);
         var column = Math.Min(_column, _grid[row].Count - 1);
         column = NearestEnabled(_grid[row], column);
         if (column >= 0)
@@ -228,13 +229,10 @@ public sealed class ViewOptionsViewModel : ViewModelBase
     private void MoveColumn(int delta)
     {
         var options = _grid[_row];
-        for (var c = _column + delta; c >= 0 && c < options.Count; c += delta)
+        var column = ListFocus.Next(_column, delta, options.Count, c => options[c].IsEnabled, HeldPress.IsRepeat);
+        if (column != _column)
         {
-            if (options[c].IsEnabled)
-            {
-                SetFocus(_row, c);
-                return;
-            }
+            SetFocus(_row, column);
         }
     }
 

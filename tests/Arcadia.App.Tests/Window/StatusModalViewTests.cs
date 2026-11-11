@@ -119,7 +119,7 @@ public sealed class StatusModalViewTests
         Assert.True(fade.ShowsEnd);
         Keep(arcadia, "status-modal-many");
 
-        arcadia.Press(UiAction.Down, times: modal.Entries.Count).Settle();
+        arcadia.Press(UiAction.Down, times: modal.Entries.Count - 1).Settle();
         Assert.Same(modal.Entries[^1], modal.Focused);
         arcadia.AssertRingAround(EntryBorder(arcadia, modal.Focused!), "letzter von vielen");
         Assert.True(fade.ShowsStart);

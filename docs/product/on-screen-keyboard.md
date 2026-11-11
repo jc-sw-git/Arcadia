@@ -29,5 +29,7 @@ On-screen keyboard (#129, #110). Where the search and the mouse mode use it: `se
 With the controller the D-pad (left stick) moves over the keys, passing over empty, greyed-out and left-out ones:
 left/right at a row's last key go on to the nearest key wholly beside it in another row (² on AltGr: left to ↹),
 up/down to the nearest key above or below, so a far key in the next row doesn't win over one right below in the row
-after (↹ on AltGr: down to ⇧, not ↵); the tall Enter is one key in both rows. In the mouse mode the
+after (↹ on AltGr: down to ⇧, not ↵); the tall Enter is one key in both rows. Where nothing is left in that
+direction, the focus goes round (#476): left/right to the row's other end, up/down to the nearest key counted from
+beyond the other edge (up from 1 to <); a held D-pad stops at the edge (`controls.md`). In the mouse mode the
 buttons are the mouse mode's (`mouse-mode.md`). The gamepad buttons stay Arcadia's, not Steam's.

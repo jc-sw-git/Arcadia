@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.App.Services;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Arcadia.App.ViewModels;
@@ -113,7 +114,7 @@ public sealed partial class FirmwareAttemptViewModel : ViewModelBase, IDisposabl
     private void Move(int step)
     {
         var at = Array.IndexOf(_order, Focused);
-        Focus(_order[Math.Clamp(at + step, 0, _order.Length - 1)]);
+        Focus(_order[ListFocus.Cycle(at, step, _order.Length, HeldPress.IsRepeat)]);
     }
 
     private void Focus(HoldButtonViewModel button)

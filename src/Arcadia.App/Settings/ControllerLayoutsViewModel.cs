@@ -134,10 +134,10 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         switch (action)
         {
             case UiAction.Up:
-                FocusAt(ListFocus.Move(_focus, -1, FocusCount));
+                FocusAt(ListFocus.Cycle(_focus, -1, FocusCount, HeldPress.IsRepeat));
                 break;
             case UiAction.Down:
-                FocusAt(ListFocus.Move(_focus, 1, FocusCount));
+                FocusAt(ListFocus.Cycle(_focus, 1, FocusCount, HeldPress.IsRepeat));
                 break;
             case UiAction.Left when FocusedRow is { } row:
                 Step(row, -1);

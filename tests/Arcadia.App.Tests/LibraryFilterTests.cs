@@ -160,7 +160,10 @@ public sealed class LibraryFilterTests
         using var arcadia = await ArcadiaDriver.StartAsync(specs);
         arcadia.Press(UiAction.KeyboardLayout);
         var modal = Modal(arcadia);
+        // Without a filter there is no reset row to go up to: up goes round to the last category (#476).
         arcadia.Press(UiAction.Up);
+        Assert.Equal("Typ", Focused(modal));
+        arcadia.Press(UiAction.Down);
         Assert.Equal(AppTexts.Installed, Focused(modal));
 
         arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Back).Press(UiAction.Up);

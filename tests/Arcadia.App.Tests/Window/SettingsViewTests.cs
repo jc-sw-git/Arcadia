@@ -124,9 +124,13 @@ public sealed class SettingsViewTests
         Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         var rows = settings.Selected.Rows;
 
-        // ▲ ▼ row by row, stopping at both ends, each row in view with its group's heading.
+        // ▲ ▼ row by row, each row in view with its group's heading; past either end round to the other (#476).
         first.Press(UiAction.Up);
+        Assert.Same(rows[^1], settings.FocusedRow);
+        AssertRowInView(first, rows[^1]);
+        first.Press(UiAction.Down);
         Assert.Same(rows[0], settings.FocusedRow);
+        AssertRowInView(first, rows[0]);
         for (var i = 1; i < rows.Count; i++)
         {
             first.Press(UiAction.Down);
@@ -135,6 +139,8 @@ public sealed class SettingsViewTests
         }
 
         first.Press(UiAction.Down);
+        Assert.Same(rows[0], settings.FocusedRow);
+        first.Press(UiAction.Up);
         Assert.Same(rows[^1], settings.FocusedRow);
         for (var i = rows.Count - 2; i >= 0; i--)
         {
@@ -283,7 +289,7 @@ public sealed class SettingsViewTests
         // The mouse resting while the rows scroll under it with keys: the focus stays with the keys.
         arcadia.MouseMove(arcadia.CentreOf(arcadia.RowButton(settings.Selected.Rows[0])));
         var pointer = arcadia.CentreOf(arcadia.RowButton(settings.Selected.Rows[0]));
-        for (var step = 0; step < settings.Selected.Rows.Count; step++)
+        for (var step = 1; step < settings.Selected.Rows.Count; step++)
         {
             arcadia.Key(Key.S).MouseMove(pointer);
         }
@@ -418,7 +424,7 @@ public sealed class SettingsViewTests
         Assert.True(scroller.Extent.Height > scroller.Viewport.Height + 1, "Die Einstellungen scrollen");
 
         AssertFooterShown(arcadia, "oben");
-        arcadia.Press(UiAction.Down, times: settings.Selected.Rows.Count);
+        arcadia.Press(UiAction.Down, times: settings.Selected.Rows.Count - 1);
         arcadia.WaitForTransitions();
         Assert.Equal(scroller.Extent.Height - scroller.Viewport.Height, scroller.Offset.Y, tolerance: 1);
         AssertFooterShown(arcadia, "unten");

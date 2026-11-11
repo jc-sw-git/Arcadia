@@ -22,7 +22,8 @@ public readonly record struct KeySpot(double Centre, bool IsEmpty, int Key = -1,
 /// nearest key wholly on that side in another row (from ² on AltGr left to ↹, owner 2026-10-22). Up and down
 /// go to the nearest key above or below, counting rows and keys alike, so a far key in the next row doesn't
 /// win over one right below in the row after (from ↹ on AltGr down to ⇧, not to ↵). Where nothing is left
-/// in that direction the focus stays.
+/// in that direction a fresh press goes round (#476): left/right to the other end of the row, up/down to the key
+/// nearest in position in the bottom or top row; a held one stays.
 /// </summary>
 public static class KeyGrid
 {
@@ -31,8 +32,11 @@ public static class KeyGrid
     // Adjacent keys share an edge; sums of quarter keys are exact, this only guards against rounding.
     private const double EdgeSlack = 1e-6;
 
-    /// <summary>The next key to the left (<paramref name="step"/> -1) or right (+1); the same key at the edge.</summary>
-    public static (int Row, int Column) Sideways(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step)
+    /// <summary>
+    /// The next key to the left (<paramref name="step"/> -1) or right (+1); at the edge the key at the row's other
+    /// end, or with <paramref name="held"/> the same key.
+    /// </summary>
+    public static (int Row, int Column) Sideways(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step, bool held = false)
     {
         if (NextInRow(rows[row], column, step) is { } next)
         {
@@ -72,6 +76,11 @@ public static class KeyGrid
             }
         }
 
+        if (best is null && !held && NextInRow(rows[row], step < 0 ? rows[row].Count : -1, step) is { } wrapped)
+        {
+            best = (row, wrapped);
+        }
+
         return best ?? (row, column);
     }
 
@@ -79,13 +88,26 @@ public static class KeyGrid
     /// The key above (<paramref name="step"/> -1) or below (+1) nearest in position; the same key at the edge.
     /// Between two keys equally near (centred rows of 13 and 12 keys meet half a key apart) the one
     /// further right wins going up and the one further left going down, as if each row sat a little
-    /// further right than the one above, like on a real keyboard: up from e is 3, down from 3 is e.
+    /// further right than the one above, like on a real keyboard: up from e is 3, down from 3 is e. At the edge
+    /// the nearest key counted from beyond the other edge, or with <paramref name="held"/> the same key.
     /// </summary>
-    public static (int Row, int Column) Vertical(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step)
+    public static (int Row, int Column) Vertical(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int row, int column, int step, bool held = false)
     {
         var centre = rows[row][column].Centre - (step * TieBreak);
         var (first, last) = RowsOf(rows, row, column);
-        var from = step < 0 ? first : last;
+        var best = Nearest(rows, step < 0 ? first : last, step, centre);
+        if (best is null && !held)
+        {
+            // Round: as if the focus stood in a row just beyond the other edge.
+            best = Nearest(rows, step < 0 ? rows.Count : -1, step, centre);
+        }
+
+        return best ?? (row, column);
+    }
+
+    /// <summary>The non-empty key nearest to <paramref name="centre"/> in the rows past <paramref name="from"/> in the direction of <paramref name="step"/>.</summary>
+    private static (int Row, int Column)? Nearest(IReadOnlyList<IReadOnlyList<KeySpot>> rows, int from, int step, double centre)
+    {
         (int Row, int Column)? best = null;
         var bestDistance = double.MaxValue;
         for (var r = from + step; r >= 0 && r < rows.Count; r += step)
@@ -100,7 +122,7 @@ public static class KeyGrid
             }
         }
 
-        return best ?? (row, column);
+        return best;
     }
 
     /// <summary>

@@ -91,7 +91,7 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     /// <summary>The focus moved to another row, by the controller, a key or a click.</summary>
     public event EventHandler? FocusMoved;
 
-    public void MoveFocus(int delta) => FocusAt(ListFocus.Move(_focus, delta, Rows.Count));
+    public void MoveFocus(int delta) => FocusAt(ListFocus.Cycle(_focus, delta, Rows.Count, HeldPress.IsRepeat));
 
     /// <summary>An input for the category itself before the page's own (e.g. Y, X); true if it took it.</summary>
     public virtual bool Handle(UiAction action) => false;

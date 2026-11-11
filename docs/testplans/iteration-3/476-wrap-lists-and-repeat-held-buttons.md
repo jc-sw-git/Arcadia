@@ -1,13 +1,14 @@
 # #476 Wrap round at the ends of every list and repeat LT/RT and LB/RB while held
 
-**Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: –
+**Status:** Automated: T476-1 to T476-12, T476-14, T476-16, T476-17 · QE: T476-8, T476-9 (PR #479), T476-2 to T476-4, T476-6 (PR #481, app run) · Open for the owner: –
 
-Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5, added with it. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now).
+Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now); T476-5 replaces T12-2's "the focus stays at the keyboard's edges".
 
 - [x] **T476-1** Search grid on its last window, RT (E, Page Down) shows the first window; LT (Q, Page Up) on the first shows the last; the search row the same · E2E: yes
 - [x] **T476-2** Focus on the first hit, left: the last hit; right on the last: the first; in the row with the keyboard out the same with the right stick; the library the same over all its pages · E2E: yes
 - [x] **T476-3** Search grid, focus in the first row: up goes to the last row, same column, or to the last hit if that row is shorter; down in the last row to the first row; in the single row up/down do nothing · E2E: yes
 - [x] **T476-4** Library: right on a page's last game goes to the next page's first, down in its bottom row to the next page's top row, same column; from the last page round to the first and back; LT/RT (Q/E, Page Up/Down, the buttons below the grid) turn round the same way · E2E: yes
+- [x] **T476-5** Every other list, menu, dialog's buttons and the on-screen keyboard go round: a step past the end goes to the other end (settings rows, first start, context menu, keyboard layout menu, "Ansicht", filter categories and values, status messages and their two buttons, the detail page's buttons and rows, questions, the empty tab's two buttons, the prompts in "Controller", "Controller zuordnen", the firmware dialog); greyed-out items are passed over; where the edge leads elsewhere it still does (filter: left out of the values); a held D-pad stops at the end · E2E: yes
 - [x] **T476-6** The search grid's LT and RT buttons both show at every window while there are more hits than fit · E2E: yes
 - [x] **T476-7** The mouse wheel over the search hits stops at the first and last window · E2E: yes
 

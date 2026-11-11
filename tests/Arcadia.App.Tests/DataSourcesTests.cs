@@ -15,7 +15,7 @@ namespace Arcadia.App.Tests;
 /// #489: the settings category "Datenquellen": the SteamGridDB key by controller, its warning, the order of the sources,
 /// "Zuschneiden erlaubt" and the search for missing artwork, through the view models with a fake SteamGridDB.
 /// </summary>
-public sealed class DataSourcesTests
+public sealed partial class DataSourcesTests
 {
     private const string GameId = "4100001";
     private const string WideHero = "https://images.example/4100001/wide.jpg";
@@ -102,7 +102,9 @@ public sealed class DataSourcesTests
                 (ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher), AppTexts.DataSourcesOrderGroup, 0),
                 (ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb), AppTexts.DataSourcesOrderGroup, 0),
                 (ArtworkSourceRows.MissingKey, AppTexts.DataSourcesArtworkGroup, 0),
+                (ArtworkReloadRows.ReloadKey, AppTexts.DataSourcesArtworkGroup, 0),
                 ("artwork-crop", AppTexts.DataSourcesArtworkGroup, 0),
+                (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 0),
             ],
             category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
 

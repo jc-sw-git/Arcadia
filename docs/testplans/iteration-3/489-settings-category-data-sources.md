@@ -1,6 +1,6 @@
 # #489 Settings category "Datenquellen": SteamGridDB key, artwork order and search
 
-**Status:** Automated: T489-1 to T489-24 (T489-8's DPAPI case runs on the Windows CI runner only) · QE: run 2026-11-11, findings fixed and checked again · Open for the owner: T489-25, T489-26, T489-27
+**Status:** Automated: T489-1 to T489-24 (T489-8's DPAPI case runs on the Windows CI runner only), from #490: T490-21, -22, -27 (way to the key), -28 to -30 · Open for the QE: T490-32 · QE: run 2026-11-11, findings fixed and checked again · Open for the owner: T489-25, T489-26, T489-27
 
 - [x] **T489-1** Settings → LB/RB to "Datenquellen": groups "STEAMGRIDDB" (Schlüssel; indented: Aus der Zwischenablage einfügen, Schlüssel-Seite öffnen, Verbindung testen), "REIHENFOLGE FÜR ARTWORK" (1 Launcher-Bilder, 2 SteamGridDB) and "ARTWORK" (Fehlende Cover und Hintergründe, Zuschneiden erlaubt) with the prototype's subtitles and info texts, including the box "WAS ARCADIA SENDET". Without a key: "Kein Schlüssel hinterlegt", action "Eingeben", "Verbindung testen" greyed out with "Erst mit einem Schlüssel möglich" but focusable, "SteamGridDB" in the order greyed out with "Wird übersprungen, solange kein gültiger Schlüssel da ist". Layout at 1920 × 1080: indents, progress bar, greyed rows, fades (#237), footer names the focused row's buttons. · E2E: yes (window test: layout and texts)
 - [x] **T489-2** Controller only, B goes back (acceptance criterion 1): open "Datenquellen", A on "Schlüssel" opens "SteamGridDB-Schlüssel" with the on-screen keyboard, type a valid key, confirm → saved and checked at once: "● Verbunden · endet auf …cdef", info toast "Schlüssel gespeichert und geprüft: verbunden.", action now "Bearbeiten"; "Einfügen" with a valid key in the clipboard → "Schlüssel eingefügt und geprüft: verbunden."; "Schlüssel-Seite öffnen" (fake browser start, T489-6); "Verbindung testen" → "Zuletzt geprüft um hh:mm · in Ordnung"; B from the dialog and from the page goes back each time. · E2E: yes
@@ -30,6 +30,18 @@
 - [ ] **T489-26** **Owner:** "Jetzt suchen" on the own library: games that had placeholders get real covers and backgrounds, none looks wrong, the progress row counts sensibly, the library stays fluid while it runs. · E2E: no (real SteamGridDB, real library)
 - [ ] **T489-27** **Owner:** close and start Arcadia: the key is still there ("Verbunden" after "Verbindung testen"). Then change one character of the key in the dialog: warning at the tab, the row and the status chip; "Einfügen" with the right key clears it. · E2E: no (real DPAPI, real SteamGridDB)
 
+
+Taken over from #490 (the settings rows and the SteamGridDB client are this PR's; the cases' text is in
+[490-change-a-games-artwork.md](490-change-a-games-artwork.md)):
+
+- [x] **T490-21** "Von Hand gesetzte Artworks überschreiben" off on a fresh install, A switches it, kept after a restart; "Alle Artworks neu laden" says "Von Hand gesetzte Bilder bleiben" or, switched on, "Auch von Hand gesetzte Bilder werden ersetzt". · E2E: yes
+- [x] **T490-22** "Alle Artworks neu laden" asks first with the text matching the switch; B changes nothing; "Neu laden" starts it, the missing row shows "Neu laden läuft · n von N Spielen", the button is greyed out while it runs. · E2E: yes
+- [x] **T490-27** (the way to the key) "Zu den Datenquellen ›" closes the modal and opens "Datenquellen" on "Schlüssel"; B leaves the settings back to the detail page. · E2E: yes
+- [x] **T490-28** A key SteamGridDB rejects: the notice "Der SteamGridDB-Schlüssel gilt nicht", no SteamGridDB tiles, no request. · E2E: no (view model test)
+- [x] **T490-29** A valid key: SteamGridDB's images after the launcher image, best rated first, " · n VORSCHLÄGE" in the label, the one in use marked; requests carry only the key and the launcher's id. · E2E: yes
+- [x] **T490-30** A on a SteamGridDB tile uses that image at once and marks it set by hand (download checks: T489-22). · E2E: no (view model test with fake server)
+- [ ] **T490-32** Release build, a game with 21 background tiles: opening the modal and every focus move < 50 ms (`Bild:` lines), images decoded at tile size, RAM back after closing. · E2E: no (real rendering; QE's run)
+
 Open question (owner): the search after a key arrives also replaces automatic images taken only as a fallback (none
 fitting), never images set by hand; implemented so in the PR, `docs/product/settings-data-sources.md`. T489-17 and
 T489-19 test it that way.
@@ -46,3 +58,4 @@ History:
 | T489-1, -3 (own run) | 2026-11-11 | Claude (QE) | PR head 3a681ba (probe), 74ebb63 (suite), Debug, real App under Xvfb, `--demo`, keys for the controller | ✅ category, rows, greyed rows, info box, footer; ❌ -3: no "Löschen", an empty field taken deletes the key | Review finding 2 |
 | T489-3, -15 (review fixes) | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container, fake SteamGridDB | ✅ `ArtworkServiceSteamGridDbTests.SteamGridDbs_image_stays_at_the_next_scan_when_the_launcher_offers_a_file` (the QE's probe, red before the fix in `ArtworkService.PickAsync`), `DataSourcesTests.An_empty_field_keeps_the_key_and_Schluessel_loeschen_deletes_it_without_a_request` | QE re-check |
 | T489-3, -15 (re-check), -1 (own run) | 2026-11-11 | Claude (QE) | PR head 3ad7b8f, Release (SteamGridDB, DataSources and Settings tests) and Debug (real App under Xvfb, `--demo`, keys) | ✅ SteamGridDB's image stays at the next scan (QE probe now a regression test); empty field keeps the key; row "Schlüssel löschen" greyed without a key | – |
+| T490-21, -22, -27 to -30 | 2026-11-11 | Claude | PR branch after merging #490, Debug, Linux cloud container, fake SteamGridDB and image server | ✅ `DataSourcesTests.ArtworkChanges`; red once: -28 to -30 with no SteamGridDB suggestions (`ArtworkService.Suggestions` null), -22 with "Neu laden" not greyed out while it runs (`ArtworkReloadRows.Refresh`); -27 stayed green with the key row not focused, because "Schlüssel" is the category's first row anyway | – |

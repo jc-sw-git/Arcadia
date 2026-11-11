@@ -41,3 +41,12 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
 - Throttling waits as SteamGridDB asks (at most 60 s) and goes on; no answer within 10 s, no network or a server
   error stops SteamGridDB for the rest of the run, asked again at the next scan. Never one request per game for a key
   that is rejected or a service that is down.
+
+## Images set by hand and "Alle Artworks neu laden" (#490)
+
+- Group "ARTWORK" also holds "Alle Artworks neu laden" (below the missing images) and the switch "Von Hand gesetzte
+  Artworks überschreiben" (default off, saved in `settings.json`). "Neu laden" asks first, with the text matching the
+  switch; B changes nothing. It runs like "Jetzt suchen" over every game, also asking SteamGridDB again, keeps images
+  set by hand unless the switch is on, and is greyed out while a search or reload runs ("Neu laden läuft · n von N").
+- With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, best rated first) after the
+  launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen ›" to the row "Schlüssel".

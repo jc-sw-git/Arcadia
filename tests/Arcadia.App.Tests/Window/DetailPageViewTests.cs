@@ -141,7 +141,7 @@ public sealed class DetailPageViewTests
         var buttons = DetailButtons(page);
 
         Assert.Equal(["Spielen", AppTexts.ActionToFavorites, "In GOG Galaxy öffnen", AppTexts.ActionChangeArtwork, AppTexts.ActionUninstallMore], buttons.Select(Label));
-        Assert.Equal([true, false, true, false, true], buttons.Select(button => button.IsEffectivelyEnabled));
+        Assert.Equal([true, false, true, true, true], buttons.Select(button => button.IsEffectivelyEnabled));
         Assert.True(buttons[0].Classes.Contains("focused"), "„Spielen“ ist fokussiert.");
 
         // The first four in one row, "Deinstallieren …" alone below them, red; all inside the card.
@@ -194,7 +194,7 @@ public sealed class DetailPageViewTests
             arcadia.Press(move);
         }
 
-        Assert.Equal(3, buttons.Count);
+        Assert.Equal(4, buttons.Count);
         Assert.Single(arcadia.WithText("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet."));
         var card = arcadia.Bounds(Card(page));
         var stats = page.GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("detailStat")).ToList();

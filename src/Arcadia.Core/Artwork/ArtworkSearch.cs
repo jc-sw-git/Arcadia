@@ -14,9 +14,12 @@ public sealed record ArtworkSearch(int MissingCovers, int MissingHeroes, Artwork
     public static ArtworkSearch NotYet { get; } = new(0, 0, null, null);
 }
 
-/// <summary>A run going on: <paramref name="Done"/> of the <paramref name="Total"/> games that missed an image when it began.</summary>
+/// <summary>
+/// A run going on: <paramref name="Done"/> of the <paramref name="Total"/> games that missed an image when it began, or of
+/// all games for "Alle Artworks neu laden" (<paramref name="Reload"/>, #490).
+/// </summary>
 /// <param name="ByPlayer">Started with "Jetzt suchen".</param>
-public sealed record ArtworkRun(int Done, int Total, bool ByPlayer);
+public sealed record ArtworkRun(int Done, int Total, bool ByPlayer, bool Reload = false);
 
 /// <summary>What a run found: images taken into the cache, and whether SteamGridDB took part.</summary>
 /// <param name="WithSteamGridDb">A usable SteamGridDB key at the start: SteamGridDB was asked where it was needed.</param>

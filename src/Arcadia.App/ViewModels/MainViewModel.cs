@@ -28,7 +28,7 @@ namespace Arcadia.App.ViewModels;
 /// detail page, search, settings, first start), holds the dialogs over them and wires the parts. The pages handle their
 /// own input (<see cref="IPage"/>); the library's loading, installs and running games are <see cref="LibrarySession"/>'s.
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IWebPageHost, IControllerModeHost, IStatusModalHost, IDisposable
+public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryHost, ILauncherSettingsHost, IWebPageHost, IControllerModeHost, IStatusModalHost, IChangeArtworkHost, IDisposable
 {
     private readonly ControllerSupportService _controllerSupport;
     private readonly ArcadiaUpdateService _updates;
@@ -221,7 +221,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen || IsFilterOpen;
+        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -366,7 +366,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         var page = OpenPages().First();
         object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
-            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? FilterModal;
+            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? ChangeArtwork;
         return new ShownLayer(page.GetType(), dialog, page.Layout);
     }
 
@@ -461,6 +461,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (FilterModal is { } filter)
         {
             filter.Handle(action);
+            return true;
+        }
+
+        if (ChangeArtwork is { } artwork)
+        {
+            artwork.Handle(action);
             return true;
         }
 

@@ -993,6 +993,22 @@
   <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Nach jedem Einlesen sucht Arcadia im Hintergrund Bilder für Spiele, die noch keine haben oder deren Bild nur zugeschnitten aushilft.</value></data>
   <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ startet dieselbe Suche sofort.</value></data>
   <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Arcadia versucht es beim nächsten Einlesen wieder.</value></data>
+  <data name="DataSourcesReload" xml:space="preserve"><value>Alle Artworks neu laden</value></data>
+  <data name="DataSourcesReloadKeeps" xml:space="preserve"><value>Von Hand gesetzte Bilder bleiben</value></data>
+  <data name="DataSourcesReloadReplaces" xml:space="preserve"><value>Auch von Hand gesetzte Bilder werden ersetzt</value></data>
+  <data name="DataSourcesReloadAction" xml:space="preserve"><value>Neu laden</value></data>
+  <data name="DataSourcesReloadInfo" xml:space="preserve"><value>Lädt Cover und Hintergründe aller Spiele neu, zum Beispiel wenn es auf SteamGridDB inzwischen bessere gibt. Vorher fragt Arcadia nach.</value></data>
+  <data name="DataSourcesReloadAsk" xml:space="preserve"><value>Alle Artworks neu laden?</value></data>
+  <data name="DataSourcesReloadAskKeeps" xml:space="preserve"><value>Arcadia lädt Cover und Hintergründe aller {count} Spiele neu. Von Hand gesetzte Bilder bleiben, wie sie sind.</value></data>
+  <data name="DataSourcesReloadAskReplaces" xml:space="preserve"><value>Arcadia lädt Cover und Hintergründe aller {count} Spiele neu. Auch von Hand gesetzte Bilder werden ersetzt, weil „Von Hand gesetzte Artworks überschreiben“ an ist.</value></data>
+  <data name="DataSourcesReloadRunning" xml:space="preserve"><value>Neu laden läuft · {done} von {total} Spielen</value></data>
+  <data name="DataSourcesOverwrite" xml:space="preserve"><value>Von Hand gesetzte Artworks überschreiben</value></data>
+  <data name="DataSourcesOverwriteSubtitle" xml:space="preserve"><value>Gilt beim Neuladen aller Artworks</value></data>
+  <data name="DataSourcesOverwriteInfo" xml:space="preserve"><value>Von Hand gesetzt ist ein Bild, das du in „Artwork ändern“ gewählt hast, auch eine eigene Datei.</value></data>
+  <data name="DataSourcesOverwriteOffHeading" xml:space="preserve"><value>AUS</value></data>
+  <data name="DataSourcesOverwriteOff" xml:space="preserve"><value>Diese Bilder bleiben beim Neuladen, wie sie sind.</value></data>
+  <data name="DataSourcesOverwriteOnHeading" xml:space="preserve"><value>AN</value></data>
+  <data name="DataSourcesOverwriteOn" xml:space="preserve"><value>Auch sie werden durch das Bild ersetzt, das Arcadia selbst wählen würde.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
   <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>
@@ -1007,4 +1023,45 @@
   <data name="DataSourcesKeyStatus" xml:space="preserve"><value>SteamGridDB-Schlüssel ungültig</value></data>
   <data name="DataSourcesKeyStatusShort" xml:space="preserve"><value>SteamGridDB wird übersprungen, bis ein gültiger Schlüssel da ist</value></data>
   <data name="ErrorContextSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
+  <data name="ArtworkGameLine" xml:space="preserve"><value>{game} · {launcher}</value></data>
+  <data name="ArtworkTabCover" xml:space="preserve"><value>Cover</value></data>
+  <data name="ArtworkTabHero" xml:space="preserve"><value>Hintergrund</value></data>
+  <data name="ArtworkPreviewHeading" xml:space="preserve"><value>VORSCHAU AUF DER DETAILSEITE</value></data>
+  <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1 WIE DER KOPF DER DETAILSEITE</value></data>
+  <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} VORSCHLÄGE</value></data>
+  <data name="ArtworkSourceRow" xml:space="preserve"><value>Quelle</value></data>
+  <data name="ArtworkScoreRow" xml:space="preserve"><value>Bewertung</value></data>
+  <data name="ArtworkFileRow" xml:space="preserve"><value>Datei</value></data>
+  <data name="ArtworkSizeRow" xml:space="preserve"><value>Größe</value></data>
+  <data name="ArtworkSetRow" xml:space="preserve"><value>Gesetzt</value></data>
+  <data name="ArtworkSourcePlaceholder" xml:space="preserve"><value>Platzhalter</value></data>
+  <data name="ArtworkSourceLauncher" xml:space="preserve"><value>{launcher} (vom Launcher)</value></data>
+  <data name="ArtworkSourceOwnFile" xml:space="preserve"><value>Eigene Datei</value></data>
+  <data name="ArtworkSetByHand" xml:space="preserve"><value>von Hand</value></data>
+  <data name="ArtworkSetAutomatically" xml:space="preserve"><value>automatisch (Standard)</value></data>
+  <data name="ArtworkImageSize" xml:space="preserve"><value>{width} × {height}</value></data>
+  <data name="ArtworkScore" xml:space="preserve"><value>★ {score}</value></data>
+  <data name="ArtworkOwnFile" xml:space="preserve"><value>Eigene Datei</value></data>
+  <data name="ArtworkOwnFileTag" xml:space="preserve"><value>EIGENE DATEI</value></data>
+  <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · bis 20&#160;MB</value></data>
+  <data name="ArtworkSuggestionHero" xml:space="preserve"><value>SteamGridDB · {size}</value></data>
+  <data name="ArtworkNoKeyTitle" xml:space="preserve"><value>Mehr Vorschläge mit SteamGridDB</value></data>
+  <data name="ArtworkNoKeyText" xml:space="preserve"><value>Mit einem kostenlosen Schlüssel zeigt Arcadia hier bis zu 20 Bilder je Spiel. Du trägst ihn in den Einstellungen unter „Datenquellen“ ein.</value></data>
+  <data name="ArtworkBadKeyTitle" xml:space="preserve"><value>Der SteamGridDB-Schlüssel gilt nicht</value></data>
+  <data name="ArtworkBadKeyText" xml:space="preserve"><value>Bis er wieder gilt, gibt es hier nur das Bild des Launchers und eigene Dateien. In den Datenquellen trägst du einen neuen ein.</value></data>
+  <data name="ArtworkToDataSources" xml:space="preserve"><value>Zu den Datenquellen ›</value></data>
+  <data name="ArtworkTabsHint" xml:space="preserve"><value>Cover / Hintergrund</value></data>
+  <data name="ArtworkChooseHint" xml:space="preserve"><value>Bild wählen</value></data>
+  <data name="ArtworkUseHint" xml:space="preserve"><value>Verwenden</value></data>
+  <data name="ArtworkOtherFileHint" xml:space="preserve"><value>Andere Datei</value></data>
+  <data name="ArtworkRestoreHint" xml:space="preserve"><value>Standard wiederherstellen</value></data>
+  <data name="ArtworkPickCoverTitle" xml:space="preserve"><value>Bild für das Cover auswählen</value></data>
+  <data name="ArtworkPickHeroTitle" xml:space="preserve"><value>Bild für den Hintergrund auswählen</value></data>
+  <data name="ArtworkImagesType" xml:space="preserve"><value>Bilder</value></data>
+  <data name="ArtworkFileTooLarge" xml:space="preserve"><value>Das Bild ist größer als 20 MB und wurde nicht übernommen.</value></data>
+  <data name="ArtworkFileNoImage" xml:space="preserve"><value>Die Datei ist kein Bild, das Arcadia lesen kann, und wurde nicht übernommen.</value></data>
+  <data name="ArtworkFileUnreadable" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden und wurde nicht übernommen.</value></data>
+  <data name="ArtworkOfferFailed" xml:space="preserve"><value>Das Bild konnte nicht geladen werden. Das bisherige bleibt.</value></data>
+  <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Artwork ändern</value></data>
 </root>

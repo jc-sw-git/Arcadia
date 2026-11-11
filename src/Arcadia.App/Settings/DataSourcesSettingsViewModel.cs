@@ -1,3 +1,4 @@
+using Arcadia.App.Input;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
@@ -16,6 +17,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
     private readonly ArtworkService _artwork;
     private readonly SteamGridDbKeyRows _keyRows;
     private readonly ArtworkSourceRows _sourceRows;
+    private readonly ArtworkReloadRows _reloadRows;
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
@@ -26,9 +28,19 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         _artwork = artwork;
         _keyRows = new SteamGridDbKeyRows(key, artwork, host, editor => Editor = editor, time, keyPersists);
         _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
+        _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
         _key.Changed += OnChanged;
         _artwork.SearchChanged += OnChanged;
         Show();
+    }
+
+    /// <summary>"Alle Artworks neu laden?": [A] reloads, [B] closes it.</summary>
+    public override void HandleDialog(UiAction action)
+    {
+        if (Dialog is SettingsQuestionViewModel question)
+        {
+            question.Handle(action);
+        }
     }
 
     /// <summary>B while the key is written drops it (the editor takes B itself); nothing else goes a level up here.</summary>
@@ -55,7 +67,8 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
     {
         _keyRows.Refresh();
         _sourceRows.Refresh();
+        _reloadRows.Refresh();
         Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
-        SetRows([.. _keyRows.Rows, .. _sourceRows.Rows]);
+        SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow]);
     }
 }

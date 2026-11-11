@@ -65,15 +65,20 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
   another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
   the run stops downloading at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
-  what the views show (`GameArtwork`), `Changed` says for which games it changed. The order of the sources and the
+  what the views show (`GameArtwork`), `Changed` says for which games it changed. `ReloadAll` runs it over every image
+  again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben". The order of the sources and the
   tolerance come from `ArtworkSettings`; SteamGridDB is asked only where nothing cached fits, once per game and kind
-  and session (`SearchAgain` asks again); `Search`/`SearchChanged`: the missing counts and the run's progress.
+  and session (`SearchAgain` and `ReloadAll` ask again); `Search`/`SearchChanged`: the missing counts and the run's progress.
 - `SteamGridDb/`: `SteamGridDbClient` (API v2, the key only in the `Authorization` header, 10 s, waits on 429, checks
   every answer), `SteamGridDbKey` (the key's shape, state None/Unchecked/Valid/Rejected, nothing sent without a
-  usable key) and `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only).
-- `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), every file
-  through a temporary file and a rename; folder names from the key that never leave the cache; unreadable metadata
-  makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
+  usable key), `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only) and
+  `SteamGridDbSuggestions` (the client as `IArtworkSuggestions` for "Artwork ändern").
+- `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's
+  as a scan would choose it, then `IArtworkSuggestions`' up to 20, waiting in `artwork/.suggestions/`), `UseAsync`,
+  `UseFileAsync` (own file, 20 MB), `UseOwnFileAsync`, `RestoreAsync`. All set by hand; one lock per game write with the run.
+- `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), the own
+  files as `own-cover|own-hero.*`, every file through a temporary file and a rename; folder names from the key that never
+  leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
 
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per

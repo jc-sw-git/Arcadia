@@ -37,7 +37,7 @@ public sealed class ArtworkLoader(ArtworkService? cache)
         {
             // The file is damaged inside (the cache's check sees only its header and end), or gone since.
             AppLog.Write($"Artwork: {Path.GetFileName(file.Path)} von {file.GameKey} nicht lesbar: {e.GetType().Name}: {e.Message}");
-            cache?.ReportBroken(file.GameKey, file.Kind);
+            cache?.ReportBroken(file);
             return null;
         }
         finally

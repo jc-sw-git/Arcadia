@@ -81,13 +81,13 @@ public sealed class ArtworkSourceRows
         Refresh();
     }
 
-    /// <summary>The sources in their order, then the group "ARTWORK".</summary>
-    public IReadOnlyList<SettingsRowViewModel> Rows =>
-    [
-        .. _changes.Current.Artwork.WithValidValues().Order.Select(source => _sources[source]),
-        _missing,
-        _crop,
-    ];
+    /// <summary>The sources in their order.</summary>
+    public IReadOnlyList<SettingsRowViewModel> OrderRows => [.. _changes.Current.Artwork.WithValidValues().Order.Select(source => _sources[source])];
+
+    /// <summary>"Fehlende Cover und Hintergründe", first in the group "ARTWORK".</summary>
+    public SettingsRowViewModel MissingRow => _missing;
+
+    public SettingsRowViewModel CropRow => _crop;
 
     public static string SourceKey(ArtworkSourceKind source) => "artwork-source-" + source.ToString().ToLowerInvariant();
 
@@ -119,6 +119,7 @@ public sealed class ArtworkSourceRows
         _missing.Progress = search.Running is { Total: > 0 } going ? 100.0 * going.Done / going.Total : running ? 0 : null;
         _missing.Subtitle = search switch
         {
+            { Running: { Reload: true } reload } => AppTexts.DataSourcesReloadRunning(done: reload.Done, total: reload.Total),
             { Running: { } run } => AppTexts.DataSourcesSearchRunning(done: run.Done, total: run.Total),
             _ when _searchAsked => AppTexts.DataSourcesSearchBusy,
             { Result: { WithSteamGridDb: false } } => AppTexts.DataSourcesSearchLauncherOnly,

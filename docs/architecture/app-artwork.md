@@ -7,7 +7,8 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
   its own that sends no cookies; `App.axaml.cs` passes it in through `ArcadiaParts.Artwork` (the tests' in their folder).
   It also makes the `SteamGridDbKey`: DPAPI for the current user on Windows, memory only elsewhere.
 - Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` with `SteamGridDbKeyRows` (key, paste, key
-  page, test) and `ArtworkSourceRows` (order, missing images with progress, "Zuschneiden erlaubt"); it reaches the
+  page, test, delete), `ArtworkSourceRows` (order, missing images with progress, "Zuschneiden erlaubt") and
+  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); it reaches the
   window through `IDataSourcesHost` (`MainViewModel.DataSources.cs`: toasts, keyboard, `IClipboardText` and
   `IWebBrowser` from `Services/ExternalApps`). `StatusBarViewModel.WatchSteamGridDb` shows a rejected key in the chip.
 - `LibrarySession` hands every read library to the service; `MainViewModel` gives each new tile its `GameArtwork` (with
@@ -23,3 +24,8 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 Measured with `--demo --demo-games 5000` (Release, Linux container, made-up images): start and page turns as without
 images. Paging through the library raises the resident memory on Linux by glibc's allocator keeping the decoder's freed
 buffers (`MALLOC_MMAP_THRESHOLD_=131072` keeps it flat); no managed or native leak. The budget is measured on Windows.
+
+"Artwork ändern" (#490): `ViewModels/ChangeArtworkViewModel` (tabs, grid focus with `GridFocus`, tiles
+`ArtworkTileViewModel`, the notice `ArtworkNoticeViewModel`) over `ArtworkService.ByHand`; `Views/ChangeArtworkView`.
+`MainViewModel.ChangeArtwork.cs` opens it from the game action (`IGameActionHost.ChangeArtwork`) as a dialog over the
+page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and the warning toast.

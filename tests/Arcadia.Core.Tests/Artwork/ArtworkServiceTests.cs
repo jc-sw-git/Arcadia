@@ -455,6 +455,25 @@ public sealed class ArtworkServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T488-11")]
+    public async Task An_image_from_a_second_host_still_offered_is_kept_without_asking_the_first_again()
+    {
+        // Steam offers the same file from two hosts: the second one's image is no change of the image.
+        const string second = "https://images-old.example/4000001/library_600x900.jpg";
+        _server.Fail(CoverUrl, HttpStatusCode.NotFound);
+        _server.Serve(second, TestImages.Jpeg(600, 900));
+        _source.Cover = [new("steam-server", Download: new Uri(CoverUrl)), new("steam-server", Download: new Uri(second))];
+        await ScanAsync(GameOf("4000001"));
+        var asked = RequestCount;
+
+        await ScanAsync(GameOf("4000001"));
+
+        Assert.Equal(2, asked);
+        Assert.Equal(asked, RequestCount);
+        Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+    }
+
+    [Fact]
     public async Task Steams_own_images_reach_the_cache_from_steams_folders()
     {
         // End to end with Steam's folders (made-up AppID and account): the account's own cover over Steam's cache, which

@@ -1,3 +1,4 @@
+using Arcadia.Core.Artwork;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
@@ -27,14 +28,17 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private readonly InstallTracker _installs;
     private readonly RunningGamesTracker _running;
     private readonly TimeProvider _time;
+    private readonly ArtworkService? _artwork;
     private readonly CancellationTokenSource _shutdown = new();
 
     // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
     private readonly HashSet<string> _changedWhileLoading = new(StringComparer.Ordinal);
     private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
 
-    public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time)
+    /// <param name="artwork">Brings the games' covers and backgrounds into the cache after each read (#487); null: placeholders only.</param>
+    public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time, ArtworkService? artwork = null)
     {
+        _artwork = artwork;
         _library = library;
         _refresher = new LibraryRefresher(library, time);
         _installs = installs;
@@ -236,9 +240,15 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
+        var scans = _refresher.Scans;
         if (await _refresher.RefreshAsync(() => _scanned, force) is { } libraries)
         {
             Show(libraries);
+        }
+        else if (_refresher.Scans != scans)
+        {
+            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
+            UpdateArtwork();
         }
 
         // "Zuletzt eingelesen" changed even if nothing else did.
@@ -347,9 +357,15 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
+        var scans = _refresher.Scans;
         if (await _refresher.RefreshAsync(() => _scanned, launcherId) is { } libraries)
         {
             Show(libraries);
+        }
+        else if (_refresher.Scans != scans)
+        {
+            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
+            UpdateArtwork();
         }
 
         LaunchersRead?.Invoke(this, EventArgs.Empty);
@@ -403,6 +419,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         await RefreshLibraryAsync(force: true);
     }
 
+    /// <summary>Every type the scanners delivered, so a switched-off type keeps its images for when it is switched on again.</summary>
+    private void UpdateArtwork()
+    {
+        var launchers = _library.Launchers;
+        _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
+    }
+
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
         // A scan still running when the session ended shows nothing: the window is closing.
@@ -423,6 +446,8 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);
+
+        UpdateArtwork();
         if (newlyFailed.Count > 0)
         {
             Noticed?.Invoke(this, new LibraryNotice.ScanFailed(newlyFailed));

@@ -10,6 +10,9 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
     public static readonly TimeSpan Throttle = TimeSpan.FromSeconds(5);
 
     private DateTimeOffset _lastRefresh;
+
+    /// <summary>Counts the scans that read launchers, so a caller can tell a skipped refresh from an unchanged one.</summary>
+    public long Scans { get; private set; }
     private Task<IReadOnlyList<LauncherLibrary>?>? _running;
 
     /// <summary>
@@ -47,6 +50,7 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
     private async Task<IReadOnlyList<LauncherLibrary>?> ScanAsync(Func<IReadOnlyList<LauncherLibrary>> current)
     {
         var scanned = await library.LoadAsync();
+        Scans++;
         return HasChanged(current(), scanned) ? scanned : null;
     }
 
@@ -75,6 +79,7 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
             return null;
         }
 
+        Scans++;
         var shown = current();
         if (!shown.Any(l => l.Launcher.Id == launcherId))
         {

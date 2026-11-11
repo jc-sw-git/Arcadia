@@ -31,6 +31,8 @@ internal sealed class TestLauncher(LauncherSpec spec, DateTimeOffset now, Record
 
     public ILauncherFolderChoice? FolderChoice => spec.FolderChoice;
 
+    public ILauncherArtwork? Artwork => spec.Artwork;
+
     // A launcher not installed is found only in a folder picked by hand (#138).
     public string? Locate() => spec.IsInstalled ? "Test" : spec.FolderChoice?.Chosen;
 }

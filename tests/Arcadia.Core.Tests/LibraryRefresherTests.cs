@@ -104,6 +104,23 @@ public sealed class LibraryRefresherTests
     }
 
     [Fact]
+    public async Task Counts_scans_so_a_skipped_refresh_tells_apart_from_an_unchanged_one()
+    {
+        var refresher = CreateRefresher();
+        _epic.Games = [GameOf("epic", "a")];
+        var current = await new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Epic) { Scanner = _epic }, new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog })).LoadAsync();
+
+        Assert.Null(await refresher.RefreshAsync(() => current));
+        Assert.Equal(1, refresher.Scans);
+
+        Assert.Null(await refresher.RefreshAsync(() => current));
+        Assert.Equal(1, refresher.Scans);
+
+        Assert.Null(await refresher.RefreshAsync(() => current, "epic"));
+        Assert.Equal(2, refresher.Scans);
+    }
+
+    [Fact]
     public async Task Throttles_unforced_rescans()
     {
         var refresher = CreateRefresher();

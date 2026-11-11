@@ -110,6 +110,10 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/InputLatency`: each key or button press timed to the frame that shows it, one `Bild:` line in arcadia.log
   (#229).
 
+## Artwork
+
+Covers and backgrounds in the views (#487): [app-artwork.md](app-artwork.md).
+
 ## Mouse mode
 
 The App's part of the mouse mode: [app-mouse-mode.md](app-mouse-mode.md).

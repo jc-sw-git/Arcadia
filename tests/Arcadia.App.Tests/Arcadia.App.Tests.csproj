@@ -35,6 +35,9 @@
     <Compile Include="..\Arcadia.Core.Tests\PackageInfoFile.cs" Link="Fixtures\PackageInfoFile.cs" />
     <!-- Steam's web API for the Steam account (#83). -->
     <Compile Include="..\Arcadia.Core.Tests\FakeSteamWeb.cs" Link="Fixtures\FakeSteamWeb.cs" />
+    <!-- Steam's image server and made-up images for the artwork (#487). -->
+    <Compile Include="..\Arcadia.Core.Tests\Artwork\FakeImageServer.cs" Link="Fixtures\FakeImageServer.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\Artwork\TestImages.cs" Link="Fixtures\TestImages.cs" />
   </ItemGroup>
 
   <ItemGroup>

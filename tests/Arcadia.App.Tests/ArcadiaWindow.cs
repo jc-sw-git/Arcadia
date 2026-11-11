@@ -56,9 +56,9 @@ internal sealed class ArcadiaWindow : IDisposable
     /// </summary>
     public static async Task<ArcadiaWindow> ShowAsync(
         IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, int width = Width, int height = Height, double scaling = 1, FakeSteam? steam = null,
-        StartArguments arguments = default)
+        StartArguments arguments = default, HttpMessageHandler? imageServer = null)
     {
-        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam, arguments: arguments);
+        var arcadia = await ArcadiaDriver.StartAsync(launchers, settings, steam, arguments: arguments, imageServer: imageServer);
         // The glyphs follow one switch for the whole app; a test before may have left it on the keyboard or another controller.
         Input.InputHints.UsesController = arcadia.Main.Input.UsesController;
         Input.InputHints.Symbols = arcadia.Main.Input.ButtonSymbols;

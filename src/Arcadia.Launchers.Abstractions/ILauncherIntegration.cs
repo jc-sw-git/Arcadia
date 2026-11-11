@@ -53,4 +53,7 @@ public interface ILauncherIntegration
 
     /// <summary>The sign-in to the launcher's online account for its uninstalled games (#83); null if it has none.</summary>
     ILauncherAccount? Account => null;
+
+    /// <summary>The launcher's own covers and backgrounds for its games (#13); null if it has none.</summary>
+    ILauncherArtwork? Artwork => null;
 }

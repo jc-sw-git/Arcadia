@@ -11,6 +11,12 @@
   the buttons below the grid) turn the page and go round the same way; a page number goes straight to its page.
 - Covers are 2 : 3 wherever one is shown: library tile 146 × 219 (its height follows the column's width), search hit
   190 × 285, detail page 210 × 315.
+- Covers and backgrounds (#13, #487): the cover fills the tile, the search hit and the detail page's cover; the background
+  (hero) fills the detail page's header and the preview's top (400 × 180), each cropped centred, never stretched. Until
+  an image is there the placeholder (hue, monogram, title) shows; with it, monogram and title hide, badges and the
+  "not installed" shade stay on top. A launcher's images are checked again at every scan, so an image changed in the
+  launcher (e.g. an own cover set in Steam) shows after the next scan; an image set by hand is never replaced by that.
+  A damaged image counts as missing and is loaded again, also where the metadata is unreadable.
 - Sorting: name / install date / last played, each ascending or descending; games without a
   date always last.
 - Sort order and preferred page size are global, not per tab, and are saved; Arcadia opens in the

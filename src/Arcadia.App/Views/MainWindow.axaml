@@ -187,7 +187,9 @@
             <Grid RowDefinitions="180,*" DataContext="{Binding Library.FocusedGame}" x:DataType="vm:GameTileViewModel">
               <Panel Background="{Binding CoverBrush}">
                 <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
-                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" />
+                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" IsVisible="{Binding !#PreviewArt.IsShowing}" />
+                <!-- The background, as on the detail page the preview leads to (#487). -->
+                <ctl:ArtworkImage Name="PreviewArt" File="{Binding Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                 <Border Classes="shade" CornerRadius="0" IsVisible="{Binding !IsInstalled}" />
                 <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" CornerRadius="16" Height="32" Padding="10,0,14,0"
                         HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16">
@@ -340,16 +342,19 @@
                     <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
                             Background="{Binding CoverBrush}" ToolTip.Tip="{Binding Title}">
                       <Panel>
+                        <!-- The cover (#487); the monogram and the title show until it is there. -->
+                        <ctl:ArtworkImage Name="CoverArt" File="{Binding Cover}" CornerRadius="8" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                         <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                         <Grid RowDefinitions="*,Auto" Margin="12">
-                          <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}" />
+                          <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}"
+                                     IsVisible="{Binding !#CoverArt.IsShowing}" />
                           <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
                           <StackPanel Grid.Row="1" Spacing="8">
                             <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
                               <ctl:LineIcon Icon="{Binding TypeIconKey}" />
                             </Border>
                             <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                                       TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                                       TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" IsVisible="{Binding !#CoverArt.IsShowing}" />
                           </StackPanel>
                         </Grid>
                         <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
@@ -521,6 +526,8 @@
               <Button Classes="plain resultTile" Classes.focused="{Binding IsFocused}" Classes.holding="{Binding IsHolding}" Command="{Binding FocusCommand}"
                       Background="{Binding CoverBrush}" Height="285" ToolTip.Tip="{Binding Title}">
                 <Panel>
+                  <!-- The cover (#487); the title shows until it is there. -->
+                  <ctl:ArtworkImage Name="HitArt" File="{Binding Cover}" CornerRadius="8" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                   <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
                   <DockPanel Margin="12">
                     <Border DockPanel.Dock="Top" Classes="launcherBadge" Width="28" Height="28" CornerRadius="7" HorizontalAlignment="Left">
@@ -531,7 +538,7 @@
                         <ctl:LineIcon Icon="{Binding TypeIconKey}" />
                       </Border>
                       <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" IsVisible="{Binding !#HitArt.IsShowing}" />
                     </StackPanel>
                   </DockPanel>
                   <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"

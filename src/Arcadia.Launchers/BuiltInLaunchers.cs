@@ -23,7 +23,7 @@ public static class BuiltInLaunchers
     /// <param name="demo">Adds a demo library for every known launcher that has no integration yet (<c>--demo</c>).</param>
     /// <param name="demoGames">
     /// How many demo games in all, shared in the same proportions (<c>--demo-games 5000</c>), to measure Arcadia with a
-    /// large library against the budgets in <c>CLAUDE.md</c>; null for the usual sizes.
+    /// large library against the budgets in <c>CLAUDE.md</c>, with made-up covers and backgrounds; null for the usual sizes.
     /// </param>
     /// <param name="folders">Where Steam and Epic keep their files; null: where they keep them on this PC.</param>
     /// <param name="http">For the Steam account's web requests (#83); null (or no <paramref name="web"/>) offers no Steam sign-in.</param>
@@ -35,6 +35,9 @@ public static class BuiltInLaunchers
         TimeProvider time, bool demo, int? demoGames = null, LauncherFolders? folders = null, HttpClient? http = null, IWebPages? web = null, string? dataFolder = null, SteamOnlineAccount? steamAccount = null)
     {
         var total = DemoGameCounts.Values.Sum();
+
+        // A large demo library measures the budgets with real images to decode (#487); the usual demo keeps its placeholders.
+        var demoArtwork = demoGames is null ? null : new DemoArtwork(Path.Combine(Path.GetTempPath(), "arcadia-demo-artwork"));
         int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
 
         ILauncherIntegration[] integrations =
@@ -52,7 +55,7 @@ public static class BuiltInLaunchers
             }
             else if (demo && DemoGameCounts.TryGetValue(launcher.Id, out var count))
             {
-                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow(), withOtherTypes: true));
+                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow(), withOtherTypes: true, artwork: demoArtwork));
             }
         }
 

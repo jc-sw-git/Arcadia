@@ -54,15 +54,19 @@
               <Border Margin="0,24,0,20" Background="{StaticResource DetailSurface}" CornerRadius="20" BoxShadow="{StaticResource DetailShadow}">
                 <Border CornerRadius="20" ClipToBounds="True">
                   <DockPanel>
-                    <!-- Hero: placeholder backdrop in the cover's hue until artwork arrives (#13). -->
+                    <!-- Hero: the game's background (#487), the placeholder backdrop in the cover's hue until it is there. -->
                     <Panel DockPanel.Dock="Top" Height="352" Background="{Binding Backdrop}" ClipToBounds="True">
                       <Ellipse Width="700" Height="700" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-140,-60,0" />
                       <Ellipse Width="380" Height="380" Stroke="{Binding Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,120,0" />
+                      <ctl:ArtworkImage Name="HeroArt" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                      <!-- Keeps the name and the chips readable over a bright background. -->
+                      <Border Classes="heroScrim" IsVisible="{Binding #HeroArt.IsShowing}" />
                       <Grid ColumnDefinitions="210,*" ColumnSpacing="40" Margin="48,0,48,24" VerticalAlignment="Bottom">
                         <Border Width="210" Height="315" CornerRadius="12" Background="{Binding Tile.CoverBrush}" BoxShadow="{StaticResource CoverShadow}">
                           <Panel>
+                            <ctl:ArtworkImage Name="DetailCoverArt" File="{Binding Tile.Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                             <Border Classes="shade" CornerRadius="12" IsVisible="{Binding !Tile.IsInstalled}" />
-                            <Grid RowDefinitions="*,Auto" Margin="20">
+                            <Grid RowDefinitions="*,Auto" Margin="20" IsVisible="{Binding !#DetailCoverArt.IsShowing}">
                               <TextBlock Text="{Binding Tile.Monogram}" FontSize="96" FontWeight="ExtraBold" Foreground="{Binding Tile.AccentBrush}" />
                               <TextBlock Grid.Row="1" Text="{Binding Tile.Title}" FontSize="19" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                                          TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />

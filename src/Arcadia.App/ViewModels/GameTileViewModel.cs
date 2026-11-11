@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.Core.Artwork;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
@@ -35,6 +36,15 @@ public partial class GameTileViewModel : ViewModelBase
     public IBrush CoverBrush { get; }
 
     public IBrush AccentBrush { get; }
+
+    /// <summary>The game's cached cover and background (#487); null until the cache has them, the placeholder shows meanwhile.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Cover), nameof(Hero))]
+    public partial GameArtwork? Artwork { get; set; }
+
+    public ArtworkFile? Cover => Artwork?.Cover;
+
+    public ArtworkFile? Hero => Artwork?.Hero;
 
     public bool IsInstalled => Game.IsInstalled;
 

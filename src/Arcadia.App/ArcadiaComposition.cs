@@ -46,6 +46,9 @@ internal sealed record ArcadiaParts(
 
     /// <summary>Arcadia's logs for "Über Arcadia" (#433); null: the real files.</summary>
     public Messages.ILogFiles? Logs { get; init; }
+
+    /// <summary>The games' covers and backgrounds (#487); null: placeholders only.</summary>
+    public Core.Artwork.ArtworkService? Artwork { get; init; }
 }
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
@@ -160,7 +163,8 @@ internal sealed class ArcadiaComposition
             new LauncherLogos(settings, parts.LogosFolder),
             parts.FirstRun,
             time,
-            parts.FolderCheck);
+            parts.FolderCheck,
+            parts.Artwork);
         if (parts.Logs is { } logs)
         {
             main.Logs = logs;

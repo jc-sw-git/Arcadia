@@ -7,10 +7,11 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Artwork;
 
-/// <summary>Where an image came from (#13): a launcher's own (also the player's own images in the launcher, #487).</summary>
+/// <summary>Where an image came from (#13): a launcher's own (also the player's own images in the launcher, #487) or SteamGridDB (#489).</summary>
 public enum ArtworkSource
 {
     Launcher,
+    SteamGridDb,
 }
 
 /// <summary>

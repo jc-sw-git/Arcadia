@@ -97,6 +97,9 @@ public sealed record AppSettings
     /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
     public bool SortsStatusByNewest { get; init; }
 
+    /// <summary>"Reihenfolge für Artwork" and "Zuschneiden erlaubt" in "Datenquellen" (#489).</summary>
+    public ArtworkSettings Artwork { get; init; } = new();
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -112,6 +115,7 @@ public sealed record AppSettings
     {
         MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
+        Artwork = (Artwork ?? new ArtworkSettings()).WithValidValues(),
     };
 
     /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>

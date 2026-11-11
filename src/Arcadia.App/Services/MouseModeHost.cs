@@ -153,7 +153,7 @@ public sealed class MouseModeHost : IDisposable
         _window.Activated += OnArcadiaActivated;
         _window.Deactivated += OnArcadiaDeactivated;
         _viewModel.PropertyChanged += OnViewModelChanged;
-        _viewModel.LogOpenedByController += OnLogOpenedByController;
+        _viewModel.OpenedForMouseByController += OnLogOpenedByController;
     }
 
     /// <summary>Gamepad input is the mouse's now, not Arcadia's navigation. Readable from any thread.</summary>
@@ -225,9 +225,9 @@ public sealed class MouseModeHost : IDisposable
     }
 
     /// <summary>
-    /// A log opened by controller (#433): the log's app is used with the mouse, so the mode comes on for it, whatever the
-    /// settings say, without the keyboard (owner's decision); it goes off again once Arcadia is back in front, if it came
-    /// on for it. The app may already have taken the front before this runs.
+    /// A log (#433) or SteamGridDB's key page (#489) opened by controller: its program is used with the mouse, so the mode
+    /// comes on for it, whatever the settings say, without the keyboard (owner's decision); it goes off again once Arcadia
+    /// is back in front, if it came on for it. The program may already have taken the front before this runs.
     /// </summary>
     private void OnLogOpenedByController(object? sender, EventArgs e)
     {
@@ -238,7 +238,7 @@ public sealed class MouseModeHost : IDisposable
         }
 
         _heldForLog = true;
-        AppLog.Write("Log per Controller geöffnet: Mausmodus für das Programm");
+        AppLog.Write("Log oder Webseite per Controller geöffnet: Mausmodus für das Programm");
         _mode.HoldForDialog(true);
     }
 
@@ -268,7 +268,7 @@ public sealed class MouseModeHost : IDisposable
     public void Dispose()
     {
         _viewModel.PropertyChanged -= OnViewModelChanged;
-        _viewModel.LogOpenedByController -= OnLogOpenedByController;
+        _viewModel.OpenedForMouseByController -= OnLogOpenedByController;
         _gamepad.Polled -= OnPolled;
         _gamepad.Lost -= OnControllersLost;
         _foregroundCheck.Stop();

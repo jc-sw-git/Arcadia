@@ -1467,6 +1467,16 @@
     <Setter Property="Background" Value="{StaticResource ProgressTrack}" />
     <Setter Property="Foreground" Value="{StaticResource Accent}" />
   </Style>
+  <!-- A row's progress on the settings page, e.g. the artwork search (#489). -->
+  <Style Selector="ProgressBar.rowProgress">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Margin" Value="0,6,0,0" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Background" Value="{StaticResource ProgressTrack}" />
+    <Setter Property="Foreground" Value="{StaticResource Accent}" />
+  </Style>
   <Style Selector="ProgressBar.installRun.failed">
     <Setter Property="Foreground" Value="{StaticResource Danger}" />
   </Style>

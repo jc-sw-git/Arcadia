@@ -92,6 +92,9 @@
                 <!-- Symbol and colour come from the statusIcon styles, so no local Data or Stroke. -->
                 <Path Classes="statusIcon" Classes.info="{Binding Status.IsControllerStatusInfo}" Classes.error="{Binding Status.IsControllerStatusError}" />
               </Panel>
+              <Panel Width="32" Height="32" IsVisible="{Binding Status.HasSteamGridDbWarning}" ToolTip.Tip="{x:Static app:AppTexts.DataSourcesKeyStatus}">
+                <Path Classes="statusIcon" />
+              </Panel>
               <Panel Width="32" Height="32" IsVisible="{Binding Status.HasArcadiaUpdate}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
                 <Path Classes="updateIcon" />
                 <!-- The dot marks it as Arcadia's own update. -->
@@ -1295,6 +1298,8 @@
                                                      IsVisible="{Binding $parent[DockPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
                                 <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                               </DockPanel>
+                              <!-- How far the row's run has got, e.g. the artwork search (#489). -->
+                              <ProgressBar Classes="rowProgress" Minimum="0" Maximum="100" Value="{Binding Progress, TargetNullValue=0}" IsVisible="{Binding HasProgress}" />
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
                             <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">

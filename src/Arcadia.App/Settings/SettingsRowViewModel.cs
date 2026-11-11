@@ -70,6 +70,16 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool IsLampFailure => Lamp == RowLamp.Failure;
 
+    /// <summary>Whether what the row stands for really works (null: no lamp), e.g. Pan's switch or the SteamGridDB key (#489).</summary>
+    public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
+
+    /// <summary>How far something the row started has got, 0 to 100, as a bar below the subtitle (#489); null shows none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasProgress))]
+    public partial double? Progress { get; set; }
+
+    public bool HasProgress => Progress is not null;
+
     /// <summary>The heading of the group the row belongs to, e.g. "MAUSMODUS"; may change while the row is shown (#136).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasGroupHeading))]

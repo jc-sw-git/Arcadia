@@ -86,6 +86,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             artwork.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateArtwork(keys));
             artwork.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextArtwork));
+            WatchSteamGridDb(artwork);
             artwork.Open();
         }
 
@@ -123,8 +124,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>Arcadia's logs, which "Über Arcadia" opens (#433); the tests put a fake in.</summary>
     public ILogFiles Logs { get; set; } = new LogFiles();
 
-    /// <summary>A log opened by controller (#433): the mouse mode holds on until Arcadia is back in front.</summary>
-    public event EventHandler? LogOpenedByController;
+    /// <summary>
+    /// A log (#433) or a web page (#489) opened by controller in a program of its own: the mouse mode holds on until
+    /// Arcadia is back in front.
+    /// </summary>
+    public event EventHandler? OpenedForMouseByController;
 
     private static readonly TimeSpan LogOpenTimeout = TimeSpan.FromSeconds(10);
 
@@ -899,6 +903,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 ShowSettings(typeof(AboutSettingsViewModel));
                 FocusRowOrTop(Settings?.Selected, AboutSettingsViewModel.InstallKey);
                 break;
+            case StatusTarget.SteamGridDbKey:
+                ShowSettings(typeof(DataSourcesSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, SteamGridDbKeyRows.KeyRowKey);
+                break;
             case StatusTarget.ControllerIssue:
                 var controller = ((IControllerModeHost)this).OpenControllerSettings();
                 var row = FocusRowOrTop(controller, PanRows.IssueKey(entry.Id));
@@ -951,6 +959,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             launchers,
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
+            .. CreateDataSources(changes) is { } dataSources ? [dataSources] : Array.Empty<SettingsCategoryViewModel>(),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget(AppTexts.ErrorContextOpenLog)),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -991,7 +1000,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // Used with the mouse and keyboard: opened by controller, the mouse mode comes on for it, as for a web page (#280).
         if (byController)
         {
-            LogOpenedByController?.Invoke(this, EventArgs.Empty);
+            OpenedForMouseByController?.Invoke(this, EventArgs.Empty);
         }
     }
 

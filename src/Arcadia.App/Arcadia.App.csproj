@@ -39,6 +39,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Avalonia.Controls.WebView" Version="12.1.1" />
     <PackageReference Include="Svg.Skia" Version="5.1.1" />
+    <!-- The SteamGridDB key, encrypted for the Windows user (#489); the same version as Arcadia.Launchers'. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
     <!-- Keep in step with the vpk tool in .config/dotnet-tools.json. -->
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>

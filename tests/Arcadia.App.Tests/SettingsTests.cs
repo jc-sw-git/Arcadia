@@ -58,7 +58,7 @@ public sealed class SettingsTests
         arcadia.Press(UiAction.Right);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Settings.Current.MouseMode.Activation);
 
-        arcadia.Press(UiAction.NextTab, times: 2);
+        arcadia.Press(UiAction.NextTab, times: 3);
         Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
 
         // B closes; the library shows the launcher switched off as gone.

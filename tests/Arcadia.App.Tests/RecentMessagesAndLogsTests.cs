@@ -448,7 +448,7 @@ public sealed class RecentMessagesAndLogsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Logs.States[LogKind.Pan] = LogFileState.Present;
         var byController = 0;
-        arcadia.Main.LogOpenedByController += (_, _) => byController++;
+        arcadia.Main.OpenedForMouseByController += (_, _) => byController++;
         OpenAbout(arcadia);
 
         foreach (var (key, kind) in new[] { ("logging-log-arcadia", LogKind.Arcadia), ("logging-log-viiper", LogKind.Viiper), ("logging-log-pan", LogKind.Pan) })
@@ -500,10 +500,10 @@ public sealed class RecentMessagesAndLogsTests
         Assert.True(Row(arcadia, "logging-log-pan").IsDimmed);
 
         // The same settings page: RB moves between the categories it already built.
-        arcadia.Press(UiAction.PreviousTab);
+        arcadia.Press(UiAction.PreviousTab, times: 2);
         Assert.Equal(AppTexts.ControllerCategory, arcadia.Main.Settings!.Selected.Name);
         arcadia.Logs.States[LogKind.Pan] = LogFileState.Present;
-        arcadia.Press(UiAction.NextTab);
+        arcadia.Press(UiAction.NextTab, times: 2);
 
         Assert.Equal(AppTexts.AboutTitle, arcadia.Main.Settings!.Selected.Name);
         Assert.False(Row(arcadia, "logging-log-pan").IsDimmed);
@@ -517,7 +517,7 @@ public sealed class RecentMessagesAndLogsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Logs.Failure = new Win32Exception(1155, "Keine Anwendung ist mit dieser Datei verknüpft.");
         var byController = 0;
-        arcadia.Main.LogOpenedByController += (_, _) => byController++;
+        arcadia.Main.OpenedForMouseByController += (_, _) => byController++;
         OpenAbout(arcadia);
         arcadia.FocusRow("logging-log-arcadia");
 

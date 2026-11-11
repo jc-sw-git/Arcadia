@@ -28,7 +28,10 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
 
     public override bool CanActivate => true;
 
-    public override string ActivateText => AppTexts.Edit;
+    /// <summary>What A says, if not "Bearbeiten", e.g. "Eingeben" while there is no SteamGridDB key (#489).</summary>
+    public Func<string>? ActionLabel { get; init; }
+
+    public override string ActivateText => ActionLabel?.Invoke() ?? AppTexts.Edit;
 
     public override void Activate() => edit(this);
 
@@ -56,7 +59,11 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
     }
 
     /// <summary>The value changed: it is read again.</summary>
-    public void Refresh() => OnPropertyChanged(nameof(ValueText));
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(ValueText));
+        NotifyActionsChanged();
+    }
 }
 
 /// <summary>

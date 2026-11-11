@@ -84,12 +84,12 @@ public sealed class SettingsViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync();
         arcadia.Press(UiAction.Settings);
         var settings = arcadia.Arcadia.Main.Settings!;
-        Assert.Equal([AppTexts.Launcher, AppTexts.ControllerCategory, AppTexts.AboutTitle], settings.Categories.Select(category => category.Name));
+        Assert.Equal([AppTexts.Launcher, AppTexts.ControllerCategory, AppTexts.DataSourcesTitle, AppTexts.AboutTitle], settings.Categories.Select(category => category.Name));
 
         arcadia.Press(UiAction.NextTab);
         Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         AssertSelectedTabDrawn(arcadia, "Controller");
-        arcadia.Press(UiAction.NextTab, times: 2);
+        arcadia.Press(UiAction.NextTab, times: 3);
         Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
         arcadia.Press(UiAction.PreviousTab);
         Assert.Equal(AppTexts.AboutTitle, settings.Selected.Name);
@@ -103,7 +103,7 @@ public sealed class SettingsViewTests
         Assert.Equal(AppTexts.ControllerCategory, settings.Selected.Name);
         AssertSelectedTabDrawn(arcadia, "Controller");
 
-        // Three categories fit: the strip stands in the middle of the header, as wide as they need, not faded.
+        // Four categories fit: the strip stands in the middle of the header, as wide as they need, not faded.
         arcadia.WaitForTransitions();
         var scroller = arcadia.Named<ScrollViewer>("CategoryScroller");
         Assert.Equal(scroller.Extent.Width, scroller.Viewport.Width, tolerance: 1);

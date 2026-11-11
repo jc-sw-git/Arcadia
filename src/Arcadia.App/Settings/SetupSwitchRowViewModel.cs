@@ -63,9 +63,6 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
 
     public override void Activate() => activate(null);
 
-    /// <summary>Whether what it switches on really works: null while the option is off, the switch says so.</summary>
-    public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
-
     /// <summary>"Treiber installieren" on this row failed (#243 part B2): the error in place of the subtitle, with the error icon.</summary>
     public void ShowProblem(string? problem)
     {

@@ -914,4 +914,91 @@
   <data name="ReleaseVersion" xml:space="preserve"><value>Version {version}</value></data>
   <data name="ArcadiaVersion" xml:space="preserve"><value>Arcadia {version}</value></data>
   <data name="KeyLayout" xml:space="preserve"><value>Layout: {code}</value></data>
+  <data name="DataSourcesTitle" xml:space="preserve"><value>Datenquellen</value></data>
+  <data name="DataSourcesSteamGridDbGroup" xml:space="preserve"><value>STEAMGRIDDB</value></data>
+  <data name="DataSourcesOrderGroup" xml:space="preserve"><value>REIHENFOLGE FÜR ARTWORK</value></data>
+  <data name="DataSourcesArtworkGroup" xml:space="preserve"><value>ARTWORK</value></data>
+  <data name="DataSourcesKey" xml:space="preserve"><value>Schlüssel</value></data>
+  <data name="DataSourcesKeyNone" xml:space="preserve"><value>Kein Schlüssel hinterlegt</value></data>
+  <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Verbunden · endet auf …{ending}</value></data>
+  <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Endet auf …{ending} · noch nicht geprüft</value></data>
+  <data name="DataSourcesKeyRejected" xml:space="preserve"><value>Schlüssel ungültig · SteamGridDB wird übersprungen</value></data>
+  <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Wird geprüft …</value></data>
+  <data name="DataSourcesKeyEnter" xml:space="preserve"><value>Eingeben</value></data>
+  <data name="DataSourcesKeyInfo" xml:space="preserve"><value>Mit dem Schlüssel lädt Arcadia Cover und Hintergründe von SteamGridDB, in der Reihenfolge, die du unter „Reihenfolge für Artwork“ festlegst. Der Schlüssel ist kostenlos. Melde dich auf steamgriddb.com an und kopiere ihn unter Einstellungen › API.</value></data>
+  <data name="DataSourcesKeyHowTo" xml:space="preserve"><value>[A] öffnet die Bildschirmtastatur. Hast du den Schlüssel schon kopiert, geht es mit „Einfügen“ schneller. Übernimmst du ein leeres Feld, löscht Arcadia den Schlüssel.</value></data>
+  <data name="DataSourcesNextStepsHeading" xml:space="preserve"><value>SO GEHT ES WEITER</value></data>
+  <data name="DataSourcesKeyRejectedInfo" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er wieder gilt, nimmt Arcadia nur die Bilder der Launcher und sonst die Platzhalter. Erzeuge auf der Schlüssel-Seite einen neuen Schlüssel und füge ihn hier ein.</value></data>
+  <data name="DataSourcesSendsHeading" xml:space="preserve"><value>WAS ARCADIA SENDET</value></data>
+  <data name="DataSourcesSendsInfo" xml:space="preserve"><value>Die ID des Spiels beim Launcher, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Der Schlüssel liegt verschlüsselt auf diesem Gerät, nie im Klartext.</value></data>
+  <data name="DataSourcesSendsInfoInMemory" xml:space="preserve"><value>Die ID des Spiels beim Launcher, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Auf diesem System bleibt der Schlüssel nur, bis Arcadia schließt, und wird nirgends gespeichert.</value></data>
+  <data name="DataSourcesKeyProblem" xml:space="preserve"><value>Ein Schlüssel hat 32 Buchstaben und Ziffern</value></data>
+  <data name="DataSourcesKeySaved" xml:space="preserve"><value>Schlüssel gespeichert und geprüft: verbunden.</value></data>
+  <data name="DataSourcesKeyPasted" xml:space="preserve"><value>Schlüssel eingefügt und geprüft: verbunden.</value></data>
+  <data name="DataSourcesKeyRejectedToast" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er gilt, nimmt Arcadia nur die Bilder der Launcher.</value></data>
+  <data name="DataSourcesKeyKeptNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Der Schlüssel ist gespeichert, Arcadia prüft ihn bei der nächsten Suche.</value></data>
+  <data name="DataSourcesKeyDeleted" xml:space="preserve"><value>Schlüssel gelöscht. Arcadia fragt SteamGridDB nicht mehr.</value></data>
+  <data name="DataSourcesPaste" xml:space="preserve"><value>Aus der Zwischenablage einfügen</value></data>
+  <data name="DataSourcesPasteSubtitle" xml:space="preserve"><value>Für einen Schlüssel, den du kopiert hast</value></data>
+  <data name="DataSourcesPasteAction" xml:space="preserve"><value>Einfügen</value></data>
+  <data name="DataSourcesPasteInfo" xml:space="preserve"><value>Fügt den Schlüssel aus der Zwischenablage ein und prüft ihn sofort.</value></data>
+  <data name="DataSourcesPasteInfoNoKey" xml:space="preserve"><value>Steht dort kein Schlüssel mit 32 Zeichen, bleibt der bisherige, und eine Meldung sagt dir das.</value></data>
+  <data name="DataSourcesPasteNoKey" xml:space="preserve"><value>In der Zwischenablage steht kein SteamGridDB-Schlüssel. Der bisherige bleibt.</value></data>
+  <data name="DataSourcesKeyPage" xml:space="preserve"><value>Schlüssel-Seite öffnen</value></data>
+  <data name="DataSourcesKeyPageSubtitle" xml:space="preserve"><value>Öffnet die API-Seite von SteamGridDB im Browser</value></data>
+  <data name="DataSourcesKeyPageAction" xml:space="preserve"><value>Öffnen ↗</value></data>
+  <data name="DataSourcesKeyPageInfo" xml:space="preserve"><value>Öffnet die Seite steamgriddb.com/profile/preferences/api im Standardbrowser. Dort meldest du dich an und kopierst den Schlüssel.</value></data>
+  <data name="DataSourcesKeyPageMouse" xml:space="preserve"><value>Den Browser bedienst du mit der Maus: Der Mausmodus geht dafür an und danach wieder aus.</value></data>
+  <data name="DataSourcesKeyPageOpening" xml:space="preserve"><value>SteamGridDB wird im Browser geöffnet …</value></data>
+  <data name="DataSourcesKeyPageFailed" xml:space="preserve"><value>Die Schlüssel-Seite von SteamGridDB ließ sich nicht im Browser öffnen.</value></data>
+  <data name="DataSourcesTest" xml:space="preserve"><value>Verbindung testen</value></data>
+  <data name="DataSourcesTestAction" xml:space="preserve"><value>Testen</value></data>
+  <data name="DataSourcesTestNeedsKey" xml:space="preserve"><value>Erst mit einem Schlüssel möglich</value></data>
+  <data name="DataSourcesTestNotYet" xml:space="preserve"><value>Fragt SteamGridDB, ob der Schlüssel gilt</value></data>
+  <data name="DataSourcesTestOk" xml:space="preserve"><value>Zuletzt geprüft um {time:HH:mm} · in Ordnung</value></data>
+  <data name="DataSourcesTestRejected" xml:space="preserve"><value>Geprüft um {time:HH:mm} · SteamGridDB lehnt den Schlüssel ab</value></data>
+  <data name="DataSourcesTestNoConnection" xml:space="preserve"><value>Keine Verbindung</value></data>
+  <data name="DataSourcesTestInfo" xml:space="preserve"><value>Fragt SteamGridDB einmal, ob der Schlüssel gilt.</value></data>
+  <data name="DataSourcesTestInfoTimeout" xml:space="preserve"><value>Kommt innerhalb von 10 Sekunden keine Antwort, steht hier „Keine Verbindung“. Der Schlüssel bleibt dann, wie er ist.</value></data>
+  <data name="DataSourcesTestOkToast" xml:space="preserve"><value>Die Verbindung zu SteamGridDB ist in Ordnung.</value></data>
+  <data name="DataSourcesTestNoConnectionToast" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Der Schlüssel bleibt, wie er ist.</value></data>
+  <data name="DataSourcesLauncherImages" xml:space="preserve"><value>Launcher-Bilder</value></data>
+  <data name="DataSourcesLauncherImagesSubtitle" xml:space="preserve"><value>Die Bilder der Launcher selbst, ohne Schlüssel</value></data>
+  <data name="DataSourcesLauncherImagesInfo" xml:space="preserve"><value>Die offiziellen Bilder der Launcher. Sie brauchen keinen Schlüssel.</value></data>
+  <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>WER WAS LIEFERT</value></data>
+  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam liefert Cover und Hintergrund. Epic Games liefert für die meisten Spiele ein Cover, als Hintergrund aber nur ein Querformat in 16:9, das nicht zum flachen Kopf der Detailseite passt. Die übrigen Launcher liefern keine Bilder.</value></data>
+  <data name="DataSourcesOrderHeading" xml:space="preserve"><value>REIHENFOLGE</value></data>
+  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Was passend heißt, legt „Zuschneiden erlaubt“ fest.</value></data>
+  <data name="DataSourcesSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
+  <data name="DataSourcesSteamGridDbSubtitle" xml:space="preserve"><value>Füllt die Lücken: Hochformate, Mods, eigene Einträge</value></data>
+  <data name="DataSourcesSteamGridDbSkipped" xml:space="preserve"><value>Wird übersprungen, solange kein gültiger Schlüssel da ist</value></data>
+  <data name="DataSourcesSteamGridDbInfo" xml:space="preserve"><value>Eine Sammlung von Bildern, die Spieler hochladen und bewerten. Arcadia nimmt das am besten bewertete Bild.</value></data>
+  <data name="DataSourcesMove" xml:space="preserve"><value>Verschieben ⇅</value></data>
+  <data name="DataSourcesOrderPlace" xml:space="preserve"><value>{place}. {source}</value></data>
+  <data name="DataSourcesMissing" xml:space="preserve"><value>Fehlende Cover und Hintergründe</value></data>
+  <data name="DataSourcesMissingCounts" xml:space="preserve"><value>{covers} Spiele ohne Cover, {heroes} ohne Hintergrund</value></data>
+  <data name="DataSourcesMissingNone" xml:space="preserve"><value>Alle Spiele haben Cover und Hintergrund</value></data>
+  <data name="DataSourcesMissingNotYet" xml:space="preserve"><value>Arcadia sucht nach dem Einlesen von selbst</value></data>
+  <data name="DataSourcesSearchRunning" xml:space="preserve"><value>Suche läuft · {done} von {total} Spielen</value></data>
+  <data name="DataSourcesSearchFound" xml:space="preserve"><value>Fertig: {covers} Cover und {heroes} Hintergründe gefunden</value></data>
+  <data name="DataSourcesSearchLauncherOnly" xml:space="preserve"><value>Fertig: ohne Schlüssel nur Launcher-Bilder geprüft</value></data>
+  <data name="DataSourcesSearchNow" xml:space="preserve"><value>Jetzt suchen</value></data>
+  <data name="DataSourcesSearchBusy" xml:space="preserve"><value>Läuft …</value></data>
+  <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Nach jedem Einlesen sucht Arcadia im Hintergrund Bilder für Spiele, die noch keine haben oder deren Bild nur zugeschnitten aushilft.</value></data>
+  <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ startet dieselbe Suche sofort.</value></data>
+  <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Arcadia versucht es beim nächsten Einlesen wieder.</value></data>
+  <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
+  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
+  <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>
+  <data name="DataSourcesCropNormal" xml:space="preserve"><value>Normal · bis 15 %</value></data>
+  <data name="DataSourcesCropMuch" xml:space="preserve"><value>Viel · bis 30 %</value></data>
+  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Cover haben das Hochformat 2:3, Hintergründe das flache Format des Kopfs der Detailseite. Passt ein Bild nicht genau, schneidet Arcadia es mittig zu. Hier legst du fest, wie viel dabei höchstens wegfallen darf.</value></data>
+  <data name="DataSourcesCropInfoOrder" xml:space="preserve"><value>Die Reihenfolge der Quellen gilt immer: Muss bei einer Quelle mehr wegfallen, fragt Arcadia die nächste. Passt bei keiner Quelle ein Bild, schneidet Arcadia das Bild der ersten Quelle zu, die überhaupt eins hat. Nur ohne jedes Bild bleibt der Platzhalter.</value></data>
+  <data name="DataSourcesCropChoiceHeading" xml:space="preserve"><value>WENIG ODER VIEL</value></data>
+  <data name="DataSourcesCropChoice" xml:space="preserve"><value>Mit „Wenig“ bleiben Bilder fast vollständig, dafür kommen sie öfter von einer Quelle weiter unten. Mit „Viel“ bleibt Arcadia öfter bei der ersten Quelle, schneidet aber auch Schrift oder Figuren am Rand ab.</value></data>
+  <data name="DataSourcesWhenHeading" xml:space="preserve"><value>WANN ES GILT</value></data>
+  <data name="DataSourcesCropWhen" xml:space="preserve"><value>Bei der nächsten Suche. Bilder, die schon passen, und von Hand gesetzte Bilder bleiben, wie sie sind.</value></data>
+  <data name="DataSourcesKeyStatus" xml:space="preserve"><value>SteamGridDB-Schlüssel ungültig</value></data>
+  <data name="DataSourcesKeyStatusShort" xml:space="preserve"><value>SteamGridDB wird übersprungen, bis ein gültiger Schlüssel da ist</value></data>
+  <data name="ErrorContextSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
 </root>

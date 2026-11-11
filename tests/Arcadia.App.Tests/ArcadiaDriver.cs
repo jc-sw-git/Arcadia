@@ -1,5 +1,6 @@
 using System.Globalization;
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.Input;
@@ -10,6 +11,7 @@ using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
+using Arcadia.Core.Tests.Artwork;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Steam.Account;
 using Arcadia.Launchers.Abstractions;
@@ -71,8 +73,11 @@ internal sealed class ArcadiaDriver : IDisposable
     private ArcadiaDriver(
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
-        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null)
+        Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null,
+        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null)
     {
+        SteamGridDb = steamGridDb ?? new FakeSteamGridDb();
+        External = external ?? new ExternalAppsFake();
         Folder = folder;
         Steam = steam;
         Releases = releases;
@@ -112,7 +117,16 @@ internal sealed class ArcadiaDriver : IDisposable
         // The artwork cache in the test's folder; Steam's image server is the launcher files' (kept across a restart), else
         // the fake network's, which knows no image (#487).
         _artworkHttp = (imageServer ?? files?.ImageServer) is { } images ? new HttpClient(images, disposeHandler: false) : _http;
-        Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _artworkHttp, time) { Log = AppLog.Write };
+        // SteamGridDB (#489) is the test's fake, kept across a restart; the key is kept unencrypted in the test's folder.
+        Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _artworkHttp, time)
+        {
+            Log = AppLog.Write,
+            Settings = () => Settings.Current.Artwork,
+            SteamGridDb = new SteamGridDbKey(
+                new SteamGridDbKeyStore(Path.Combine(folder, "data"), data => data, data => data),
+                new SteamGridDbClient(new HttpClient(SteamGridDb, disposeHandler: false), time) { Log = AppLog.Write },
+                time),
+        };
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
@@ -124,6 +138,9 @@ internal sealed class ArcadiaDriver : IDisposable
         });
         ControllerSupport = _app.ControllerSupport;
         Main = _app.Main;
+        Main.Browser = External;
+        Main.Clipboard = External;
+        Main.KeepsSteamGridDbKey = true;
         if (files is not null)
         {
             _ = new Fixtures.TestBrowser(Main, files.SteamWeb);
@@ -160,6 +177,12 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>The games' covers and backgrounds (#487), cached in <see cref="Folder"/>.</summary>
     public ArtworkService Artwork { get; }
+
+    /// <summary>SteamGridDB's API (#489); it records every request.</summary>
+    public FakeSteamGridDb SteamGridDb { get; }
+
+    /// <summary>The browser and the clipboard (#489).</summary>
+    public ExternalAppsFake External { get; }
 
     /// <summary>The logs "Über Arcadia" opens (#433), never the real ones.</summary>
     public FakeLogFiles Logs { get; } = new();
@@ -378,7 +401,8 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>Arcadia closed and started again on the same settings, as the user does after a change.</summary>
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
-        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened);
+        var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened,
+            steamGridDb: SteamGridDb, external: External);
         await restarted.LoadAsync();
         return restarted;
     }

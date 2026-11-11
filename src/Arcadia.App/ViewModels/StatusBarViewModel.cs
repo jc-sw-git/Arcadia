@@ -4,6 +4,7 @@ using Arcadia.App.Settings;
 using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
+using Arcadia.Core.Artwork.SteamGridDb;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -43,6 +44,8 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     // When each shown message appeared, at its current level (#166); a message that goes is forgotten.
     private readonly Dictionary<string, (StatusLevel Level, DateTimeOffset Since)> _since = [];
     private IReadOnlyList<StatusEntry> _controllerEntries = [];
+    private IReadOnlyList<StatusMessage> _controllerMessages = [];
+    private SteamGridDbKey? _steamGridDb;
 
     /// <param name="history">Gets the status messages the header shows on every change (#433).</param>
     public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time, StatusMessageChanges history)
@@ -100,7 +103,31 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     public bool HasEntries => Entries.Count > 0;
 
     /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
-    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate;
+    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate || HasSteamGridDbWarning;
+
+    /// <summary>SteamGridDB turned the key down (#489): a warning in the header until a new key or none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
+    public partial bool HasSteamGridDbWarning { get; private set; }
+
+    public static string SteamGridDbStatusId => "steamgriddb-key";
+
+    /// <summary>Follows the SteamGridDB key's state from now on (#489).</summary>
+    public void WatchSteamGridDb(SteamGridDbKey key)
+    {
+        _steamGridDb = key;
+        key.Changed += OnSteamGridDbChanged;
+        UpdateSteamGridDbState();
+    }
+
+    private void OnSteamGridDbChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateSteamGridDbState);
+
+    private void UpdateSteamGridDbState()
+    {
+        HasSteamGridDbWarning = _steamGridDb?.State == SteamGridDbKeyState.Rejected;
+        ShowHistory();
+        ShowEntries();
+    }
 
     [ObservableProperty]
     public partial string Clock { get; private set; } = string.Empty;
@@ -114,6 +141,11 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         _clock.Dispose();
         _controllerSupport.Changed -= OnControllerSupportChanged;
         _updates.Changed -= OnUpdatesChanged;
+        if (_steamGridDb is not null)
+        {
+            _steamGridDb.Changed -= OnSteamGridDbChanged;
+        }
+
         GC.SuppressFinalize(this);
     }
 
@@ -167,11 +199,12 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
 
         // What the header stands for, message by message: their changes are entries of "Letzte Meldungen" (#433).
         var panLevel = _pan.State == PanEmulationState.Stopped ? HealthSeverity.Error : HealthSeverity.Warning;
-        _history.Show(
+        _controllerMessages =
         [
             .. issues.Select(issue => new StatusMessage(issue.Id, issue.Severity, issue.Title)),
             .. panProblem ? [new StatusMessage(PanStatusId, panLevel, PanNotRunningText)] : Array.Empty<StatusMessage>(),
-        ]);
+        ];
+        ShowHistory();
 
         _controllerEntries =
         [
@@ -194,12 +227,22 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         ? new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, AboutSettingsViewModel.LoadingText(version, percent), default, StatusTarget.ArcadiaUpdate, null)
         : new StatusEntry(UpdateStatusId, StatusLevel.Update, ArcadiaUpdateText, UpdateShortText, default, StatusTarget.ArcadiaUpdate, UpdateFixLabel);
 
+    /// <summary>What the header stands for, message by message, for "Letzte Meldungen" (#433).</summary>
+    private void ShowHistory() => _history.Show(
+    [
+        .. _controllerMessages,
+        .. HasSteamGridDbWarning ? [new StatusMessage(SteamGridDbStatusId, HealthSeverity.Warning, AppTexts.DataSourcesKeyStatus)] : Array.Empty<StatusMessage>(),
+    ]);
+
     /// <summary>The header's messages as the modal's entries, each with the time it appeared at its level.</summary>
     private void ShowEntries()
     {
         IReadOnlyList<StatusEntry> shown =
         [
             .. _controllerEntries,
+            .. HasSteamGridDbWarning
+                ? [new StatusEntry(SteamGridDbStatusId, StatusLevel.Warning, AppTexts.DataSourcesKeyStatus, AppTexts.DataSourcesKeyStatusShort, default, StatusTarget.SteamGridDbKey, null)]
+                : Array.Empty<StatusEntry>(),
             .. HasArcadiaUpdate
                 ? [UpdateEntry()]
                 : Array.Empty<StatusEntry>(),

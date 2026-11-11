@@ -18,3 +18,8 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 Measured with `--demo --demo-games 5000` (Release, Linux container, made-up images): start and page turns as without
 images. Paging through the library raises the resident memory on Linux by glibc's allocator keeping the decoder's freed
 buffers (`MALLOC_MMAP_THRESHOLD_=131072` keeps it flat); no managed or native leak. The budget is measured on Windows.
+
+"Artwork ändern" (#490): `ViewModels/ChangeArtworkViewModel` (tabs, grid focus with `GridFocus`, tiles
+`ArtworkTileViewModel`, the notice `ArtworkNoticeViewModel`) over `ArtworkService.ByHand`; `Views/ChangeArtworkView`.
+`MainViewModel.ChangeArtwork.cs` opens it from the game action (`IGameActionHost.ChangeArtwork`) as a dialog over the
+page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and the warning toast.

@@ -27,3 +27,7 @@
 - After "Installieren" the game shows "Bitte in … bestätigen" (an Epic engine: "Bitte in … starten") for 1 minute,
   then "Installieren" again: launchers don't report a cancelled install dialog, and a later confirm still shows its
   progress. A on a waiting game opens the launcher's install dialog again and restarts the minute (#343).
+- "Artwork ändern" (#490, prototype in #13) works on the open game at once, nothing to confirm or cancel: A uses the
+  focused tile, also the one in use (it becomes set by hand); Y gives only the open tab back to Arcadia's choice. An own
+  file stays offered under "Eigene Datei" after another choice, until X replaces it; it is cropped centred like every
+  image. A file that isn't a readable PNG, JPEG or WebP of at most 20 MB is refused with a warning.

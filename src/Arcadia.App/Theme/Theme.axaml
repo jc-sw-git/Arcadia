@@ -2809,4 +2809,265 @@
     <Setter Property="Height" Value="22" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+
+  <!-- "Artwork ändern" (#490, prototype in #13). Tiles fill the grid's 852 px: five covers (2 : 3) or two backgrounds
+       (3.1 : 1) a row; the notice spans three covers or the whole row. -->
+  <Style Selector="Border.artworkModal">
+    <Setter Property="Background" Value="{StaticResource DetailSurface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="40,32,40,0" />
+    <Setter Property="BoxShadow" Value="{StaticResource DialogShadow}" />
+  </Style>
+  <Style Selector="Path.artworkIcon">
+    <Setter Property="Data" Value="M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2M20.5 16l-5-5-8 8.5M9 8.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6" />
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.artworkGame">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.artworkTab">
+    <Setter Property="Padding" Value="24,12" />
+    <Setter Property="CornerRadius" Value="26" />
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Button.artworkTab.selected">
+    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Foreground" Value="{StaticResource Bg}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.artworkLabel">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="LetterSpacing" Value="1.6" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="Margin" Value="0,0,0,14" />
+  </Style>
+  <Style Selector="Border.artworkMini">
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.artworkMiniCover">
+    <Setter Property="Width" Value="118" />
+    <Setter Property="Height" Value="177" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Margin" Value="28,44,0,0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="BoxShadow" Value="{StaticResource CoverShadow}" />
+  </Style>
+  <Style Selector="TextBlock.artworkMonogram">
+    <Setter Property="FontSize" Value="54" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Margin" Value="12,8" />
+  </Style>
+  <Style Selector="TextBlock.artworkMiniTitle">
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="Black" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="Margin" Value="172,150,24,0" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <!-- The part being changed: a ring inside the hero, around the cover. -->
+  <Style Selector="Border.artworkMark">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    <Setter Property="BorderThickness" Value="3" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.artworkMark.cover">
+    <Setter Property="Width" Value="130" />
+    <Setter Property="Height" Value="189" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="Margin" Value="22,38,0,0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Border.artworkMiniAction">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Border.artworkMiniAction.accent">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Border.artworkMiniFact">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{StaticResource Surface}" />
+  </Style>
+  <Style Selector="Border.artworkFacts">
+    <Setter Property="Margin" Value="0,22,0,0" />
+    <Setter Property="Padding" Value="20,14" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="DockPanel.artworkFact">
+    <Setter Property="Margin" Value="0,6" />
+  </Style>
+  <Style Selector="TextBlock.artworkFactLabel">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.artworkFactValue">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="Margin" Value="20,0,0,0" />
+  </Style>
+  <Style Selector="Border.artworkFrame">
+    <Setter Property="Width" Value="154" />
+    <Setter Property="Height" Value="231" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="ItemsControl.hero Border.artworkFrame">
+    <Setter Property="Width" Value="412" />
+    <Setter Property="Height" Value="133" />
+  </Style>
+  <Style Selector="Button.artworkTile.focused Border.artworkFrame">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.artworkOwnEmpty">
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="StackPanel.artworkOwnContent">
+    <Setter Property="Spacing" Value="10" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ItemsControl.hero StackPanel.artworkOwnContent">
+    <Setter Property="Orientation" Value="Horizontal" />
+  </Style>
+  <Style Selector="Path.artworkFolderIcon">
+    <Setter Property="Data" Value="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 10v6M9 13h6" />
+    <Setter Property="Stroke" Value="{StaticResource TextSoft}" />
+    <Setter Property="StrokeThickness" Value="1.8" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.artworkOwnLabel">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.artworkTag">
+    <Setter Property="Background" Value="{StaticResource LauncherBadgePlate}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Margin" Value="8" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Border.artworkTag TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="LetterSpacing" Value="0.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Border.artworkTick">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="Margin" Value="8" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Path.artworkTickMark">
+    <Setter Property="Data" Value="M5 12l5 5 9-10" />
+    <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
+    <Setter Property="StrokeThickness" Value="3.4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.artworkCaption">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="MaxWidth" Value="154" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="ItemsControl.hero TextBlock.artworkCaption">
+    <Setter Property="MaxWidth" Value="412" />
+  </Style>
+  <Style Selector="Border.artworkNotice">
+    <Setter Property="Width" Value="502" />
+    <Setter Property="Height" Value="259" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="28,26" />
+    <Setter Property="Background" Value="{StaticResource InfoNoteSurface}" />
+  </Style>
+  <Style Selector="ItemsControl.hero Border.artworkNotice">
+    <Setter Property="Width" Value="852" />
+    <Setter Property="Height" Value="NaN" />
+  </Style>
+  <Style Selector="TextBlock.artworkNoticeTitle">
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="TextBlock.artworkNoticeText">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="LineHeight" Value="26" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{StaticResource InfoNoteText}" />
+  </Style>
+  <Style Selector="Button.artworkNoticeButton">
+    <Setter Property="Height" Value="46" />
+    <Setter Property="Padding" Value="22,0" />
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.artworkNoticeButton.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.artworkFooter">
+    <Setter Property="Height" Value="76" />
+    <Setter Property="Margin" Value="0,12,0,0" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Button.artworkRestore.off">
+    <Setter Property="Opacity" Value="0.4" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
 </Styles>

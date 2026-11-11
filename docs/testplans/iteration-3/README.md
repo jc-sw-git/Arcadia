@@ -40,6 +40,7 @@ its file.
 | [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
 | [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
 | [488](488-show-epics-covers-and-backgrounds.md) | #488 | Show Epic's covers and backgrounds from its catalog | T488-1 to T488-17 (owner: T488-16, -17) |
+| [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 
 ## Release candidate tests (restart or installation)
 
@@ -83,3 +84,5 @@ Charter: –. Time box: –. Findings: –.
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
 | T488-1, -8, -13 | `EpicArtworkTests` |
 | T488-14, -15 | `Window/EpicArtworkWindowTests`; the variants T488-2 to -7, -9 to -12 in `EpicArtworkTests` (Core) |
+| T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
+| T490-2, -5 | `Window/ChangeArtworkViewTests` |

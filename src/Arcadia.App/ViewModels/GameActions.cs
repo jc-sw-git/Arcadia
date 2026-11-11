@@ -41,6 +41,9 @@ public interface IGameActionsOwner
 
     void CycleGameMouseMode(Game game);
 
+    /// <summary>"Artwork ändern" (#490): the modal over the page.</summary>
+    void ChangeArtwork(GameTileViewModel tile);
+
     /// <summary>A game is starting or its start failed: every shown cover takes its run state again.</summary>
     void RunStatesChanged();
 }
@@ -460,4 +463,6 @@ public sealed class GameActions : IGameActionHost
     bool IGameActionHost.DefaultGameMouseModeAllowed => _settings.Current.MouseMode.PerGameDefaultAllowed;
 
     void IGameActionHost.CycleGameMouseMode(GameTileViewModel tile) => _owner.CycleGameMouseMode(tile.Game);
+
+    void IGameActionHost.ChangeArtwork(GameTileViewModel tile) => _owner.ChangeArtwork(tile);
 }

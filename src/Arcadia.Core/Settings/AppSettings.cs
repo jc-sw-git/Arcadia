@@ -98,6 +98,12 @@ public sealed record AppSettings
     public bool SortsStatusByNewest { get; init; }
 
     /// <summary>
+    /// "Von Hand gesetzte Artworks überschreiben" (#13, #490): "Alle Artworks neu laden" replaces images set by hand too
+    /// (<c>ArtworkService.ReloadAll</c>). Off by default; its row is in the category "Datenquellen" (#489).
+    /// </summary>
+    public bool OverwritesArtworkSetByHand { get; init; }
+
+    /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
     /// </summary>

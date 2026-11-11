@@ -2,7 +2,7 @@
 
 **Status:** Automated: T476-1 to T476-4, T476-6 to T476-12, T476-14 · QE: T476-8, T476-9 (app run) · Open for the owner: T476-15
 
-Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5, added with it.
+Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release threshold): T476-1 to -4, -6, -7, -14, -15. Part 3 (all other lists): T476-5, added with it. T476-1 replaces T12-16's "the grid stops at its ends" (only the wheel stops there now).
 
 - [x] **T476-1** Search grid on its last window, RT (Q, Page Down) shows the first window; LT (E, Page Up) on the first shows the last; the search row the same · E2E: yes
 - [x] **T476-2** Focus on the first hit, left: the last hit; right on the last: the first; in the row with the keyboard out the same with the right stick; the library the same over all its pages · E2E: yes

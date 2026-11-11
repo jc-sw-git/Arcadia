@@ -81,22 +81,23 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     private List<GameTileViewModel> _results = [];
     private TextWithCaret _text = TextWithCaret.AtEnd(string.Empty);
     private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
+    private readonly SearchPageParts _parts;
 
     /// <param name="tabs">The launcher tabs; the search covers the ones with games.</param>
     /// <param name="actions">The window's one <see cref="GameActions"/>: it holds the press in progress for every page.</param>
     /// <param name="host">The window, asked to close the search and to show the hit's menu and the filter dialog.</param>
+    /// <param name="parts">The keyboard and the places of the hits, kept from the search before.</param>
+    /// <param name="layout">The keyboard's layout; it may have been changed elsewhere since the search before.</param>
     /// <param name="createTile">A hit's cover from its game, what focuses it and what a click on it does.</param>
     public SearchViewModel(
         LauncherTabsViewModel tabs,
         GameActions actions,
         IPageHost host,
+        SearchPageParts parts,
         KeyboardLayout layout,
-        Action<KeyboardLayout> layoutChosen,
         Func<Game, Action<GameTileViewModel>, Action<GameTileViewModel>, GameTileViewModel> createTile,
         Func<LauncherInfo, LauncherBadge> badgeOf,
-        bool usesController,
-        TimeProvider time,
-        Action<Action> post)
+        bool usesController)
     {
         _tabs = tabs;
         _actions = actions;
@@ -105,10 +106,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
         _createTile = createTile;
         _badgeOf = badgeOf;
-        Keyboard = new OnScreenKeyboardViewModel(layout, this, time, post);
-        Keyboard.LayoutChosen += layoutChosen;
-        // A search field has no tab order to go through, and the keyboard is part of the page, with no edge to move to.
-        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown);
+        _parts = parts;
+        Keyboard = parts.Keyboard;
+        Slots = parts.Slots;
+        parts.Attach(this, layout);
         UsesController = usesController;
         Keyboard.UsesController = usesController;
         IsKeyboardOut = usesController;
@@ -189,7 +190,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     /// A place keeps its controls when it gets another tile: building a tile's controls takes milliseconds,
     /// and building them for every key press or step at the window's edge broke the budget for a focus move.
     /// </summary>
-    public ObservableCollection<TileSlotViewModel> Slots { get; } = [];
+    public ObservableCollection<TileSlotViewModel> Slots { get; }
 
     /// <summary>The index in <see cref="Hits"/> of the first of <see cref="Results"/>.</summary>
     public int SliceStart { get; private set; }
@@ -599,7 +600,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
             KeyboardClosed?.Invoke();
         }
 
-        Keyboard.Dispose();
+        _parts.Detach(this);
     }
 
     partial void OnUsesControllerChanged(bool value) => Keyboard.UsesController = value;

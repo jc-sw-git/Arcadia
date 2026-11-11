@@ -48,8 +48,8 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 
 - `Setup/`: the first start's page (#139): `FirstRunViewModel` with `FirstRunLauncherViewModel` rows, drawn by
   `Views/FirstRunView`.
-- `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
-  hits shown in `TileSlotViewModel` places too).
+- `Search/`: `SearchViewModel` (search page, takes all its input, #209); `SearchPageParts` (its keyboard and
+  `TileSlotViewModel` hit places, kept between searches, #477).
 - `Keyboard/`: the one on-screen keyboard (#110): `OnScreenKeyboardViewModel` (drawn by `Views/OnScreenKeyboardView`)
   with `BoardKeyViewModel`, `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types
   into; its user greys out or leaves out keys, `BoardKeyState`) and `WindowInFrontTarget` (the mouse mode's).

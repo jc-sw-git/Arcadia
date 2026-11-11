@@ -88,6 +88,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs = new PanDialogsViewModel(controllerSupport, settings, Toast, time, () => QuitRequested?.Invoke(this, EventArgs.Empty), CancelHold);
         PanDialogs.PropertyChanged += OnPanDialogsChanged;
         Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);
+        SearchParts = new SearchPageParts(
+            KeyboardLayout.Find(settings.Current.KeyboardLayout),
+            layout => SaveView(view => view with { KeyboardLayout = layout.Id }),
+            time,
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
         Library.PropertyChanged += OnLibraryChanged;
         LauncherTabs.Chosen += OnTabChosen;
         if (firstRun.IsPending)
@@ -249,6 +254,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSearchShown))]
     public partial SearchViewModel? Search { get; private set; }
+
+    /// <summary>The search page's keyboard and the places of its hits, which every search uses again (#477).</summary>
+    public SearchPageParts SearchParts { get; }
 
     /// <summary>The search is open and not hidden behind a detail page opened from it.</summary>
     public bool IsSearchShown => Search is not null && Detail is null;
@@ -702,13 +710,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             LauncherTabs,
             _actions,
             this,
+            SearchParts,
             KeyboardLayout.Find(_settings.Current.KeyboardLayout),
-            layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
             CreateTile,
             _logos.BadgeOf,
-            Input.Kind == InputKind.Gamepad,
-            _time,
-            action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
+            Input.Kind == InputKind.Gamepad);
     }
 
     /// <summary>Back to the library, where it was before the search.</summary>
@@ -987,6 +993,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ControllerMode.Dispose();
         Status.Dispose();
         Toast.Dispose();
+        SearchParts.Dispose();
         Session.Dispose();
         GC.SuppressFinalize(this);
     }

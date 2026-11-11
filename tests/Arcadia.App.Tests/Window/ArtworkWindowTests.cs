@@ -35,7 +35,8 @@ public sealed class ArtworkWindowTests : IDisposable
     {
         var installed = TestGames.Installed(KnownLaunchers.Gog, "Alpha", DateTimeOffset.UnixEpoch);
         var notInstalled = TestGames.NotInstalled(KnownLaunchers.Gog, "Beta");
-        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, installed, notInstalled)];
+        var source = new FixedArtwork(_images);
+        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, installed, notInstalled) with { Artwork = source }];
         using var window = await ArcadiaWindow.ShowAsync(launchers);
         var arcadia = window.Arcadia;
         var green = Color.FromRgb(40, 200, 60);
@@ -45,7 +46,6 @@ public sealed class ArtworkWindowTests : IDisposable
         // A cover taller than 2 : 3 and a background wider than 3.1 : 1. The background's outer 200 columns on each side
         // are red: a centred crop to the header (3.1 : 1 or wider keeps at most 3,440 of 3,840) cuts them away, a stretched
         // or fitted one shows them.
-        var source = new FixedArtwork(_images);
         foreach (var game in new[] { installed, notInstalled })
         {
             source.Set(game, ArtworkKind.Cover, DemoArtwork.Png(600, 1000, _ => (green.R, green.G, green.B)));
@@ -106,10 +106,10 @@ public sealed class ArtworkWindowTests : IDisposable
     public async Task The_image_takes_the_placeholders_place_without_moving_the_grid_or_the_focus()
     {
         var games = Enumerable.Range(1, 30).Select(i => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {i:D2}", DateTimeOffset.UnixEpoch)).ToArray();
-        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games)];
+        var source = new FixedArtwork(_images);
+        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games) with { Artwork = source }];
         using var window = await ArcadiaWindow.ShowAsync(launchers);
         var arcadia = window.Arcadia;
-        var source = new FixedArtwork(_images);
         window.Press(UiAction.Right);
         var focused = arcadia.Main.Library.FocusedGame!;
         var tile = window.Tile(focused);
@@ -139,10 +139,10 @@ public sealed class ArtworkWindowTests : IDisposable
     public async Task On_the_open_detail_page_and_search_the_image_swaps_in_where_the_player_is()
     {
         var games = Enumerable.Range(1, 30).Select(i => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {i:D2}", DateTimeOffset.UnixEpoch)).ToArray();
-        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games)];
+        var source = new FixedArtwork(_images);
+        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games) with { Artwork = source }];
         using var window = await ArcadiaWindow.ShowAsync(launchers);
         var arcadia = window.Arcadia;
-        var source = new FixedArtwork(_images);
         foreach (var (game, i) in games.Select((g, i) => (g, i)))
         {
             source.Set(game, ArtworkKind.Cover, Solid(i, 300, 450));
@@ -173,10 +173,10 @@ public sealed class ArtworkWindowTests : IDisposable
     public async Task With_the_controller_alone_every_place_shows_its_own_games_images()
     {
         var games = Enumerable.Range(1, 30).Select(i => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {i:D2}", DateTimeOffset.UnixEpoch)).ToArray();
-        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games)];
+        var source = new FixedArtwork(_images);
+        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games) with { Artwork = source }];
         using var window = await ArcadiaWindow.ShowAsync(launchers);
         var arcadia = window.Arcadia;
-        var source = new FixedArtwork(_images);
         foreach (var (game, i) in games.Select((g, i) => (g, i)))
         {
             source.Set(game, ArtworkKind.Cover, Solid(i, 300, 450));
@@ -276,6 +276,7 @@ public sealed class ArtworkWindowTests : IDisposable
 
     private async Task ShowArtworkAsync(ArcadiaWindow window, FixedArtwork source, params Game[] games)
     {
+        // The launcher's own source too: a rescan meanwhile (the window's activation) takes the run's place with it.
         window.Arcadia.Artwork.Update([new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), source)]);
         await window.Arcadia.Artwork.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
         await WaitShowingAsync(window);

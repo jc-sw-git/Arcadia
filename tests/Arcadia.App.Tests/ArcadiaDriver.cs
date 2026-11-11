@@ -722,10 +722,12 @@ internal readonly record struct StartArguments(bool Demo = false, bool FirstRun 
 /// <paramref name="IsDemo"/>: Arcadia's own demo data (<c>--demo</c>), whose games can't be started and of which one runs.
 /// <paramref name="Options"/>: the launcher's switches for software, tools and soundtracks (#141).
 /// <paramref name="Running"/>: the ids of the games the launcher reports as running.
+/// <paramref name="Artwork"/>: the launcher's covers and backgrounds (#487).
 /// </summary>
 internal sealed record LauncherSpec(
     LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false,
-    IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null, TestFolderChoice? FolderChoice = null)
+    IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null, TestFolderChoice? FolderChoice = null,
+    ILauncherArtwork? Artwork = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
 

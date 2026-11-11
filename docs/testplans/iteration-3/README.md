@@ -39,6 +39,7 @@ its file.
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 | [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
 | [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
+| [489](489-settings-category-data-sources.md) | #489 | Settings category "Datenquellen": SteamGridDB key, artwork order and search | T489-1 to T489-27 |
 
 ## Release candidate tests (restart or installation)
 
@@ -80,3 +81,4 @@ Charter: –. Time box: –. Findings: –.
 | T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
 | T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
+| T489-1, -2, -12, -13, -16, -19 | `DataSourcesTests`; T489-1 (layout) and -24 in `Window/DataSourcesViewTests`; the variants in `SteamGridDbKeyTests`, `SteamGridDbClientTests`, `ArtworkServiceSteamGridDbTests` (Core) |

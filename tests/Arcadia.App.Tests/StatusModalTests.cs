@@ -356,7 +356,7 @@ public sealed class StatusModalTests
         arcadia.Press(UiAction.Left);
         Assert.Equal(AppTexts.Install, modal.AcceptText);
 
-        // ▲ ▼ stop at the ends. The restart's info offers "Windows neu starten" too (#382).
+        // ▲ ▼ stop at the ends. The restart's info offers "PC neu starten" too (#382).
         arcadia.Press(UiAction.Down, times: 3);
         Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, modal.Focused?.Title);
         Assert.True(modal.FocusedHasFix);

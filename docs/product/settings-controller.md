@@ -33,7 +33,7 @@ The page and its status messages: [settings.md](settings.md).
   missing, too old or waits for the restart, only the part rows show (nothing from the emulation's state, which would
   only follow from it) and "Controller zuordnen" is hidden while the emulation doesn't run (an old usbip-win2 or
   HidHide may still let it run).
-- A driver change waiting for the Windows restart, Pan paused until then, "Windows neu starten":
+- A driver change waiting for the restart of the PC, Pan paused until then, "PC neu starten":
   [settings-controller-restart.md](settings-controller-restart.md).
 - Controllers Arcadia saw right before a hide and doesn't see again within 5 s (#396; HidHide installed while Arcadia
   ran): the emulation ends, Pan shows them, a toast says so, and nothing is hidden until Arcadia restarts, also after
@@ -50,8 +50,8 @@ The page and its status messages: [settings.md](settings.md).
   wiederherstellen", while Pan is on and any controller is connected; subtitle "Ändere das Layout deiner angeschlossenen
   Controller", [Zuordnen]; its info panel ends with the box "SPIELE SEHEN" (the Steam Controller whenever it is connected,
   also while Arcadia lets go of it for Pan, then each connected model → its layout, or "Nicht übernommen"). [Zuordnen] opens a modal with one row per connected model (its default as
-  subtitle "Vorgabe: …"): ▲ ▼ moves, ◀ ▶ cycles Xbox 360 Controller, DualShock 4, DualSense, (DualSense Edge only for
-  an Edge,) Switch 2 Pro Controller, "Nicht übernehmen" (wraps), as does A on a row, without applying. Below the rows the button
+  subtitle "Vorgabe: …"): ▲ ▼ moves, ◀ ▶ cycles Xbox Controller, DualShock 4, DualSense, (DualSense Edge only for
+  an Edge,) Switch 2 Pro, "Nicht übernehmen" (wraps), as does A on a row, without applying. Below the rows the button
   [Übernehmen] (▲ ▼ reach it, A or a click) is the only way to apply: all changes once, then it closes. B (✕) closes
   without them. Not at once: each applied change replaces the pad,
   and "Nicht übernehmen" and back restart the real controller, which Steam announces each time. The Steam Controller's row ("Steam Controller (Modus „Arcadia“)") is locked to Xbox 360 Controller and

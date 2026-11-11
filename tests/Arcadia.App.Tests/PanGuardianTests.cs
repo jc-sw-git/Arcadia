@@ -131,12 +131,12 @@ public sealed class PanGuardianTests
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasControllerStatus, "das Dreieck im Header");
         Assert.False(arcadia.Main.Status.IsControllerStatusInfo);
         Assert.False(arcadia.Main.Status.IsControllerStatusError);
-        Assert.Equal("Steam Controller: Wächterdienst Pan fehlt", arcadia.Main.Status.ControllerStatusText);
+        Assert.Equal("Steam Controller: Controller-Wächter (Pan) fehlt", arcadia.Main.Status.ControllerStatusText);
 
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Controller-Wächter (Pan) fehlt“");
         var warning = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing"));
         Assert.Equal(HealthSeverity.Warning, warning.Severity);
         Assert.Equal(AppTexts.Install, warning.ActionText);
@@ -166,7 +166,7 @@ public sealed class PanGuardianTests
         using var arcadia = await ArcadiaDriver.StartAsync(steam: steam);
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings!.Selected);
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Controller-Wächter (Pan) fehlt“");
         var pan = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing"));
 
         pan.Activate();

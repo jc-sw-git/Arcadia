@@ -690,7 +690,7 @@ public sealed class PanRows
         [
             new InfoText(AppTexts.PanMainInfo4),
             .. ModeCards,
-            new InfoNote(AppTexts.PanMainInfo5, HealthSeverity.Info),
+            new InfoNote(AppTexts.PanMainInfo5, HealthSeverity.Info) { Title = AppTexts.PanFirmwareUpdatesHeading },
         ]),
         new InfoSection(AppTexts.PanWhatItNeeds,
         [

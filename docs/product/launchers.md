@@ -35,7 +35,7 @@
 - A or a click on a launcher in the list opens its page in place of the rows; B (or a click on "Launcher" above its
   name) goes back to the list with that launcher focused. LT/RT (Q/E, a click on a neighbour in the head) turn to the
   launcher before or after it in the list's order, wrapping.
-- Groups "Allgemein": Aktiv, "Name im Tab", "Such-Kürzel", "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only
+- Groups "Allgemein": Aktiv, "Name des Launchers in Arcadia", "Such-Kürzel", "Logo"; "Bibliothek": "Ordner" and "Neu einlesen" (only
   active and found); "Controller" (below). Steam's page ends with the group "Desktop-Steuerung", "Steams
   Desktop-Steuerung zulassen" (#315; off by default; subtitle
   "Steams Desktop-Steuerung ist momentan aktiviert" / "… wird momentan ignoriert"), there also while Steam is

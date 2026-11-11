@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A comment may say "emuliert", z. B. or ... -->
+<root>
+  <resheader name="version"><value>2.0 "..." - z. B.</value></resheader>
+  <data name="RestartWindows" xml:space="preserve"><value>PC neu starten</value></data>
+  <data name="Emulation" xml:space="preserve"><value>Die Emulation und die Controller-Emulation laufen, Spiele sehen einen virtuellen Controller.</value></data>
+  <data name="Quotes" xml:space="preserve"><value>„Steam-Eingabe“ im Steam-Controller-Modus – Wird geladen …</value></data>
+  <data name="Units" xml:space="preserve"><value>{hours} Std. · vor {minutes} Min. · {size} GB · {percent} %</value></data>
+</root>

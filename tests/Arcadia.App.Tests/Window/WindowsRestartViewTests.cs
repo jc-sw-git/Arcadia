@@ -10,7 +10,7 @@ using Avalonia.VisualTree;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// "Windows neu starten" as drawn (#382, artboards T382F01, T382F05–F07): the restart row under the paused switch, the
+/// "PC neu starten" as drawn (#382, artboards T382F01, T382F05–F07): the restart row under the paused switch, the
 /// question with its buttons and the footer that names what A does, and a refusal as a toast.
 /// </summary>
 public sealed class WindowsRestartViewTests
@@ -38,7 +38,7 @@ public sealed class WindowsRestartViewTests
         var arcadia = await ArcadiaWindow.ShowAsync(steam: steam);
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Arcadia.Main.Settings!.Selected);
-        await arcadia.Arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        await arcadia.Arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „PC-Neustart ausstehend“");
         controller.FocusRow(RestartRowKey);
         arcadia.Settle();
         return (arcadia, controller);
@@ -115,7 +115,7 @@ public sealed class WindowsRestartViewTests
         var cancel = arcadia.Window.GetVisualDescendants().OfType<Button>().Single(button => button.IsEffectivelyVisible && Equals(button.Content, "Abbrechen")
             && button.Command == controller.ClosePromptCommand);
         arcadia.AssertRingAround(cancel, "Abbrechen");
-        RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "Windows neu starten?");
+        RingGeometry.AssertNoRingCutOff(arcadia.Window, () => arcadia.Settle().WaitForTransitions(), "PC neu starten?");
         Keep(arcadia, "382-question-cancel-focused");
     }
 

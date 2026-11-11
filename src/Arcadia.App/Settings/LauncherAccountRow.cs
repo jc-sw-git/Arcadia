@@ -165,11 +165,9 @@ internal sealed class LauncherAccountRow : IDisposable
         switch (account.State.Step)
         {
             case AccountStep.SignedIn:
-                var launcherName = _category.Host.Launchers.Info(_category.PageLauncherId!).DisplayName;
                 _category.Dialog = new ConfirmationViewModel(
                     AppTexts.AccountAskSignOutTitle(account.Title),
-                    AppTexts.AccountAskSignOut(account.State.AccountName)
-                        + AppTexts.AccountAskSignOutLicenses(launcherName),
+                    AppTexts.AccountAskSignOut(account.State.AccountName),
                     AppTexts.SignOut,
                     account.SignOut,
                     () => _category.Dialog = null);

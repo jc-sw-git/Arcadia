@@ -12,7 +12,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// The controller setup after an update (#382) as the player meets it: no wrong HidHide hint without HidHide, Pan paused
-/// while a removed driver waits for the Windows restart, the one restart row with "Windows neu starten" and its question,
+/// while a removed driver waits for the Windows restart, the one restart row with "PC neu starten" and its question,
 /// and nothing that starts by itself afterwards. Pan, the drivers and Windows' restart are faked; the real ones are the
 /// owner's cases T382-30 to T382-34.
 /// </summary>
@@ -20,7 +20,7 @@ public sealed class WindowsRestartTests
 {
     private static readonly string RestartRowKey = PanRows.IssueKey(EmulationParts.WindowsRestartId);
     private const string HidHideMissingKey = "issue:hidhide-missing";
-    private const string PausedSubtitle = "Pausiert bis zum Neustart von Windows";
+    private const string PausedSubtitle = "Pausiert bis zum Neustart des PCs";
 
     /// <summary>
     /// Arcadia with Pan on and a Steam Controller whose copy Pan hides; a GOG library whose launcher reports running
@@ -68,7 +68,7 @@ public sealed class WindowsRestartTests
         Assert.IsType<ActionRowViewModel>(Assert.Single(controller.Rows, row => row.Key == RestartRowKey));
 
     private static Task WaitForRestartRowAsync(ArcadiaDriver arcadia, ControllerSettingsViewModel controller) =>
-        arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „PC-Neustart ausstehend“");
 
     /// <summary>The App's timers for <paramref name="duration"/> of virtual time: the parts every 2 s, Pan's emulation with them.</summary>
     private static async Task RunForAsync(ArcadiaDriver arcadia, TimeSpan duration)
@@ -207,16 +207,16 @@ public sealed class WindowsRestartTests
 
         Assert.Equal(
             [
-                "Ein Treiber wurde deinstalliert. Windows entfernt ihn ganz erst beim nächsten Neustart.",
-                "Bis dahin pausiert Pan: Arcadia emuliert und versteckt keine Controller, Spiele und Steam sehen deine Controller direkt. Der Schalter bleibt an, nach dem Neustart läuft Pan von selbst weiter.",
+                "Ein Treiber wurde deinstalliert. Ganz entfernt ist er erst nach dem nächsten Neustart des PCs.",
+                "Bis dahin pausiert Pan: Arcadia virtualisiert und versteckt keine Controller, Spiele und Steam sehen deine Controller direkt. Der Schalter bleibt an, nach dem Neustart läuft Pan von selbst weiter.",
             ],
             row.Info.OfType<InfoText>().Select(text => text.Text));
         var box = Assert.Single(row.Info.OfType<InfoSection>());
         Assert.Equal(ControllerSupportTexts.PausedBoxTitle, box.Title);
         Assert.Equal(
-            "Fehlt dann noch etwas, steht es hier mit „Installieren“. Ein Druck richtet alles Fehlende in einem Durchgang ein, mit einer Windows-Abfrage.",
+            "Fehlt dann noch etwas, steht es hier mit „Installieren“. Ein Druck richtet alles Fehlende in einem Durchgang ein, mit einer Abfrage nach Administratorrechten.",
             Assert.IsType<InfoText>(Assert.Single(box.Blocks)).Text);
-        Assert.Equal("WINDOWS-NEUSTART AUSSTEHEND", row.InfoTitle);
+        Assert.Equal("PC-NEUSTART AUSSTEHEND", row.InfoTitle);
     }
 
     [AvaloniaFact]
@@ -324,6 +324,48 @@ public sealed class WindowsRestartTests
         Assert.True(restarted.Settings.Current.PanEnabled);
     }
 
+    /// <summary>T339-12: the restart says "PC" in the row, its button, the question and the refusal, never "Windows".</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T339-12")]
+    public async Task Every_restart_text_says_PC_and_B_closes_the_question_back_on_the_row()
+    {
+        var steam = new FakeSteam { HidHideRemovalPending = true, WindowsRestartError = new InvalidOperationException("shutdown.exe endete mit 1190") };
+        using var arcadia = await StartAsync(steam);
+        var controller = OpenControllerSettings(arcadia);
+        await WaitForRestartRowAsync(arcadia, controller);
+
+        // The gamepad alone: ▼ from the switch to the restart row.
+        for (var press = 0; press < controller.Rows.Count && controller.FocusedRow?.Key != RestartRowKey; press++)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        var row = RestartRow(controller);
+        Assert.Equal(row, controller.FocusedRow);
+        string[] rowTexts = [row.Title, row.Subtitle ?? string.Empty, row.ActionText ?? string.Empty, Switch(controller).Subtitle ?? string.Empty,
+            .. row.Info.OfType<InfoText>().Select(text => text.Text), .. row.Info.OfType<InfoSection>().SelectMany(box => box.Blocks.OfType<InfoText>()).Select(text => text.Text)];
+        Assert.Equal("PC-Neustart ausstehend", row.Title);
+        Assert.Equal("PC neu starten", row.ActionText);
+        Assert.Equal("Pausiert bis zum Neustart des PCs", Switch(controller).Subtitle);
+        Assert.All(rowTexts, text => Assert.DoesNotContain("Windows", text, StringComparison.Ordinal));
+
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal(SettingsPrompt.ConfirmWindowsRestart, controller.Prompt);
+        Assert.Equal("PC neu starten?", ControllerSettingsViewModel.RestartTitle);
+        Assert.DoesNotContain("Windows", ControllerSettingsViewModel.RestartText, StringComparison.Ordinal);
+        arcadia.Press(UiAction.Back);
+        Assert.Equal(SettingsPrompt.None, controller.Prompt);
+        Assert.Equal(RestartRowKey, controller.FocusedRow?.Key);
+        Assert.Equal(0, steam.WindowsRestarts);
+
+        // Refused: the toast says "PC" too, the row stays.
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text?.StartsWith(ControllerSupportService.RestartRefusedTitle, StringComparison.Ordinal) == true, "der Toast");
+        Assert.Contains("PC", arcadia.Main.Toast.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Windows", arcadia.Main.Toast.Text, StringComparison.Ordinal);
+        Assert.True(RestartRow(controller).CanActivate);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T382-20")]
     public async Task While_a_game_runs_Windows_neu_starten_is_greyed_out_keeps_its_focus_and_does_nothing_until_the_game_ended()
@@ -352,7 +394,7 @@ public sealed class WindowsRestartTests
         await arcadia.FollowRunningGamesAsync();
         await RunForAsync(arcadia, TimeSpan.FromSeconds(10));
         Assert.Null(arcadia.Main.Session.RealRunStateOf(game.Key));
-        await arcadia.WaitUntilAsync(() => RestartRow(controller).CanActivate, "„Windows neu starten“ wieder wählbar");
+        await arcadia.WaitUntilAsync(() => RestartRow(controller).CanActivate, "„PC neu starten“ wieder wählbar");
         Assert.Equal(EmulationParts.PausedSummary, RestartRow(controller).Subtitle);
     }
 

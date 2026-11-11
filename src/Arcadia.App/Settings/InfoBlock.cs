@@ -77,6 +77,11 @@ public sealed record InfoNote(string Text, HealthSeverity Severity = HealthSever
 
     /// <summary>A note that must be read before switching, e.g. doubled input with Steam's desktop layout (#315).</summary>
     public bool IsBold { get; init; }
+
+    /// <summary>A bold line above the text that names what the note is about, e.g. "Firmware-Updates von Controllern".</summary>
+    public string? Title { get; init; }
+
+    public bool HasTitle => !string.IsNullOrEmpty(Title);
 }
 
 /// <summary>A fact in a line: what on the left, its value on the right, e.g. "Such-Kürzel  /epic".</summary>

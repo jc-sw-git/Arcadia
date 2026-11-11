@@ -81,7 +81,7 @@ internal sealed class LauncherGeneralRows
         ActiveRow.Preview = [tabBar];
         ActiveRow.Info =
         [
-            new InfoText(AppTexts.LauncherActiveInfo(name)),
+            new InfoText(AppTexts.LauncherActiveInfo),
             .. isFound ? Array.Empty<InfoBlock>() : [new InfoNote(isActive
                 ? AppTexts.LauncherNotFoundAnymore(name)
                 : AppTexts.LauncherNotFoundCannotActivate(name))],

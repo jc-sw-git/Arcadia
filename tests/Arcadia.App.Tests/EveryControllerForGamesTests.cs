@@ -508,28 +508,28 @@ public sealed class EveryControllerForGamesTests
         var info = Assert.Single(controller.FocusedRow!.Info.OfType<InfoFacts>());
         Assert.Equal(AppTexts.PanGamesSee, info.Title);
         Assert.Equal(
-            ["Steam Controller (Modus „Arcadia“) → Xbox 360 Controller", "DualSense Wireless Controller → DualSense", "Nintendo GameCube Controller → Xbox 360 Controller"],
+            ["Steam Controller (Modus „Arcadia“) → Xbox Controller", "DualSense Wireless Controller → DualSense", "Nintendo GameCube Controller → Xbox Controller"],
             info.Facts.Select(fact => $"{fact.Label} → {fact.Value}"));
 
         var layouts = OpenLayouts(arcadia, controller);
         Assert.Equal(
-            ["Steam Controller (Modus „Arcadia“): Xbox 360 Controller (gesperrt)", "DualSense Wireless Controller: DualSense", "Nintendo GameCube Controller: Xbox 360 Controller"],
+            ["Steam Controller (Modus „Arcadia“): Xbox Controller (gesperrt)", "DualSense Wireless Controller: DualSense", "Nintendo GameCube Controller: Xbox Controller"],
             Shown(layouts));
-        Assert.Equal(["Vorgabe: Xbox 360 Controller", "Vorgabe: DualSense", "Vorgabe: Xbox 360 Controller"], layouts.Rows.Select(row => row.Subtitle));
+        Assert.Equal(["Vorgabe: Xbox Controller", "Vorgabe: DualSense", "Vorgabe: Xbox Controller"], layouts.Rows.Select(row => row.Subtitle));
 
         // The Steam Controller takes the focus, but ◀ ▶ do nothing there; its note says why.
         arcadia.Press(UiAction.Right).Press(UiAction.Left);
         Assert.True(layouts.Rows[0].ShowsLockNote);
         Assert.False(layouts.CanChange);
-        Assert.Equal("Xbox 360 Controller", layouts.Rows[0].ValueText);
+        Assert.Equal("Xbox Controller", layouts.Rows[0].ValueText);
 
-        // Trying layouts changes nothing yet: DualSense ◀ ◀ (DualShock 4, Xbox 360 Controller), GameCube ◀ to
+        // Trying layouts changes nothing yet: DualSense ◀ ◀ (DualShock 4, Xbox Controller), GameCube ◀ to
         // "Nicht übernehmen" and ◀ again. B closes without them.
         arcadia.Press(UiAction.Down).Press(UiAction.Left, times: 2);
         Assert.True(layouts.CanChange);
-        Assert.Equal("Xbox 360 Controller", layouts.Rows[1].ValueText);
+        Assert.Equal("Xbox Controller", layouts.Rows[1].ValueText);
         arcadia.Press(UiAction.Down).Press(UiAction.Left).Press(UiAction.Left);
-        Assert.Equal("Switch 2 Pro Controller", layouts.Rows[2].ValueText);
+        Assert.Equal("Switch 2 Pro", layouts.Rows[2].ValueText);
         var padsPlugged = arcadia.XboxPads.All.Count;
         await arcadia.TickSteamControllerAsync();
         Assert.Equal(padsPlugged, arcadia.XboxPads.All.Count);
@@ -537,13 +537,13 @@ public sealed class EveryControllerForGamesTests
         arcadia.Press(UiAction.Back);
         Assert.Null(controller.Dialog);
         layouts = OpenLayouts(arcadia, controller);
-        Assert.Equal(["DualSense", "Xbox 360 Controller"], layouts.Rows.Skip(1).Select(row => row.ValueText));
+        Assert.Equal(["DualSense", "Xbox Controller"], layouts.Rows.Skip(1).Select(row => row.ValueText));
 
-        // DualSense ◀ ◀ to Xbox 360 Controller, GameCube ▶ ▶ and A, which steps on too (DualShock 4, DualSense,
-        // Switch 2 Pro Controller); A on [Übernehmen] below the rows applies both at the next tick, each pad replaced once.
+        // DualSense ◀ ◀ to Xbox Controller, GameCube ▶ ▶ and A, which steps on too (DualShock 4, DualSense,
+        // Switch 2 Pro); A on [Übernehmen] below the rows applies both at the next tick, each pad replaced once.
         arcadia.Press(UiAction.Down).Press(UiAction.Left, times: 2);
         arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 2).Press(UiAction.Accept);
-        Assert.Equal("Switch 2 Pro Controller", layouts.Rows[2].ValueText);
+        Assert.Equal("Switch 2 Pro", layouts.Rows[2].ValueText);
         Assert.NotNull(controller.Dialog);
         arcadia.Press(UiAction.Down);
         Assert.True(layouts.IsApplyFocused);
@@ -601,21 +601,21 @@ public sealed class EveryControllerForGamesTests
         Dispatcher.UIThread.RunJobs();
         Assert.Contains(PanRows.LayoutsKey, RowsBelow(controller));
         var layouts = OpenLayouts(arcadia, controller);
-        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller"], Shown(layouts));
+        Assert.Equal(["Nintendo GameCube Controller: Xbox Controller"], Shown(layouts));
 
         // Two DualSense controllers are one row: the layout is the model's (D3b).
         var firstDualSense = arcadia.Sdl.Plug(DualSense);
         var secondDualSense = arcadia.Sdl.Plug(DualSense);
         arcadia.PollControllers();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
+        Assert.Equal(["Nintendo GameCube Controller: Xbox Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
 
         // One of them goes: the row stays for the other.
         arcadia.Sdl.Unplug(firstDualSense);
         arcadia.Time.Advance(TakenOverControllers.RereadGrace);
         arcadia.PollControllers();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(["Nintendo GameCube Controller: Xbox 360 Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
+        Assert.Equal(["Nintendo GameCube Controller: Xbox Controller", "DualSense Wireless Controller: DualSense"], Shown(layouts));
 
         arcadia.Sdl.Unplug(arcadia.Sdl.IdOf(GameCube));
         arcadia.Sdl.Unplug(secondDualSense);

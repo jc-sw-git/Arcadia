@@ -89,9 +89,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     public string Purpose => SteamTexts.SteamAccountPurpose;
 
-    public string About => SteamTexts.SteamAccountAbout1
-        + SteamTexts.SteamAccountAbout2
-        + SteamTexts.SteamAccountAbout3;
+    public string About => SteamTexts.SteamAccountAbout1 + SteamTexts.SteamAccountAbout2;
 
     public string SignInMethod => SteamTexts.SteamSignInMethod;
 

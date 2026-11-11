@@ -5,7 +5,7 @@ namespace Arcadia.Core.Tests;
 
 /// <summary>
 /// #382: one restart row for every driver change that waits for the Windows restart, Pan paused while a removal waits,
-/// "Windows neu starten", HidHide not asked about while it is missing, and the setup's log line.
+/// "PC neu starten", HidHide not asked about while it is missing, and the setup's log line.
 /// </summary>
 public sealed partial class ControllerSupportServiceTests
 {
@@ -28,8 +28,8 @@ public sealed partial class ControllerSupportServiceTests
         var row = Assert.Single(service.Issues);
         Assert.Same(EmulationParts.WindowsRestartRequired, row);
         Assert.Equal(HealthFix.RestartWindows, row.Fix);
-        Assert.Equal("Windows neu starten", row.FixLabel);
-        Assert.Equal("Starte Windows neu, danach kannst du die fehlenden Teile installieren.", row.ShortText);
+        Assert.Equal("PC neu starten", row.FixLabel);
+        Assert.Equal("Starte den PC neu, danach kannst du die fehlenden Teile installieren.", row.ShortText);
         Assert.True(service.PausesForWindowsRestart);
         Assert.Equal(PendingRestart.Required, service.PendingRestart);
     }
@@ -46,7 +46,7 @@ public sealed partial class ControllerSupportServiceTests
 
         Assert.Equal(["hidhide-missing", EmulationParts.WindowsRestartId], service.Issues.Select(issue => issue.Id));
         Assert.Same(EmulationParts.WindowsRestartRecommended, service.Issues[1]);
-        Assert.Equal("Starte Windows neu, damit der neue Treiber ganz aktiv ist.", service.Issues[1].ShortText);
+        Assert.Equal("Starte den PC neu, damit der neue Treiber ganz aktiv ist.", service.Issues[1].ShortText);
         Assert.False(service.PausesForWindowsRestart);
     }
 

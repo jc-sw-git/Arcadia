@@ -40,7 +40,7 @@ public sealed class LoggingRowsTests : IDisposable
     public void A_level_switched_off_hides_its_entries_at_once_and_the_subtitle_counts_both()
     {
         _messages.Add(HealthSeverity.Info, MessageKind.Toast, "„Sternenpfad“ wird gestartet …");
-        _messages.Add(HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt");
+        _messages.Add(HealthSeverity.Warning, MessageKind.Status, "Controller-Wächter (Pan) fehlt");
         _messages.Add(HealthSeverity.Error, MessageKind.Toast, "„Nebelwald“ konnte nicht gestartet werden");
         _rows.Refresh();
         Assert.Equal("3 seit dem Start von Arcadia", Row("logging-list").Subtitle);
@@ -140,8 +140,8 @@ public sealed class LoggingRowsTests : IDisposable
 
     [Theory]
     [Trait("TestCase", "T433-24")]
-    [InlineData(1155, "Windows kennt kein Programm für .log-Dateien.")]
-    [InlineData(5, "Windows verweigert den Zugriff.")]
+    [InlineData(1155, "Für .log-Dateien ist kein Programm eingestellt.")]
+    [InlineData(5, "Der Zugriff auf die Datei wurde verweigert.")]
     [InlineData(2, "Die Datei gibt es nicht mehr.")]
     [InlineData(1223, "Details stehen in arcadia.log.")]
     public void Why_a_log_did_not_open_is_German_and_names_no_path(int code, string reason)

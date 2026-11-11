@@ -203,7 +203,7 @@ public sealed class SteamAccountTests
         Assert.Equal($"{FakeSteamWeb.ProfileName} · Steam ist mit einem anderen Konto angemeldet", row.Subtitle);
         var note = Assert.Single(row.Info.OfType<InfoNote>());
         Assert.True(note.IsInfo);
-        Assert.Equal("Steam ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele könnten ggf. nicht starten oder falsche Spielstände verwenden.", note.Text);
+        Assert.Equal("Steam ist momentan mit einem anderen Konto angemeldet als in Arcadia. Arcadia wird so lange keine Installationen starten können. Installierte Spiele starten eventuell nicht oder falsche Spielstände verwenden.", note.Text);
 
         arcadia.CloseSettings();
         arcadia.FocusTile("Leuchtturm");

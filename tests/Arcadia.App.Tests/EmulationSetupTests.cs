@@ -138,7 +138,7 @@ public sealed class EmulationSetupTests
         var steam = new FakeSteam { IsPanReady = false };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Controller-Wächter (Pan) fehlt“");
 
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
@@ -156,7 +156,7 @@ public sealed class EmulationSetupTests
         var steam = new FakeSteam { IsPanReady = false, HidHideVersion = null, HidHideInstallError = error };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Controller-Wächter (Pan) fehlt“");
         Assert.Contains(controller.Rows, row => row.Key == "issue:hidhide-missing");
 
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
@@ -209,7 +209,7 @@ public sealed class EmulationSetupTests
     [Trait("TestCase", "T413-9")]
     public async Task A_declined_install_of_every_part_installs_nothing_not_even_VIIPER_and_shows_its_error_at_the_switch()
     {
-        const string error = "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.";
+        const string error = "Die Installation wurde in der Abfrage nach Administratorrechten abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.";
         var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null, IsSteamRunning = true };
         steam.Pan.Declines = true;
         steam.Viiper.IsInstalled = false;
@@ -255,7 +255,7 @@ public sealed class EmulationSetupTests
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „PC-Neustart ausstehend“");
         var pan = Switch(controller);
         Assert.True(pan.IsInstall);
         Assert.True(pan.IsLocked);
@@ -492,7 +492,7 @@ public sealed class EmulationSetupTests
         using var _ = arcadia;
         arcadia.Pan.Hiding = PanReason.HidHideBusy;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „PC-Neustart ausstehend“");
         await arcadia.TickControllerSupportAsync();
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
         Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, row.Title);
@@ -524,7 +524,7 @@ public sealed class EmulationSetupTests
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „PC-Neustart ausstehend“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
         Assert.Equal(ControllerSupportTexts.WindowsRestartPendingTitle, row.Title);
         Assert.Equal(ControllerSupportTexts.RecommendedSummary, row.Subtitle);
@@ -544,14 +544,14 @@ public sealed class EmulationSetupTests
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-failing"), "die Meldung „Wächterdienst Pan startet nicht“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-failing"), "die Meldung „Controller-Wächter (Pan) startet nicht“");
         var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-failing"));
         Assert.Equal(ControllerSupportTexts.PanFailingTitle, row.Title);
         Assert.Equal(ControllerSupportTexts.SetUpAgain, row.ActionText);
         Assert.Contains(PanPaths.DataDirectory, row.Info.OfType<InfoText>().Single().Text);
         Assert.Equal(ProblemText, Switch(controller).Subtitle);
         await arcadia.TickControllerSupportAsync();
-        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.ControllerStatusText.Contains("Wächterdienst Pan startet nicht"), "das Dreieck im Header");
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.ControllerStatusText.Contains("Controller-Wächter (Pan) startet nicht"), "das Dreieck im Header");
 
         row.Activate();
         await arcadia.WaitUntilAsync(() => controller.Rows.All(r => r.Key != "issue:pan-failing"), "die Meldung verschwindet");
@@ -678,7 +678,7 @@ public sealed class EmulationSetupTests
         var steam = new FakeSteam { IsPanReady = false, IsSteamRunning = true };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Meldung „Controller-Wächter (Pan) fehlt“");
 
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:pan-missing")).Activate();
         Assert.Equal(SettingsPrompt.None, controller.Prompt);

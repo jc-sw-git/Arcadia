@@ -181,7 +181,7 @@ public sealed class RecentMessagesAndLogsTests
         Assert.Equal((HealthSeverity.Warning, MessageKind.Status, ControllerSupportTexts.PanMissingTitle), (appeared.Level, appeared.Kind, appeared.Text));
 
         var controller = OpenController(arcadia);
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Zeile „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:pan-missing"), "die Zeile „Controller-Wächter (Pan) fehlt“");
         controller.Rows.Single(row => row.Key == "issue:pan-missing").Activate();
         await arcadia.WaitUntilAsync(() => steam.IsPanReady, "Pan installiert");
         await arcadia.TickControllerSupportAsync();
@@ -430,7 +430,7 @@ public sealed class RecentMessagesAndLogsTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Main.Toast.Show(HealthSeverity.Info, "„Sternenpfad“ wird gestartet …");
-        arcadia.Main.Messages.Add(HealthSeverity.Warning, MessageKind.Status, "Wächterdienst Pan fehlt");
+        arcadia.Main.Messages.Add(HealthSeverity.Warning, MessageKind.Status, "Controller-Wächter (Pan) fehlt");
         var about = OpenAbout(arcadia);
 
         var texts = about.Rows.Where(row => row.Group == LoggingRows.Group)

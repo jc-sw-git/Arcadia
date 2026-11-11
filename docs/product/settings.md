@@ -30,7 +30,7 @@
 ## Status messages
 
 `HealthIssue` (header, the settings row and category they belong to) has three levels, each with its own symbol:
-**Info** (round blue i) for intended behaviour in a situation, e.g. "Windows-Neustart ausstehend" (also HidHide's and usbip's restart pending), or a launcher
+**Info** (round blue i) for intended behaviour in a situation, e.g. "PC-Neustart ausstehend" (also HidHide's and usbip's restart pending), or a launcher
 without games; **Warning** (yellow triangle with !) when a function is impaired and the user must act, e.g. Steam not
 running, usbip driver missing, SISR running beside Pan; **Error** (red X) for lasting failures, e.g. Pan keeps ending
 at once. The header shows the worst level; info alone doesn't make a status unhealthy. A failed fix shows its error at

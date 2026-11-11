@@ -1,6 +1,6 @@
 # #488 Show Epic's covers and backgrounds from its catalog
 
-**Status:** Automated: T488-1 to T488-15 · QE: – · Open for the owner: T488-16, T488-17
+**Status:** Automated: T488-1 to T488-15 · QE: app run with `--demo --demo-games 200` (Epic formats cropped, no distortion) · Open for the owner: T488-16, T488-17
 
 Automated tests read a recreated `catcache.bin` (Base64 JSON) with made-up catalog ids, app names and image URLs and a
 fake image server; nothing reaches Epic's real servers. "Shown" means at all four places: library tile, preview, detail
@@ -45,3 +45,5 @@ History:
 | T488-2 to -7, -9 to -12 | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container; made-up catalog, fake image server, fake time | ✅ `Core.Tests/Artwork/EpicArtworkTests`, `ArtworkServiceTests.An_image_from_a_second_host_still_offered_is_kept_without_asking_the_first_again` | T488-11 red before `ArtworkService` re-downloaded a replaced address (a fitting cached cover was kept) |
 | T488-1, -8, -13 | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container; recreated Epic folders (`Fixtures/EpicFolder`), fake image server | ✅ `App.Tests/EpicArtworkTests`; red once with the source reading no image type | – |
 | T488-14, -15 | 2026-11-11 | Claude | PR branch, Debug, headless window, Linux cloud container; 500 and 30 made-up Epic games, one colour per game | ✅ `Window/EpicArtworkWindowTests`; red once with the source reading no image type. In -15 all games are installed: the "not installed" shade darkens the colour the check reads; installed and uninstalled alike in T488-1 | – |
+| T488-1, -6 | 2026-11-11 | Claude (QE) | PR branch, Debug, Linux cloud container; probe test (not committed): two Epic entries (`UE_5.3`, `UE_5.4`) with the same `DieselGameBoxTall` URL, one scan | ❌ only the first gets the cover; the second is skipped because `ArtworkService` counts the URL as tried in this run | Fix in this PR (finding 1 in the Review) |
+| – | 2026-11-11 | Claude (QE) | PR branch, Debug build, Linux cloud container, Xvfb 1920 × 1080, `--demo --demo-games 200`, keys | ✅ covers and preview background in Epic's formats fill their frames, cropped centred; only checked with demo gradients, not real art | – |

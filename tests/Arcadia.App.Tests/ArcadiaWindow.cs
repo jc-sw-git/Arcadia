@@ -360,10 +360,17 @@ internal sealed class ArcadiaWindow : IDisposable
         }).Where(text => !string.IsNullOrEmpty(text))))
         .ToList();
 
-    /// <summary>What a glyph shows: its text, or the name of the icon a controller's symbol is drawn with (#215, e.g. "Cross").</summary>
+    /// <summary>
+    /// What a glyph shows: its text, or the name of the icon a controller's symbol is drawn with (#215, e.g. "Cross").
+    /// Xbox's and the Steam Controller's ⧉ and ≡ are icons too (#24), but their printing is the neutral one, so they read
+    /// as the neutral names.
+    /// </summary>
     public static string? Printed(Border glyph) => glyph switch
     {
-        Controls.PadGlyph { Shown: { Icon: not global::Arcadia.Input.ButtonIcon.None } symbol } => symbol.Icon.ToString(),
+        Controls.PadGlyph { Shown: { Icon: not global::Arcadia.Input.ButtonIcon.None } symbol } pad =>
+            (pad.Symbols ?? Input.InputHints.Symbols) is global::Arcadia.Input.ButtonSymbols.Xbox or global::Arcadia.Input.ButtonSymbols.SteamController
+                ? pad.Button
+                : symbol.Icon.ToString(),
         { Child: TextBlock text } => text.Text,
         _ => null,
     };

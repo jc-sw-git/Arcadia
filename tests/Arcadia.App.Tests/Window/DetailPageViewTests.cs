@@ -120,7 +120,7 @@ public sealed class DetailPageViewTests
 
         Assert.False(main.IsDetailOpen);
         Assert.Equal(last, arcadia.Arcadia.FocusedGame?.Title);
-        Assert.Equal(6, arcadia.Arcadia.PageGames.Count);
+        Assert.Equal(7, arcadia.Arcadia.PageGames.Count);
         Assert.Equal(arcadia.Arcadia.PageGames[^1], arcadia.Arcadia.FocusedGame);
         Assert.True(arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes.Contains("focused"), "Die Kachel zeigt den Fokus.");
     }

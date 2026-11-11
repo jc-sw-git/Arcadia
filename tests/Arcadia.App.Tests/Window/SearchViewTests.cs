@@ -396,18 +396,26 @@ public sealed class SearchViewTests
         var gridFade = arcadia.Named<EdgeFade>("HitsGridFade");
         Assert.True(gridFade.ShowsStart && gridFade.ShowsEnd, "Oben und unten ausgeblendet");
         Assert.False(arcadia.Named<EdgeFade>("HitsRowFade").ShowsStart || arcadia.Named<EdgeFade>("HitsRowFade").ShowsEnd, "Seitlich nicht ausgeblendet");
+        // RT beside the lower row says more follow, as no row peeks in (#24); LT joins it once there are hits above.
+        var gridBarRight = arcadia.Bounds(arcadia.Named<ScrollBar>("HitsGridScrollBar")).Right;
+        var lowerRow = arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns]));
+        var down = Assert.Single(TurnButtons(arcadia));
+        Assert.Same(search.TurnOnCommand, down.Command);
+        Assert.True(arcadia.Bounds(down).Left > gridBarRight && arcadia.Bounds(down).Center.Y > lowerRow.Top && arcadia.Bounds(down).Center.Y < lowerRow.Bottom, $"RT {arcadia.Bounds(down)} rechts neben der unteren Reihe {lowerRow}");
         arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("1–14 von 105", search.RangeText);
         arcadia.Press(UiAction.NextPage);
         Assert.Equal("15–28 von 105", search.RangeText);
+        Assert.Equal([search.TurnBackCommand, search.TurnOnCommand], TurnButtons(arcadia).OrderBy(button => arcadia.Bounds(button).Top).Select(button => button.Command));
         arcadia.Key(Key.PageDown);
         Assert.Equal("29–42 von 105", search.RangeText);
         arcadia.Key(Key.PageUp).Press(UiAction.NextPage, times: 10);
         Assert.Equal("92–105 von 105", search.RangeText);
         arcadia.Key(Key.PageDown);
         Assert.Equal("92–105 von 105", search.RangeText);
+        Assert.Same(search.TurnBackCommand, Assert.Single(TurnButtons(arcadia)).Command);
 
-        // The wheel scrolls as far, a click on a hit cut off at the edge brings it in, the bar stands beside the grid.
+        // The wheel scrolls as far, the bar stands beside the grid.
         for (var notch = 0; notch < 14; notch++)
         {
             arcadia.Wheel(arcadia.Named<Control>("SearchViewport"), notches: 1);
@@ -419,11 +427,16 @@ public sealed class SearchViewTests
         Assert.True(gridBar.IsEffectivelyVisible);
         Assert.True(arcadia.Bounds(gridBar).Left > arcadia.Bounds(HitButton(arcadia, search.Results[SearchViewModel.ResultColumns - 1])).Right, "Die Leiste steht neben dem Raster");
         Assert.True(arcadia.Bounds(gridBar).Height > 2 * arcadia.Bounds(gridBar).Width, "senkrecht");
-        var cutOff = search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Select(slot => slot.Tile!)
-            .First(tile => arcadia.Bounds(HitButton(arcadia, tile)).Bottom > viewport.Bottom);
-        arcadia.Click(new Point(arcadia.Bounds(HitButton(arcadia, cutOff)).Center.X, viewport.Bottom - 20));
-        Assert.Equal("8–21 von 105", search.RangeText);
-        Assert.Same(cutOff, search.FocusedResult);
+        // Both rows of 2 : 3 hits fit whole (#24) and clear of the fades, the launcher name below the lower row included;
+        // the next two rows are a turn away.
+        var fadedAbove = arcadia.Bounds(gridFade.StartFade).Bottom;
+        var fadedBelow = arcadia.Bounds(gridFade.EndFade).Top;
+        Assert.All(search.Slots.Where(slot => slot.IsShown && slot.Tile is not null).Take(2 * SearchViewModel.ResultColumns), slot =>
+        {
+            var hit = arcadia.Bounds(HitButton(arcadia, slot.Tile!));
+            var launcher = arcadia.Bounds(One(arcadia, HitButton(arcadia, slot.Tile!).GetVisualParent<Control>()!, slot.Tile!.LauncherName));
+            Assert.True(hit.Top >= fadedAbove && launcher.Bottom <= fadedBelow, $"{slot.Tile!.Title}: {hit}, Launcher {launcher}, frei zwischen {fadedAbove} und {fadedBelow}");
+        });
         DragThumb(arcadia, gridBar, toEnd: true);
         Assert.Equal("92–105 von 105", search.RangeText);
     }
@@ -753,7 +766,7 @@ public sealed class SearchViewTests
             .OrderBy(panel => arcadia.Bounds(panel).Left)
             .Select(panel => string.Join(' ', panel.Children.Select(child => child switch
             {
-                Border { Child: TextBlock glyph } => glyph.Text,
+                Border glyph => ArcadiaWindow.Printed(glyph),
                 TextBlock text => text.Text,
                 _ => null,
             }).Where(text => !string.IsNullOrEmpty(text))))

@@ -31,7 +31,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>A Saturday evening, so "zuletzt gespielt" and the clock read the same on every machine.</summary>
     public static readonly DateTimeOffset Now = new(2026, 10, 24, 20, 0, 0, TimeSpan.Zero);
 
-    /// <summary>Three launchers with page counts that differ at 25 per page: two pages, three pages, one page.</summary>
+    /// <summary>Three launchers with page counts that differ at 24 per page: two pages, three pages, one page.</summary>
     public static readonly IReadOnlyList<LauncherSpec> DefaultLaunchers =
     [
         new(KnownLaunchers.Gog, 31),

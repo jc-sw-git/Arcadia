@@ -16,8 +16,8 @@ public sealed class GridFadeTests
     [Trait("TestCase", "T102-1")]
     public async Task A_page_taller_than_the_grid_fades_only_towards_where_it_scrolls_and_the_end_rows_show_whole()
     {
-        // GOG has 31 games: four rows at 50 per page, a little more than fits.
-        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(50));
+        // GOG has 31 games: four rows at 64 per page, a little more than fits.
+        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(64));
         var main = arcadia.Arcadia.Main;
 
         AssertFades(arcadia, top: false, bottom: true);
@@ -29,7 +29,7 @@ public sealed class GridFadeTests
         Assert.True(IsInView(arcadia, LastRowTile(main)), "Ganz unten ist die letzte Reihe vollständig sichtbar.");
         AssertFadedToBackground(arcadia, top: true);
 
-        // Xbox has 50 games on page 1: seven rows, so the middle can scroll both ways.
+        // Xbox has 62 games on page 1: eight rows, so the middle can scroll both ways.
         arcadia.Press(UiAction.NextTab).Press(UiAction.Down, times: 3);
         AssertFades(arcadia, top: true, bottom: true);
 
@@ -40,11 +40,16 @@ public sealed class GridFadeTests
             transition => transition is DoubleTransition { Property.Name: "Opacity", Duration.TotalMilliseconds: > 0 }));
     }
 
+    /// <summary>T24-2: the default page of 24, three full rows, fits the grid whole: nothing to scroll, no fade.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T102-2")]
+    [Trait("TestCase", "T24-2")]
     public async Task A_page_that_fits_the_grid_has_no_fade()
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(10));
+        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(24));
+        Assert.Equal(24, arcadia.Arcadia.PageGames.Count);
+        var scroller = arcadia.Named<ScrollViewer>("GridScroller");
+        Assert.True(scroller.Extent.Height <= scroller.Viewport.Height, $"Die Seite ist {scroller.Extent.Height} hoch, sichtbar sind {scroller.Viewport.Height}.");
 
         AssertFades(arcadia, top: false, bottom: false);
         arcadia.Press(UiAction.Down, times: 2);
@@ -55,8 +60,8 @@ public sealed class GridFadeTests
     [Trait("TestCase", "T102-3")]
     public async Task The_focused_tile_never_lies_under_a_fade_and_the_wheel_switches_the_fades_too()
     {
-        // Xbox: seven rows on page 1 at 50 per page.
-        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(50));
+        // Xbox: eight rows on page 1 at 64 per page.
+        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(64));
         var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.NextTab);
 
@@ -75,9 +80,9 @@ public sealed class GridFadeTests
         AssertFades(arcadia, top: false, bottom: true);
         arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: -2);
         AssertFades(arcadia, top: true, bottom: true);
-        arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: -20);
+        arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: -40);
         AssertFades(arcadia, top: true, bottom: false);
-        arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: 20);
+        arcadia.Wheel(arcadia.Named<ScrollViewer>("GridScroller"), notches: 40);
         AssertFades(arcadia, top: false, bottom: true);
         Assert.NotNull(arcadia.Arcadia.FocusedGame);
     }
@@ -88,7 +93,7 @@ public sealed class GridFadeTests
     [InlineData(1536, 864, 1.25)]
     public async Task No_line_of_unfaded_covers_is_left_at_the_edge_of_a_fade_also_at_a_scaled_size(int width, int height, double scaling)
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(50), width: width, height: height, scaling: scaling);
+        using var arcadia = await ArcadiaWindow.ShowAsync(settings: ArcadiaWindow.WithPageSize(64), width: width, height: height, scaling: scaling);
 
         AssertFadedToBackground(arcadia, top: false);
         arcadia.Press(UiAction.Down, times: 3);

@@ -1,7 +1,11 @@
 # Product decisions: Library
 
-- Page sizes 10/25/50/100, default 25. A size is selectable if the library has *more* games
-  than the next smaller size (`PageSizes.IsAllowed`).
+- Page sizes 24/64/128, default 24: 3, 8 and 16 full rows of 8, so a full page never ends in a half row (the last page
+  of a tab may). A size is selectable if the library has *more* games than the next smaller size
+  (`PageSizes.IsAllowed`). A saved size Arcadia doesn't offer (an older version's 10/25/50/100, one edited by hand)
+  becomes 24 at the start and is saved so.
+- Covers are 2 : 3 wherever one is shown: library tile 146 × 219 (its height follows the column's width), search hit
+  190 × 285, detail page 210 × 315.
 - Sorting: name / install date / last played, each ascending or descending; games without a
   date always last.
 - Sort order and preferred page size are global, not per tab, and are saved; Arcadia opens in the

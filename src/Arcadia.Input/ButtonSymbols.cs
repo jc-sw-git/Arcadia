@@ -21,6 +21,9 @@ public enum ButtonIcon
     Triangle,
     Create,
     Options,
+
+    /// <summary>Xbox's View button (⧉), which neither embedded font has (#24).</summary>
+    View,
 }
 
 /// <summary>How one button looks on a controller: its <see cref="Text"/> or its <see cref="Icon"/>, round (face buttons) or a pill.</summary>
@@ -52,8 +55,15 @@ public static class ButtonSymbolSets
         _ => Xbox(button),
     };
 
-    // Guide is named, not drawn with the controller's logo: brand logos are a trademark question first (#315).
-    private static ButtonSymbol Xbox(string button) => button == "Guide" ? Pill("Guide") : new(button, ButtonIcon.None, ButtonText.IsRound(button));
+    // Guide is named, not drawn with the controller's logo: brand logos are a trademark question first (#315). View and
+    // Menu are icons: no embedded font has ⧉ or ≡, so as characters they'd depend on the system's fallback font (#24).
+    private static ButtonSymbol Xbox(string button) => button switch
+    {
+        "Guide" => Pill("Guide"),
+        "⧉" => new(string.Empty, ButtonIcon.View, IsRound: false),
+        "≡" => new(string.Empty, ButtonIcon.Options, IsRound: false),
+        _ => new(button, ButtonIcon.None, ButtonText.IsRound(button)),
+    };
 
     private static ButtonSymbol PlayStation(string button, ButtonSymbols generation) => button switch
     {

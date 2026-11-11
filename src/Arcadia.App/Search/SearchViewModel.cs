@@ -199,7 +199,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>More hits than fit: LT/RT turn them.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
+    [NotifyPropertyChangedFor(nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar), nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial bool CanTurn { get; private set; }
 
     /// <summary>The scroll bar runs across below the row of hits beside the keyboard, and down beside the grid without it.</summary>
@@ -207,11 +207,19 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     public bool ShowsGridScrollBar => CanTurn && !IsKeyboardOut;
 
+    // The grid's LT/RT buttons: the two rows fill it and no row peeks in (#24), so they say that more hits lie above or
+    // below; the grid stops at its ends, so each shows only where it can still turn.
+    public bool CanTurnUpInGrid => ShowsGridScrollBar && ScrollStart > 0;
+
+    public bool CanTurnDownInGrid => ShowsGridScrollBar && ScrollStart < ScrollEnd;
+
     // The scroll bar beside the hits: where the window starts, the last place it can start, and how many hits it shows.
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial int ScrollStart { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial int ScrollEnd { get; private set; }
 
     [ObservableProperty]
@@ -231,7 +239,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
 
     /// <summary>The on-screen keyboard is out, and the hits get one row above it; in, they fill a grid.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar))]
+    [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar), nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial bool IsKeyboardOut { get; set; }
 
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>

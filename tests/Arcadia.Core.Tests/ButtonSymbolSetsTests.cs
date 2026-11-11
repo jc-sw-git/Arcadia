@@ -23,12 +23,12 @@ public sealed class ButtonSymbolSetsTests
         Assert.Equal(symbols, ButtonSymbolSets.For(type));
 
     [Theory]
-    [InlineData(ButtonSymbols.Xbox, "A B X Y LB RB LT RT L3 R3 ⧉ ≡ D-Pad")]
+    [InlineData(ButtonSymbols.Xbox, "A B X Y LB RB LT RT L3 R3 View Options D-Pad")]
     [InlineData(ButtonSymbols.PlayStation5, "Cross Circle Square Triangle L1 R1 L2 R2 L3 R3 Create Options D-Pad")]
     [InlineData(ButtonSymbols.PlayStation4, "Cross Circle Square Triangle L1 R1 L2 R2 L3 R3 Share Options D-Pad")]
     [InlineData(ButtonSymbols.PlayStation3, "Cross Circle Square Triangle L1 R1 L2 R2 L3 R3 Select Start D-Pad")]
     [InlineData(ButtonSymbols.Nintendo, "B A Y X L R ZL ZR LS RS − + D-Pad")]
-    [InlineData(ButtonSymbols.SteamController, "A B X Y L1 R1 L2 R2 L3 R3 ⧉ ≡ D-Pad")]
+    [InlineData(ButtonSymbols.SteamController, "A B X Y L1 R1 L2 R2 L3 R3 View Options D-Pad")]
     public void The_buttons_Arcadia_uses_get_the_printing_of_the_controller(ButtonSymbols symbols, string printed) =>
         Assert.Equal(printed, string.Join(' ', Buttons.Select(button => Shown(ButtonSymbolSets.Symbol(button, symbols)))));
 

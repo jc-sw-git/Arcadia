@@ -50,7 +50,7 @@ public sealed class EntryTypeViewTests
     [Trait("TestCase", "T141-4")]
     public async Task On_a_cover_the_type_icon_stands_above_the_title_clear_of_every_state_badge_and_the_progress_bar_and_games_have_none()
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync([EveryState()], ArcadiaWindow.WithPageSize(25, [EveryState()]));
+        using var arcadia = await ArcadiaWindow.ShowAsync([EveryState()], ArcadiaWindow.WithPageSize(64, [EveryState()]));
         var driver = arcadia.Arcadia;
         foreach (var type in OtherTypes)
         {
@@ -108,12 +108,12 @@ public sealed class EntryTypeViewTests
     [Trait("TestCase", "T141-4")]
     public async Task The_focus_ring_stays_whole_around_first_edge_and_last_cover_with_a_type_icon_and_a_state_badge()
     {
-        // A full page of tools, each with an update: the type icon and a state badge on every cover.
+        // Three full rows and one cover of tools, each with an update: the type icon and a state badge on every cover.
         var tools = Enumerable.Range(1, 25)
             .Select(i => Installed(KnownLaunchers.Gog, $"Werkzeug {i:D2}", Installed) with { Type = GameType.Tool, UpdateAvailable = true })
             .ToArray();
         IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, tools)];
-        using var arcadia = await ArcadiaWindow.ShowAsync(launchers, ArcadiaWindow.WithPageSize(25, launchers));
+        using var arcadia = await ArcadiaWindow.ShowAsync(launchers, ArcadiaWindow.WithPageSize(64, launchers));
         var driver = arcadia.Arcadia;
 
         foreach (var (index, where) in new[] { (0, "erstes Cover"), (7, "letzte Spalte"), (24, "letztes Cover der Seite") })

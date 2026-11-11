@@ -212,7 +212,7 @@ public sealed class SteamControllerXboxPad
                 await Guarded(async () => await UnplugAsync(pad), "Abstecken");
             }
 
-            await Guarded(_pads.ShutdownAsync, "VIIPER beenden");
+            await Guarded(_pads.ShutdownAsync, "VIIPER beenden"); // not a UI text (log)
         }
         finally
         {
@@ -349,7 +349,7 @@ public sealed class SteamControllerXboxPad
             }
 
             _gaveUp = true;
-            message = $"Steam Controller für Spiele: VIIPER fiel {_losses.Count}-mal in {CrashWindow.TotalMinutes:0} Minuten aus, Arcadia versucht es erst nach einem Neustart oder „Controller wiederherstellen“ wieder";
+            message = ControllerSupportTexts.SteamControllerForGamesViiperGaveUp(_losses.Count, CrashWindow.TotalMinutes);
         }
 
         _log($"Xbox-Pad: {message}");

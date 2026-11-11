@@ -40,25 +40,25 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
 
     public string Title => tab switch
     {
-        null => "Kein Launcher aktiv",
-        _ when _isMissing => $"{tab.Name} nicht gefunden",
-        _ when _isScanFailed => $"{tab.Name} konnte nicht eingelesen werden",
-        _ => $"Keine Spiele in {tab.Name}",
+        null => AppTexts.NoLauncherActive,
+        _ when _isMissing => AppTexts.EmptyTabNotFoundTitle(tab.Name),
+        _ when _isScanFailed => AppTexts.EmptyTabScanFailedTitle(tab.Name),
+        _ => AppTexts.EmptyTabNoGamesTitle(tab.Name),
     };
 
     public string Text => tab switch
     {
-        null => "Arcadia zeigt die Spiele deiner Launcher in Tabs. Schalte in den Einstellungen unter „Launcher“ die ein, deren Spiele du hier sehen willst.",
-        _ when _isMissing => $"Arcadia findet {tab.Name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher in den Einstellungen ab, dann verschwindet dieser Tab.",
-        _ when _isScanFailed => $"Arcadia konnte die Spiele von {tab.Name} gerade nicht lesen, etwa weil eine seiner Dateien gesperrt ist. Versuch es gleich noch einmal.",
-        _ => $"{tab.Name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du in {tab.Name} ein Spiel kaufst oder installierst, erscheint es hier.",
+        null => AppTexts.EmptyTabNoLaunchersText,
+        _ when _isMissing => AppTexts.EmptyTabNotFoundText(tab.Name),
+        _ when _isScanFailed => AppTexts.EmptyTabScanFailedText(tab.Name),
+        _ => AppTexts.EmptyTabNoGamesText(tab.Name),
     };
 
     /// <summary>Below the tab's name, where a tab with games counts them.</summary>
-    public string Summary => IsMissing ? "Launcher nicht gefunden" : IsScanFailed ? "Einlesen fehlgeschlagen" : "Keine Spiele";
+    public string Summary => IsMissing ? AppTexts.EmptyTabNotFoundSummary : IsScanFailed ? AppTexts.EmptyTabScanFailedSummary : AppTexts.EmptyTabNoGamesSummary;
 
     /// <summary>A launcher no longer found is looked for again, a failed scan tried again.</summary>
-    public string RescanText => IsMissing ? "Erneut suchen" : IsScanFailed ? "Erneut versuchen" : "Neu einlesen";
+    public string RescanText => IsMissing ? AppTexts.SearchAgain : IsScanFailed ? AppTexts.TryAgain : AppTexts.Rescan;
 
     public bool CanRescan => rescan is not null;
 

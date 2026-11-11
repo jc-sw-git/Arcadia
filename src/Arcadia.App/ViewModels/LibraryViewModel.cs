@@ -129,7 +129,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     [ObservableProperty]
     public partial string FilterHidesAllText { get; private set; } = string.Empty;
 
-    public const string NoHitsTitle = "Keine Einträge passen zu deinen Filtern.";
+    public static string NoHitsTitle => AppTexts.LibraryNoFilterHits;
 
     [ObservableProperty]
     public partial string RangeText { get; private set; } = string.Empty;
@@ -367,7 +367,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         _settings.Current.PreferredPageSize,
         sort => ChangeView(settings => settings with { LibrarySort = sort }),
         size => ChangeView(settings => settings with { PreferredPageSize = size }),
-        forDetailPage ? "Gilt für die Bibliothek; die Detailseite zeigt immer ein Spiel. Das aktuelle Spiel bleibt in der Mitte, die Nachbarn ordnen sich nach der neuen Sortierung." : null);
+        forDetailPage ? AppTexts.ViewOptionsForLibraryInfo : null);
 
     [RelayCommand]
     private void OpenViewOptions()
@@ -566,13 +566,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         Counts = EmptyTab is null ? snapshot.Counts : TypeCountLine.None;
         CanFilter = EmptyTab is null && snapshot.Offer.HasAny;
         IsFiltered = CanFilter && shownTab.Filter.IsActive;
-        FilterHitsText = IsFiltered ? $"{Formatting.Count(sorted.Count)} von {Formatting.Count(tab.Count)}" : string.Empty;
+        FilterHitsText = IsFiltered ? AppTexts.LibraryFilteredOf(Formatting.Count(sorted.Count), Formatting.Count(tab.Count)) : string.Empty;
         FilterHidesAll = EmptyTab is null && sorted.Count == 0;
         FilterHidesAllText = FilterHidesAll
-            ? $"{tab.Name} hat {(tab.Count == 1 ? "1 Eintrag" : $"{Formatting.Count(tab.Count)} Einträge")}, der Filter blendet gerade alle aus."
+            ? tab.Count == 1 ? AppTexts.LibraryFilterHidesTheOne(tab.Name) : AppTexts.LibraryFilterHidesAll(tab.Name, Formatting.Count(tab.Count))
             : string.Empty;
-        RangeText = window.Length == 0 ? string.Empty : $"{window.Start + 1}–{window.Start + window.Length} von {sorted.Count}";
-        ViewSummary = $"{Formatting.SortLabel(view.LibrarySort)}  ·  {pageSize} pro Seite";
+        RangeText = window.Length == 0 ? string.Empty : AppTexts.LibraryPageRange(window.Start + 1, window.Start + window.Length, sorted.Count);
+        ViewSummary = AppTexts.LibrarySortAndPageSize(Formatting.SortLabel(view.LibrarySort), pageSize);
     }
 
     /// <summary>A tab's games sorted, what they were sorted from, its count line, what it offers to filter and what its filter shows.</summary>

@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    UI texts (#480): a project that sets HasUiTexts gets typed classes for its *Texts.resx files from
+    Arcadia.Texts.Generator. Each file is embedded under "<AssemblyName>.<FileName>", the name the generated class
+    reads it by, wherever in the project it sits.
+  -->
+  <ItemGroup Condition="'$(HasUiTexts)' == 'true'">
+    <EmbeddedResource Update="**/*Texts.resx" LogicalName="$(AssemblyName).%(Filename).resources" />
+    <AdditionalFiles Include="**/*Texts.resx" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir;AssemblyName" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/Arcadia.Texts.Generator/Arcadia.Texts.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

@@ -10,6 +10,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Arcadia.Launchers.Abstractions.Texts;
 
 namespace Arcadia.App;
 
@@ -116,6 +117,10 @@ internal sealed class ArcadiaComposition
     {
         var settings = parts.Settings;
         var time = parts.Time;
+
+        // A text broken by a later change (a placeholder without a value, a missing key) shows what is missing and is
+        // logged once, never toasted: the page around it still works (#480).
+        UiText.Log = AppLog.Write;
 
         // The first start asks which launchers are active (#139), the settings change them and their order (#136);
         // while the question shows, every launcher found is read, so it can count their games. Names, keywords and

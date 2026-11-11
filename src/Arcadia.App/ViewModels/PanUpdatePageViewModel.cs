@@ -36,27 +36,27 @@ public enum PanUpdateState
 public sealed partial class PanUpdatePageViewModel(ControllerSupportService support, TimeProvider time, Action requestStart, Action<HealthSeverity, string> done, Action quit)
     : ViewModelBase
 {
-    public const string NoticeTitle = "Neue Pan-Version";
-    public const string NoticeText = "Diese Arcadia-Version bringt eine neue Version von Pan mit, deinem Controller-Wächter. Ohne Aktualisierung schaltet Arcadia den Controller-Wächter aus.";
-    public const string NoticeHint = "Danach fragt Windows, ob Pan installiert werden darf.";
-    public const string UpdatingTitle = "Pan wird aktualisiert";
-    public const string UpdatingText = "Diese Arcadia-Version braucht eine neue Version von Pan, deinem Controller-Wächter.";
-    public const string PromptHint = "Bitte bestätige die Windows-Abfrage. Sie lässt sich bisher nur mit Maus oder Tastatur beantworten.";
-    public const string StoppingTitle = "Pan wird beendet";
-    public const string StoppingText = "Arcadia wartet, bis das alte Pan deine Controller freigegeben hat. Das dauert meist etwa 30\u00A0Sekunden.";
+    public static string NoticeTitle => AppTexts.PanNewVersionTitle;
+    public static string NoticeText => AppTexts.PanUpdateNotice;
+    public static string NoticeHint => AppTexts.PanUpdateNoticeHint;
+    public static string UpdatingTitle => AppTexts.PanUpdatingTitle;
+    public static string UpdatingText => AppTexts.PanUpdatingText;
+    public static string PromptHint => AppTexts.PanUpdatePromptHint;
+    public static string StoppingTitle => AppTexts.PanStoppingTitle;
+    public static string StoppingText => AppTexts.PanStoppingText;
     /// <summary>Above the countdown number: the text names the usual 30 s, the ring the upper bound (#340).</summary>
-    public const string CountdownCaption = "noch höchstens";
-    public const string StuckTitle = "Controller freigeben";
-    public const string StuckText = "Das alte Pan hat deine Controller nicht freigegeben. Controller oder Steam Puck sind für Spiele womöglich noch unsichtbar.";
-    public const string RestoreHint = "Beim Wiederherstellen fragt Windows nach deiner Erlaubnis.";
-    public const string RestoringTitle = "Controller werden wiederhergestellt";
-    public const string ManualTitle = "Controller von Hand freigeben";
-    public const string ManualText = "Das Wiederherstellen hat nicht geklappt. So gibst du die Controller in HidHide frei (nur mit Maus oder Tastatur):";
-    public const string RestoreDeclined = "Das Wiederherstellen wurde in der Windows-Abfrage abgelehnt.";
-    public const string UpdatedToast = "Pan: aktualisiert";
-    public const string DeclinedToast = "Pan: nicht aktualisiert, Controller-Wächter ausgeschaltet";
-    public const string FailedToast = "Pan: Aktualisierung fehlgeschlagen, Controller-Wächter ausgeschaltet";
-    public const string RestoredToast = "Pan: Controller wiederhergestellt, Controller-Wächter ausgeschaltet";
+    public static string CountdownCaption => AppTexts.PanCountdownCaption;
+    public static string StuckTitle => AppTexts.FirmwareRelease;
+    public static string StuckText => AppTexts.PanStuckText;
+    public static string RestoreHint => AppTexts.PanRestoreHint;
+    public static string RestoringTitle => AppTexts.PanRestoringTitle;
+    public static string ManualTitle => AppTexts.PanManualTitle;
+    public static string ManualText => AppTexts.PanManualText;
+    public static string RestoreDeclined => AppTexts.PanRestoreDeclined;
+    public static string UpdatedToast => AppTexts.PanUpdatedToast;
+    public static string DeclinedToast => AppTexts.PanDeclinedToast;
+    public static string FailedToast => AppTexts.PanFailedToast;
+    public static string RestoredToast => AppTexts.PanRestoredToast;
 
     /// <summary>An old Pan without a client ends itself after 30 s (<c>ServiceHost.IdleTimeout</c>), after giving everything back.</summary>
     public static readonly TimeSpan StopWait = TimeSpan.FromSeconds(45);
@@ -65,11 +65,11 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
 
     public static IReadOnlyList<string> ManualSteps { get; } =
     [
-        "1. Öffne im Startmenü „HidHide Configuration Client“ und erlaube die Windows-Abfrage.",
-        "2. Reiter „Devices“: Entferne die Haken bei deinen Controllern und dem Steam Puck.",
-        "3. Reiter „Applications“: Entferne Arcadia aus der Liste.",
-        "4. Schalte „Enable device hiding“ aus und schließe das Programm.",
-        "5. Wähle hier „Erneut prüfen“.",
+        AppTexts.PanManualStep1,
+        AppTexts.PanManualStep2,
+        AppTexts.PanManualStep3,
+        AppTexts.PanManualStep4,
+        AppTexts.PanManualStep5,
     ];
 
     /// <summary>[B] on the notice: once Pan's own dialogs are done, <see cref="Run"/> switches Pan off instead of updating it.</summary>
@@ -137,12 +137,12 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
 
     public string ConfirmText => State switch
     {
-        PanUpdateState.Notice => "Aktualisieren",
-        PanUpdateState.Stuck => "Controller wiederherstellen",
-        _ => "Erneut prüfen",
+        PanUpdateState.Notice => AppTexts.Update,
+        PanUpdateState.Stuck => AppTexts.PanRestoreControllers,
+        _ => AppTexts.CheckAgain,
     };
 
-    public string CancelText => IsNotice ? "Ohne Pan weiter" : "Arcadia beenden";
+    public string CancelText => IsNotice ? AppTexts.ContinueWithoutPan : AppTexts.QuitArcadia;
 
     /// <summary>Starts the update, or the switch-off after [B]; on the UI thread, once Pan's own dialogs are done.</summary>
     public void Run()
@@ -158,7 +158,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         }
         else
         {
-            UpdateAsync().Forget("Pan aktualisieren");
+            UpdateAsync().Forget(AppTexts.ErrorContextUpdatePan);
         }
     }
 
@@ -186,11 +186,11 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
                 requestStart();
                 break;
             case PanUpdateState.Stuck:
-                RestoreAsync().Forget("Controller wiederherstellen");
+                RestoreAsync().Forget(AppTexts.ErrorContextRestoreControllers);
                 break;
             case PanUpdateState.ManualCleanup:
                 Error = null;
-                WaitForOldPanAsync().Forget("Auf das Ende des alten Pan warten");
+                WaitForOldPanAsync().Forget(AppTexts.ErrorContextWaitForOldPan);
                 break;
         }
     }
@@ -228,7 +228,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         }
         catch (Exception ex)
         {
-            Report(ex, "Pan aktualisieren");
+            Report(ex, AppTexts.ErrorContextUpdatePan);
             SwitchOff(ex.Message, HealthSeverity.Error, FailedToast);
         }
     }
@@ -237,7 +237,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
     {
         support.SwitchPanOffForUpdate(error);
         _offToast = (level, toast);
-        WaitForOldPanAsync().Forget("Auf das Ende des alten Pan warten");
+        WaitForOldPanAsync().Forget(AppTexts.ErrorContextWaitForOldPan);
     }
 
     /// <summary>Pan is off, so Arcadia no longer talks to the old one: it gives everything back and ends, or it is stuck.</summary>
@@ -285,7 +285,7 @@ public sealed partial class PanUpdatePageViewModel(ControllerSupportService supp
         }
         catch (Exception ex)
         {
-            Report(ex, "Controller wiederherstellen");
+            Report(ex, AppTexts.ErrorContextRestoreControllers);
             Error = ex.Message;
         }
 

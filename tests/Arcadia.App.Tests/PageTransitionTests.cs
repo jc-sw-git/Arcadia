@@ -41,7 +41,7 @@ public sealed class PageTransitionTests
         Assert.Equal("2 von 5", detail.PositionText);
         Assert.Equal("Echo", Side(detail, -1));
         Assert.Equal("Charlie", Side(detail, 1));
-        Assert.Equal("Name Z–A", detail.SortLabel);
+        Assert.Equal(AppTexts.SortNameDescending, detail.SortLabel);
         Assert.True(arcadia.Main.IsTabStripShown);
     }
 

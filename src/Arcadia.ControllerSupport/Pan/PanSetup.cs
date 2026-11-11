@@ -105,7 +105,7 @@ public static class PanSetup
         PanHandOver handOver;
         try
         {
-            handOver = await PanHandOver.ConnectAsync(process, RestoreHandOver.PipeName(run.Id), command, "die Wiederherstellung", cancellationToken);
+            handOver = await PanHandOver.ConnectAsync(process, RestoreHandOver.PipeName(run.Id), command, ControllerSupportTexts.PanWhatRestore, cancellationToken);
         }
         catch
         {
@@ -125,7 +125,7 @@ public static class PanSetup
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new System.TimeoutException($"Pan {command} hat nach {PanTimeouts.Restore.TotalMinutes:0} Minuten nicht geantwortet.");
+                throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(command, PanTimeouts.Restore.TotalMinutes));
             }
         }
 
@@ -148,7 +148,7 @@ public static class PanSetup
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new System.TimeoutException($"Pan {arguments[0]} hat nach {wait.TotalMinutes:0} Minuten nicht geantwortet.");
+            throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(arguments[0], wait.TotalMinutes));
         }
 
         if (process.ExitCode != 0)
@@ -176,7 +176,7 @@ public static class PanSetup
 
         try
         {
-            return Process.Start(info) ?? throw new InvalidOperationException("Pan konnte nicht gestartet werden.");
+            return Process.Start(info) ?? throw new InvalidOperationException(ControllerSupportTexts.PanNotStarted);
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
         {
@@ -186,7 +186,7 @@ public static class PanSetup
 
     /// <summary>A Debug build gets its Pan.exe from the App project's build (see Arcadia.App.csproj); the installer always has it.</summary>
     private static string MissingBundle =>
-        $"Pan fehlt in Arcadias Programmordner ({BundledExecutable}) – Arcadia neu installieren behebt das.";
+        ControllerSupportTexts.PanMissingInBundle(BundledExecutable);
 
     private static string HashOf(string file)
     {

@@ -257,7 +257,7 @@ public sealed class SteamControllerModeTests
         arcadia.Click(arcadia.Main.ControllerMode.CycleControllerSupportCommand);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings?.Selected);
         Assert.Equal("pan:start-failed", controller.Rows.Single(row => row.IsFocused).Key);
-        Assert.Equal("Treiber usbip nicht geladen", controller.Rows.Single(row => row.IsFocused).Subtitle);
+        Assert.Equal(ControllerSupportTexts.UsbipNotLoaded, controller.Rows.Single(row => row.IsFocused).Subtitle);
         Assert.Empty(arcadia.Settings.Current.ControllerSupportOverrides);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);

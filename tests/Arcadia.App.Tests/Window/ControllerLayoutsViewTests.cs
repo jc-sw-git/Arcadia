@@ -116,7 +116,7 @@ public sealed class ControllerLayoutsViewTests
         arcadia.Press(UiAction.Down);
         arcadia.Settle();
         Assert.True(layouts.IsApplyFocused);
-        arcadia.AssertRingAround(Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Name == "ApplyButton"), "Übernehmen");
+        arcadia.AssertRingAround(Assert.Single(arcadia.Window.GetVisualDescendants().OfType<Button>(), button => button.Name == "ApplyButton"), AppTexts.Apply);
         Keep(arcadia, "layouts-apply");
     }
 }

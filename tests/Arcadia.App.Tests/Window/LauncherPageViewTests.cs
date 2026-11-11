@@ -43,7 +43,7 @@ public sealed class LauncherPageViewTests
         var head = Head(arcadia);
         Assert.Equal("xbox", arcadia.LauncherCategory().PageLauncherId);
         Assert.Single(head.GetVisualDescendants().OfType<Controls.LauncherLogo>(), logo => logo.IsEffectivelyVisible && logo.Bounds.Width >= 56);
-        Assert.Equal(["Launcher", "/", "Xbox", "GOG Galaxy", "Amazon Games"], Texts(head));
+        Assert.Equal([AppTexts.Launcher, "/", "Xbox", "GOG Galaxy", "Amazon Games"], Texts(head));
 
         // B or Esc and LT/RT, Q/E as key chips: round for the controller, square for the keyboard.
         var glyphs = ArcadiaWindow.Glyphs(head);
@@ -53,7 +53,7 @@ public sealed class LauncherPageViewTests
 
         // The groups "Allgemein", "Bibliothek" and "Controller" (#178) with their rows.
         var headings = arcadia.GroupHeadings();
-        Assert.Equal(["ALLGEMEIN", "BIBLIOTHEK", "CONTROLLER"], headings.Select(heading => heading.Text));
+        Assert.Equal(["ALLGEMEIN", AppTexts.LibraryGroup, "CONTROLLER"], headings.Select(heading => heading.Text));
         var rows = arcadia.Arcadia.Main.Settings!.Selected.Rows;
         Assert.Equal(["launcher-active", "launcher-name", "launcher-keyword", "launcher-logo", "launcher-rescan", "launcher-controller-mode"], rows.Select(row => row.Key));
         Assert.All(rows.Take(4), row => Assert.InRange(arcadia.Bounds(arcadia.RowButton(row)).Top, arcadia.Bounds(headings[0]).Bottom, arcadia.Bounds(headings[1]).Top));
@@ -231,7 +231,7 @@ public sealed class LauncherPageViewTests
         arcadia.Key(Key.Q, times: 2);
         Assert.Equal("Amazon Games", Texts(Head(arcadia))[2]);
         arcadia.Key(Key.E, KeyModifiers.Shift);
-        Assert.Equal("Controller", arcadia.Arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.ControllerCategory, arcadia.Arcadia.Main.Settings!.Selected.Name);
         // Back on the tab "Launcher": the list, on the launcher whose page was open; Space opens it again.
         arcadia.Key(Key.Q, KeyModifiers.Shift);
         Assert.Null(arcadia.LauncherCategory().PageLauncherId);
@@ -241,7 +241,7 @@ public sealed class LauncherPageViewTests
         // D switches "Aktiv" on the page.
         arcadia.Arcadia.FocusRow("launcher-active");
         arcadia.Key(Key.D);
-        Assert.Equal("Aus", arcadia.ValueShown(arcadia.Row("launcher-active")));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(arcadia.Row("launcher-active")));
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Arcadia.TabNames());
 
         // A keyword taken by another launcher shows red at once and is not taken.
@@ -281,7 +281,7 @@ public sealed class LauncherPageViewTests
 
         // As every switch of the settings, a click on its value flips it.
         arcadia.Click(arcadia.RowButton(arcadia.Row("launcher-active")).GetVisualDescendants().OfType<TextBlock>().Single(text => text.Classes.Contains("valueText")));
-        Assert.Equal("Aus", arcadia.ValueShown(arcadia.Row("launcher-active")));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(arcadia.Row("launcher-active")));
         Assert.Equal(["Xbox", "Amazon Games"], arcadia.Arcadia.TabNames());
     }
 

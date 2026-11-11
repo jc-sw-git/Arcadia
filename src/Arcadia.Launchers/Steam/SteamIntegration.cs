@@ -68,23 +68,23 @@ public sealed class SteamIntegration : ILauncherIntegration
     [
         new(
             "tools",
-            "Werkzeuge einbeziehen",
-            "Etwa SteamVR und SDKs",
-            "Steam führt unter „Werkzeuge“ Programme für Spiele und ihre Entwicklung. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten; Laufzeitumgebungen und Redistributables bleiben immer draußen:",
-            ["SteamVR", "Source SDK", "Dedizierte Server"],
+            SteamTexts.SteamToolsTitle,
+            SteamTexts.SteamToolsSubtitle,
+            SteamTexts.SteamToolsInfo,
+            ["SteamVR", "Source SDK", SteamTexts.SteamDedicatedServers],
             [GameType.Tool]),
         new(
             "software",
-            "Software einbeziehen",
-            "Etwa Wallpaper Engine und Blender",
-            "Steam verkauft auch Programme, die keine Spiele sind. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten:",
+            SteamTexts.SteamSoftwareTitle,
+            SteamTexts.SteamSoftwareSubtitle,
+            SteamTexts.SteamSoftwareInfo,
             ["Wallpaper Engine", "Blender", "RPG Maker"],
             [GameType.Software]),
         new(
             "soundtracks",
-            "Soundtracks einbeziehen",
-            "Die Soundtracks deiner Spiele",
-            "Steam installiert Soundtracks wie Spiele. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten; [A] öffnet einen Soundtrack in Steam, das ihn abspielt.",
+            SteamTexts.SteamSoundtracksTitle,
+            SteamTexts.SteamSoundtracksSubtitle,
+            SteamTexts.SteamSoundtracksInfo,
             [],
             [GameType.Soundtrack]),
     ];

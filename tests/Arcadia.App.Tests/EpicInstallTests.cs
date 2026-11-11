@@ -88,7 +88,7 @@ public sealed class EpicInstallTests
         await arcadia.FollowInstallsAsync();
         Assert.Null(Tile(arcadia).InstallState);
         Assert.Equal("Installation von „Leuchtturm“ abgebrochen.", arcadia.Main.Toast.Text);
-        Assert.Equal("Installieren", Tile(arcadia).PrimaryActionText);
+        Assert.Equal(AppTexts.Install, Tile(arcadia).PrimaryActionText);
     }
 
     [AvaloniaFact]
@@ -175,7 +175,7 @@ public sealed class EpicInstallTests
         await arcadia.FollowInstallsAsync();
 
         Assert.Equal("Wird aktualisiert …", Tile(arcadia).InstallStatusText);
-        Assert.Equal("Lädt", Tile(arcadia).InstallShortText);
+        Assert.Equal(AppTexts.TileLoading, Tile(arcadia).InstallShortText);
         Assert.True(Tile(arcadia).IsInstallIndeterminate);
     }
 

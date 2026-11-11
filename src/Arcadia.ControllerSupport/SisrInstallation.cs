@@ -70,11 +70,11 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
     /// <summary>How the old Arcadia started SISR (<c>SisrHost.Start</c> up to #214); a user's SISR never listens there.</summary>
     public const string ArcadiaApiArgument = "--api.listen-address localhost:47640";
 
-    public const string StopFailedCause =
-        "SISR.exe lässt sich nicht beenden, deshalb bleiben seine Dateien. Starte den PC neu und versuch es dann noch einmal.";
+    public static string StopFailedCause =>
+        ControllerSupportTexts.SisrStopFailed;
 
-    public const string SteamRunningCause =
-        "Steam lief, deshalb bleibt der Eintrag „SISR Marker“. Versuch es noch einmal.";
+    public static string SteamRunningCause =>
+        ControllerSupportTexts.SisrSteamRunning;
 
     /// <summary>The real folders; the log folders are today's and those of versions up to 0.1.0-rc.1 (<see cref="LogLocation.MoveOldLogs"/>).</summary>
     public static SisrPaths DefaultPaths(string? arcadiaViiper)
@@ -212,7 +212,7 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidOperationException or System.ComponentModel.Win32Exception)
             {
                 notRemoved.Add(what);
-                cause ??= $"{what} ließ sich nicht entfernen: {ex.Message}";
+                cause ??= ControllerSupportTexts.SisrNotRemovable(what, ex.Message);
             }
         }
 
@@ -222,7 +222,7 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             Step($"SISR-Daten ({Path.GetFileName(data)})", () => DeleteDirectory(data));
         }
 
-        Step("SISR-Verknüpfungen", () =>
+        Step(ControllerSupportTexts.SisrShortcuts, () =>
         {
             foreach (var link in Links)
             {
@@ -243,18 +243,18 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             {
                 if (steamRunning)
                 {
-                    notRemoved.Add("Steam-Eintrag „SISR Marker“");
+                    notRemoved.Add(ControllerSupportTexts.SisrSteamEntry);
                     cause ??= SteamRunningCause;
                 }
                 else
                 {
-                    Step("Steam-Eintrag „SISR Marker“", () => steam.RemoveShortcutsTo(Executable));
+                    Step(ControllerSupportTexts.SisrSteamEntry, () => steam.RemoveShortcutsTo(Executable));
                 }
             }
 
             if (CefDebuggingFlag is { } flag)
             {
-                Step("Steams CEF-Debugging", () => DeleteFile(flag));
+                Step(ControllerSupportTexts.SisrCefDebugging, () => DeleteFile(flag));
             }
         }
 
@@ -288,7 +288,7 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             || runningViipers.Any(p => !IsFromInstallDirectory(p));
         if (!otherViiper)
         {
-            step("VIIPER-Schlüssel", () => DeleteDirectory(ViiperKeyDirectory));
+            step(ControllerSupportTexts.SisrViiperKeys, () => DeleteDirectory(ViiperKeyDirectory));
         }
     }
 

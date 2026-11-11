@@ -16,13 +16,13 @@ public sealed class UpdateTests
         Assert.Equal(["arcadia-version", "arcadia-check"], about.Rows.Where(row => row.Group == "VERSION").Select(row => row.Key));
 
         arcadia.Press(UiAction.Down);
-        Assert.Equal("Nach Updates suchen", arcadia.Main.Settings!.FocusedRow?.Title);
+        Assert.Equal(AppTexts.AboutCheckForUpdates, arcadia.Main.Settings!.FocusedRow?.Title);
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Updates is { IsChecking: false, LastChecked: not null }, "die Suche nach Updates ist fertig");
         arcadia.Wait(TimeSpan.FromMilliseconds(50));
 
-        Assert.StartsWith("Arcadia ist auf dem neuesten Stand.", about.Rows[0].Subtitle);
-        Assert.DoesNotContain(about.Rows, row => row.Title == "Jetzt aktualisieren");
+        Assert.StartsWith(AppTexts.AboutUpToDate, about.Rows[0].Subtitle);
+        Assert.DoesNotContain(about.Rows, row => row.Title == AppTexts.UpdateNow);
         Assert.False(arcadia.Main.Status.HasArcadiaUpdate);
     }
 
@@ -44,7 +44,7 @@ public sealed class UpdateTests
         Assert.True(arcadia.Main.Status.HasArcadiaUpdate);
         arcadia.Press(UiAction.Down, times: 2);
         var changelog = arcadia.Main.Settings!.FocusedRow!;
-        Assert.Equal("Was ist neu", changelog.Title);
+        Assert.Equal(AppTexts.AboutWhatsNew, changelog.Title);
         Assert.Equal("Neu bis Version 0.3.0", changelog.Subtitle);
         var shown = changelog.Info.Cast<InfoRelease>().ToList();
         Assert.Equal(["Version 0.3.0", "Version 0.2.1", "Version 0.2.0"], shown.Select(release => release.VersionText));
@@ -59,7 +59,7 @@ public sealed class UpdateTests
     {
         arcadia.Press(UiAction.Settings).Press(UiAction.PreviousTab);
         var about = arcadia.Main.Settings!.Selected;
-        Assert.Equal("Über Arcadia", about.Name);
+        Assert.Equal(AppTexts.AboutTitle, about.Name);
         return about;
     }
 }

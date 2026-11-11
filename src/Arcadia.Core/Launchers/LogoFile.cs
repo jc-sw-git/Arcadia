@@ -35,8 +35,8 @@ public static class LogoFile
 
     /// <param name="length">The file's size in bytes, checked before it is read.</param>
     public static string? SizeProblem(long length) =>
-        length == 0 ? "Die Datei ist leer."
-        : length > MaxBytes ? $"Die Datei ist größer als {MaxBytes / (1024 * 1024)} MB."
+        length == 0 ? CoreTexts.LogoFileEmpty
+        : length > MaxBytes ? CoreTexts.LogoFileTooLarge(MaxBytes / (1024 * 1024))
         : null;
 
     public static LogoCheck Check(ReadOnlySpan<byte> content)
@@ -72,7 +72,7 @@ public static class LogoFile
     /// <returns>Null for an SVG that is a picture alone; otherwise why not, or that the file is no picture Arcadia takes.</returns>
     private static string? SvgProblem(ReadOnlySpan<byte> content)
     {
-        const string NotAPicture = "Das ist keine PNG-, SVG-, ICO- oder WebP-Datei.";
+        var notAPicture = CoreTexts.LogoNotAnImage;
         string text;
         try
         {
@@ -80,7 +80,7 @@ public static class LogoFile
         }
         catch (DecoderFallbackException)
         {
-            return NotAPicture;
+            return notAPicture;
         }
 
         var settings = new XmlReaderSettings
@@ -98,14 +98,14 @@ public static class LogoFile
             {
                 if (reader.NodeType == XmlNodeType.ProcessingInstruction && reader.Name != "xml")
                 {
-                    return "Das SVG lädt ein Stylesheet; Arcadia nimmt nur reine Bilder.";
+                    return CoreTexts.LogoSvgStylesheet;
                 }
 
                 if (reader.NodeType == XmlNodeType.Text || reader.NodeType == XmlNodeType.CDATA)
                 {
                     if (LoadsSomething(reader.Value))
                     {
-                        return "Das SVG lädt andere Dateien oder Seiten; Arcadia nimmt nur Bilder ohne Verweise nach außen.";
+                        return CoreTexts.LogoSvgReferences;
                     }
 
                     continue;
@@ -118,18 +118,18 @@ public static class LogoFile
 
                 if (isFirst && reader.LocalName != "svg")
                 {
-                    return NotAPicture;
+                    return notAPicture;
                 }
 
                 isFirst = false;
                 if (reader.LocalName is "script" or "foreignObject" or "iframe" or "object" or "embed")
                 {
-                    return "Das SVG enthält Skripte oder Webinhalte; Arcadia nimmt nur reine Bilder.";
+                    return CoreTexts.LogoSvgScripts;
                 }
 
                 if (reader.LocalName is "image" or "feImage")
                 {
-                    return "Das SVG bettet andere Bilder ein; Arcadia nimmt nur reine Vektorgrafik.";
+                    return CoreTexts.LogoSvgEmbedsImages;
                 }
 
                 while (reader.MoveToNextAttribute())
@@ -137,18 +137,18 @@ public static class LogoFile
                     var external = reader.LocalName == "href" ? !reader.Value.TrimStart().StartsWith('#') : LoadsSomething(reader.Value);
                     if (external || reader.LocalName.StartsWith("on", StringComparison.OrdinalIgnoreCase))
                     {
-                        return "Das SVG lädt andere Dateien oder Seiten; Arcadia nimmt nur Bilder ohne Verweise nach außen.";
+                        return CoreTexts.LogoSvgReferences;
                     }
                 }
 
                 reader.MoveToElement();
             }
 
-            return isFirst ? NotAPicture : null;
+            return isFirst ? notAPicture : null;
         }
         catch (XmlException)
         {
-            return NotAPicture;
+            return notAPicture;
         }
     }
 

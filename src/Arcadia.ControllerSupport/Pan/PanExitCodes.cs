@@ -21,23 +21,23 @@ public static class PanExitCodes
     public const int DriversNotRemoved = 7;
 
     /// <summary>Exit 9 of a driver install that Arcadia didn't cause (#413): Pan waited in vain or the pipe was taken; nothing was changed.</summary>
-    public const string HandOverEndedText =
-        "Pan hat die Installation beendet, bevor Arcadia die Installer übergeben konnte. Es wurde nichts verändert – bitte noch einmal „Installieren“ wählen.";
+    public static string HandOverEndedText =>
+        ControllerSupportTexts.PanHandOverEnded;
 
     /// <summary>Exit 9 of a restore that Arcadia didn't cause (#471): Pan waited in vain for the go; nothing was restored.</summary>
-    public const string RestoreHandOverEndedText =
-        "Pan hat die Wiederherstellung beendet, bevor Arcadia sie freigeben konnte. Es wurde nichts verändert – bitte noch einmal „Controller wiederherstellen“ wählen.";
+    public static string RestoreHandOverEndedText =>
+        ControllerSupportTexts.PanRestoreHandOverEnded;
 
     /// <summary>Today's message for each exit code other than 0.</summary>
     public static Exception ErrorFor(int exitCode, string command) => exitCode switch
     {
         // Pan could not log this: nothing of it may be written into a folder it doesn't own.
-        DataFolder => new InvalidOperationException($"Pan konnte seinen Datenordner {PanPaths.DataDirectory} nicht sichern – bitte den Ordner prüfen oder entfernen und es noch einmal versuchen."),
-        RestoreIncomplete => new InvalidOperationException($"Pan konnte nicht alles aufräumen – das Journal bleibt erhalten; Details stehen in {PanPaths.LogPath}. Ein Neustart von Pan oder \"Pan.exe --restore\" versucht es noch einmal."),
-        HidHideFailed => new InvalidOperationException($"Pan ist eingerichtet, HidHide aber nicht – Details stehen in {PanPaths.LogPath}. HidHide lässt sich auch selbst installieren: {HidHideRelease.ManualInstallUrl}"),
-        DriversNotRemoved => new InvalidOperationException($"Pan ist entfernt, aber nicht jeder Treiber – Details stehen in {PanPaths.LogPath}; der Rest lässt sich unter Windows-Einstellungen → Apps entfernen."),
+        DataFolder => new InvalidOperationException(ControllerSupportTexts.PanDataFolderNotSaved(PanPaths.DataDirectory)),
+        RestoreIncomplete => new InvalidOperationException(ControllerSupportTexts.PanCleanupIncomplete(PanPaths.LogPath)),
+        HidHideFailed => new InvalidOperationException(ControllerSupportTexts.PanHidHideNotInstalled(PanPaths.LogPath, HidHideRelease.ManualInstallUrl)),
+        DriversNotRemoved => new InvalidOperationException(ControllerSupportTexts.PanRemovedDriverLeft(PanPaths.LogPath)),
         // When Arcadia aborted, it shows its own failed step's message instead.
         InstallHandOver.EndedExitCode => new InvalidOperationException(command == "--restore" ? RestoreHandOverEndedText : HandOverEndedText),
-        _ => new InvalidOperationException($"Pan {command} meldete Fehler {exitCode} – Details stehen in {PanPaths.LogPath}."),
+        _ => new InvalidOperationException(ControllerSupportTexts.PanCommandFailed(command, exitCode, PanPaths.LogPath)),
     };
 }

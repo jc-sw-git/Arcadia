@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EpicSoftwareTitle" xml:space="preserve"><value>Software und Engines einbeziehen</value></data>
+  <data name="EpicSoftwareSubtitle" xml:space="preserve"><value>Startbare Einträge, die keine Spiele sind</value></data>
+  <data name="EpicSoftwareInfo" xml:space="preserve"><value>Epic zeigt in seiner Bibliothek auch Programme, die keine Spiele sind. Eingeschaltet erscheinen sie auch in Arcadia:</value></data>
+  <data name="EpicUnrealEngine" xml:space="preserve"><value>Unreal Engine, alle Versionen als ein Eintrag</value></data>
+  <data name="EpicUnrealEditorForFortnite" xml:space="preserve"><value>Unreal Editor für Fortnite</value></data>
+  <data name="EpicMoreAddOns" xml:space="preserve"><value>weitere startbare Add-ons</value></data>
+</root>

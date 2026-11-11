@@ -170,15 +170,15 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         var usbip = UsbipDriver.InstalledVersion();
         if (usbip is null)
         {
-            issues.Add(new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
+            issues.Add(new("usbip-missing", HealthSeverity.Warning, ControllerSupportTexts.UsbipMissingTitle, ControllerSupportTexts.UsbipMissingText, HealthFix.InstallDrivers, ControllerSupportTexts.Install));
         }
         else if (usbip < UsbipDriver.MinimumVersion)
         {
-            issues.Add(new("usbip-outdated", HealthSeverity.Warning, "usbip-Treiber ist veraltet", $"Installiert ist {usbip}, benötigt wird mindestens {UsbipDriver.MinimumVersion}.", HealthFix.InstallDrivers, "Aktualisieren"));
+            issues.Add(new("usbip-outdated", HealthSeverity.Warning, ControllerSupportTexts.UsbipOutdatedTitle, ControllerSupportTexts.UsbipOutdatedText(usbip, UsbipDriver.MinimumVersion), HealthFix.InstallDrivers, ControllerSupportTexts.Update));
         }
         else if (!UsbipDriver.IsRunning())
         {
-            issues.Add(new("usbip-stopped", HealthSeverity.Warning, "usbip-Treiber ist nicht aktiv", "Der Treiber ist installiert, aber nicht geladen. Meist hilft ein Neustart des PCs, sonst eine Neuinstallation.", HealthFix.InstallDrivers, "Neu installieren"));
+            issues.Add(new("usbip-stopped", HealthSeverity.Warning, ControllerSupportTexts.UsbipInactiveTitle, ControllerSupportTexts.UsbipInactiveText, HealthFix.InstallDrivers, ControllerSupportTexts.Reinstall));
         }
 
         if (CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide)
@@ -195,7 +195,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         }
         else
         {
-            issues.Add(new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Pan gibt die echten Controller zurück, wenn Arcadia abstürzt oder hängt. Ohne Pan bringt Arcadia den Steam Controller nicht als Xbox Controller in Spiele. Die Installation fragt einmalig nach Administratorrechten.", HealthFix.InstallDrivers, "Installieren"));
+            issues.Add(new("pan-missing", HealthSeverity.Warning, ControllerSupportTexts.PanMissingTitle, ControllerSupportTexts.PanMissingText, HealthFix.InstallDrivers, ControllerSupportTexts.Install));
         }
 
         return issues;
@@ -205,17 +205,17 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
     public static HealthIssue? CheckHidHide(Version? installed, bool removalPending = false) => installed switch
     {
         _ when removalPending => EmulationParts.HidHideRemovalPending,
-        null => new("hidhide-missing", HealthSeverity.Warning, "HidHide fehlt", HidHideMissingText, HealthFix.InstallDrivers, "Installieren"),
+        null => new("hidhide-missing", HealthSeverity.Warning, ControllerSupportTexts.HidHideMissingTitle, HidHideMissingText, HealthFix.InstallDrivers, ControllerSupportTexts.Install),
         _ when HidHideRelease.IsSupported(installed) => null,
-        _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
-            $"Installiert ist ein älteres HidHide (Treiber {installed.ToString(3)}), Arcadia braucht HidHide {HidHideRelease.Version} oder neuer. „Aktualisieren“ installiert HidHide {HidHideRelease.Version}; was in HidHide eingestellt ist, bleibt erhalten. Die Installation fragt einmalig nach Administratorrechten.",
-            HealthFix.InstallDrivers, "Aktualisieren"),
-        _ => new("hidhide-unsupported", HealthSeverity.Warning, "HidHide-Version wird nicht unterstützt",
-            $"Installiert ist HidHide {installed.ToString(3)}, Arcadia kennt bisher nur HidHide {SteamControllerHiding.SupportedMajorVersion}.x. Ein Arcadia-Update bringt die Unterstützung."),
+        _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, ControllerSupportTexts.HidHideUnsupportedTitle,
+            ControllerSupportTexts.HidHideTooOldText(installed.ToString(3), HidHideRelease.Version),
+            HealthFix.InstallDrivers, ControllerSupportTexts.Update),
+        _ => new("hidhide-unsupported", HealthSeverity.Warning, ControllerSupportTexts.HidHideUnsupportedTitle,
+            ControllerSupportTexts.HidHideTooNewText(installed.ToString(3), SteamControllerHiding.SupportedMajorVersion)),
     };
 
-    private const string HidHideMissingText =
-        "Mit HidHide versteckt Arcadia den echten Steam Controller vor Steam und anderen Programmen, solange es ihn selbst weiterreicht. Die Installation fragt einmalig nach Administratorrechten.";
+    private static string HidHideMissingText =>
+        ControllerSupportTexts.HidHideMissingText;
 
     private static DateTimeOffset LastBootTime(DateTimeOffset now) => now - TimeSpan.FromMilliseconds(Environment.TickCount64);
 }

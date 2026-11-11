@@ -191,7 +191,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         }
         catch (Exception ex) when (!_closed)
         {
-            Broke($"Puck (Interface {iface}) nicht mehr lesbar: {ex.Message}");
+            Broke($"Puck (Interface {iface}) nicht mehr lesbar: {ex.Message}"); // not a UI text (log)
         }
         catch (Exception)
         {
@@ -218,7 +218,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
                 }
             }
 
-            Broke("VIIPER hat die Verbindung beendet");
+            Broke("VIIPER hat die Verbindung beendet"); // not a UI text (log)
         }
         catch (Exception ex) when (!_closed)
         {
@@ -315,7 +315,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
 
         var report = new byte[Math.Clamp((int)length, 1, HidProxyFrames.MaxPayload - 16)];
         var read = 0;
-        var after = _lastMessage.TryGetValue(iface, out var message) ? $"nach {SteamControllerMessages.NameOfFeature(message)}" : null;
+        var after = _lastMessage.TryGetValue(iface, out var message) ? $"nach {SteamControllerMessages.NameOfFeature(message)}" : null; // not a UI text (log)
         var call = new PuckCall($"GET_REPORT {type}", iface, id, after);
         return ToPuck(() => read = _puck.GetReport(iface, type, id, report), call) ? report[..Math.Min(read, report.Length)] : null;
     }
@@ -355,7 +355,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     /// </summary>
     private void Refused(PuckCall call, Exception ex)
     {
-        var error = ex is Win32Exception win32 ? $"Fehler {win32.NativeErrorCode}" : ex.GetType().Name;
+        var error = ex is Win32Exception win32 ? $"Fehler {win32.NativeErrorCode}" : ex.GetType().Name; // not a UI text (log)
         int count;
         lock (_refusalsLock)
         {
@@ -412,7 +412,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
             return;
         }
 
-        Broke($"VIIPER nimmt seit {_sendTimeout.TotalSeconds:0.#} s keine Daten an");
+        Broke($"VIIPER nimmt seit {_sendTimeout.TotalSeconds:0.#} s keine Daten an"); // not a UI text (log)
         // Ends the hanging write, so the thread that waits in it gets free.
         Quietly(_viiper.Dispose);
     }

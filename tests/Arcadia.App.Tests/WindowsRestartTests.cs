@@ -92,11 +92,11 @@ public sealed class WindowsRestartTests
         await RunForAsync(arcadia, TimeSpan.FromSeconds(30));
 
         var hidHide = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == HidHideMissingKey));
-        Assert.Equal("Installieren", hidHide.ActionText);
+        Assert.Equal(ControllerSupportTexts.Install, hidHide.ActionText);
         Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
         Assert.DoesNotContain(controller.Rows, row => row.Title.Contains("nicht aktiv", StringComparison.Ordinal));
         Assert.DoesNotContain(controller.Rows, row => row.Title.Contains("Neustart", StringComparison.Ordinal));
-        Assert.Equal("Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleProblem, Switch(controller).Subtitle);
         Assert.Equal(0, arcadia.Pan.HidingChecks);
 
         CloseSettings(arcadia);
@@ -176,7 +176,7 @@ public sealed class WindowsRestartTests
         var row = RestartRow(controller);
         Assert.Equal(EmulationParts.PausedSummary, row.Subtitle);
         Assert.Single(controller.Rows, row => row.Title.Contains("Neustart", StringComparison.Ordinal));
-        Assert.DoesNotContain(controller.Rows, row => row.Title == "HidHide: Neustart ausstehend");
+        Assert.DoesNotContain(controller.Rows, row => row.Title == ControllerSupportTexts.HidHideRestartPending);
         Assert.Equal(PausedSubtitle, Switch(controller).Subtitle);
         Assert.Empty(arcadia.Pan.Hidden);
         Assert.Empty(arcadia.Pan.Started);
@@ -212,7 +212,7 @@ public sealed class WindowsRestartTests
             ],
             row.Info.OfType<InfoText>().Select(text => text.Text));
         var box = Assert.Single(row.Info.OfType<InfoSection>());
-        Assert.Equal("NACH DEM NEUSTART", box.Title);
+        Assert.Equal(ControllerSupportTexts.PausedBoxTitle, box.Title);
         Assert.Equal(
             "Fehlt dann noch etwas, steht es hier mit „Installieren“. Ein Druck richtet alles Fehlende in einem Durchgang ein, mit einer Windows-Abfrage.",
             Assert.IsType<InfoText>(Assert.Single(box.Blocks)).Text);
@@ -231,7 +231,7 @@ public sealed class WindowsRestartTests
         Switch(controller).Activate();
         await arcadia.TickSteamControllerAsync();
         Assert.False(arcadia.Settings.Current.PanEnabled);
-        Assert.Equal("Aus – Spiele und Launcher sehen deine echten Controller direkt", Switch(controller).Subtitle);
+        Assert.Equal(AppTexts.PanSubtitleOff, Switch(controller).Subtitle);
         Assert.True(RestartRow(controller).CanActivate);
 
         Switch(controller).Activate();
@@ -239,7 +239,7 @@ public sealed class WindowsRestartTests
         Assert.True(arcadia.Settings.Current.PanEnabled);
         Assert.Equal(PausedSubtitle, Switch(controller).Subtitle);
         Assert.True(RestartRow(controller).CanActivate);
-        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel { ActionText: "Installieren" });
+        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel actionRow && actionRow.ActionText == ControllerSupportTexts.Install);
         Assert.Empty(arcadia.Pan.Hidden);
         Assert.Empty(arcadia.Pan.Started);
     }

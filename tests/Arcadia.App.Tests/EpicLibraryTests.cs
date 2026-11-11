@@ -145,7 +145,7 @@ public sealed class EpicLibraryTests
         var tile = arcadia.FocusedGame!;
         Assert.Equal("Leuchtturm", tile.Title);
         Assert.False(tile.IsInstalled);
-        Assert.Equal("Installieren", tile.PrimaryActionText);
+        Assert.Equal(AppTexts.Install, tile.PrimaryActionText);
     }
 
     [AvaloniaFact]

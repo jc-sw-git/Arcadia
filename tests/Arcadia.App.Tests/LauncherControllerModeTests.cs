@@ -41,7 +41,7 @@ public sealed class LauncherControllerModeTests
         var launchers = arcadia.OpenLauncherSettings();
 
         var steam = ModeRow(arcadia, launchers, "steam");
-        Assert.Equal(("CONTROLLER", "Steam Controller", "Vorauswahl für die Spiele dieses Launchers"), (steam.Group, steam.Title, steam.Subtitle));
+        Assert.Equal(("CONTROLLER", "Steam Controller", AppTexts.LauncherControllerPresetSubtitle), (steam.Group, steam.Title, steam.Subtitle));
         Assert.Equal(ControllerModes.Steam, steam.ValueText);
         Assert.Contains(steam.Info, block => block is InfoFootnote { Text: "Ab Werk: Steam-Eingabe, weil Spiele aus Steam Steams Belegungen nutzen. Gilt ab dem nächsten Spielstart." });
         Assert.Contains(steam.Info, block => block is InfoCard { Title: ControllerModes.Arcadia });
@@ -175,14 +175,14 @@ public sealed class LauncherControllerModeTests
         ModeRow(arcadia, launchers, "steam");
         var reset = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(ResetKey));
         Assert.True(reset.IsIndented);
-        Assert.Equal(("Alle Spiele auf die Vorauswahl setzen", "2 Spiele haben einen eigenen Modus", "Zurücksetzen"), (reset.Title, reset.Subtitle, reset.ActionText));
+        Assert.Equal((AppTexts.LauncherControllerResetTitle, "2 Spiele haben einen eigenen Modus", AppTexts.FilterHintReset), (reset.Title, reset.Subtitle, reset.ActionText));
         var listed = Assert.Single(reset.Info.OfType<InfoFacts>()).Facts;
         Assert.Equal([(games[0].Title, ControllerModes.Arcadia), (games[1].Title, ControllerModes.Steam)], listed.Select(fact => (fact.Label, fact.Value)));
 
         // [A] asks; [B] keeps every choice.
         arcadia.Press(UiAction.Accept);
         var question = Assert.IsType<SettingsQuestionViewModel>(launchers.Dialog);
-        Assert.Equal("Alle Spiele auf die Vorauswahl setzen?", question.Title);
+        Assert.Equal(AppTexts.LauncherControllerAskReset, question.Title);
         Assert.Equal($"2 Spiele aus Steam bekommen wieder „Steam-Eingabe“: {games[0].Title}, {games[1].Title}. Gilt ab dem nächsten Spielstart.", question.Message);
         arcadia.Press(UiAction.Back);
         Assert.Null(launchers.Dialog);
@@ -210,8 +210,8 @@ public sealed class LauncherControllerModeTests
         var mode = ModeRow(arcadia, launchers, "gog");
         Assert.True(mode.IsDimmed);
         Assert.False(mode.CanChange);
-        Assert.Equal("Aus – erst mit dem Controller-Wächter (Pan)", mode.Subtitle);
-        Assert.Contains(mode.Info, block => block is InfoNote { Text: "Einstellbar, sobald der Controller-Wächter (Pan) an ist: Controller → Pan." });
+        Assert.Equal(AppTexts.LauncherControllerPanOff, mode.Subtitle);
+        Assert.Contains(mode.Info, block => block is InfoNote info && info.Text == AppTexts.LauncherControllerNeedsPan);
         arcadia.Press(UiAction.Right).Press(UiAction.Left).Press(UiAction.Accept);
         Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
 
@@ -230,7 +230,7 @@ public sealed class LauncherControllerModeTests
         Assert.Same(mode, ModeRow(arcadia, launchers, "gog"));
         Assert.False(mode.IsDimmed);
         Assert.True(mode.CanChange);
-        Assert.Equal("Vorauswahl für die Spiele dieses Launchers", mode.Subtitle);
+        Assert.Equal(AppTexts.LauncherControllerPresetSubtitle, mode.Subtitle);
         Assert.True(reset.CanActivate);
     }
 
@@ -250,7 +250,7 @@ public sealed class LauncherControllerModeTests
         var mode = ModeRow(arcadia, launchers, "gog");
         Assert.True(mode.IsDimmed);
         Assert.False(mode.CanChange);
-        Assert.Equal("Auf diesem System noch nicht verfügbar", mode.Subtitle);
+        Assert.Equal(AppTexts.LauncherControllerUnsupported, mode.Subtitle);
         arcadia.Press(UiAction.Right);
         Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
         Assert.Empty(arcadia.Settings.Current.Launchers);
@@ -267,7 +267,7 @@ public sealed class LauncherControllerModeTests
 
         // Below the group "Controller" only "Desktop-Steuerung" (#315).
         Assert.Equal([ModeKey, SteamDesktopLayoutRowViewModel.RowKey], launchers.Rows.TakeLast(2).Select(row => row.Key));
-        Assert.DoesNotContain(launchers.Rows, row => row.Title == "Controller-Einstellungen für Steam");
+        Assert.DoesNotContain(launchers.Rows, row => row.Title == AppTexts.ControllerSteamSettingsTitle);
     }
 
     /// <summary>
@@ -286,7 +286,7 @@ public sealed class LauncherControllerModeTests
         var launchers = arcadia.OpenLauncherSettings();
         ModeRow(arcadia, launchers, "gog");
         arcadia.Press(UiAction.Right);
-        Assert.Equal("1 Spiel hat einen eigenen Modus", launchers.Rows.Single(row => row.Key == ResetKey).Subtitle);
+        Assert.Equal(AppTexts.LauncherControllerOwnModeOne, launchers.Rows.Single(row => row.Key == ResetKey).Subtitle);
         arcadia.Press(UiAction.Settings);
 
         using var restarted = await arcadia.RestartAsync();

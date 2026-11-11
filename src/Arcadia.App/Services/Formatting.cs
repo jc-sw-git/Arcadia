@@ -15,7 +15,7 @@ public static class Formatting
     {
         if (lastPlayed is not { } value)
         {
-            return "Nie gespielt";
+            return AppTexts.NeverPlayed;
         }
 
         var days = (int)(now.Date - value.ToLocalTime().Date).TotalDays;
@@ -24,11 +24,11 @@ public static class Formatting
             <= 0 => "Heute",
             1 => "Gestern",
             < 7 => $"Vor {days} Tagen",
-            < 14 => "Vor 1 Woche",
+            < 14 => AppTexts.PlayedAWeekAgo,
             < 30 => $"Vor {days / 7} Wochen",
-            < 60 => "Vor 1 Monat",
+            < 60 => AppTexts.PlayedAMonthAgo,
             < 365 => $"Vor {days / 30} Monaten",
-            _ => "Vor über 1 Jahr",
+            _ => AppTexts.PlayedOverAYearAgo,
         };
     }
 
@@ -67,12 +67,12 @@ public static class Formatting
     public static string SortLabel(SortOrder? sort) => (sort?.Field, sort?.Direction) switch
     {
         (null, _) => "Relevanz",
-        (SortField.Name, SortDirection.Ascending) => "Name A–Z",
-        (SortField.Name, SortDirection.Descending) => "Name Z–A",
-        (SortField.InstalledAt, SortDirection.Descending) => "Installiert · neueste zuerst",
-        (SortField.InstalledAt, SortDirection.Ascending) => "Installiert · älteste zuerst",
-        (SortField.LastPlayed, SortDirection.Descending) => "Zuletzt gespielt · neueste zuerst",
-        _ => "Zuletzt gespielt · älteste zuerst",
+        (SortField.Name, SortDirection.Ascending) => AppTexts.SortNameAscending,
+        (SortField.Name, SortDirection.Descending) => AppTexts.SortNameDescending,
+        (SortField.InstalledAt, SortDirection.Descending) => AppTexts.SortInstalledNewest,
+        (SortField.InstalledAt, SortDirection.Ascending) => AppTexts.SortInstalledOldest,
+        (SortField.LastPlayed, SortDirection.Descending) => AppTexts.SortPlayedNewest,
+        _ => AppTexts.SortPlayedOldest,
     };
 
     public static string Clock(DateTimeOffset now) => now.ToString("HH:mm", Culture);

@@ -32,7 +32,7 @@ public sealed class SisrRemovalTests
         using (var leftover = await ArcadiaDriver.StartAsync(steam: markerOnly))
         {
             var controller = await OpenControllerAsync(leftover);
-            Assert.Equal("Übrig ist noch ein Eintrag in Steam", controller.Rows.Single(row => row.Key == SisrRows.RemoveKey).Subtitle);
+            Assert.Equal(AppTexts.SisrSteamEntryLeft, controller.Rows.Single(row => row.Key == SisrRows.RemoveKey).Subtitle);
         }
 
         var steam = new FakeSteam();
@@ -49,7 +49,7 @@ public sealed class SisrRemovalTests
         Assert.Equal("PAN", settings.Rows[keys.IndexOf(SisrRows.RemoveKey) - 1].Group);
         var keep = settings.Rows.Single(row => row.Key == SisrRows.KeepKey);
         Assert.Equal((SisrRows.Group, 1), (keep.Group, keep.Indent));
-        Assert.Equal("Pan ersetzt SISR. Arcadia braucht es nicht mehr.", settings.Rows.Single(row => row.Key == SisrRows.RemoveKey).Subtitle);
+        Assert.Equal(AppTexts.SisrReplacedByPan, settings.Rows.Single(row => row.Key == SisrRows.RemoveKey).Subtitle);
         Assert.True(File.Exists(steam.Sisr.SisrExe));
         Assert.Equal(1, steam.Sisr.Installation().Find().MarkerAccounts);
     }
@@ -93,8 +93,8 @@ public sealed class SisrRemovalTests
 
         arcadia.Press(UiAction.Accept);
         Assert.Equal(SettingsPrompt.ConfirmSteamStop, controller.Prompt);
-        Assert.Equal("Den Eintrag „SISR Marker“ kann Arcadia nur entfernen, solange Steam geschlossen ist. Steam wird dafür kurz beendet und danach wieder gestartet.", controller.SteamStopText);
-        Assert.Equal(("Weiter", "Abbrechen"), (controller.ConfirmSteamStopText, controller.PromptBackText));
+        Assert.Equal(AppTexts.SteamStopForSisrMarker, controller.SteamStopText);
+        Assert.Equal((AppTexts.Continue, AppTexts.Cancel), (controller.ConfirmSteamStopText, controller.PromptBackText));
         Assert.False(controller.HasSteamStopDetail);
         Assert.True(controller.ConfirmSteamStopItem.IsFocused);
 
@@ -131,7 +131,7 @@ public sealed class SisrRemovalTests
 
         Assert.Equal(SettingsPrompt.SteamGameRunning, controller.Prompt);
         Assert.Equal("Hades II", controller.RunningGame);
-        Assert.Equal("Beende das Spiel zuerst, dann kann Arcadia SISR entfernen.", controller.GamePromptText);
+        Assert.Equal(AppTexts.GameRunningSisr, controller.GamePromptText);
         Assert.False(controller.CanRetryGamePrompt);
         Assert.True(controller.CloseGamePromptItem.IsFocused);
         arcadia.Press(UiAction.Accept);
@@ -163,7 +163,7 @@ public sealed class SisrRemovalTests
         var row = controller.Rows.Single(r => r.Key == SisrRows.RemoveKey);
         await arcadia.WaitUntilAsync(() => row.Subtitle == "SISR wurde nicht entfernt", "die Zeile sagt, dass nichts entfernt wurde");
         Assert.Equal(HealthSeverity.Warning, row.Severity);
-        Assert.Contains(row.Info, block => block is InfoNote { Text: ControllerSupportService.SteamWontCloseText });
+        Assert.Contains(row.Info, block => block is InfoNote note && note.Text == ControllerSupportService.SteamWontCloseText);
     }
 
     [AvaloniaFact]
@@ -202,7 +202,7 @@ public sealed class SisrRemovalTests
         await arcadia.WaitUntilAsync(() => row.Subtitle == "SISR wurde nicht entfernt", "die Zeile sagt, dass nichts entfernt wurde");
 
         Assert.Equal(HealthSeverity.Warning, row.Severity);
-        Assert.Contains(row.Info, block => block is InfoNote { Text: SisrInstallation.StopFailedCause });
+        Assert.Contains(row.Info, block => block is InfoNote note && note.Text == SisrInstallation.StopFailedCause);
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
         Assert.True(File.Exists(steam.Sisr.SisrExe));
         Assert.NotEqual(Removed, arcadia.Main.Toast.Text);
@@ -278,7 +278,7 @@ public sealed class SisrRemovalTests
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:sisr-running"), "die Warnung „SISR läuft“");
 
         var warning = controller.Rows.Single(row => row.Key == "issue:sisr-running");
-        Assert.Equal(("SISR läuft", 1, HealthSeverity.Warning), (warning.Title, warning.Indent, warning.Severity));
+        Assert.Equal((ControllerSupportTexts.SisrRunningTitle, 1, HealthSeverity.Warning), (warning.Title, warning.Indent, warning.Severity));
         Assert.Equal(PanRows.Group, warning.Group);
         Assert.DoesNotContain(controller.Rows, row => row.Group == SisrRows.Group);
 

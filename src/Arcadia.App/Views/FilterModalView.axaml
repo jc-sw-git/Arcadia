@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
              xmlns:filter="using:Arcadia.App.Filter"
@@ -22,7 +23,7 @@
             <TextBlock Grid.Column="1" Text="{x:Static filter:FilterModalViewModel.Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Classes="filterLauncher" Text="{Binding LauncherName}" />
             <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="filterHitsLead" Text="Mit dieser Auswahl" />
+              <TextBlock Classes="filterHitsLead" Text="{x:Static app:AppTexts.WithThisSelection}" />
               <TextBlock Classes="filterHits" Classes.active="{Binding IsActive}" Text="{Binding HitsText}" />
               <TextBlock Classes="filterHitsTotal" Text="{Binding TotalText}" />
             </StackPanel>
@@ -129,7 +130,7 @@
             </ItemsControl>
           </Grid>
         </DockPanel>
-        <Button Classes="plain dialogClose" Margin="0,-14,-22,0" ToolTip.Tip="Schließen"
+        <Button Classes="plain dialogClose" Margin="0,-14,-22,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
                 IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
           <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
         </Button>

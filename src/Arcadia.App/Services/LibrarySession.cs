@@ -47,7 +47,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             {
                 var launcherId = integration.Launcher.Id;
                 EventHandler changed = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnAccountLibraryChanged(launcherId));
-                EventHandler<Exception> failed = (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, $"Konto von {integration.Launcher.DisplayName}"));
+                EventHandler<Exception> failed = (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextAccountOf(integration.Launcher.DisplayName)));
                 account.LibraryChanged += changed;
                 account.Failed += failed;
                 _accounts.Add((account, changed, failed));
@@ -125,7 +125,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         Show(libraries);
         foreach (var launcherId in _changedWhileLoading)
         {
-            RefreshLauncherAsync(launcherId).Forget("Bibliothek aktualisieren");
+            RefreshLauncherAsync(launcherId).Forget(AppTexts.ErrorContextRefreshLibrary);
         }
 
         _changedWhileLoading.Clear();
@@ -286,7 +286,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         Show(kept);
         if (kept.Count < active.Count)
         {
-            RefreshLibraryAsync(force: true).Forget("Bibliothek aktualisieren");
+            RefreshLibraryAsync(force: true).Forget(AppTexts.ErrorContextRefreshLibrary);
         }
     }
 
@@ -336,7 +336,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        RefreshLauncherAsync(launcherId).Forget("Bibliothek aktualisieren");
+        RefreshLauncherAsync(launcherId).Forget(AppTexts.ErrorContextRefreshLibrary);
     }
 
     /// <summary>Reads one launcher again ("Neu einlesen", #137); the other launchers keep their games.</summary>
@@ -391,7 +391,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>The game with this key in <see cref="Libraries"/>, or null if it left them.</summary>
     public Game? GameOf(string gameKey) => Libraries.SelectMany(l => l.Games).FirstOrDefault(g => g.Key == gameKey);
 
-    private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget("Bibliothek aktualisieren");
+    private void RefreshLibraryLater(TimeSpan delay) => RefreshLibraryAfterAsync(delay, _shutdown.Token).Forget(AppTexts.ErrorContextRefreshLibrary);
 
     // Continues on the UI thread it was started on; a cancelled delay ends quietly (AppErrors ignores the cancellation).
     private async Task RefreshLibraryAfterAsync(TimeSpan delay, CancellationToken cancellationToken)

@@ -23,13 +23,13 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
     private const ulong SteamId64Base = 76561197960265728;
 
-    internal const string OtherAccountNotice = "Steam ist mit einem anderen Konto angemeldet";
+    internal static string OtherAccountNotice => SteamTexts.SteamOtherAccountNotice;
 
-    internal const string UnreachableWithList = "Steam ist nicht erreichbar. Arcadia zeigt die zuletzt geladene Liste deiner Spiele.";
+    internal static string UnreachableWithList => SteamTexts.SteamUnreachableWithList;
 
-    internal const string UnreachableWithoutList = "Steam ist nicht erreichbar. Deine nicht installierten Spiele fehlen, bis Arcadia ihre Liste laden kann.";
+    internal static string UnreachableWithoutList => SteamTexts.SteamUnreachableWithoutList;
 
-    internal const string ExpiredProblem = "Die Anmeldung ist abgelaufen. Melde dich neu an, um wieder alle Spiele zu sehen.";
+    internal static string ExpiredProblem => SteamTexts.SteamSignInExpired;
 
     /// <summary>A stored token closer to its end than this is read anew before it is used.</summary>
     private static readonly TimeSpan TokenMargin = TimeSpan.FromMinutes(5);
@@ -85,15 +85,15 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
     public static SteamOnlineAccount Create(HttpClient http, IWebPages web, TimeProvider time, string folder) =>
         new(new SteamWebApi(http), SteamAccountStore.CreateDefault(folder), web, time);
 
-    public string Title => "Steam-Konto";
+    public string Title => SteamTexts.SteamAccountTitle;
 
-    public string Purpose => "Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben";
+    public string Purpose => SteamTexts.SteamAccountPurpose;
 
-    public string About => "Hinterlegst du in Arcadia dein Steam-Konto, erhältst du auch in Arcadia vollen Zugriff auf deine Spielebibliothek. "
-        + "Ohne Anmeldung kann Arcadia nur die Spiele auflisten, die auf diesem PC installiert sind. "
-        + "Ob du sie auch erfolgreich aus Arcadia starten kannst, hängt davon ab, ob das Konto, das aktuell in Steam angemeldet ist, die Berechtigung dafür hat.";
+    public string About => SteamTexts.SteamAccountAbout1
+        + SteamTexts.SteamAccountAbout2
+        + SteamTexts.SteamAccountAbout3;
 
-    public string SignInMethod => "Die Anmeldung erfolgt auf der Anmeldeseite von Steam, per QR-Code mit der Steam Mobile App oder mit Name und Passwort. Arcadia sieht deine Anmelde-Informationen nie.";
+    public string SignInMethod => SteamTexts.SteamSignInMethod;
 
     public LauncherAccountState State
     {
@@ -213,7 +213,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
                 {
                     Trace.TraceWarning($"Steam-Konto: Cookies nicht gelöscht ({error})");
                 }
-            }, "Abmelden");
+            }, SteamTexts.ErrorContextSignOut);
         }
 
         Trace.TraceInformation("Steam-Konto: abgemeldet, gespeicherte Anmeldung und Liste gelöscht");
@@ -290,7 +290,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         }
         catch (Exception e)
         {
-            Report(e, "Steam-Konto prüfen");
+            Report(e, SteamTexts.ErrorContextCheckSteamAccount);
         }
 
         static uint Normal(uint? client) => client ?? 0;
@@ -318,7 +318,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
             }
 
             _fetchedAt = now;
-            _fetchTask = Run(FetchAsync, "Spiele laden");
+            _fetchTask = Run(FetchAsync, SteamTexts.ErrorContextLoadGames);
         }
     }
 
@@ -356,7 +356,7 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
 
         Trace.TraceInformation("Steam-Konto: Anmeldeseite geöffnet");
         var shown = await _web.ShowAsync(
-            "Bei Steam anmelden",
+            SteamTexts.SteamSignInTitle,
             SteamStorePage.LoginPage, SteamStorePage.Domains, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
         if (shown.IsCancelled)
         {
@@ -507,17 +507,17 @@ public sealed class SteamOnlineAccount : ILauncherAccount, IDisposable
         var read = await _web!.ReadAsync(SteamStorePage.StorePage, SteamStorePage.Domains, SteamStorePage.AccountScript, page => SteamStorePage.SignInOf(page) is not null, cancellationToken).ConfigureAwait(false);
         if (read.IsCancelled)
         {
-            return new SteamApiError("Store-Seite: abgebrochen", IsCancelled: true);
+            return new SteamApiError("Store-Seite: abgebrochen", IsCancelled: true); // not a UI text (log)
         }
 
         if (read.Text is not { } page)
         {
-            return new SteamApiError($"Store-Seite: {read.Error}", IsNetwork: true);
+            return new SteamApiError($"Store-Seite: {read.Error}", IsNetwork: true); // not a UI text (log)
         }
 
         if (SteamStorePage.SignInOf(page) is not { } current || current.SteamId != signIn.SteamId)
         {
-            return new SteamApiError("Store-Seite: nicht angemeldet", Status: System.Net.HttpStatusCode.Unauthorized);
+            return new SteamApiError("Store-Seite: nicht angemeldet", Status: System.Net.HttpStatusCode.Unauthorized); // not a UI text (log)
         }
 
         lock (_lock)

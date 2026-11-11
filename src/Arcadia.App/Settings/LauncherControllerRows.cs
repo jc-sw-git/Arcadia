@@ -13,10 +13,10 @@ namespace Arcadia.App.Settings;
 internal sealed class LauncherControllerRows
 {
     private const string ControllerGroup = "CONTROLLER";
-    private const string PanOffSubtitle = "Aus – erst mit dem Controller-Wächter (Pan)";
+    private static string PanOffSubtitle => AppTexts.LauncherControllerPanOff;
 
     // As Pan's own row says it, so the rows don't send the user to a switch that can't help (QE review PR #319).
-    private const string PanUnsupportedSubtitle = "Auf diesem System noch nicht verfügbar";
+    private static string PanUnsupportedSubtitle => AppTexts.LauncherControllerUnsupported;
 
     // The question before the reset names this many games, then how many more.
     private const int MaxTitlesInQuestion = 5;
@@ -39,11 +39,11 @@ internal sealed class LauncherControllerRows
         {
             Group = ControllerGroup,
         };
-        _resetRow = new ActionRowViewModel("launcher-controller-reset", "Alle Spiele auf die Vorauswahl setzen", AskReset)
+        _resetRow = new ActionRowViewModel("launcher-controller-reset", AppTexts.LauncherControllerResetTitle, AskReset)
         {
             Group = ControllerGroup,
             Indent = 1,
-            ActionText = "Zurücksetzen",
+            ActionText = AppTexts.Reset,
         };
         _steamDesktopLayoutRow = new SteamDesktopLayoutRowViewModel(category.Changes);
     }
@@ -58,17 +58,19 @@ internal sealed class LauncherControllerRows
         var panSupported = host.IsPanSupported;
         var panOffSubtitle = panSupported ? PanOffSubtitle : PanUnsupportedSubtitle;
         IReadOnlyList<InfoBlock> panOff = panOn ? [] : [new InfoNote(panSupported
-            ? "Einstellbar, sobald der Controller-Wächter (Pan) an ist: Controller → Pan."
-            : "Der Controller-Wächter (Pan) läuft auf diesem System noch nicht, und ohne ihn gibt es keinen Steam-Controller-Modus.", HealthSeverity.Info)];
+            ? AppTexts.LauncherControllerNeedsPan
+            : AppTexts.LauncherControllerPanUnsupported, HealthSeverity.Info)];
 
         _modeRow.ShowPan();
-        _modeRow.Subtitle = panOn ? "Vorauswahl für die Spiele dieses Launchers" : panOffSubtitle;
+        _modeRow.Subtitle = panOn ? AppTexts.LauncherControllerPresetSubtitle : panOffSubtitle;
         _modeRow.Info =
         [
-            new InfoText($"So startet ein Spiel aus {name} mit dem Steam Controller, solange du in seinen Details nichts anderes wählst. Spiele mit eigenem Modus behalten ihn."),
+            new InfoText(AppTexts.LauncherControllerPresetInfo(name)),
             .. panOff,
             .. PanRows.ModeCards,
-            new InfoFootnote($"{(gamesUseSteamInput ? $"Ab Werk: {ControllerModes.Steam}, weil Spiele aus {name} Steams Belegungen nutzen." : $"Ab Werk: {ControllerModes.Arcadia}.")} Gilt ab dem nächsten Spielstart."),
+            new InfoFootnote(gamesUseSteamInput
+                ? AppTexts.LauncherControllerFactorySteam(ControllerModes.Steam, name)
+                : AppTexts.LauncherControllerFactoryArcadia(ControllerModes.Arcadia)),
         ];
 
         // Only games of the library count and are listed; the reset clears the missing ones' choices too.
@@ -79,14 +81,14 @@ internal sealed class LauncherControllerRows
             .ToList();
         _resetRow.IsEnabled = panOn;
         _resetRow.IsDimmed = !panOn;
-        _resetRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? "1 Spiel hat einen eigenen Modus" : $"{own.Count} Spiele haben einen eigenen Modus";
+        _resetRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? AppTexts.LauncherControllerOwnModeOne : AppTexts.LauncherControllerOwnModeMany(own.Count);
         _resetRow.Info =
         [
-            new InfoText($"Diese Spiele aus {name} hast du selbst umgestellt. Danach folgen sie wieder der Vorauswahl „{preset}“:"),
+            new InfoText(AppTexts.LauncherControllerOwnModeInfo(name, preset)),
             new InfoFacts(string.Empty, [.. own.Select(game => new InfoFact(game.Title, ControllerModes.Of(game.Choice!.Value)))]),
             .. panOff,
-            new InfoText("[A] fragt vorher nach."),
-            new InfoFootnote("Gilt ab dem nächsten Spielstart."),
+            new InfoText(AppTexts.LauncherControllerAsksFirst),
+            new InfoFootnote(AppTexts.AppliesFromNextStart),
         ];
         _ownModeTitles = [.. own.Select(game => game.Title)];
 
@@ -129,19 +131,19 @@ internal sealed class LauncherControllerRows
         var name = host.Launchers.Info(id).DisplayName;
         var preset = ControllerModes.Of(_category.Changes.Current.LauncherUsesArcadiaPad(id, host.Launchers.GamesUseSteamInput));
         _category.Dialog = new SettingsQuestionViewModel(
-            "Alle Spiele auf die Vorauswahl setzen?",
-            $"{ResetGames(_ownModeTitles, name)} wieder „{preset}“: {TitleList(_ownModeTitles)}. Gilt ab dem nächsten Spielstart.",
-            "Zurücksetzen",
+            AppTexts.LauncherControllerAskReset,
+            AppTexts.LauncherControllerAskResetText(ResetGames(_ownModeTitles, name), preset, TitleList(_ownModeTitles)),
+            AppTexts.Reset,
             () => Reset(id),
             () => _category.Dialog = null);
     }
 
     private static string ResetGames(IReadOnlyList<string> titles, string launcher) =>
-        titles.Count == 1 ? $"1 Spiel aus {launcher} bekommt" : $"{titles.Count} Spiele aus {launcher} bekommen";
+        titles.Count == 1 ? AppTexts.LauncherControllerResetGamesOne(launcher) : AppTexts.LauncherControllerResetGamesMany(titles.Count, launcher);
 
     /// <summary>The first few titles; a long list ends with how many more there are.</summary>
     private static string TitleList(IReadOnlyList<string> titles) =>
-        titles.Count <= MaxTitlesInQuestion ? string.Join(", ", titles) : $"{string.Join(", ", titles.Take(MaxTitlesInQuestion))} und {titles.Count - MaxTitlesInQuestion} weitere";
+        titles.Count <= MaxTitlesInQuestion ? string.Join(", ", titles) : AppTexts.TitleListAndMore(string.Join(", ", titles.Take(MaxTitlesInQuestion)), titles.Count - MaxTitlesInQuestion);
 
     /// <summary>Every game of the launcher back on "Standard", missing ones too, in one write; the focus goes to "Steam Controller".</summary>
     private void Reset(string id)

@@ -62,7 +62,7 @@ public sealed class SearchTests
         Assert.Empty(search.Hits);
         Assert.False(search.HasHits);
         Assert.True(search.Empty?.IsNoHits);
-        Assert.Equal("Keine Treffer", search.Empty?.Title);
+        Assert.Equal(AppTexts.NoHits, search.Empty?.Title);
         Assert.Equal("Kein Spiel passt zu „xyz“. Prüfe die Schreibweise oder nimm weitere Launcher dazu.", search.Empty?.Text);
     }
 

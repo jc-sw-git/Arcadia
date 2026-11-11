@@ -31,7 +31,7 @@ public sealed class FirstRunViewTests
         using var arcadia = await ArcadiaWindow.ShowAsync(TwoFoundOneMissing, new AppSettings());
         var firstRun = arcadia.Arcadia.Main.FirstRun!;
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
-        Assert.Equal("Aus", ValueShown(arcadia, firstRun.Found[1]));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, firstRun.Found[1]));
 
         if (how == "Enter")
         {
@@ -64,11 +64,11 @@ public sealed class FirstRunViewTests
         arcadia.Press(UiAction.Down);
         AssertFocused(arcadia, xbox, "▼");
         arcadia.Press(UiAction.Right);
-        Assert.Equal("Aus", ValueShown(arcadia, xbox));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, xbox));
         arcadia.Press(UiAction.Left);
         Assert.Equal("An", ValueShown(arcadia, xbox));
         arcadia.Press(UiAction.Accept);
-        Assert.Equal("Aus", ValueShown(arcadia, xbox));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, xbox));
         arcadia.Press(UiAction.Up);
         AssertFocused(arcadia, gog, "▲");
 
@@ -90,7 +90,7 @@ public sealed class FirstRunViewTests
         arcadia.Key(Key.S);
         AssertFocused(arcadia, xbox, "S");
         arcadia.Key(Key.D);
-        Assert.Equal("Aus", ValueShown(arcadia, xbox));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, xbox));
         arcadia.Key(Key.A);
         Assert.Equal("An", ValueShown(arcadia, xbox));
         arcadia.Key(Key.S);
@@ -99,7 +99,7 @@ public sealed class FirstRunViewTests
         arcadia.Key(Key.W, times: 2);
         AssertFocused(arcadia, gog, "W");
         arcadia.Key(Key.D);
-        Assert.Equal("Aus", ValueShown(arcadia, gog));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, gog));
 
         arcadia.Key(Key.Enter);
         await AssertLibraryAsync(arcadia, ["Xbox"], "Enter");
@@ -118,14 +118,14 @@ public sealed class FirstRunViewTests
         Assert.Equal("An", ValueShown(arcadia, xbox));
 
         arcadia.Click(Toggle(arcadia, xbox));
-        Assert.Equal("Aus", ValueShown(arcadia, xbox));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, xbox));
         arcadia.Click(Arrows(arcadia, xbox)[1]);
         Assert.Equal("An", ValueShown(arcadia, xbox));
 
         // A click on the switch of the row not focused yet: the hover focuses it on the way there.
         arcadia.Click(Toggle(arcadia, gog));
         AssertFocused(arcadia, gog, "Klick auf GOGs Schalter");
-        Assert.Equal("Aus", ValueShown(arcadia, gog));
+        Assert.Equal(AppTexts.Off, ValueShown(arcadia, gog));
 
         arcadia.Click(Finish(arcadia));
         await AssertLibraryAsync(arcadia, ["Xbox"], "Klick auf Fertig");

@@ -101,13 +101,13 @@ public sealed class ArcadiaUpdateService
         }
         catch (TimeoutException)
         {
-            LastError = manual ? "Die Suche nach Updates ist fehlgeschlagen: GitHub antwortet nicht." : null;
+            LastError = manual ? AppTexts.UpdateCheckNoAnswer : null;
             Log?.Invoke($"Arcadia-Update-Prüfung: keine Antwort nach {CheckTimeout.TotalSeconds:0} s");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // In the background (offline, GitHub unreachable) try again later without bothering the user.
-            LastError = manual ? $"Die Suche nach Updates ist fehlgeschlagen: {ex.Message}" : null;
+            LastError = manual ? AppTexts.UpdateCheckFailed(ex.Message) : null;
             Log?.Invoke($"Arcadia-Update-Prüfung fehlgeschlagen: {ex.Message}");
         }
         finally
@@ -176,7 +176,7 @@ public sealed class ArcadiaUpdateService
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            LastError = $"Das Update konnte nicht geladen werden: {ex.Message}";
+            LastError = AppTexts.UpdateDownloadFailed(ex.Message);
             Log?.Invoke($"Arcadia-Update fehlgeschlagen: {ex}");
         }
         finally

@@ -18,12 +18,12 @@ namespace Arcadia.App.Settings;
 /// </summary>
 public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILauncherCategory
 {
-    private const string ActiveGroup = "AKTIV · ERSCHEINEN ALS TABS";
-    private const string InactiveGroup = "NICHT AKTIV";
-    private const string DropGroup = "NICHT AKTIV · HIERHER VERSCHIEBEN SCHALTET IHN AB";
+    private static string ActiveGroup => AppTexts.LauncherGroupActive;
+    private static string InactiveGroup => AppTexts.LauncherGroupInactive;
+    private static string DropGroup => AppTexts.LauncherGroupDrop;
     private const string ListL3Action = "Verschieben";
 
-    private const string ListXAction = "Alle neu einlesen";
+    private static string ListXAction => AppTexts.RescanAll;
 
     private readonly ILauncherSettingsHost _host;
     private readonly SettingsChanges _changes;
@@ -68,15 +68,15 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _controller = new LauncherControllerRows(this);
 
         // X does the same; the row is there so that the mouse alone can do it too.
-        _rescanAllRow = new ActionRowViewModel("launchers-rescan-all", "Alle neu einlesen", RescanAll)
+        _rescanAllRow = new ActionRowViewModel("launchers-rescan-all", AppTexts.RescanAll, RescanAll)
         {
             Group = LauncherLibraryRows.LibraryGroup,
-            ActionText = "Jetzt einlesen",
+            ActionText = AppTexts.ScanNow,
             ShortcutPad = "X",
             ShortcutKeys = "F",
             Info =
             [
-                new InfoText("Liest die Spiele aller aktiven Launcher sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
+                new InfoText(AppTexts.RescanAllInfo),
             ],
         };
 
@@ -156,7 +156,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         }
 
         _rescanAllRow.IsEnabled = active.Count > 0;
-        _rescanAllRow.Subtitle = active.Count > 0 ? "Liest die Spiele aller aktiven Launcher neu ein" : "Kein Launcher aktiv";
+        _rescanAllRow.Subtitle = active.Count > 0 ? AppTexts.RescanAllSubtitle : AppTexts.NoLauncherActive;
         SetRows([.. active.Select(id => _rows[id]), .. inactive.Select(id => _rows[id]), _rescanAllRow]);
     }
 
@@ -393,7 +393,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _head.Badge = row.Badge;
         _head.Name = row.Launcher.DisplayName;
         _head.IsActive = isActive;
-        _head.StateText = isActive ? $"Aktiv · Tab {tabs.ToList().IndexOf(row) + 1}" : isFound ? "Nicht aktiv" : "Nicht installiert";
+        _head.StateText = isActive ? $"Aktiv · Tab {tabs.ToList().IndexOf(row) + 1}" : isFound ? AppTexts.NotActive : AppTexts.NotInstalled;
         var order = _order.ListOrder();
         var place = order.ToList().IndexOf(row.Launcher.Id);
         LauncherNeighbour? Neighbour(int delta) => order.Count < 2 ? null

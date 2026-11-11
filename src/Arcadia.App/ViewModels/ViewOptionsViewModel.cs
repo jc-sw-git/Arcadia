@@ -82,12 +82,14 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         var blocked = PageSizes.Options.Where(size => !PageSizes.IsAllowed(size, gameCount)).ToList();
         var largest = PageSizes.Allowed(gameCount)[^1];
         var pageSizeNote = note ?? (blocked.Count == 0
-            ? $"{tabName} hat {gameCount} Spiele – alle Seitengrößen wählbar."
-            : $"{tabName} hat {gameCount} Spiele – {largest} pro Seite zeigt bereits alle, {JoinGerman(blocked)} {(blocked.Count == 1 ? "ist" : "sind")} daher nicht wählbar.");
+            ? AppTexts.ViewOptionsAllPageSizes(tabName, gameCount)
+            : blocked.Count == 1
+                ? AppTexts.ViewOptionsPageSizeBlocked(tabName, gameCount, largest, JoinGerman(blocked))
+                : AppTexts.ViewOptionsPageSizesBlocked(tabName, gameCount, largest, JoinGerman(blocked)));
 
         return new ViewOptionsViewModel(
-            "Ansicht",
-            "Sortierung und Einträge pro Seite, gültig für alle Launcher",
+            AppTexts.ViewOptionsTitle,
+            AppTexts.ViewOptionsSubtitle,
             [],
             SortRowsFor(sort, order => applySort(order!.Value), withRelevance: false),
             pageSizes,
@@ -101,8 +103,8 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         var options = launchers.Select(l => new OptionViewModel(l.Label, l.IsOn, true, l.Toggle)).ToList();
         var rows = options.Chunk(LauncherColumns).Select(row => (IReadOnlyList<OptionViewModel>)row).ToList();
         return new ViewOptionsViewModel(
-            "Filter und Sortierung",
-            "Gilt nur für diese Suche",
+            AppTexts.ViewOptionsSearchTitle,
+            AppTexts.ViewOptionsSearchSubtitle,
             rows,
             SortRowsFor(sort, applySort, withRelevance: true),
             [],
@@ -181,14 +183,14 @@ public sealed class ViewOptionsViewModel : ViewModelBase
 
         List<SortRowViewModel> rows =
         [
-            new("Name", [SortOption(SortField.Name, SortDirection.Ascending, "A → Z"), SortOption(SortField.Name, SortDirection.Descending, "Z → A")]),
-            new("Installationsdatum", [SortOption(SortField.InstalledAt, SortDirection.Descending, "Neueste zuerst"), SortOption(SortField.InstalledAt, SortDirection.Ascending, "Älteste zuerst")]),
-            new("Zuletzt gespielt", [SortOption(SortField.LastPlayed, SortDirection.Descending, "Neueste zuerst"), SortOption(SortField.LastPlayed, SortDirection.Ascending, "Älteste zuerst")]),
+            new(AppTexts.SortName, [SortOption(SortField.Name, SortDirection.Ascending, "A → Z"), SortOption(SortField.Name, SortDirection.Descending, "Z → A")]),
+            new("Installationsdatum", [SortOption(SortField.InstalledAt, SortDirection.Descending, AppTexts.NewestFirst), SortOption(SortField.InstalledAt, SortDirection.Ascending, AppTexts.SortOldestFirst)]),
+            new(AppTexts.SortLastPlayed, [SortOption(SortField.LastPlayed, SortDirection.Descending, AppTexts.NewestFirst), SortOption(SortField.LastPlayed, SortDirection.Ascending, AppTexts.SortOldestFirst)]),
         ];
 
         if (withRelevance)
         {
-            rows.Insert(0, new("Relevanz", [new OptionViewModel("Beste Treffer zuerst", sort is null, true, () => apply(null))]));
+            rows.Insert(0, new("Relevanz", [new OptionViewModel(AppTexts.BestHitsFirst, sort is null, true, () => apply(null))]));
         }
 
         return rows;
@@ -261,6 +263,6 @@ public sealed class ViewOptionsViewModel : ViewModelBase
     {
         0 => string.Empty,
         1 => values[0].ToString(System.Globalization.CultureInfo.InvariantCulture),
-        _ => string.Join(", ", values.Take(values.Count - 1)) + " und " + values[^1],
+        _ => string.Join(", ", values.Take(values.Count - 1)) + AppTexts.JoinAnd + values[^1],
     };
 }

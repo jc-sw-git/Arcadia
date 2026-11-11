@@ -30,9 +30,9 @@ public sealed class DetailPageViewTests
 
         OpenByHoldingA(arcadia);
         AssertDetailOf(arcadia, third);
-        Assert.Equal(["B", "Bibliothek", "/", "GOG Galaxy", "/", third], Crumbs(arcadia));
+        Assert.Equal(["B", AppTexts.Library, "/", "GOG Galaxy", "/", third], Crumbs(arcadia));
         Assert.Single(arcadia.WithText("3 von 31"));
-        Assert.Single(arcadia.WithText("Name A–Z"));
+        Assert.Single(arcadia.WithText(AppTexts.SortNameAscending));
 
         // The game in the middle, its neighbours cut off at the window's edges and dimmed.
         var pages = Pages(arcadia);
@@ -140,7 +140,7 @@ public sealed class DetailPageViewTests
         var page = CentrePage(arcadia);
         var buttons = DetailButtons(page);
 
-        Assert.Equal(["Spielen", "Zu Favoriten", "In GOG Galaxy öffnen", "Artwork ändern", "Deinstallieren …"], buttons.Select(Label));
+        Assert.Equal(["Spielen", AppTexts.ActionToFavorites, "In GOG Galaxy öffnen", AppTexts.ActionChangeArtwork, AppTexts.ActionUninstallMore], buttons.Select(Label));
         Assert.Equal([true, false, true, false, true], buttons.Select(button => button.IsEffectivelyEnabled));
         Assert.True(buttons[0].Classes.Contains("focused"), "„Spielen“ ist fokussiert.");
 
@@ -157,8 +157,8 @@ public sealed class DetailPageViewTests
         arcadia.Press(UiAction.Right);
         Assert.Equal("In GOG Galaxy öffnen", Label(Focused(arcadia)));
         arcadia.Press(UiAction.Down);
-        Assert.Equal("Deinstallieren …", Label(Focused(arcadia)));
-        Assert.Equal("Folgt in einer späteren Version", ToolTip.GetTip(buttons[1]));
+        Assert.Equal(AppTexts.ActionUninstallMore, Label(Focused(arcadia)));
+        Assert.Equal(AppTexts.ActionNotYetAvailable, ToolTip.GetTip(buttons[1]));
         Assert.Empty(arcadia.WithText("Nur in GOG Galaxy möglich – öffnet GOG Galaxy"));
 
         // ⧉ opens no menu here.

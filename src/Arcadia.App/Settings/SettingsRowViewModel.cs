@@ -149,7 +149,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public virtual bool CanActivate => false;
 
     /// <summary>What A does, for the footer.</summary>
-    public virtual string ActivateText => "Auswählen";
+    public virtual string ActivateText => AppTexts.Select;
 
     /// <summary>The footer names A. A choice doesn't: A only counts on there, which ◀ ▶ already say.</summary>
     public virtual bool ShowsActivateHint => CanActivate;
@@ -242,7 +242,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public override bool CanActivate => true;
 
-    public override string ActivateText => "Ändern";
+    public override string ActivateText => AppTexts.Change;
 
     public override bool ShowsActivateHint => false;
 
@@ -266,7 +266,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     }
 
     /// <summary>"1 Sekunde", "3 Sekunden".</summary>
-    public static string Seconds(int value) => value == 1 ? "1 Sekunde" : $"{value} Sekunden";
+    public static string Seconds(int value) => value == 1 ? "1 Sekunde" : AppTexts.Seconds(value);
 
     protected virtual void OnValueShown()
     {
@@ -295,11 +295,11 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
 /// <summary>On or off, a choice of two: ◀, ▶ and A all switch it.</summary>
 public partial class SwitchRowViewModel(string key, string title, Func<bool> get, Action<bool> set)
-    : ChoiceRowViewModel(key, title, () => get() ? 1 : 0, value => set(value == 1), value => value == 1 ? "An" : "Aus", 0, 1)
+    : ChoiceRowViewModel(key, title, () => get() ? 1 : 0, value => set(value == 1), value => value == 1 ? AppTexts.On : AppTexts.Off, 0, 1)
 {
     public bool IsOn => get();
 
-    public override string ActivateText => "Umschalten";
+    public override string ActivateText => AppTexts.Toggle;
 
     public override bool ShowsActivateHint => true;
 

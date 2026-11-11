@@ -98,10 +98,10 @@ public sealed record DriverInstallPlan(bool Prompt, bool Viiper, bool SteamClose
 /// </summary>
 public sealed class DriverInstallProgress
 {
-    public const string RunningTitle = "Treiber werden installiert";
-    public const string FailedTitle = "Installation fehlgeschlagen";
-    public const string PromptRunningText = "Bitte bestätige die Windows-Abfrage";
-    public const string UsbipRunningDetail = "kann einige Minuten dauern";
+    public static string RunningTitle => ControllerSupportTexts.DriversRunningTitle;
+    public static string FailedTitle => ControllerSupportTexts.InstallFailedTitle;
+    public static string PromptRunningText => ControllerSupportTexts.DriversPromptRunning;
+    public static string UsbipRunningDetail => ControllerSupportTexts.DriversUsbipRunningDetail;
 
     private static readonly DriverInstallStepKind[] PanSteps = [DriverInstallStepKind.UsbipInstall, DriverInstallStepKind.HidHideInstall, DriverInstallStepKind.PanSetup];
 
@@ -202,7 +202,7 @@ public sealed class DriverInstallProgress
         }
 
         entry.Fraction = total is > 0 ? Math.Clamp((double)received / total.Value, 0, 1) : 0;
-        entry.Detail = total is > 0 ? $"{Megabytes(received)} von {Megabytes(total.Value)} MB" : null;
+        entry.Detail = total is > 0 ? ControllerSupportTexts.DownloadProgress(Megabytes(received), Megabytes(total.Value)) : null;
     });
 
     public void Complete(DriverInstallStepKind kind) => Update(kind, entry =>
@@ -390,17 +390,17 @@ public sealed class DriverInstallProgress
 
     private static string TitleOf(DriverInstallStepKind kind) => kind switch
     {
-        DriverInstallStepKind.Prompt => "Windows-Abfrage bestätigen",
-        DriverInstallStepKind.Viiper => "VIIPER herunterladen und einrichten",
-        DriverInstallStepKind.SteamClose => "Steam beenden",
+        DriverInstallStepKind.Prompt => ControllerSupportTexts.StepConfirmPrompt,
+        DriverInstallStepKind.Viiper => ControllerSupportTexts.StepViiper,
+        DriverInstallStepKind.SteamClose => ControllerSupportTexts.StepSteamStop,
         DriverInstallStepKind.UsbipDownload => "usbip-win2 herunterladen",
-        DriverInstallStepKind.HidHideDownload => "HidHide herunterladen",
-        DriverInstallStepKind.UsbipInstall => "usbip-win2 installieren",
-        DriverInstallStepKind.HidHideInstall => "HidHide installieren",
-        DriverInstallStepKind.PanSetup => "Pan einrichten",
+        DriverInstallStepKind.HidHideDownload => ControllerSupportTexts.StepHidHideDownload,
+        DriverInstallStepKind.UsbipInstall => ControllerSupportTexts.StepUsbipInstall,
+        DriverInstallStepKind.HidHideInstall => ControllerSupportTexts.StepHidHideInstall,
+        DriverInstallStepKind.PanSetup => ControllerSupportTexts.StepPanSetUp,
         DriverInstallStepKind.PanFallback => RunningTitle,
-        DriverInstallStepKind.SteamStart => "Steam starten",
-        _ => "Arcadia neu starten",
+        DriverInstallStepKind.SteamStart => ControllerSupportTexts.StepSteamStart,
+        _ => ControllerSupportTexts.StepArcadiaRestart,
     };
 
     private sealed class Entry(DriverInstallStepKind kind, double? weight = null)

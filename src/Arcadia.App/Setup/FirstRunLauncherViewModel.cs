@@ -65,7 +65,7 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(StateText))]
     public partial int TabNumber { get; set; }
 
-    public string ValueText => IsOn ? "An" : "Aus";
+    public string ValueText => IsOn ? AppTexts.On : AppTexts.Off;
 
     /// <summary>A choice of two wraps like every ◀ ▶ selector, so both arrows switch it (owner, 2026-10-24).</summary>
     public bool CanDecrease => IsFound;
@@ -75,18 +75,18 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
     /// <summary>The line below its name, e.g. "Gefunden · 128 Spiele".</summary>
     public string StatusText => (IsFound, _games?.Count) switch
     {
-        (false, _) => "Auf diesem PC nicht gefunden",
-        (true, null) => "Gefunden",
-        (true, 0) => "Gefunden · noch keine Spiele",
-        (true, var count) => $"Gefunden · {GameCount(count.Value)}",
+        (false, _) => AppTexts.FirstRunNotFound,
+        (true, null) => AppTexts.Found,
+        (true, 0) => AppTexts.FirstRunFoundNoGames,
+        (true, var count) => AppTexts.FoundWithGames(GameCount(count.Value)),
     };
 
     /// <summary>The line below its name in the info panel, e.g. "An · wird Tab 2".</summary>
     public string StateText => (IsFound, IsOn) switch
     {
-        (false, _) => "Nicht installiert",
-        (true, true) => $"An · wird Tab {TabNumber}",
-        _ => "Aus · bekommt keinen Tab",
+        (false, _) => AppTexts.NotInstalled,
+        (true, true) => AppTexts.FirstRunOnBecomesTab(TabNumber),
+        _ => AppTexts.FirstRunOffNoTab,
     };
 
     public string GamesText
@@ -99,12 +99,12 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
             }
 
             var installed = games.Count(g => g.IsInstalled);
-            return installed == games.Count ? GameCount(games.Count) : $"{games.Count} · {installed} installiert";
+            return installed == games.Count ? GameCount(games.Count) : AppTexts.CountOfThemInstalled(games.Count, installed);
         }
     }
 
     /// <summary>Where it was found, e.g. "C:\Program Files (x86)\Steam".</summary>
-    public string LocationText => _location ?? "Nicht gefunden";
+    public string LocationText => _location ?? AppTexts.NotFound;
 
     /// <param name="games">Its games as read; null if it wasn't read.</param>
     public void Show(bool isFound, string? location, IReadOnlyList<Game>? games)
@@ -163,5 +163,5 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
         Change(1);
     }
 
-    private static string GameCount(int count) => count == 1 ? "1 Spiel" : $"{count} Spiele";
+    private static string GameCount(int count) => count == 1 ? AppTexts.GameCountOne : AppTexts.GameCountMany(count);
 }

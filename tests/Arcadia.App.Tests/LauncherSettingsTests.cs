@@ -50,7 +50,7 @@ public sealed class LauncherSettingsTests
 
         // Anything but ▲ ▼, Y and B waits until the launcher is put down.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal("Launcher", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings!.Selected.Name);
 
         arcadia.Press(UiAction.Back);
         Assert.True(arcadia.Main.IsSettingsOpen);
@@ -70,7 +70,7 @@ public sealed class LauncherSettingsTests
         arcadia.Press(UiAction.Down).Press(UiAction.ViewOptions).Press(UiAction.Down, times: 2);
         var xbox = Assert.IsType<LauncherRowViewModel>(launchers.FocusedRow);
         Assert.Equal(["gog", "amazon", "xbox"], launchers.LauncherKeys());
-        Assert.StartsWith("NICHT AKTIV", xbox.Group, StringComparison.Ordinal);
+        Assert.StartsWith(AppTexts.LauncherGroupInactive, xbox.Group, StringComparison.Ordinal);
 
         arcadia.Press(UiAction.ViewOptions);
         Assert.False(xbox.IsActive);
@@ -103,11 +103,11 @@ public sealed class LauncherSettingsTests
         Assert.Equal(["GOG Galaxy"], tabs.Tabs.Where(tab => tab.IsHighlighted).Select(tab => tab.Name));
         var head = Assert.IsType<InfoLauncher>(gog.Info[0]);
         Assert.Equal(("GOG Galaxy", "Aktiv · Tab 1"), (head.Name, head.StateText));
-        Assert.Equal("3 Spiele, davon 2 installiert", gog.Fact("Einträge"));
-        Assert.Equal("gerade eben", gog.Fact("Zuletzt eingelesen"));
-        Assert.Equal("Test", gog.Fact("Gefunden unter"));
-        Assert.Equal("werden überwacht", gog.Fact("Installationen"));
-        Assert.Equal("an ihren Prozessen erkannt", gog.Fact("Laufende Spiele"));
+        Assert.Equal("3 Spiele, davon 2 installiert", gog.Fact(AppTexts.FactEntries));
+        Assert.Equal(AppTexts.JustNow, gog.Fact(AppTexts.FactLastScanned));
+        Assert.Equal("Test", gog.Fact(AppTexts.FoundAt));
+        Assert.Equal(AppTexts.FactWatched, gog.Fact("Installationen"));
+        Assert.Equal(AppTexts.FactDetectedByProcesses, gog.Fact(AppTexts.ErrorContextRunningGames));
 
         // An inactive launcher is not in the tab strip.
         arcadia.Press(UiAction.Down, times: 2);
@@ -116,9 +116,9 @@ public sealed class LauncherSettingsTests
         tabs = Assert.IsType<InfoTabBar>(Assert.Single(amazon.Preview));
         Assert.Equal(["GOG Galaxy", "Xbox"], tabs.Tabs.Select(tab => tab.Name));
         Assert.DoesNotContain(tabs.Tabs, tab => tab.IsHighlighted);
-        Assert.Equal("Nicht aktiv", Assert.IsType<InfoLauncher>(amazon.Info[0]).StateText);
-        Assert.Equal("nicht eingelesen", amazon.Fact("Spiele"));
-        Assert.Equal("nicht überwacht", amazon.Fact("Installationen"));
+        Assert.Equal(AppTexts.NotActive, Assert.IsType<InfoLauncher>(amazon.Info[0]).StateText);
+        Assert.Equal(AppTexts.FactNotScanned, amazon.Fact(AppTexts.GameTypeGames));
+        Assert.Equal(AppTexts.FactNotWatched, amazon.Fact("Installationen"));
     }
 
     [AvaloniaFact]
@@ -128,12 +128,12 @@ public sealed class LauncherSettingsTests
         using var arcadia = await ArcadiaDriver.StartAsync(LauncherSettingsDriving.WithoutFolders);
         arcadia.Time.Advance(TimeSpan.FromMinutes(10));
         var settings = arcadia.OpenLauncherSettings();
-        Assert.Equal("vor 10 Min.", settings.FocusedRow!.Fact("Zuletzt eingelesen"));
+        Assert.Equal("vor 10 Min.", settings.FocusedRow!.Fact(AppTexts.FactLastScanned));
 
         arcadia.Press(UiAction.Search);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == "Alle Launcher sind neu eingelesen.", "der Toast nach dem Einlesen");
 
-        Assert.All(settings.Rows.OfType<LauncherRowViewModel>(), row => Assert.Equal("gerade eben", row.Fact("Zuletzt eingelesen")));
+        Assert.All(settings.Rows.OfType<LauncherRowViewModel>(), row => Assert.Equal(AppTexts.JustNow, row.Fact(AppTexts.FactLastScanned)));
     }
 
     [AvaloniaFact]
@@ -143,17 +143,17 @@ public sealed class LauncherSettingsTests
         using var arcadia = await ArcadiaDriver.StartAsync(LauncherSettingsDriving.WithoutFolders);
         arcadia.Time.Advance(TimeSpan.FromMinutes(10));
         var settings = arcadia.OpenLauncherSettings();
-        Assert.Equal("vor 10 Min.", settings.FocusedRow!.Fact("Zuletzt eingelesen"));
+        Assert.Equal("vor 10 Min.", settings.FocusedRow!.Fact(AppTexts.FactLastScanned));
 
         arcadia.Press(UiAction.Down, times: 3);
         var row = Assert.IsType<ActionRowViewModel>(settings.FocusedRow);
-        Assert.Equal(("Alle neu einlesen", "BIBLIOTHEK"), (row.Title, row.Group));
-        Assert.Equal(("Jetzt einlesen", "X"), (row.ActionText, row.ShortcutPad));
+        Assert.Equal((AppTexts.RescanAll, AppTexts.LibraryGroup), (row.Title, row.Group));
+        Assert.Equal((AppTexts.ScanNow, "X"), (row.ActionText, row.ShortcutPad));
         Assert.True(row.CanActivate);
 
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == "Alle Launcher sind neu eingelesen.", "der Toast nach dem Einlesen");
-        Assert.All(settings.Rows.OfType<LauncherRowViewModel>(), launcher => Assert.Equal("gerade eben", launcher.Fact("Zuletzt eingelesen")));
+        Assert.All(settings.Rows.OfType<LauncherRowViewModel>(), launcher => Assert.Equal(AppTexts.JustNow, launcher.Fact(AppTexts.FactLastScanned)));
     }
 
     [AvaloniaFact]
@@ -165,9 +165,9 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.Down, times: 3);
         var row = Assert.IsType<ActionRowViewModel>(settings.FocusedRow);
-        Assert.Equal("Alle neu einlesen", row.Title);
+        Assert.Equal(AppTexts.RescanAll, row.Title);
         Assert.False(row.IsEnabled);
-        Assert.Equal("Kein Launcher aktiv", row.Subtitle);
+        Assert.Equal(AppTexts.NoLauncherActive, row.Subtitle);
 
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Toast.Text);
@@ -183,7 +183,7 @@ public sealed class LauncherSettingsTests
         arcadia.Press(UiAction.NextTab);
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.TabNames());
         var empty = arcadia.Main.Library.EmptyTab!;
-        Assert.Equal(("Keine Spiele in Xbox", "Neu einlesen"), (empty.Title, empty.RescanText));
+        Assert.Equal(("Keine Spiele in Xbox", AppTexts.Rescan), (empty.Title, empty.RescanText));
         Assert.True(empty.IsSettingsFocused);
 
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
@@ -192,7 +192,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.Left).Press(UiAction.Accept);
         Assert.True(arcadia.Main.IsSettingsOpen);
-        Assert.Equal("Launcher", arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings!.Selected.Name);
         Assert.Equal("xbox", arcadia.Main.Settings.Selected.FocusedRow?.Key);
     }
 
@@ -206,7 +206,7 @@ public sealed class LauncherSettingsTests
         arcadia.Press(UiAction.NextTab);
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.TabNames());
         var empty = arcadia.Main.Library.EmptyTab!;
-        Assert.Equal(("Xbox nicht gefunden", "Erneut suchen"), (empty.Title, empty.RescanText));
+        Assert.Equal(("Xbox nicht gefunden", AppTexts.SearchAgain), (empty.Title, empty.RescanText));
 
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == "Xbox ist weiterhin nicht zu finden.", "der Toast nach dem Suchen");
@@ -225,7 +225,7 @@ public sealed class LauncherSettingsTests
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
         var empty = arcadia.Main.Library.EmptyTab!;
         Assert.True(empty.HasNoLauncher);
-        Assert.Equal("Kein Launcher aktiv", empty.Title);
+        Assert.Equal(AppTexts.NoLauncherActive, empty.Title);
         Assert.False(empty.CanRescan);
         Assert.DoesNotContain("demo", empty.Text, StringComparison.OrdinalIgnoreCase);
 
@@ -235,7 +235,7 @@ public sealed class LauncherSettingsTests
         Assert.True(empty.IsSettingsFocused);
 
         arcadia.Press(UiAction.Accept);
-        Assert.Equal("Launcher", arcadia.Main.Settings?.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings?.Selected.Name);
     }
 
     [AvaloniaFact]
@@ -248,7 +248,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.Down);
         var xbox = settings.FocusedRow!;
-        Assert.Equal(("xbox", "Keine Spiele gefunden"), (xbox.Key, ((LauncherRowViewModel)xbox).StatusText));
+        Assert.Equal(("xbox", AppTexts.NoGamesFound), (xbox.Key, ((LauncherRowViewModel)xbox).StatusText));
         Assert.Equal(HealthSeverity.Info, xbox.Severity);
         Assert.True(Assert.Single(xbox.Info.OfType<InfoNote>()).IsInfo);
         Assert.Null(settings.Marker);
@@ -264,7 +264,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.Down);
         var xbox = settings.FocusedRow!;
-        Assert.Equal(("xbox", "Nicht gefunden"), (xbox.Key, ((LauncherRowViewModel)xbox).StatusText));
+        Assert.Equal(("xbox", AppTexts.NotFound), (xbox.Key, ((LauncherRowViewModel)xbox).StatusText));
         Assert.Equal(HealthSeverity.Warning, xbox.Severity);
         Assert.False(Assert.Single(xbox.Info.OfType<InfoNote>()).IsInfo);
         Assert.Equal(HealthSeverity.Warning, settings.Marker);

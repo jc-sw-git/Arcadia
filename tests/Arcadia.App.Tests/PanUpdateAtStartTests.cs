@@ -69,8 +69,8 @@ public sealed class PanUpdateAtStartTests
         Assert.NotNull(page);
         Assert.Equal(PanUpdatePageViewModel.NoticeTitle, page.Title);
         Assert.Equal(PanUpdatePageViewModel.NoticeHint, page.Hint);
-        Assert.Equal("Aktualisieren", page.ConfirmText);
-        Assert.Equal("Ohne Pan weiter", page.CancelText);
+        Assert.Equal(AppTexts.Update, page.ConfirmText);
+        Assert.Equal(AppTexts.ContinueWithoutPan, page.CancelText);
 
         // Pan answered: no prompt opens by itself (#326).
         await arcadia.PanAnsweredAtStartAsync();
@@ -340,8 +340,8 @@ public sealed class PanUpdateAtStartTests
 
         Assert.Equal(PanUpdatePageViewModel.StuckTitle, page.Title);
         Assert.Equal(PanUpdatePageViewModel.RestoreHint, page.Hint);
-        Assert.Equal("Controller wiederherstellen", page.ConfirmText);
-        Assert.Equal("Arcadia beenden", page.CancelText);
+        Assert.Equal(AppTexts.PanRestoreControllers, page.ConfirmText);
+        Assert.Equal(AppTexts.QuitArcadia, page.CancelText);
         Assert.Equal(0, steam.Restores);
 
         arcadia.Press(UiAction.Accept);
@@ -367,7 +367,7 @@ public sealed class PanUpdateAtStartTests
         Assert.Equal(PanUpdatePageViewModel.ManualTitle, page.Title);
         Assert.Equal(PanUpdatePageViewModel.RestoreDeclined, page.Error);
         Assert.True(page.ShowsSteps);
-        Assert.Equal("Erneut prüfen", page.ConfirmText);
+        Assert.Equal(AppTexts.CheckAgain, page.ConfirmText);
 
         // Still running: checking again counts down and comes back to the steps.
         arcadia.Press(UiAction.Accept);

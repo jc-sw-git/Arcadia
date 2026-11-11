@@ -66,7 +66,7 @@ public partial class App : Application
 
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
 
-    private const string PanJournalText = "Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\\Arcadia\\Pan";
+    private static string PanJournalText => AppTexts.PanJournalUnreadable;
 
     public override void Initialize()
     {
@@ -78,7 +78,7 @@ public partial class App : Application
         // An error in a UI event handler would otherwise end Arcadia; log it, show it, keep running.
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
-            AppErrors.Report(e.Exception, "Oberfläche");
+            AppErrors.Report(e.Exception, AppTexts.ErrorContextUi);
             e.Handled = true;
         };
 
@@ -193,30 +193,30 @@ public partial class App : Application
             viewModel.PanDialogs.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
             _gamepad.Start();
 
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), "Controller-Überwachung"));
+            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), AppTexts.ErrorContextControllerWatch));
             monitoring.Start();
 
-            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), "Xbox-Pad für Spiele"));
+            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), AppTexts.ErrorContextXboxPadForGames));
 
             // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
             // watch, rescan until the games it handed over are installed.
-            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, "Installationen verfolgen"));
+            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, AppTexts.ErrorContextFollowInstalls));
             installProgress.Start();
-            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, "Installationen prüfen"));
+            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, AppTexts.ErrorContextCheckInstalls));
             installs.Start();
-            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, "Update-Prüfung"));
+            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, AppTexts.ErrorContextUpdateCheck));
             updateCheck.Start();
 
             // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
             // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
             var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
-                await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, "Laufende Spiele"));
+                await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, AppTexts.ErrorContextRunningGames));
             running.Start();
-            window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
-            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget("Nach dem Spiel zurück zu Arcadia");
+            window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
+            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget(AppTexts.ErrorContextReturnAfterGame); // not a UI text (log)
 
             // The launcher's own window (Steam's error dialog) stays open behind Arcadia: Arcadia doesn't close other programs' windows (#277).
-            viewModel.Session.StartRefused += (_, gameKey) => ReturnAfterGameAsync(gameKey, "nicht gestartet").Forget("Nach abgebrochenem Start zurück zu Arcadia");
+            viewModel.Session.StartRefused += (_, gameKey) => ReturnAfterGameAsync(gameKey, "nicht gestartet").Forget(AppTexts.ErrorContextReturnAfterRefusedStart); // not a UI text (log)
 
             async Task ReturnAfterGameAsync(string gameKey, string what)
             {
@@ -276,7 +276,7 @@ public partial class App : Application
 
                 await xboxPad.TickAsync();
                 AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
-            }).Forget("Controller-Überwachung");
+            }).Forget(AppTexts.ErrorContextControllerWatch);
 
             desktop.ShutdownRequested += (_, _) =>
             {
@@ -305,9 +305,9 @@ public partial class App : Application
             // Version and Windows build first: a bug report with only the log must say what it is about.
             AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
                 + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
-            viewModel.Session.LoadAsync().Forget("Bibliothek laden");
-            viewModel.Session.PollRunningGamesAsync().Forget("Laufende Spiele");
-            updates.CheckIfDueAsync().Forget("Update-Prüfung");
+            viewModel.Session.LoadAsync().Forget(AppTexts.ErrorContextLoadLibrary);
+            viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
+            updates.CheckIfDueAsync().Forget(AppTexts.ErrorContextUpdateCheck);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -343,7 +343,7 @@ public partial class App : Application
         }
     }
 
-    public const string RestartFailedText = "Arcadia konnte sich nicht neu starten. Beende Arcadia und starte es dann wieder.";
+    public static string RestartFailedText => AppTexts.RestartFailed;
 
     private static int? DemoGames(string[] args)
     {

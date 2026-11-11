@@ -35,7 +35,7 @@ public sealed class StartTests
 
         var empty = Assert.IsType<Arcadia.App.ViewModels.EmptyTabViewModel>(arcadia.Main.Library.EmptyTab);
         Assert.True(empty.HasNoLauncher);
-        Assert.Equal("Kein Launcher aktiv", empty.Title);
+        Assert.Equal(AppTexts.NoLauncherActive, empty.Title);
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
         Assert.False(arcadia.Main.Toast.IsVisible, arcadia.Main.Toast.Text);
     }
@@ -88,7 +88,7 @@ public sealed class StartTests
 
         var line = ArcadiaDriver.Log.Split('\n').Single(line => line.Contains(marker));
         Assert.DoesNotContain(profile, line, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(Path.Combine("Spiele", marker, "game.exe"), line);
+        Assert.Contains(Path.Combine(AppTexts.GameTypeGames, marker, "game.exe"), line);
     }
 
     [AvaloniaFact]

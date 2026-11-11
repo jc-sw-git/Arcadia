@@ -33,9 +33,9 @@ public sealed class LauncherViewTests
         Assert.Equal("Aktiv", arcadia.ValueShown(arcadia.LauncherRow("xbox")));
 
         Switch(arcadia, arcadia.LauncherRow("xbox"), how);
-        Assert.Equal("Aus", arcadia.ValueShown(arcadia.LauncherRow("xbox")));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(arcadia.LauncherRow("xbox")));
         Assert.Equal(["gog", "amazon", "xbox"], arcadia.LauncherCategory().LauncherKeys());
-        var inactive = Assert.Single(arcadia.GroupHeadings(), heading => heading.Text!.StartsWith("NICHT AKTIV", StringComparison.Ordinal));
+        var inactive = Assert.Single(arcadia.GroupHeadings(), heading => heading.Text!.StartsWith(AppTexts.LauncherGroupInactive, StringComparison.Ordinal));
         Assert.True(arcadia.Bounds(arcadia.RowButton(arcadia.LauncherRow("xbox"))).Top > arcadia.Bounds(inactive).Bottom, "Xbox steht unter „Nicht aktiv“");
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Arcadia.TabNames());
 
@@ -88,7 +88,7 @@ public sealed class LauncherViewTests
 
         // A and D switch; F reads all again, the toast stands over the page.
         arcadia.Key(Key.A);
-        Assert.Equal("Aus", arcadia.ValueShown(arcadia.LauncherRow("gog")));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(arcadia.LauncherRow("gog")));
         arcadia.Arcadia.FocusRow("gog");
         arcadia.Key(Key.D);
         Assert.Equal("Aktiv", arcadia.ValueShown(arcadia.LauncherRow("gog")));
@@ -114,14 +114,14 @@ public sealed class LauncherViewTests
         // Off, it stands at the top of the inactive ones.
         Assert.Equal(["gog", "xbox", "amazon"], arcadia.LauncherCategory().LauncherKeys());
         Assert.False(arcadia.LauncherRow("xbox").IsActive);
-        Assert.Equal("Aus", arcadia.ValueShown(arcadia.LauncherRow("xbox")));
+        Assert.Equal(AppTexts.Off, arcadia.ValueShown(arcadia.LauncherRow("xbox")));
         Assert.Equal(["GOG Galaxy"], arcadia.Arcadia.TabNames());
         Assert.Equal(["gog"], arcadia.Arcadia.Settings.Current.ActiveLaunchers);
 
         // A click on the switch of Amazon, then on "Alle neu einlesen".
         arcadia.Click(arcadia.Toggle(arcadia.LauncherRow("amazon")));
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Arcadia.TabNames());
-        var readAll = Assert.Single(arcadia.LauncherCategory().Rows, row => row.Title == "Alle neu einlesen");
+        var readAll = Assert.Single(arcadia.LauncherCategory().Rows, row => row.Title == AppTexts.RescanAll);
         arcadia.Click(arcadia.RowButton(readAll));
         await AssertToastOverThePageAsync(arcadia, "Alle Launcher sind neu eingelesen.");
     }
@@ -170,7 +170,7 @@ public sealed class LauncherViewTests
         arcadia.Arcadia.FocusRow("gog");
         arcadia.Key(Key.A).Key(Key.Escape);
         var none = main.Library.EmptyTab!;
-        Assert.Equal("Kein Launcher aktiv", none.Title);
+        Assert.Equal(AppTexts.NoLauncherActive, none.Title);
         Assert.False(EmptyButton(arcadia, none.RescanCommand).IsEffectivelyVisible);
         if (how == "Tastatur")
         {
@@ -181,7 +181,7 @@ public sealed class LauncherViewTests
             arcadia.Click(EmptyButton(arcadia, none.OpenSettingsCommand));
         }
 
-        Assert.Equal("Launcher", main.Settings?.Selected.Name);
+        Assert.Equal(AppTexts.Launcher, main.Settings?.Selected.Name);
     }
 
     private static void Switch(ArcadiaWindow arcadia, LauncherRowViewModel row, string how)

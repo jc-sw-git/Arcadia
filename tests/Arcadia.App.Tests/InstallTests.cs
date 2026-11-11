@@ -26,7 +26,7 @@ public sealed class InstallTests
         var menu = arcadia.Main.GameMenu!;
 
         Assert.Equal("BRAVO", menu.Title);
-        Assert.Equal(["Installieren", "Details anzeigen", "Zu Favoriten hinzufügen", "In GOG Galaxy öffnen"], menu.Actions.Select(action => action.Label));
+        Assert.Equal([AppTexts.Install, AppTexts.ActionShowDetails, AppTexts.ActionAddToFavorites, "In GOG Galaxy öffnen"], menu.Actions.Select(action => action.Label));
         Assert.True(menu.Actions[0].IsEnabled);
         Assert.True(menu.Actions[0].IsFocused);
 
@@ -36,7 +36,7 @@ public sealed class InstallTests
         arcadia.Press(UiAction.Options);
         menu = arcadia.Main.GameMenu!;
 
-        Assert.Equal(["Wird installiert · 42\u00A0%", "Details anzeigen", "Zu Favoriten hinzufügen", "In GOG Galaxy öffnen"], menu.Actions.Select(action => action.Label));
+        Assert.Equal(["Wird installiert · 42\u00A0%", AppTexts.ActionShowDetails, AppTexts.ActionAddToFavorites, "In GOG Galaxy öffnen"], menu.Actions.Select(action => action.Label));
         Assert.False(menu.Actions[0].IsEnabled);
         Assert.False(menu.Actions[0].IsFocused);
 

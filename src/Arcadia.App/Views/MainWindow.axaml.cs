@@ -139,7 +139,7 @@ public partial class MainWindow : Window
         InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
-        Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget("Bibliothek aktualisieren");
+        Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
     }
 
     private void UpdateSortDivider()
@@ -196,8 +196,8 @@ public partial class MainWindow : Window
         {
             RequestAnimationFrame(_ =>
             {
-                Dispatcher.UIThread.Post(() => BuildKeyboard(SearchKeyboard, "der Suche"), DispatcherPriority.Background);
-                Dispatcher.UIThread.Post(() => BuildKeyboard(SettingsKeyboard, "der Einstellungen"), DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(() => BuildKeyboard(SearchKeyboard, AppTexts.KeyboardOfSearch), DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(() => BuildKeyboard(SettingsKeyboard, AppTexts.KeyboardOfSettings), DispatcherPriority.Background);
             });
             return;
         }
@@ -229,7 +229,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             // Only a head start: the page builds the keyboard itself when it shows it.
-            AppErrors.Report(ex, $"Tastatur {whose} vorbereiten");
+            AppErrors.Report(ex, AppTexts.ErrorContextPrepareKeyboard(whose));
         }
     }
 

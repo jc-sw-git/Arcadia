@@ -132,7 +132,7 @@ internal sealed class DriverInstallation(
                 Begin(DriverInstallStepKind.SteamClose);
                 if (steam.IsRunning)
                 {
-                    if (!await WithTimeoutAsync(t => steam.CloseAsync(time, t), SteamCloseTimeout, "Das Beenden von Steam", token))
+                    if (!await WithTimeoutAsync(t => steam.CloseAsync(time, t), SteamCloseTimeout, ControllerSupportTexts.TimeoutWhatSteamStop, token))
                     {
                         throw new InvalidOperationException(ControllerSupportService.SteamWontCloseText);
                     }
@@ -149,7 +149,7 @@ internal sealed class DriverInstallation(
             {
                 Begin(DriverInstallStepKind.UsbipDownload);
                 usbip = await WithTimeoutAsync(t => platform.DownloadUsbipInstallerAsync(http, run.InstallersFolder, Bytes(DriverInstallStepKind.UsbipDownload), t),
-                    UsbipDownloadTimeout, "Der usbip-win2-Download", token);
+                    UsbipDownloadTimeout, ControllerSupportTexts.TimeoutWhatUsbipDownload, token);
                 usbipSha = Sha256Of(usbip);
                 progress.Complete(DriverInstallStepKind.UsbipDownload);
             }
@@ -158,7 +158,7 @@ internal sealed class DriverInstallation(
             {
                 Begin(DriverInstallStepKind.HidHideDownload);
                 hidHide = await WithTimeoutAsync(t => platform.DownloadHidHideInstallerAsync(http, run.InstallersFolder, Bytes(DriverInstallStepKind.HidHideDownload), t),
-                    HidHideDownloadTimeout, "Der HidHide-Download", token);
+                    HidHideDownloadTimeout, ControllerSupportTexts.TimeoutWhatHidHideDownload, token);
                 progress.Complete(DriverInstallStepKind.HidHideDownload);
             }
 
@@ -196,7 +196,7 @@ internal sealed class DriverInstallation(
             if (time.GetUtcNow() - start >= PanTimeout)
             {
                 // The step Pan is at turns red, not the first one Arcadia started (S6).
-                var timeout = new TimeoutException($"Die Treiber-Installation hat nicht innerhalb von {PanTimeout.TotalSeconds:0} Sekunden geantwortet.");
+                var timeout = new TimeoutException(ControllerSupportTexts.DriversInstallNoAnswer(PanTimeout.TotalSeconds));
                 _panDecided = true;
                 progress.PanEnded(FailedPanStep(run) ?? progress.OpenPanStep(), timeout.Message);
                 throw timeout;
@@ -270,7 +270,7 @@ internal sealed class DriverInstallation(
         {
             await viiper.InstallAsync(http, Bytes(DriverInstallStepKind.Viiper), t);
             return true;
-        }, ViiperTimeout, "Der VIIPER-Download", cancellationToken);
+        }, ViiperTimeout, ControllerSupportTexts.TimeoutWhatViiperDownload, cancellationToken);
         Log?.Invoke("VIIPER eingerichtet");
         progress.Complete(DriverInstallStepKind.Viiper);
     }
@@ -314,7 +314,7 @@ internal sealed class DriverInstallation(
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException($"{what} dauerte länger als {timeout.TotalMinutes:0} Minuten – die Installation wurde abgebrochen.");
+            throw new TimeoutException(ControllerSupportTexts.InstallTookTooLong(what, timeout.TotalMinutes));
         }
     }
 

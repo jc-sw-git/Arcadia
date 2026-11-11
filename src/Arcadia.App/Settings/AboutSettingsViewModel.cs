@@ -16,7 +16,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
     public const string InstallKey = "arcadia-install";
 
     /// <summary>The download's progress, here and on the status modal's update entry.</summary>
-    public static string LoadingText(string version, int percent) => $"Version {version} wird geladen … {percent} %";
+    public static string LoadingText(string version, int percent) => AppTexts.AboutLoading(version, percent);
 
     private readonly ArcadiaUpdateService _updates;
     private readonly InfoRowViewModel _version;
@@ -35,25 +35,25 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
 
     public AboutSettingsViewModel(ArcadiaUpdateService updates, Func<Task> installUpdate, RecentMessages messages, SettingsChanges changes, ILogFiles logs,
         TimeProvider time, Action<LogKind> openLog)
-        : base("Über Arcadia", "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z M12 11v6 M12 7.5v.01")
+        : base(AppTexts.AboutTitle, "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z M12 11v6 M12 7.5v.01")
     {
         _updates = updates;
         _messages = messages;
         _logging = new LoggingRows(messages, changes, logs, openLog);
         _version = new InfoRowViewModel("arcadia-version", $"Arcadia {updates.CurrentVersion}") { Group = Group };
-        _check = new ActionRowViewModel("arcadia-check", "Nach Updates suchen", () => updates.CheckNowAsync().Forget("Update-Prüfung"))
+        _check = new ActionRowViewModel("arcadia-check", AppTexts.AboutCheckForUpdates, () => updates.CheckNowAsync().Forget(AppTexts.ErrorContextUpdateCheck))
         {
             Group = Group,
-            Subtitle = "Arcadia sucht auch von selbst alle 6 Stunden",
+            Subtitle = AppTexts.AboutChecksByItself,
         };
-        _install = new ActionRowViewModel(InstallKey, "Jetzt aktualisieren", () => installUpdate().Forget("Arcadia aktualisieren"))
+        _install = new ActionRowViewModel(InstallKey, AppTexts.UpdateNow, () => installUpdate().Forget(AppTexts.ErrorContextUpdateArcadia))
         {
             Group = Group,
-            Subtitle = "Arcadia schließt sich, installiert das Update und startet neu",
-            ActionText = "Jetzt aktualisieren",
+            Subtitle = AppTexts.AboutInstallSubtitle,
+            ActionText = AppTexts.UpdateNow,
             IsPrimary = true,
         };
-        _changelog = new InfoRowViewModel("arcadia-changelog", "Was ist neu") { Group = Group };
+        _changelog = new InfoRowViewModel("arcadia-changelog", AppTexts.AboutWhatsNew) { Group = Group };
         _updates.Changed += OnUpdatesChanged;
         _messages.Changed += OnMessagesChanged;
         _repeats = time.CreateTimer(_ => Dispatcher.UIThread.Post(() =>
@@ -103,15 +103,15 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
         var updates = _updates;
         var updateText = updates switch
         {
-            { IsInstalled: false } => "Entwicklungs-Build – Updates gibt es nur für das installierte Arcadia.",
-            { IsChecking: true } => "Suche nach Updates …",
-            { AvailableVersion: { } next, IsRestartingForUpdate: true } => $"Version {next} ist geladen – Arcadia startet neu …",
+            { IsInstalled: false } => AppTexts.AboutDevelopmentBuild,
+            { IsChecking: true } => AppTexts.AboutChecking,
+            { AvailableVersion: { } next, IsRestartingForUpdate: true } => AppTexts.AboutLoadedRestarting(next),
             { AvailableVersion: { } next, Progress: { } percent } => LoadingText(next, percent),
-            { AvailableVersion: { } next } => $"Version {next} ist verfügbar.",
-            { LastChecked: { } checkedAt } => $"Arcadia ist auf dem neuesten Stand. Zuletzt gesucht: {checkedAt.ToLocalTime():HH:mm} Uhr.",
-            _ => "Arcadia ist auf dem neuesten Stand.",
+            { AvailableVersion: { } next } => AppTexts.AboutAvailable(next),
+            { LastChecked: { } checkedAt } => AppTexts.AboutUpToDateCheckedAt(checkedAt.ToLocalTime()),
+            _ => AppTexts.AboutUpToDate,
         };
-        var source = $"Freie Software unter der GPL-3.0 · Quelltext: {ArcadiaUpdateService.RepositoryUrl.Replace("https://", string.Empty, StringComparison.Ordinal)}";
+        var source = AppTexts.AboutLicense(ArcadiaUpdateService.RepositoryUrl.Replace("https://", string.Empty, StringComparison.Ordinal));
 
         _version.Subtitle = updateText;
         _version.Info =
@@ -122,16 +122,16 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
         ];
 
         var idle = !updates.IsChecking && updates.Progress is null && !updates.IsRestartingForUpdate;
-        _check.ActionText = updates.IsChecking ? "Suche läuft …" : "Suchen";
+        _check.ActionText = updates.IsChecking ? AppTexts.AboutCheckRunning : AppTexts.AboutCheck;
         _check.IsEnabled = idle;
         _check.Info = [new InfoText(updateText), .. updates.LastError is { } checkError ? [new InfoError(checkError)] : Array.Empty<InfoBlock>()];
 
         var hasUpdate = updates.AvailableVersion is not null && updates.Progress is null && !updates.IsRestartingForUpdate;
-        _install.Info = [new InfoText(updateText), new InfoText("Arcadia schließt sich, Velopack installiert das Update ohne Rückfrage und startet Arcadia neu. Ein laufendes Spiel läuft dabei weiter.")];
+        _install.Info = [new InfoText(updateText), new InfoText(AppTexts.AboutInstallInfo)];
 
         // Only the versions between the running and the newest one.
         var hasChangelog = updates.AvailableVersion is not null && updates.Changelog.Count > 0;
-        _changelog.Subtitle = updates.AvailableVersion is { } version ? $"Neu bis Version {version}" : null;
+        _changelog.Subtitle = updates.AvailableVersion is { } version ? AppTexts.AboutNewUpToVersion(version) : null;
         _changelog.Info = [.. updates.Changelog.Select(InfoRelease.Of)];
 
         SetRows(

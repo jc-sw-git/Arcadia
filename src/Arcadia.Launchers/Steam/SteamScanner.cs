@@ -189,11 +189,11 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         Notice = game.IsInstalled ? OtherAccountInstalledNotice : OtherAccountUninstalledNotice,
     };
 
-    internal const string OtherAccountInstall = "In Steam ist ein anderes Konto angemeldet";
+    internal static string OtherAccountInstall => SteamTexts.SteamOtherAccountInstall;
 
-    internal const string OtherAccountUninstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Installationen aus Arcadia heraus sind so lange nicht möglich.";
+    internal static string OtherAccountUninstalledNotice => SteamTexts.SteamOtherAccountUninstalledNotice;
 
-    internal const string OtherAccountInstalledNotice = "In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Das Spiel könnte daher entweder nicht starten oder falsche Spielstände verwenden.";
+    internal static string OtherAccountInstalledNotice => SteamTexts.SteamOtherAccountInstalledNotice;
 
     /// <summary>The app id in <c>appmanifest_&lt;appid&gt;.acf</c>; null for another name.</summary>
     internal static uint? AppIdOfManifestFile(string path)
@@ -588,7 +588,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
                     file = new FileInfo(path);
                     if (!file.Exists)
                     {
-                        return Unreadable("Steam: packageinfo.vdf fehlt, kostenlose Werkzeuge fehlen in der Bibliothek");
+                        return Unreadable("Steam: packageinfo.vdf fehlt, kostenlose Werkzeuge fehlen in der Bibliothek"); // not a UI text (log)
                     }
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)

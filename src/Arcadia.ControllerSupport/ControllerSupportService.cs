@@ -156,8 +156,8 @@ public sealed class ControllerSupportService
     /// </summary>
     public Action<string>? RestartArcadia { get; set; }
 
-    public const string HidHideInstallingText = "HidHide wird installiert";
-    public const string RestartPendingText = "Arcadia startet nach der HidHide-Installation neu";
+    public static string HidHideInstallingText => ControllerSupportTexts.HidHideInstalling;
+    public static string RestartPendingText => ControllerSupportTexts.RestartPendingText;
 
     /// <summary>
     /// Why Pan's emulation may hide nothing now, or null (#396): HidHide's installer runs, or ran and Arcadia restarts.
@@ -202,11 +202,11 @@ public sealed class ControllerSupportService
     /// <summary><paramref name="fix"/> runs HidHide's installer now: the settings say first that Arcadia restarts afterwards (#396).</summary>
     public bool InstallsHidHide(HealthFix fix) => RestartsPuck(fix);
 
-    public const string HidHideReinstallWhileHiddenText =
-        "Solange Pan den Steam Controller versteckt, lässt sich HidHide nicht neu installieren. Schalte den Controller-Wächter (Pan) aus und versuche es dann noch einmal.";
+    public static string HidHideReinstallWhileHiddenText =>
+        ControllerSupportTexts.HidHideReinstallWhileHidden;
 
     /// <summary>An action that has to close Steam stops before it changes anything when Steam doesn't exit.</summary>
-    public const string SteamWontCloseText = "Steam ließ sich nicht beenden. Beende Steam selbst und versuche es dann erneut.";
+    public static string SteamWontCloseText => ControllerSupportTexts.SteamWontClose;
 
     /// <summary>Steam's client runs: it could update the Steam Controller's firmware (#242).</summary>
     public bool SteamRuns => _steam.IsRunning;
@@ -326,10 +326,10 @@ public sealed class ControllerSupportService
         }
     }
 
-    public const string FirmwareUpdateBlocksInstallText =
-        "Während ein Firmware-Update deiner Controller läuft, lassen sich keine Treiber installieren. Schließe das Update ab und versuche es dann erneut.";
+    public static string FirmwareUpdateBlocksInstallText =>
+        ControllerSupportTexts.FirmwareUpdateBlocksInstall;
 
-    public const string DriversBusyText = "Treiber werden installiert – bitte die Windows-Abfrage bestätigen …";
+    public static string DriversBusyText => ControllerSupportTexts.DriversBusy;
 
     private async Task InstallDriversAndSwitchPanOnAsync(CancellationToken cancellationToken)
     {
@@ -386,7 +386,7 @@ public sealed class ControllerSupportService
         var usbipWasReady = _platform.IsUsbipReady;
         try
         {
-            await RunInstallationAsync(plan, "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Installieren“ wählen und die Abfrage bestätigen.", cancellationToken);
+            await RunInstallationAsync(plan, ControllerSupportTexts.DriversInstallDeclined, cancellationToken);
         }
         finally
         {
@@ -403,7 +403,7 @@ public sealed class ControllerSupportService
         }
     }
 
-    public const string WindowsRestartFirstText = "Ein deinstallierter Treiber wartet auf den Neustart von Windows. Starte Windows neu, danach lassen sich die fehlenden Teile installieren.";
+    public static string WindowsRestartFirstText => ControllerSupportTexts.WindowsRestartFirst;
 
     /// <summary>
     /// What a successful run set up, for the log (#382, S7): the drivers the plan installed, and Pan when it wasn't ready
@@ -421,7 +421,7 @@ public sealed class ControllerSupportService
         {
             0 => "nichts Neues",
             1 => parts[0],
-            _ => $"{string.Join(", ", parts[..^1])} und {parts[^1]}",
+            _ => $"{string.Join(", ", parts[..^1])} und {parts[^1]}", // not a UI text (log)
         };
     }
 
@@ -438,7 +438,7 @@ public sealed class ControllerSupportService
         // Checked before the prompt: a reinstall that can't run must not ask or close Steam for nothing.
         if (_platform.HidHideVersion is not { } installed || !HidHideRelease.IsPinnedDriver(installed))
         {
-            throw new InvalidOperationException($"„Neu installieren“ geht nur über HidHide {HidHideRelease.Version}; installiert ist eine andere Version.");
+            throw new InvalidOperationException(ControllerSupportTexts.HidHideReinstallWrongVersion(HidHideRelease.Version));
         }
 
         if (_steam.IsRunning && SteamGameBlockingInstall() is { } game)
@@ -448,7 +448,7 @@ public sealed class ControllerSupportService
 
         // HidHide answering unexpectedly means Pan can't hide: the puck is Steam's, and the installer restarts it.
         var plan = new DriverInstallPlan(Prompt: true, Viiper: false, SteamCloses: _steam.IsRunning, Usbip: false, HidHide: true, HidHideRepair: true, Restarts: true);
-        await RunInstallationAsync(plan, "Die Installation wurde in der Windows-Abfrage abgelehnt – noch einmal „Neu installieren“ wählen und die Abfrage bestätigen.", cancellationToken);
+        await RunInstallationAsync(plan, ControllerSupportTexts.HidHideReinstallDeclined, cancellationToken);
         Log?.Invoke("HidHide neu installiert");
     }
 
@@ -480,12 +480,12 @@ public sealed class ControllerSupportService
             DeclinedText = declinedText,
             Log = Log,
         };
-        SetBusyText(plan.Prompt ? DriversBusyText : "VIIPER wird installiert …");
+        SetBusyText(plan.Prompt ? DriversBusyText : ControllerSupportTexts.ViiperInstalling);
         await installation.RunAsync(cancellationToken);
     }
 
     private string? FirmwareBlocksInstall() =>
-        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? FirmwareUpdateBlocksInstallText : null;
+        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? FirmwareUpdateBlocksInstallText : null; // not a UI text (log)
 
     /// <summary>
     /// Runs <paramref name="work"/>, with Steam closed when <paramref name="needsSteamClosed"/> and Steam runs: closed
@@ -508,7 +508,7 @@ public sealed class ControllerSupportService
         }
 
         var busy = BusyText;
-        SetBusyText("Steam wird beendet …");
+        SetBusyText(ControllerSupportTexts.SteamStopping);
         if (!await _steam.CloseAsync(_time, cancellationToken))
         {
             throw new InvalidOperationException(SteamWontCloseText);
@@ -518,7 +518,7 @@ public sealed class ControllerSupportService
         T result;
         try
         {
-            SetBusyText(busy ?? "Bitte warten …");
+            SetBusyText(busy ?? ControllerSupportTexts.PleaseWait);
             result = await work(cancellationToken);
         }
         finally
@@ -529,7 +529,7 @@ public sealed class ControllerSupportService
 
         if (waitForSteam(result))
         {
-            SetBusyText("Steam wird gestartet …");
+            SetBusyText(ControllerSupportTexts.SteamStarting);
             await ProcessWatch.WaitUntilAsync(() => _steam.IsReady, SteamStartTimeout, _time, cancellationToken);
         }
 
@@ -538,7 +538,7 @@ public sealed class ControllerSupportService
 
     /// <summary>Why a driver install that closes Steam can't run now: closing Steam would end <paramref name="game"/>.</summary>
     public static string DriverInstallBlocker(string game) =>
-        $"Ein laufendes Steam-Spiel ({game}) wurde erkannt. Beende es zuerst, da Steam für die Installation kurz beendet werden muss.";
+        ControllerSupportTexts.DriverInstallBlockerSteamGame(game);
 
     /// <summary>
     /// Set at start while the installed Pan isn't the bundled one (#297) until it is replaced or removed: Pan's emulation
@@ -578,9 +578,9 @@ public sealed class ControllerSupportService
 
     private bool _restoringControllers;
 
-    public const string PanUpdatingReason = "Pan wird aktualisiert – Arcadia verbindet sich erst danach wieder";
-    public const string RestoringReason = "Controller werden wiederhergestellt – Arcadia verbindet sich erst danach wieder";
-    public const string OldPanOffReason = "Pan ist nicht aktualisiert und ausgeschaltet – Arcadia spricht nicht mit ihm";
+    public static string PanUpdatingReason => ControllerSupportTexts.PanUpdatingReason;
+    public static string RestoringReason => ControllerSupportTexts.RestoringReason;
+    public static string OldPanOffReason => ControllerSupportTexts.OldPanOffReason;
 
     /// <summary>
     /// Why Arcadia doesn't talk to the installed Pan, null if it may. Not while the update runs (see
@@ -639,7 +639,7 @@ public sealed class ControllerSupportService
     {
         IsPanUpdating = true;
         OnChanged();
-        if (!await WithTimeoutAsync(_platform.UpdatePanAsync, DriversInstallTimeout, "Die Aktualisierung von Pan", cancellationToken))
+        if (!await WithTimeoutAsync(_platform.UpdatePanAsync, DriversInstallTimeout, ControllerSupportTexts.TimeoutWhatPanUpdate, cancellationToken))
         {
             Log?.Invoke("Pan-Aktualisierung in der Windows-Abfrage abgelehnt");
             return false;
@@ -690,13 +690,13 @@ public sealed class ControllerSupportService
     /// update, and comes back afterwards (#366, #471, see <see cref="IsRestoringControllers"/>); declined, nothing changes.
     /// </summary>
     public Task RestoreControllersAsync(CancellationToken cancellationToken = default) =>
-        RunBusyAsync("Controller werden wiederhergestellt – bitte die Windows-Abfrage bestätigen …", async token =>
+        RunBusyAsync(ControllerSupportTexts.RestoringBusy, async token =>
         {
             try
             {
                 if (!await _platform.RestoreControllersAsync(LetGoForRestoreAsync, token))
                 {
-                    throw new InvalidOperationException("Die Wiederherstellung wurde in der Windows-Abfrage abgelehnt.");
+                    throw new InvalidOperationException(ControllerSupportTexts.RestoreDeclined);
                 }
             }
             finally
@@ -774,7 +774,7 @@ public sealed class ControllerSupportService
 
         if (_restartPending && RestartArcadia is { } restart)
         {
-            restart("nach der HidHide-Installation");
+            restart("nach der HidHide-Installation"); // not a UI text (log)
         }
     }
 
@@ -860,8 +860,8 @@ public sealed class ControllerSupportService
         return restart;
     }
 
-    public const string RestartRefusedTitle = "Windows lässt den Neustart nicht zu";
-    public const string RestartRefusedText = "Ein anderes Programm oder eine Einstellung von Windows verhindert ihn. Versuch es gleich noch einmal oder starte Windows über das Startmenü neu.";
+    public static string RestartRefusedTitle => ControllerSupportTexts.RestartRefusedTitle;
+    public static string RestartRefusedText => ControllerSupportTexts.RestartRefusedText;
 
     private int _restartingWindows;
 
@@ -912,7 +912,7 @@ public sealed class ControllerSupportService
     {
         var allMissing = IsSupportedPlatform && AllPartsMissing;
         var blockers = allMissing ? CheckInstallBlockers() : [];
-        var plugged = allMissing && SafeCheck(() => _platform.SteamControllerPlugged, "ob ein Steam Controller angeschlossen ist");
+        var plugged = allMissing && SafeCheck(() => _platform.SteamControllerPlugged, "ob ein Steam Controller angeschlossen ist"); // not a UI text (log)
         var changed = !blockers.SequenceEqual(InstallBlockers) || plugged != SteamControllerPlugged;
         InstallBlockers = blockers;
         SteamControllerPlugged = plugged;
@@ -920,7 +920,7 @@ public sealed class ControllerSupportService
     }
 
     private List<HealthIssue> CheckInstallBlockers() =>
-        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? [EmulationParts.FirmwareUpdateRuns] : [];
+        SafeCheck(() => _platform.FirmwareUpdateRuns, "ob ein Firmware-Update läuft") ? [EmulationParts.FirmwareUpdateRuns] : []; // not a UI text (log)
 
     /// <summary>A check that fails counts as false and is logged: the install itself checks the firmware again.</summary>
     private bool SafeCheck(Func<bool> check, string what)
@@ -1008,7 +1008,7 @@ public sealed class ControllerSupportService
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException($"{what} hat nicht innerhalb von {timeout.TotalSeconds:0} Sekunden geantwortet.");
+            throw new TimeoutException(ControllerSupportTexts.TimeoutNoAnswer(what, timeout.TotalSeconds));
         }
     }
 

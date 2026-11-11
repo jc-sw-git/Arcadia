@@ -71,5 +71,5 @@ public static class ControllerLayouts
         chosen is { IsTakenOver: false } ? ControllerLayout.NotTakenOver : ControllerLayout.Of(KindFor(chosen, defaultKind));
 
     /// <summary>The choice's name as the settings show it.</summary>
-    public static string DisplayName(ControllerLayout layout) => layout.Kind is { } kind ? PadKinds.DisplayName(kind) : "Nicht übernehmen";
+    public static string DisplayName(ControllerLayout layout) => layout.Kind is { } kind ? PadKinds.DisplayName(kind) : ControllerSupportTexts.LayoutNotApplied;
 }

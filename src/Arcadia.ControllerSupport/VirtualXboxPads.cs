@@ -60,11 +60,11 @@ public interface IVirtualXboxPad : IAsyncDisposable
 /// </summary>
 public sealed class NoVirtualXboxPads : IVirtualXboxPadServer
 {
-    public const string Reason = "Diese Arcadia-Version hat keine geprüfte VIIPER-Version";
+    public static string Reason => ControllerSupportTexts.NoCheckedViiperVersion;
 
     public int? ServerPort => null;
 
-    public string? Unavailable() => OperatingSystem.IsWindows() ? Reason : "nur unter Windows";
+    public string? Unavailable() => OperatingSystem.IsWindows() ? Reason : ControllerSupportTexts.OnlyOnWindows;
 
     public Task<int> PrepareAsync(CancellationToken cancellationToken) => throw new InvalidOperationException(Unavailable());
 

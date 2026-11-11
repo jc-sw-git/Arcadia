@@ -201,8 +201,8 @@ public sealed class GameActions : IGameActionHost
         if (tile.InstallState is { } install)
         {
             _toast.Show(HealthSeverity.Info, install.Phase == InstallPhase.Uninstalling
-                    ? $"„{tile.Title}“ wird gerade deinstalliert."
-                    : $"„{tile.Title}“ wird bereits {(tile.IsInstalled ? "aktualisiert" : "installiert")} – Pausieren und Abbrechen in {tile.LauncherName}.");
+                    ? AppTexts.GameBeingUninstalled(tile.Title)
+                    : tile.IsInstalled ? AppTexts.GameAlreadyUpdating(tile.Title, tile.LauncherName) : AppTexts.GameAlreadyInstalling(tile.Title, tile.LauncherName));
             return;
         }
 
@@ -210,10 +210,10 @@ public sealed class GameActions : IGameActionHost
         {
             case RunPhase.Starting:
                 // A second A must not start the game twice (#95).
-                _toast.Show(HealthSeverity.Info, $"„{tile.Title}“ wird bereits gestartet …");
+                _toast.Show(HealthSeverity.Info, AppTexts.GameAlreadyStarting(tile.Title));
                 return;
             case RunPhase.Running:
-                ReturnToGameAsync(tile).Forget("Zurück ins Spiel");
+                ReturnToGameAsync(tile).Forget(AppTexts.ErrorContextReturnToGame);
                 return;
         }
 
@@ -227,10 +227,10 @@ public sealed class GameActions : IGameActionHost
         // wait for or switch to.
         if (tile.IsSoundtrack)
         {
-            if (HandOver(tile, tile.Game.Launch, $"„{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo: Hier würde jetzt „{tile.Title}“ abgespielt."))
+            if (HandOver(tile, tile.Game.Launch, AppTexts.GameOpeningInLauncher(tile.Title, tile.LauncherName), AppTexts.DemoWouldPlay(tile.Title)))
             {
                 Task.Delay(LinkGap, _time).ContinueWith(_ => ShowInLauncher(tile), TaskScheduler.FromCurrentSynchronizationContext())
-                    .Forget("Soundtrack im Launcher zeigen");
+                    .Forget(AppTexts.ErrorContextShowSoundtrack);
             }
 
             return;
@@ -243,7 +243,7 @@ public sealed class GameActions : IGameActionHost
     /// The launcher ran an update before the game and didn't start the game after it: Arcadia hands it over once more,
     /// still "Wird gestartet …" (<see cref="RunningGamesTracker.StartAgainAfterInstall"/>).
     /// </summary>
-    public void StartAgain(GameTileViewModel tile) => LaunchAsync(tile, again: true).Forget("Spielstart nach dem Update");
+    public void StartAgain(GameTileViewModel tile) => LaunchAsync(tile, again: true).Forget(AppTexts.ErrorContextStartAfterUpdate);
 
     private async Task LaunchAsync(GameTileViewModel tile, bool again = false)
     {
@@ -269,13 +269,13 @@ public sealed class GameActions : IGameActionHost
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:
-                _toast.Show(HealthSeverity.Error, $"„{tile.Title}“ konnte nicht gestartet werden: {error.Message}");
+                _toast.Show(HealthSeverity.Error, AppTexts.GameStartFailed(tile.Title, error.Message));
                 break;
             case { Outcome: LaunchOutcome.FailedUnexpectedly }:
-                _toast.Show(HealthSeverity.Error, $"„{tile.Title}“ konnte wegen eines unerwarteten Fehlers nicht gestartet werden – Details stehen in arcadia.log.");
+                _toast.Show(HealthSeverity.Error, AppTexts.GameStartFailedUnexpected(tile.Title));
                 break;
             case { Outcome: LaunchOutcome.AlreadyLaunching }:
-                _toast.Show(HealthSeverity.Warning, $"Ein anderes Spiel wird gerade gestartet – „{tile.Title}“ bitte gleich noch einmal starten.");
+                _toast.Show(HealthSeverity.Warning, AppTexts.GameStartOtherStarting(tile.Title));
                 break;
         }
     }
@@ -299,7 +299,7 @@ public sealed class GameActions : IGameActionHost
         if (window == 0)
         {
             AppLog.Write($"Zurück ins Spiel: kein Fenster von {key} gefunden");
-            _toast.Show(HealthSeverity.Warning, $"Arcadia findet kein Fenster von „{tile.Title}“ – vielleicht startet es noch oder läuft ohne Fenster.");
+            _toast.Show(HealthSeverity.Warning, AppTexts.GameNoWindow(tile.Title));
             return;
         }
 
@@ -307,7 +307,7 @@ public sealed class GameActions : IGameActionHost
         AppLog.Write($"Zurück ins Spiel: {key} {(shown ? "vorne" : "ließ sich nicht nach vorne holen")}");
         if (!shown)
         {
-            _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ ließ sich nicht nach vorne holen.");
+            _toast.Show(HealthSeverity.Warning, AppTexts.GameNotToFront(tile.Title));
         }
     }
 
@@ -315,7 +315,7 @@ public sealed class GameActions : IGameActionHost
     {
         if (tile.Game.InstallBlockedReason is { } blocked)
         {
-            _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ lässt sich gerade nicht installieren: {blocked}.");
+            _toast.Show(HealthSeverity.Warning, AppTexts.GameInstallBlocked(tile.Title, blocked));
             return;
         }
 
@@ -325,20 +325,20 @@ public sealed class GameActions : IGameActionHost
             {
                 tile.InstallState = _installs.Started(tile.Game);
                 _toast.Show(HealthSeverity.Info, tile.Game.InstallStartsInLauncher
-                    ? $"{tile.LauncherName} wird geöffnet – starte dort selbst die Installation von „{tile.Title}“."
-                    : $"Installation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …");
+                    ? AppTexts.GameInstallOpenLauncher(tile.LauncherName, tile.Title)
+                    : AppTexts.GameInstallOpening(tile.Title, tile.LauncherName));
             }
             else
             {
                 var isDemo = tile.Game.Install is LaunchTarget.None;
                 _toast.Show(isDemo ? HealthSeverity.Info : HealthSeverity.Warning, isDemo
-                    ? $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ installiert."
-                    : $"„{tile.Title}“ kann nur direkt in {tile.LauncherName} installiert werden.");
+                    ? AppTexts.DemoWouldInstall(tile.Title)
+                    : AppTexts.GameInstallOnlyInLauncher(tile.Title, tile.LauncherName));
             }
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show(HealthSeverity.Error, $"Installation von „{tile.Title}“ konnte nicht geöffnet werden: {ex.Message}");
+            _toast.Show(HealthSeverity.Error, AppTexts.GameInstallOpenFailed(tile.Title, ex.Message));
         }
     }
 
@@ -347,13 +347,13 @@ public sealed class GameActions : IGameActionHost
         switch (stage)
         {
             case LaunchStage.StartingLauncher:
-                _toast.Show(HealthSeverity.Info, $"{tile.LauncherName} wird im Hintergrund gestartet …", sticky: true);
+                _toast.Show(HealthSeverity.Info, AppTexts.LauncherStartingInBackground(tile.LauncherName), sticky: true);
                 Task.Delay(TimeSpan.FromSeconds(2), _time).ContinueWith(
                     _ => ForegroundRequested?.Invoke(this, EventArgs.Empty),
-                    TaskScheduler.FromCurrentSynchronizationContext()).Forget("Fenster nach vorn holen");
+                    TaskScheduler.FromCurrentSynchronizationContext()).Forget(AppTexts.ErrorContextWindowToFront);
                 break;
             case LaunchStage.LauncherNotReady:
-                _toast.Show(HealthSeverity.Warning, $"{tile.LauncherName} reagiert nicht – „{tile.Title}“ wird trotzdem angefragt …");
+                _toast.Show(HealthSeverity.Warning, AppTexts.LauncherNotRespondingStillAsking(tile.LauncherName, tile.Title));
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.LauncherReady:
@@ -361,15 +361,15 @@ public sealed class GameActions : IGameActionHost
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? $"„{tile.Title}“ wird gestartet – {tile.LauncherName} installiert ggf. vorher das Update …" : $"„{tile.Title}“ wird gestartet …");
+                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? AppTexts.GameStartingMaybeUpdate(tile.Title, tile.LauncherName) : AppTexts.GameStarting(tile.Title));
                 break;
             case LaunchStage.NotStartable:
                 StartFailed(tile);
-                _toast.Show(HealthSeverity.Info, $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ gestartet.");
+                _toast.Show(HealthSeverity.Info, AppTexts.DemoWouldStart(tile.Title));
                 break;
             case LaunchStage.NotConfirmed:
                 StartFailed(tile);
-                _toast.Show(HealthSeverity.Warning, $"„{tile.Title}“ ist nicht gestartet – bitte in {tile.LauncherName} nachsehen.");
+                _toast.Show(HealthSeverity.Warning, AppTexts.GameNotStartedCheckLauncher(tile.Title, tile.LauncherName));
                 break;
         }
     }
@@ -397,12 +397,12 @@ public sealed class GameActions : IGameActionHost
             var offered = opened || target is LaunchTarget.None;
             _toast.Show(offered ? HealthSeverity.Info : HealthSeverity.Warning, opened ? handedOver
                 : target is LaunchTarget.None ? demo
-                : $"{tile.LauncherName} bietet das für „{tile.Title}“ nicht an.");
+                : AppTexts.LauncherDoesNotOffer(tile.LauncherName, tile.Title));
             return opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show(HealthSeverity.Error, $"{tile.LauncherName} konnte nicht geöffnet werden: {ex.Message}");
+            _toast.Show(HealthSeverity.Error, AppTexts.LauncherOpenFailed(tile.LauncherName, ex.Message));
             return false;
         }
     }
@@ -431,7 +431,7 @@ public sealed class GameActions : IGameActionHost
     void IGameActionHost.ShowDetails(GameTileViewModel tile) => _owner.ShowDetails(tile);
 
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
-        HandOver(tile, tile.Game.OpenInLauncher, $"{tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
+        HandOver(tile, tile.Game.OpenInLauncher, AppTexts.LauncherOpening(tile.LauncherName), AppTexts.DemoWouldOpenLauncher(tile.LauncherName));
 
     void IGameActionHost.CycleControllerMode(GameTileViewModel tile) => CycleControllerMode(tile.Game);
 
@@ -440,15 +440,15 @@ public sealed class GameActions : IGameActionHost
         if (tile.Game.Uninstall is not { } uninstall)
         {
             // Only the launcher's own window can do it.
-            HandOver(tile, tile.Game.OpenInLauncher, $"„{tile.Title}“ lässt sich nur in {tile.LauncherName} deinstallieren – {tile.LauncherName} wird geöffnet …", $"Demo-Spiel: Hier würde jetzt {tile.LauncherName} geöffnet.");
+            HandOver(tile, tile.Game.OpenInLauncher, AppTexts.GameUninstallOnlyInLauncher(tile.Title, tile.LauncherName), AppTexts.DemoWouldOpenLauncher(tile.LauncherName));
             return;
         }
 
         _owner.Confirm(new ConfirmationViewModel(
-            $"„{tile.Title}“ deinstallieren?",
-            $"{tile.LauncherName} entfernt das Spiel von diesem PC und fragt eventuell selbst noch einmal nach. Installieren lässt es sich danach jederzeit wieder.",
-            "Deinstallieren",
-            () => HandOver(tile, uninstall, $"Deinstallation von „{tile.Title}“ wird in {tile.LauncherName} geöffnet …", $"Demo-Spiel: Hier würde jetzt „{tile.Title}“ deinstalliert.")));
+            AppTexts.GameAskUninstall(tile.Title),
+            AppTexts.GameAskUninstallText(tile.LauncherName),
+            AppTexts.Uninstall,
+            () => HandOver(tile, uninstall, AppTexts.GameUninstallOpening(tile.Title, tile.LauncherName), AppTexts.DemoWouldUninstall(tile.Title))));
     }
 
     bool IGameActionHost.ShowGameMouseMode => _owner.ShowGameMouseMode;

@@ -26,11 +26,11 @@ public sealed record DriverInstallStepViewModel(string Title, string? Detail, Dr
 /// </summary>
 public sealed partial class DriverInstallDialogViewModel : ViewModels.ViewModelBase, IHasOwnHints
 {
-    public const string UsbHintTitle = "Maus, Tastatur und Controller können kurz nicht reagieren";
-    public const string UsbHintText = "Das ist normal, während usbip-win2 installiert wird. Bitte schalte den PC nicht aus, Arcadia meldet sich, sobald es weitergeht.";
-    public const string NoCancelText = "Die Installation lässt sich nicht abbrechen.";
-    public const string RestartFooterText = "Zum Schluss startet Arcadia einmal neu.";
-    public const string ClosesByItselfText = "Das Fenster schließt sich von selbst.";
+    public static string UsbHintTitle => AppTexts.DriversUsbHintTitle;
+    public static string UsbHintText => AppTexts.DriversUsbHintText;
+    public static string NoCancelText => AppTexts.DriversNoCancel;
+    public static string RestartFooterText => AppTexts.DriversRestartFooter;
+    public static string ClosesByItselfText => AppTexts.DriversClosesByItself;
 
     private readonly Action _close;
 
@@ -89,7 +89,7 @@ public sealed partial class DriverInstallDialogViewModel : ViewModels.ViewModelB
         var percent = Math.Round(Progress.Value * 100);
         Value = percent;
         Percent = percent.ToString("0", CultureInfo.InvariantCulture) + " %";
-        StepCount = $"Schritt {Progress.CurrentNumber} von {steps.Count}";
+        StepCount = AppTexts.DriversStepOf(Progress.CurrentNumber, steps.Count);
     }
 
     /// <summary>While it runs nothing gets through (D2); after a failure A and B close it (D9).</summary>

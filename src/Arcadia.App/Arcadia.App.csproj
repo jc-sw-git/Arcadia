@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <HasUiTexts>true</HasUiTexts>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- The installed program is "Arcadia.exe"; namespaces stay Arcadia.App. -->
     <AssemblyName>Arcadia</AssemblyName>

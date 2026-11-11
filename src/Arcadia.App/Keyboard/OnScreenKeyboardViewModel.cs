@@ -459,7 +459,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     {
         foreach (var key in Keys.Where(k => k.IsDockKey))
         {
-            key.Text = AtTop ? "Nach unten" : "Nach oben";
+            key.Text = AtTop ? AppTexts.KeyboardDockDown : AppTexts.KeyboardDockUp;
             key.PointsUp = !AtTop;
         }
     }

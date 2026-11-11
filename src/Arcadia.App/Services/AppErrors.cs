@@ -32,7 +32,7 @@ public static class AppErrors
         AppLog.Write($"Unerwarteter Fehler ({context}): {exception}");
         try
         {
-            Occurred?.Invoke($"Unerwarteter Fehler ({context}) – Details stehen in arcadia.log.", streak);
+            Occurred?.Invoke(AppTexts.UnexpectedError(context), streak);
         }
         catch (Exception ex)
         {

@@ -66,7 +66,7 @@ public readonly record struct PadDevice(string Name, ushort Vendor, ushort Produ
         {
             (0x2DC8, 0x310B) => "8BitDo Ultimate 2",
             (0x045E, _) => "Xbox Controller",
-            _ => "Xbox-kompatibler Controller",
+            _ => InputTexts.XboxCompatibleController,
         };
 
     /// <summary>For <c>arcadia.log</c>: name, SDL's type and the USB ids.</summary>
@@ -120,29 +120,29 @@ public static class GamepadDevices
     {
         if (device.Vendor == PadDevice.ValveVendor && device.Product == PadDevice.SteamVirtualProduct)
         {
-            return "virtueller Controller von Steam";
+            return "virtueller Controller von Steam"; // not a UI text (log)
         }
 
         // SDL's type Steam covers both Steam Controllers (and Hori's licensed one). Other Valve devices, such as the
         // Steam Deck's own controls, stay Steam's.
         if (device.Type == PadType.Steam)
         {
-            return emulated.IsCopy(device) ? "Kopie des Steam Controllers für Steam" : null;
+            return emulated.IsCopy(device) ? "Kopie des Steam Controllers für Steam" : null; // not a UI text (log)
         }
 
         if (device.Vendor == PadDevice.ValveVendor)
         {
-            return "Gerät von Valve, kein Steam Controller";
+            return "Gerät von Valve, kein Steam Controller"; // not a UI text (log)
         }
 
         if (device.Vendor is SonyVendor or NintendoVendor && emulated.IsVirtualHidPad(device))
         {
-            return "virtueller Controller, z. B. Arcadias für ein Spiel";
+            return "virtueller Controller, z. B. Arcadias für ein Spiel"; // not a UI text (log)
         }
 
         if (device.XInputSlot is not null && emulated.IsEmulated(device))
         {
-            return "virtueller Xbox Controller, z. B. von SISR";
+            return "virtueller Xbox Controller, z. B. von SISR"; // not a UI text (log)
         }
 
         if (device.Type is PadType.JoyConLeft or PadType.JoyConRight)
@@ -153,7 +153,7 @@ public static class GamepadDevices
         // Wheels, flight sticks and the like can be in SDL's controller database, but aren't controllers for Arcadia.
         if (device.StickType is not (StickDeviceType.Unknown or StickDeviceType.Gamepad))
         {
-            return $"kein Gamepad ({device.StickType})";
+            return $"kein Gamepad ({device.StickType})"; // not a UI text (log)
         }
 
         return null;

@@ -32,13 +32,13 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
 
     /// <summary>What the install action says on the right, e.g. "Treiber installieren" or "Wird installiert …".</summary>
     [ObservableProperty]
-    public partial string InstallText { get; set; } = "Treiber installieren";
+    public partial string InstallText { get; set; } = AppTexts.DriversInstall;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ValueText))]
     public partial bool IsOn { get; private set; }
 
-    public string ValueText => IsOn ? "An" : "Aus";
+    public string ValueText => IsOn ? AppTexts.On : AppTexts.Off;
 
     /// <summary>Something starts or stops (or a game runs): the switch keeps its position but can't be flipped.</summary>
     [ObservableProperty]
@@ -48,7 +48,7 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
 
     public override bool CanActivate => Mode != SetupRowMode.Unavailable && !IsLocked;
 
-    public override string ActivateText => IsInstall ? InstallText : "Umschalten";
+    public override string ActivateText => IsInstall ? InstallText : AppTexts.Toggle;
 
     /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>
     public override void Change(int delta) => activate(null);

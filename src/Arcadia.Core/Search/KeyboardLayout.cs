@@ -54,9 +54,9 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
 
     public static KeyboardLayout German { get; } = new("de", "DE", "Deutsch", "QWERTZ",
     [
-        Row("^1234567890ß´", "°!\"§$%&/()=?`", "  ²³   {[]}\\ "),
-        Row("qwertzuiopü+", "QWERTZUIOPÜ*", "@ €        ~"),
-        Row("asdfghjklöä#", "ASDFGHJKLÖÄ'", string.Empty),
+        Row("^1234567890ß´", "°!\"§$%&/()=?`", "  ²³   {[]}\\ "), // not a UI text (key row)
+        Row("qwertzuiopü+", "QWERTZUIOPÜ*", "@ €        ~"), // not a UI text (key row)
+        Row("asdfghjklöä#", "ASDFGHJKLÖÄ'", string.Empty), // not a UI text (key row)
         Row("<yxcvbnm,.-", ">YXCVBNM;:_", "|      µ"),
     ]);
 

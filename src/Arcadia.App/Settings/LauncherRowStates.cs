@@ -29,22 +29,22 @@ internal sealed class LauncherRowStates(ILauncherCategory category)
         string? note = null;
         if (isActive && !isFound)
         {
-            notice = ("Nicht gefunden", HealthSeverity.Warning);
-            note = $"Arcadia findet {name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte den Launcher hier ab, dann verschwindet sein Tab.";
+            notice = (AppTexts.NotFound, HealthSeverity.Warning);
+            note = AppTexts.LauncherNotFoundAnymoreSwitchOff(name);
         }
         else if (library is { Games.Count: 0 })
         {
             // Nothing is broken and nothing needs doing: information, not a warning (owner, 2026-10-24).
-            notice = ("Keine Spiele gefunden", HealthSeverity.Info);
-            note = $"{name} ist installiert, aber Arcadia hat dort keine Spiele gefunden. Sobald du dort ein Spiel kaufst oder installierst, erscheint es im Tab.";
+            notice = (AppTexts.NoGamesFound, HealthSeverity.Info);
+            note = AppTexts.LauncherNoGamesInfo(name);
         }
 
         var status = (isActive, isFound, library) switch
         {
             (true, _, { } shown) => $"{LauncherTexts.GameCount(shown.Games.Count)} · {keyword}",
-            (true, _, null) => "Wird eingelesen …",
-            (false, true, _) => "Installiert",
-            _ => "Nicht gefunden",
+            (true, _, null) => AppTexts.Scanning,
+            (false, true, _) => AppTexts.Installed,
+            _ => AppTexts.NotFound,
         };
 
         var tabNumber = isActive ? place + 1 : (int?)null;
@@ -53,35 +53,35 @@ internal sealed class LauncherRowStates(ILauncherCategory category)
         InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))])];
 
         // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
-        List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? "Nicht aktiv" : "Nicht installiert", isActive)];
+        List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? AppTexts.NotActive : AppTexts.NotInstalled, isActive)];
         if (notice is { } message && note is not null)
         {
             info.Add(new InfoNote(note, message.Severity));
         }
 
         var scannedAt = host.ScannedAt(id);
-        info.Add(new InfoFacts("BIBLIOTHEK",
+        info.Add(new InfoFacts(AppTexts.LibraryGroup,
         [
             library is null
-                ? new InfoFact("Spiele", isActive ? "werden eingelesen" : "nicht eingelesen", IsMuted: true)
-                : library.Games.Count == 0 ? new InfoFact("Spiele", LauncherTexts.GameCount(0))
+                ? new InfoFact(AppTexts.FactGames, isActive ? AppTexts.FactScanning : AppTexts.FactNotScanned, IsMuted: true)
+                : library.Games.Count == 0 ? new InfoFact(AppTexts.FactGames, LauncherTexts.GameCount(0))
                 : CountsFact(TypeCountLine.Of(library.Games)),
-            new InfoFact("Zuletzt eingelesen", LauncherTexts.Ago(category.Time, scannedAt), IsMuted: scannedAt is null),
+            new InfoFact(AppTexts.FactLastScanned, LauncherTexts.Ago(category.Time, scannedAt), IsMuted: scannedAt is null),
         ]));
         info.Add(new InfoFacts("ORT",
         [
-            new InfoFact("Gefunden unter", location ?? "Nicht gefunden", IsMuted: location is null),
+            new InfoFact(AppTexts.FoundAt, location ?? AppTexts.NotFound, IsMuted: location is null),
             new InfoFact("Installationen", (isActive, integration?.InstallMonitor) switch
             {
-                (false, _) => "nicht überwacht",
-                (true, null) => "nur aus Arcadia gestartete",
-                _ => "werden überwacht",
+                (false, _) => AppTexts.FactNotWatched,
+                (true, null) => AppTexts.FactOnlyStartedFromArcadia,
+                _ => AppTexts.FactWatched,
             }, IsMuted: !isActive, IsGood: isActive && integration?.InstallMonitor is not null),
-            new InfoFact("Laufende Spiele", (isActive, integration?.RunningGames) switch
+            new InfoFact(AppTexts.FactRunningGames, (isActive, integration?.RunningGames) switch
             {
-                (false, _) => "nicht überwacht",
-                (true, null) => "an ihren Prozessen erkannt",
-                _ => "meldet der Launcher",
+                (false, _) => AppTexts.FactNotWatched,
+                (true, null) => AppTexts.FactDetectedByProcesses,
+                _ => AppTexts.FactReportedByLauncher,
             }, IsMuted: !isActive, IsGood: isActive),
         ]));
 
@@ -89,5 +89,5 @@ internal sealed class LauncherRowStates(ILauncherCategory category)
     }
 
     // The same count line as beside the tab's name (#141); the words are the tooltip's.
-    private static InfoFact CountsFact(TypeCountLine counts) => new("Einträge", counts.Tip, Counts: counts);
+    private static InfoFact CountsFact(TypeCountLine counts) => new(AppTexts.FactEntries, counts.Tip, Counts: counts);
 }

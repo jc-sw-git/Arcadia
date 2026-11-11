@@ -103,5 +103,5 @@ public sealed class DeviceTreeEmulatedPads(
     }
 
     private static string Describe(IReadOnlyList<XusbDevice> devices) =>
-        string.Join(", ", devices.Select(device => $"{(device.OnSoftwareHost ? "virtuell" : "echt")} auf {(device.Slot is { } slot ? $"#{slot}" : "?")}"));
+        string.Join(", ", devices.Select(device => $"{(device.OnSoftwareHost ? "virtuell" : "echt")} auf {(device.Slot is { } slot ? $"#{slot}" : "?")}")); // not a UI text (log)
 }

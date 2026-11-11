@@ -29,27 +29,27 @@ internal sealed class LauncherGeneralRows
             () => category.PageLauncherId is { } id && launchers.IsFound(id))
         {
             Group = GeneralGroup,
-            Subtitle = "Als Tab zeigen, in der Suche und beim Einlesen",
+            Subtitle = AppTexts.LauncherActiveSubtitle,
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
-        _nameRow = new TextRowViewModel("launcher-name", "Name im Tab", () => PageInfo.DisplayName, Edit)
+        _nameRow = new TextRowViewModel("launcher-name", AppTexts.LauncherNameTitle, () => PageInfo.DisplayName, Edit)
         {
             Group = GeneralGroup,
-            Subtitle = "So heißt der Tab in der Leiste",
+            Subtitle = AppTexts.LauncherNameSubtitle,
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
-        _keywordRow = new TextRowViewModel("launcher-keyword", "Such-Kürzel", () => PageInfo.SearchKeyword, Edit)
+        _keywordRow = new TextRowViewModel("launcher-keyword", AppTexts.LauncherKeywordTitle, () => PageInfo.SearchKeyword, Edit)
         {
             Group = GeneralGroup,
             Prefix = SearchQuery.PrefixMarker.ToString(),
         };
         // Two buttons, not a choice (owner, 2026-10-23): uploading is always offered, going back only while an own logo is used.
-        _logoRow = new ActionRowViewModel("launcher-logo", "Logo", () => PickLogoAsync().Forget("Logo wählen"))
+        _logoRow = new ActionRowViewModel("launcher-logo", "Logo", () => PickLogoAsync().Forget(AppTexts.ErrorContextPickLogo))
         {
             Group = GeneralGroup,
-            ActionText = "Hochladen …",
+            ActionText = AppTexts.Upload,
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
@@ -57,7 +57,7 @@ internal sealed class LauncherGeneralRows
         {
             Group = GeneralGroup,
             Indent = 1,
-            ActionText = "Wiederherstellen",
+            ActionText = AppTexts.Restore,
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
@@ -81,48 +81,48 @@ internal sealed class LauncherGeneralRows
         ActiveRow.Preview = [tabBar];
         ActiveRow.Info =
         [
-            new InfoText($"Ein aktiver Launcher hat einen Tab, Arcadia liest seine Spiele ein, findet sie in der Suche und sieht, wenn eins installiert wird oder läuft. Abgeschaltet bleibt {name} aus all dem heraus; seine Einstellungen bleiben."),
+            new InfoText(AppTexts.LauncherActiveInfo(name)),
             .. isFound ? Array.Empty<InfoBlock>() : [new InfoNote(isActive
-                ? $"Arcadia findet {name} auf diesem PC nicht mehr. Ist es deinstalliert, schalte es hier ab, dann verschwindet sein Tab."
-                : $"Arcadia findet {name} auf diesem PC nicht, deshalb lässt es sich nicht einschalten.")],
-            new InfoFootnote("Wirkt sofort, ohne Speichern."),
+                ? AppTexts.LauncherNotFoundAnymore(name)
+                : AppTexts.LauncherNotFoundCannotActivate(name))],
+            new InfoFootnote(AppTexts.AppliesImmediately),
         ];
 
         _nameRow.Refresh();
         _nameRow.Preview = [tabBar];
         _nameRow.Info =
         [
-            new InfoText($"So heißt der Launcher im Tab, in der Liste, in der Suche und auf den Spielen. Höchstens {LauncherNames.MaxNameLength} Zeichen."),
-            new InfoFootnote($"Standard: {original.DisplayName}. Wirkt sofort, ohne Speichern."),
+            new InfoText(AppTexts.LauncherNameInfo(LauncherNames.MaxNameLength)),
+            new InfoFootnote(AppTexts.DefaultAppliesImmediately(original.DisplayName)),
         ];
 
         _keywordRow.Refresh();
-        _keywordRow.Subtitle = $"Sucht mit {keyword} nur in diesem Launcher";
+        _keywordRow.Subtitle = AppTexts.LauncherKeywordSubtitle(keyword);
         var other = launchers.Shown.FirstOrDefault(l => l.Id != id && launchers.ActiveIds.Contains(l.Id));
         _keywordRow.Info =
         [
-            new InfoText("Steht das Kürzel vor dem Suchbegriff, sucht die Suche nur in diesem Launcher. Mehrere Kürzel verbindest du mit „-“."),
-            new InfoExample($"{keyword} hollow", $"sucht nur in {name}"),
-            .. other is null ? Array.Empty<InfoBlock>() : [new InfoExample($"{keyword}{SearchQuery.KeywordSeparator}{other.SearchKeyword} hollow", $"sucht in {name} und {other.DisplayName}")],
-            new InfoText($"Nur Kleinbuchstaben und Ziffern, höchstens {LauncherNames.MaxKeywordLength} Zeichen. Kein „-“, denn das trennt mehrere Launcher. Jedes Kürzel gibt es nur einmal."),
-            new InfoFootnote($"Standard: {SearchQuery.PrefixMarker}{original.SearchKeyword}. Wirkt sofort, ohne Speichern."),
+            new InfoText(AppTexts.LauncherKeywordInfo),
+            new InfoExample($"{keyword} hollow", AppTexts.LauncherKeywordSearchesOnlyIn(name)),
+            .. other is null ? Array.Empty<InfoBlock>() : [new InfoExample($"{keyword}{SearchQuery.KeywordSeparator}{other.SearchKeyword} hollow", AppTexts.LauncherKeywordSearchesIn(name, other.DisplayName))],
+            new InfoText(AppTexts.LauncherKeywordRules(LauncherNames.MaxKeywordLength)),
+            new InfoFootnote(AppTexts.DefaultKeywordAppliesImmediately(SearchQuery.PrefixMarker, original.SearchKeyword)),
         ];
 
         var hasOwnLogo = _category.Changes.Current.PreferencesOf(id).LogoFile is not null;
-        var defaultLogo = original.Logo is null ? "der Anfangsbuchstabe auf einer farbigen Kachel" : $"das Logo von {original.DisplayName}";
-        _logoRow.Subtitle = hasOwnLogo ? "Eigenes Bild · im Tab auf 24 × 24 px eingepasst" : "Standardlogo · im Tab auf 24 × 24 px eingepasst";
+        var defaultLogo = original.Logo is null ? AppTexts.LauncherLogoInitialTile : AppTexts.LauncherLogoOf(original.DisplayName);
+        _logoRow.Subtitle = hasOwnLogo ? AppTexts.LauncherLogoOwnFitted : AppTexts.LauncherLogoDefaultFitted;
         _logoRow.Preview = [tabBar];
         _logoRow.Info =
         [
-            new InfoText("Ein eigenes Bild ersetzt das Logo überall: im Tab, in der Liste, in der Suche und auf den Spielen. PNG, SVG, ICO oder WebP bis 2 MB. Arcadia legt eine Kopie ab; die Datei selbst kannst du danach verschieben oder löschen."),
-            new InfoText("Im Tab wird jedes Logo in ein Feld von 24 × 24 px eingepasst. Das Seitenverhältnis bleibt, freie Fläche bleibt leer."),
+            new InfoText(AppTexts.LauncherLogoOwnInfo),
+            new InfoText(AppTexts.LauncherLogoFitInfo),
             new InfoFootnote($"Standard: {defaultLogo}."),
         ];
-        _defaultLogoRow.Subtitle = "Eigenes Bild entfernen";
+        _defaultLogoRow.Subtitle = AppTexts.LauncherLogoRemove;
         _defaultLogoRow.Preview = [tabBar];
         _defaultLogoRow.Info =
         [
-            new InfoText($"Entfernt das eigene Bild; {name} zeigt wieder {defaultLogo}. Arcadia löscht seine Kopie des Bilds."),
+            new InfoText(AppTexts.LauncherLogoRemoveInfo(name, defaultLogo)),
         ];
 
         return [ActiveRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>()];
@@ -163,7 +163,7 @@ internal sealed class LauncherGeneralRows
         _category.Editor = null;
         if (editor.Rejection is { } reason)
         {
-            _category.Host.Warn($"{row.Title} nicht übernommen: {reason}");
+            _category.Host.Warn(AppTexts.SettingNotApplied(row.Title, reason));
         }
 
         editor.Dispose();
@@ -175,7 +175,7 @@ internal sealed class LauncherGeneralRows
         var original = _category.Host.Launchers.Registered(id)!.Launcher;
         var value = isName ? text.Trim() : text;
         var own = value.Length == 0 || value == (isName ? original.DisplayName : original.SearchKeyword) ? null : value;
-        _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => isName ? p with { Name = own } : p with { Keyword = own }), isName ? "Launcher-Name" : "Such-Kürzel");
+        _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => isName ? p with { Name = own } : p with { Keyword = own }), isName ? AppTexts.LauncherNameSetting : AppTexts.LauncherKeywordTitle);
         AppLog.Write($"{(isName ? "Name" : "Such-Kürzel")} von {id} geändert");
         LooksChanged();
     }
@@ -193,7 +193,7 @@ internal sealed class LauncherGeneralRows
         try
         {
             var name = host.Launchers.Info(id).DisplayName;
-            if (await dialogs.PickFileAsync($"Logo für {name} wählen", "Bilder", LogoFile.Extensions) is not { } path)
+            if (await dialogs.PickFileAsync(AppTexts.LauncherPickLogo(name), "Bilder", LogoFile.Extensions) is not { } path)
             {
                 return;
             }
@@ -201,7 +201,7 @@ internal sealed class LauncherGeneralRows
             var import = await host.Logos.ImportAsync(id, path);
             if (import.FileName is not { } fileName)
             {
-                host.Warn($"Logo nicht übernommen: {import.Problem}");
+                host.Warn(AppTexts.LauncherLogoNotApplied(import.Problem));
                 return;
             }
 

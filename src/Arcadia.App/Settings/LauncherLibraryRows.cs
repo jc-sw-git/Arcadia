@@ -13,7 +13,7 @@ namespace Arcadia.App.Settings;
 internal sealed class LauncherLibraryRows
 {
     /// <summary>The group's title; "Alle neu einlesen" on the list stands in it too.</summary>
-    public const string LibraryGroup = "BIBLIOTHEK";
+    public static string LibraryGroup => AppTexts.LibraryGroup;
 
     private readonly ILauncherCategory _category;
     private readonly LauncherOrder _order;
@@ -28,15 +28,15 @@ internal sealed class LauncherLibraryRows
     {
         _category = category;
         _order = order;
-        _folderRow = new ActionRowViewModel("launcher-folder", "Ordner", () => PickFolderAsync().Forget("Ordner wählen"))
+        _folderRow = new ActionRowViewModel("launcher-folder", "Ordner", () => PickFolderAsync().Forget(AppTexts.ErrorContextPickFolder))
         {
             Group = LibraryGroup,
-            ActionText = "Ordner wählen …",
+            ActionText = AppTexts.PickFolder,
         };
-        _rescanRow = new ActionRowViewModel("launcher-rescan", "Neu einlesen", () => category.Host.RescanLauncher(category.PageLauncherId!))
+        _rescanRow = new ActionRowViewModel("launcher-rescan", AppTexts.Rescan, () => category.Host.RescanLauncher(category.PageLauncherId!))
         {
             Group = LibraryGroup,
-            ActionText = "Jetzt einlesen",
+            ActionText = AppTexts.ScanNow,
         };
     }
 
@@ -52,16 +52,16 @@ internal sealed class LauncherLibraryRows
         var showsFolder = folderChoice is not null && (!isFound || preferences.Folder is not null);
         if (folderChoice is not null)
         {
-            _folderRow.Subtitle = preferences.Folder ?? $"Arcadia findet {name} nicht von selbst";
+            _folderRow.Subtitle = preferences.Folder ?? AppTexts.LauncherFolderSubtitle(name);
             _folderRow.Severity = isFound ? null : HealthSeverity.Warning;
             _folderRow.Info =
             [
-                new InfoText($"Arcadia findet {name} sonst über Windows. Klappt das nicht, etwa bei einer Installation ohne Eintrag in der Registry, wähle hier den Ordner, in dem {name} liegt."),
-                new InfoText($"Arcadia prüft gleich beim Wählen, ob dort {folderChoice.Expected} liegen, und nimmt den Ordner nur dann."),
+                new InfoText(AppTexts.LauncherFolderInfo(name)),
+                new InfoText(AppTexts.LauncherFolderCheckInfo(folderChoice.Expected)),
                 new InfoFacts("ORT",
                 [
-                    new InfoFact("Gewählt", preferences.Folder ?? "–", IsMuted: preferences.Folder is null),
-                    new InfoFact("Gefunden unter", launchers.LocationOf(id) ?? "Nicht gefunden", IsMuted: !isFound),
+                    new InfoFact(AppTexts.Chosen, preferences.Folder ?? "–", IsMuted: preferences.Folder is null),
+                    new InfoFact(AppTexts.FoundAt, launchers.LocationOf(id) ?? AppTexts.NotFound, IsMuted: !isFound),
                 ]),
             ];
         }
@@ -72,18 +72,18 @@ internal sealed class LauncherLibraryRows
         _rescanRow.Counts = counts;
         _rescanRow.Subtitle = (isActive, isFound, library) switch
         {
-            (false, _, _) => "Nur für einen aktiven Launcher",
-            (true, false, _) => "Nicht gefunden",
-            (true, true, null) => "Wird eingelesen …",
+            (false, _, _) => AppTexts.OnlyForActiveLauncher,
+            (true, false, _) => AppTexts.NotFound,
+            (true, true, null) => AppTexts.Scanning,
             (true, true, { Games.Count: 0 }) when scannedAt is null => LauncherTexts.GameCount(0),
-            (true, true, { Games.Count: 0 }) => $"{LauncherTexts.GameCount(0)} · zuletzt {Ago(scannedAt)}",
+            (true, true, { Games.Count: 0 }) => AppTexts.GamesScannedAgo(LauncherTexts.GameCount(0), Ago(scannedAt)),
             (true, true, _) when scannedAt is null => null,
             // After the count line (#141).
-            (true, true, _) => $"· zuletzt {Ago(scannedAt)}",
+            (true, true, _) => AppTexts.ScannedAgo(Ago(scannedAt)),
         };
         _rescanRow.Info =
         [
-            new InfoText($"Liest die Spiele von {name} sofort neu ein, etwa nach einer Installation, die Arcadia nicht mitbekommen hat. Sonst liest Arcadia neu ein, wenn es wieder nach vorne kommt."),
+            new InfoText(AppTexts.LauncherRescanInfo(name)),
         ];
 
         var optionRows = launchers.LibraryOptions(id).Select(option => OptionRow(id, option));
@@ -109,7 +109,7 @@ internal sealed class LauncherLibraryRows
                 [
                     new InfoText(option.Info),
                     .. option.Examples.Select(example => new InfoBullet(example)),
-                    new InfoFootnote("Standard: Aus. Wirkt sofort, ohne Speichern."),
+                    new InfoFootnote(AppTexts.OptionDefaultOffImmediate),
                 ],
             };
             _optionRows[key] = row;
@@ -143,14 +143,14 @@ internal sealed class LauncherLibraryRows
         try
         {
             var name = host.Launchers.Info(id).DisplayName;
-            if (await dialogs.PickFolderAsync($"Ordner von {name} wählen") is not { } folder)
+            if (await dialogs.PickFolderAsync(AppTexts.LauncherPickFolder(name)) is not { } folder)
             {
                 return;
             }
 
             if (await Task.Run(() => choice.Find(folder)) is not { } root)
             {
-                host.Warn($"Dort liegt kein {name}: Arcadia sucht {choice.Expected}.");
+                host.Warn(AppTexts.LauncherFolderWrong(name, choice.Expected));
                 return;
             }
 

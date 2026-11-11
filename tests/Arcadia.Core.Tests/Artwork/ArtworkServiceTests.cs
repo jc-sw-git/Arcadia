@@ -320,7 +320,7 @@ public sealed class ArtworkServiceTests : IDisposable
         await ScanAsync(GameOf("4000001"));
         var before = _service.Of("steam:4000001")!.Cover!;
 
-        _service.ReportBroken("steam:4000001", ArtworkKind.Cover);
+        _service.ReportBroken(before);
         await ScanAsync(GameOf("4000001"));
 
         Assert.True(_service.Of("steam:4000001")!.Cover!.Version > before.Version);

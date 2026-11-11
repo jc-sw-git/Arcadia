@@ -39,6 +39,7 @@ its file.
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 | [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
 | [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
+| [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 
 ## Release candidate tests (restart or installation)
 
@@ -80,3 +81,5 @@ Charter: –. Time box: –. Findings: –.
 | T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
 | T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
+| T490-1, -3, -4, -6, -8, -10, -12 to -15, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -19, -23 to -26 in `ArtworkByHandTests` (Core) |
+| T490-2, -5 | `Window/ChangeArtworkViewTests` |

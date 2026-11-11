@@ -56,12 +56,12 @@ public sealed class GameMenuTests
         arcadia.Key(Key.Apps);
         AssertMenuOpenFor(arcadia, "C Game");
 
-        // Down skips the two disabled entries (favourites, artwork) after "Details anzeigen", Up skips them back.
+        // Down skips the disabled "Zu Favoriten hinzufügen" after "Details anzeigen", Up skips it back.
         Assert.Equal("Spielen", FocusedEntry(arcadia));
         arcadia.Press(UiAction.Down);
         Assert.Equal(AppTexts.ActionShowDetails, FocusedEntry(arcadia));
         arcadia.Press(UiAction.Down);
-        Assert.Equal("In GOG Galaxy öffnen", FocusedEntry(arcadia));
+        Assert.Equal(AppTexts.ActionChangeArtworkMore, FocusedEntry(arcadia));
         arcadia.Press(UiAction.Up);
         Assert.Equal(AppTexts.ActionShowDetails, FocusedEntry(arcadia));
         arcadia.Press(UiAction.Back);
@@ -138,7 +138,7 @@ public sealed class GameMenuTests
         Assert.Equal(
             ["Spielen", "Details anzeigen", "Zu Favoriten hinzufügen", "Artwork ändern …", "In GOG Galaxy öffnen", "Deinstallieren …"],
             entries.Select(entry => entry.Label));
-        Assert.Equal([true, true, false, false, true, true], entries.Select(entry => entry.IsEnabled));
+        Assert.Equal([true, true, false, true, true, true], entries.Select(entry => entry.IsEnabled));
         Assert.Equal("GOG Galaxy installiert eventuell vorher das Update", entries[0].Note);
         Assert.All(entries.Where(entry => !entry.IsEnabled), entry => Assert.Equal(AppTexts.ActionNotYetAvailable, entry.Note));
         Assert.DoesNotContain(entries, entry => entry.Label.Contains("Update", StringComparison.Ordinal) || entry.Label.Contains("Controller-Layout", StringComparison.Ordinal));

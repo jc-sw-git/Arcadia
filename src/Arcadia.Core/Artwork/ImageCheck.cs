@@ -161,6 +161,13 @@ public static class ImageCheck
 
         if (chunk.SequenceEqual("VP8X"u8))
         {
+            // Animated images are out of scope (#13); the flag says so before any frame (#490, T490-16).
+            const byte AnimationFlag = 0x02;
+            if ((head[20] & AnimationFlag) != 0)
+            {
+                return null;
+            }
+
             return new ImageSize(Read24(head[24..]) + 1, Read24(head[27..]) + 1);
         }
 

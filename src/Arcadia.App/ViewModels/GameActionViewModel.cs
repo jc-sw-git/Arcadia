@@ -57,6 +57,9 @@ public interface IGameActionHost
     void CycleGameMouseMode(GameTileViewModel tile);
 
     void Uninstall(GameTileViewModel tile);
+
+    /// <summary>"Artwork ändern" (#490): the modal for the game's cover and background.</summary>
+    void ChangeArtwork(GameTileViewModel tile);
 }
 
 /// <summary>
@@ -184,7 +187,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
         actions.Add(new(GameActionKind.Favorite, AppTexts.ActionAddToFavorites, NotYetAvailable, false, () => { }, AppTexts.ActionToFavorites));
         if (game.IsInstalled)
         {
-            actions.Add(new(GameActionKind.Artwork, AppTexts.ActionChangeArtworkMore, NotYetAvailable, false, () => { }, AppTexts.ActionChangeArtwork));
+            actions.Add(new(GameActionKind.Artwork, AppTexts.ActionChangeArtworkMore, null, true, () => host.ChangeArtwork(tile), AppTexts.ActionChangeArtwork));
         }
 
         actions.Add(game.OpenInLauncher is null

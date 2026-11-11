@@ -13,11 +13,12 @@ namespace Arcadia.Core.Artwork;
 /// </summary>
 /// <remarks>
 /// One run at a time, off the UI thread; a scan during a run queues the newest libraries for the next run, so a run cut off
-/// (Arcadia closed) is simply taken up by the next. <see cref="Of"/> may be called from any thread; <see cref="Changed"/> and
+/// (Arcadia closed) is simply taken up by the next. What the player does in "Artwork ändern" (#490, ArtworkService.ByHand.cs)
+/// waits for the game the run is at, never for the whole run: each game is written under one lock. <see cref="Of"/> may be called from any thread; <see cref="Changed"/> and
 /// <see cref="Failed"/> are raised on the run's thread. Failures of single images are logged and leave the placeholder; no
 /// download outlives <see cref="DownloadTimeout"/>, and after a timeout or with no network the run downloads nothing more.
 /// </remarks>
-public sealed class ArtworkService : IDisposable
+public sealed partial class ArtworkService : IDisposable
 {
     /// <summary>The longest a download may take (#13); then the image waits for the next scan.</summary>
     public static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(10);
@@ -31,6 +32,13 @@ public sealed class ArtworkService : IDisposable
     private readonly CancellationTokenSource _shutdown = new();
     private readonly object _gate = new();
 
+    // One writer of the cache at a time: the run per game, or one of the player's choices (#490).
+    private readonly SemaphoreSlim _write = new(1, 1);
+
+    // The launchers' images by launcher id and the libraries last read, for a single game's choice and "Alle neu laden".
+    private readonly ConcurrentDictionary<string, ILauncherArtwork> _sources = new(StringComparer.Ordinal);
+    private IReadOnlyList<LibraryArtwork>? _lastLibraries;
+
     // What the views show, readable from any thread.
     private readonly ConcurrentDictionary<string, GameArtwork> _shown = new(StringComparer.Ordinal);
 
@@ -43,7 +51,7 @@ public sealed class ArtworkService : IDisposable
     private readonly Dictionary<(string Key, ArtworkKind Kind), long> _versions = [];
     private bool _indexed;
 
-    private IReadOnlyList<LibraryArtwork>? _pending;
+    private PendingRun? _pending;
     private Task _runner = Task.CompletedTask;
 
     /// <param name="tolerance">How much of an image the crop may cut away for it to fit (<see cref="ArtworkFormat"/>).</param>
@@ -73,7 +81,31 @@ public sealed class ArtworkService : IDisposable
     /// The libraries were read (again): brings their images into the cache in the background, and removes the automatic
     /// images of games no longer in a library that was read whole.
     /// </summary>
-    public void Update(IReadOnlyList<LibraryArtwork> libraries) => Start(libraries);
+    public void Update(IReadOnlyList<LibraryArtwork> libraries) => Start(new PendingRun(libraries, Reload: false, Overwrite: false));
+
+    /// <summary>
+    /// "Alle Artworks neu laden" (#13, #490): takes every game's images from their sources again, also those already cached.
+    /// Images set by hand stay unless <paramref name="overwriteSetByHand"/> ("Von Hand gesetzte Artworks überschreiben");
+    /// then they give way to what Arcadia would choose, and own files stay offered. An image that can't be loaded now stays.
+    /// </summary>
+    /// <returns>False before the first scan: there is nothing to load yet.</returns>
+    public bool ReloadAll(bool overwriteSetByHand)
+    {
+        IReadOnlyList<LibraryArtwork>? libraries;
+        lock (_gate)
+        {
+            libraries = _lastLibraries;
+        }
+
+        if (libraries is null)
+        {
+            return false;
+        }
+
+        Log($"Artwork: alle neu laden{(overwriteSetByHand ? ", auch von Hand gesetzte" : string.Empty)}");
+        Start(new PendingRun(libraries, Reload: true, Overwrite: overwriteSetByHand));
+        return true;
+    }
 
     /// <summary>The run going on now and those queued behind it; for the tests.</summary>
     public Task WhenIdleAsync()
@@ -84,22 +116,41 @@ public sealed class ArtworkService : IDisposable
         }
     }
 
-    /// <summary>The view couldn't decode the image (damaged inside): it counts as missing, the next scan loads it again.</summary>
-    public void ReportBroken(string gameKey, ArtworkKind kind)
+    /// <summary>
+    /// The view couldn't decode the image (damaged inside): it counts as missing, the next scan loads it again. An image
+    /// "Artwork ändern" only offers is no game's image: the offer just shows nothing.
+    /// </summary>
+    public void ReportBroken(ArtworkFile file)
     {
-        _broken[(gameKey, kind)] = true;
-        Log($"Artwork: {Name(kind)} von {gameKey} ist beschädigt, wird beim nächsten Einlesen neu geladen");
+        if (Of(file.GameKey)?.Of(file.Kind)?.Path != file.Path)
+        {
+            return;
+        }
+
+        _broken[(file.GameKey, file.Kind)] = true;
+        Log($"Artwork: {Name(file.Kind)} von {file.GameKey} ist beschädigt, wird beim nächsten Einlesen neu geladen");
     }
 
     public void Dispose() => _shutdown.Cancel();
 
-    private void Start(IReadOnlyList<LibraryArtwork>? libraries)
+    private void Start(PendingRun? run)
     {
         lock (_gate)
         {
-            if (libraries is not null)
+            if (run is not null)
             {
-                _pending = libraries;
+                // A reload queued stays one when a scan comes after it; the newest libraries go.
+                _pending = _pending is { } queued
+                    ? run with { Reload = run.Reload || queued.Reload, Overwrite = run.Overwrite || queued.Overwrite }
+                    : run;
+                _lastLibraries = run.Libraries;
+                foreach (var (library, source) in run.Libraries)
+                {
+                    if (source is not null)
+                    {
+                        _sources[library.Launcher.Id] = source;
+                    }
+                }
             }
 
             if (_runner.IsCompleted)
@@ -118,19 +169,27 @@ public sealed class ArtworkService : IDisposable
                 var changes = new ChangeBatcher(this);
                 if (!_indexed)
                 {
-                    ReadIndex(changes);
+                    await _write.WaitAsync(_shutdown.Token);
+                    try
+                    {
+                        ReadIndex(changes);
+                    }
+                    finally
+                    {
+                        _write.Release();
+                    }
                 }
 
-                IReadOnlyList<LibraryArtwork>? libraries;
+                PendingRun? pending;
                 lock (_gate)
                 {
-                    libraries = _pending;
+                    pending = _pending;
                     _pending = null;
                 }
 
-                if (libraries is not null)
+                if (pending is not null)
                 {
-                    await UpdateAsync(libraries, changes, _shutdown.Token);
+                    await UpdateAsync(pending, changes, _shutdown.Token);
                 }
 
                 changes.Flush();
@@ -172,6 +231,8 @@ public sealed class ArtworkService : IDisposable
         var watch = Stopwatch.StartNew();
         try
         {
+            // What "Artwork ändern" offered before isn't shown by any view now.
+            _cache.ClearAllSuggestions();
             foreach (var artwork in _cache.All())
             {
                 _records[artwork.GameKey] = artwork;
@@ -188,11 +249,11 @@ public sealed class ArtworkService : IDisposable
         Log($"Artwork: {_records.Count} Spiele im Cache, in {watch.ElapsedMilliseconds} ms gelesen");
     }
 
-    private async Task UpdateAsync(IReadOnlyList<LibraryArtwork> libraries, ChangeBatcher changes, CancellationToken cancel)
+    private async Task UpdateAsync(PendingRun pending, ChangeBatcher changes, CancellationToken cancel)
     {
         var watch = Stopwatch.StartNew();
-        var run = new RunState();
-        foreach (var (library, source) in libraries)
+        var run = new RunState { Reload = pending.Reload, Overwrite = pending.Overwrite };
+        foreach (var (library, source) in pending.Libraries)
         {
             if (source is null)
             {
@@ -203,6 +264,7 @@ public sealed class ArtworkService : IDisposable
             foreach (var game in library.Games)
             {
                 cancel.ThrowIfCancellationRequested();
+                await _write.WaitAsync(cancel);
                 try
                 {
                     await UpdateGameAsync(game, lookup, run, changes, cancel);
@@ -212,11 +274,23 @@ public sealed class ArtworkService : IDisposable
                     // One game's images can't be written now (a full disk, a locked file): it keeps what it shows.
                     Log($"Artwork: {game.Key} nicht gespeichert: {e.GetType().Name}: {e.Message}");
                 }
+                finally
+                {
+                    _write.Release();
+                }
             }
 
             if (library is { IsFound: true, ScanFailed: false })
             {
-                RemoveLeftGames(library, changes);
+                await _write.WaitAsync(cancel);
+                try
+                {
+                    RemoveLeftGames(library, changes);
+                }
+                finally
+                {
+                    _write.Release();
+                }
             }
         }
 
@@ -225,7 +299,7 @@ public sealed class ArtworkService : IDisposable
             ReleaseGarbage();
         }
 
-        Log($"Artwork: {run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
+        Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
             + (run.Offline ? "; keine Verbindung, der Rest folgt beim nächsten Einlesen" : string.Empty));
     }
 
@@ -238,10 +312,11 @@ public sealed class ArtworkService : IDisposable
 
     private const int ManyImages = 100;
 
+    /// <summary>Brings one game's images not set by hand up to date; the caller holds <see cref="_write"/>.</summary>
     private async Task UpdateGameAsync(Game game, IArtworkLookup lookup, RunState run, ChangeBatcher changes, CancellationToken cancel)
     {
         var key = game.Key;
-        var before = _records.GetValueOrDefault(key) ?? _cache.Read(key) ?? new CachedArtwork(key, null, null);
+        var before = RecordOf(key);
         if (before.Unreadable)
         {
             Log($"Artwork: Metadaten von {key} nicht lesbar; die Bilder darin gelten als von Hand gesetzt");
@@ -260,12 +335,22 @@ public sealed class ArtworkService : IDisposable
                 image = null;
             }
 
+            if (image is { SetByHand: true } && run.Overwrite)
+            {
+                // "Von Hand gesetzte Artworks überschreiben": Arcadia chooses again; an own file stays offered, not in use.
+                image = image.Source == ArtworkSource.File ? null : image with { SetByHand = false };
+                size = image is null ? null : size;
+                artwork = artwork.With(kind, image);
+            }
+
             if (image is { SetByHand: true })
             {
                 continue;
             }
 
-            var pick = await PickAsync(game, kind, lookup.For(game, kind), image, size, run, cancel);
+            var pick = run.Reload
+                ? await PickAsync(game, kind, lookup.For(game, kind), null, null, run, cancel) ?? (size is null ? null : new Pick.Keep())
+                : await PickAsync(game, kind, lookup.For(game, kind), image, size, run, cancel);
             written |= pick is Pick.Take;
             artwork = Apply(artwork, kind, pick, run);
         }
@@ -273,7 +358,7 @@ public sealed class ArtworkService : IDisposable
         // The same original copied again (its copy was broken) leaves the metadata alike but the file new.
         if (written || artwork != before)
         {
-            if (artwork is { Cover: null, Hero: null })
+            if (artwork.IsEmpty)
             {
                 _records.Remove(key);
             }
@@ -559,7 +644,7 @@ public sealed class ArtworkService : IDisposable
             }
 
             _cache.WriteMetadata(kept);
-            if (kept is { Cover: null, Hero: null })
+            if (kept.IsEmpty)
             {
                 _records.Remove(key);
             }
@@ -602,8 +687,17 @@ public sealed class ArtworkService : IDisposable
         public sealed record Take(ArtworkCandidate Candidate, byte[] Content, ImageSize Size, string Stamp) : Pick;
     }
 
+    /// <summary>The libraries a run goes over, and whether it is "Alle Artworks neu laden" (#490).</summary>
+    private sealed record PendingRun(IReadOnlyList<LibraryArtwork> Libraries, bool Reload, bool Overwrite);
+
     private sealed class RunState
     {
+        /// <summary>Every image is taken from its source again, also one already cached.</summary>
+        public bool Reload { get; init; }
+
+        /// <summary>Images set by hand give way too.</summary>
+        public bool Overwrite { get; init; }
+
         public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
 
         // A server that has no image now is asked again by the next run: a rescan may find what it added meanwhile.

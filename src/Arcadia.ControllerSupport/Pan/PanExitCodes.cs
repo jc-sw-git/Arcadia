@@ -34,10 +34,10 @@ public static class PanExitCodes
         // Pan could not log this: nothing of it may be written into a folder it doesn't own.
         DataFolder => new InvalidOperationException(ControllerSupportTexts.PanDataFolderNotSaved(PanPaths.DataDirectory)),
         RestoreIncomplete => new InvalidOperationException(ControllerSupportTexts.PanCleanupIncomplete(PanPaths.LogPath)),
-        HidHideFailed => new InvalidOperationException(ControllerSupportTexts.PanHidHideNotInstalled(PanPaths.LogPath, HidHideRelease.ManualInstallUrl)),
+        HidHideFailed => new InvalidOperationException(ControllerSupportTexts.PanHidHideNotInstalled(logPath: PanPaths.LogPath, url: HidHideRelease.ManualInstallUrl)),
         DriversNotRemoved => new InvalidOperationException(ControllerSupportTexts.PanRemovedDriverLeft(PanPaths.LogPath)),
         // When Arcadia aborted, it shows its own failed step's message instead.
         InstallHandOver.EndedExitCode => new InvalidOperationException(command == "--restore" ? RestoreHandOverEndedText : HandOverEndedText),
-        _ => new InvalidOperationException(ControllerSupportTexts.PanCommandFailed(command, exitCode, PanPaths.LogPath)),
+        _ => new InvalidOperationException(ControllerSupportTexts.PanCommandFailed(command: command, exitCode: exitCode, logPath: PanPaths.LogPath)),
     };
 }

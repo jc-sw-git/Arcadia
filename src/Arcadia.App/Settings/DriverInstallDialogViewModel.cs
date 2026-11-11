@@ -89,7 +89,7 @@ public sealed partial class DriverInstallDialogViewModel : ViewModels.ViewModelB
         var percent = Math.Round(Progress.Value * 100);
         Value = percent;
         Percent = percent.ToString("0", CultureInfo.InvariantCulture) + " %";
-        StepCount = AppTexts.DriversStepOf(Progress.CurrentNumber, steps.Count);
+        StepCount = AppTexts.DriversStepOf(current: Progress.CurrentNumber, count: steps.Count);
     }
 
     /// <summary>While it runs nothing gets through (D2); after a failure A and B close it (D9).</summary>

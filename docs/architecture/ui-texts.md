@@ -24,7 +24,9 @@ description is translated by Windows' own means (`ServiceDescriptions`).
   as `<AssemblyName>.<FileName>` and runs `src/Arcadia.Texts.Generator`, a Roslyn source generator, so the build
   needs nothing but `dotnet build` on any platform.
 - The generator makes a static class per file: a property per text without placeholders (`AppTexts.Cancel`), a
-  method per text with placeholders whose parameters are the placeholders (`AppTexts.GameStarting(game)`).
+  method per text with placeholders whose parameters are the placeholders in name order
+  (`AppTexts.GameStarting(game)`). Two or more values are passed by name (`AppTexts.GameOpening(game: title,
+  launcher: name)`), so a rewording that moves the placeholders can't swap them; `UiTextsStayInResourcesTests` checks it.
 - Both read through `UiText` in `Arcadia.Launchers.Abstractions` (the plugin contract), the one place texts are
   filled. It never throws: a placeholder without a value stays visible (`{game}`), a format the value doesn't know
   is left out, a missing text shows its key; each

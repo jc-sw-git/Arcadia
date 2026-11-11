@@ -22,7 +22,7 @@ public sealed class PluralTextsTests
     public void The_found_games_toast_reads_as_before(int count) =>
         Assert.Equal(
             count == 1 ? "1 Spiel in Steam gefunden." : $"{count} Spiele in Steam gefunden.",
-            count == 1 ? AppTexts.ToastFoundOneGame("Steam") : AppTexts.ToastFoundGames(count, "Steam"));
+            count == 1 ? AppTexts.ToastFoundOneGame("Steam") : AppTexts.ToastFoundGames(count: count, launcher: "Steam"));
 
     [Theory]
     [MemberData(nameof(Counts))]
@@ -36,14 +36,14 @@ public sealed class PluralTextsTests
     public void The_search_title_reads_as_before(int launchers) =>
         Assert.Equal(
             $"12 Treffer in {launchers} {(launchers == 1 ? "Launcher" : "Launchern")}",
-            launchers == 1 ? AppTexts.SearchHitsInOneLauncher(12) : AppTexts.SearchHitsInLaunchers(12, launchers));
+            launchers == 1 ? AppTexts.SearchHitsInOneLauncher(12) : AppTexts.SearchHitsInLaunchers(count: 12, launchers: launchers));
 
     [Theory]
     [MemberData(nameof(Counts))]
     public void The_filter_hides_all_note_reads_as_before(int count) =>
         Assert.Equal(
             $"Steam hat {(count == 1 ? "1 Eintrag" : $"{Formatting.Count(count)} Einträge")}, der Filter blendet gerade alle aus.",
-            count == 1 ? AppTexts.LibraryFilterHidesTheOne("Steam") : AppTexts.LibraryFilterHidesAll("Steam", Formatting.Count(count)));
+            count == 1 ? AppTexts.LibraryFilterHidesTheOne("Steam") : AppTexts.LibraryFilterHidesAll(tab: "Steam", count: Formatting.Count(count)));
 
     [Theory]
     [InlineData(1)]

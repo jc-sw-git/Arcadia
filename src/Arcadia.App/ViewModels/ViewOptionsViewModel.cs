@@ -82,10 +82,10 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         var blocked = PageSizes.Options.Where(size => !PageSizes.IsAllowed(size, gameCount)).ToList();
         var largest = PageSizes.Allowed(gameCount)[^1];
         var pageSizeNote = note ?? (blocked.Count == 0
-            ? AppTexts.ViewOptionsAllPageSizes(tabName, gameCount)
+            ? AppTexts.ViewOptionsAllPageSizes(tab: tabName, count: gameCount)
             : blocked.Count == 1
-                ? AppTexts.ViewOptionsPageSizeBlocked(tabName, gameCount, largest, JoinGerman(blocked))
-                : AppTexts.ViewOptionsPageSizesBlocked(tabName, gameCount, largest, JoinGerman(blocked)));
+                ? AppTexts.ViewOptionsPageSizeBlocked(tab: tabName, count: gameCount, largest: largest, sizes: JoinGerman(blocked))
+                : AppTexts.ViewOptionsPageSizesBlocked(tab: tabName, count: gameCount, largest: largest, sizes: JoinGerman(blocked)));
 
         return new ViewOptionsViewModel(
             AppTexts.ViewOptionsTitle,

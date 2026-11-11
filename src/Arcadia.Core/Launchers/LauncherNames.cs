@@ -53,7 +53,7 @@ public static class LauncherNames
         }
 
         return launchers.FirstOrDefault(l => l.Id != launcherId && string.Equals(l.SearchKeyword, keyword, StringComparison.OrdinalIgnoreCase)) is { } other
-            ? CoreTexts.KeywordTaken(SearchQuery.PrefixMarker, keyword, other.DisplayName)
+            ? CoreTexts.KeywordTaken(prefix: SearchQuery.PrefixMarker, keyword: keyword, launcher: other.DisplayName)
             : null;
     }
 

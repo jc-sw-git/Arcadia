@@ -40,7 +40,7 @@ public static class LibraryToasts
         {
             null => AppTexts.ToastNotStarted(name),
             { Reason: { } reason } => $"{name}: {reason}",
-            _ => AppTexts.ToastStartCancelledByLauncher(name, notStarted.Launcher.DisplayName),
+            _ => AppTexts.ToastStartCancelledByLauncher(game: name, launcher: notStarted.Launcher.DisplayName),
         };
     }
 
@@ -62,7 +62,7 @@ public static class LibraryToasts
             { IsFound: false } => (HealthSeverity.Warning, AppTexts.ToastLauncherStillNotFound(name), false),
             { ScanFailed: true, Count: var kept } => (HealthSeverity.Warning, ScanFailed([name], keptGames: kept > 0), false),
             { Count: 0 } => (HealthSeverity.Info, AppTexts.ToastStillNoGames(name), false),
-            { Count: var count } => (HealthSeverity.Info, count == 1 ? AppTexts.ToastFoundOneGame(name) : AppTexts.ToastFoundGames(count, name), false),
+            { Count: var count } => (HealthSeverity.Info, count == 1 ? AppTexts.ToastFoundOneGame(name) : AppTexts.ToastFoundGames(count: count, launcher: name), false),
         };
     }
 

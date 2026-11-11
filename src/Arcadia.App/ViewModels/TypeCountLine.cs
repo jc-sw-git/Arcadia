@@ -37,7 +37,7 @@ public sealed record TypeCountLine(IReadOnlyList<TypeCountPart> Parts, string Ti
             .ToList();
         var tip = string.Join(" · ", counts.Select(count => count.AreAllInstalled
             ? GameTypeTexts.Count(count.Type, count.Total)
-            : AppTexts.TypeCountOfThemInstalled(GameTypeTexts.Count(count.Type, count.Total), Formatting.Count(count.Installed))));
+            : AppTexts.TypeCountOfThemInstalled(total: GameTypeTexts.Count(count.Type, count.Total), installed: Formatting.Count(count.Installed))));
         return new TypeCountLine(parts, tip);
     }
 }

@@ -566,13 +566,13 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         Counts = EmptyTab is null ? snapshot.Counts : TypeCountLine.None;
         CanFilter = EmptyTab is null && snapshot.Offer.HasAny;
         IsFiltered = CanFilter && shownTab.Filter.IsActive;
-        FilterHitsText = IsFiltered ? AppTexts.LibraryFilteredOf(Formatting.Count(sorted.Count), Formatting.Count(tab.Count)) : string.Empty;
+        FilterHitsText = IsFiltered ? AppTexts.LibraryFilteredOf(shown: Formatting.Count(sorted.Count), total: Formatting.Count(tab.Count)) : string.Empty;
         FilterHidesAll = EmptyTab is null && sorted.Count == 0;
         FilterHidesAllText = FilterHidesAll
-            ? tab.Count == 1 ? AppTexts.LibraryFilterHidesTheOne(tab.Name) : AppTexts.LibraryFilterHidesAll(tab.Name, Formatting.Count(tab.Count))
+            ? tab.Count == 1 ? AppTexts.LibraryFilterHidesTheOne(tab.Name) : AppTexts.LibraryFilterHidesAll(tab: tab.Name, count: Formatting.Count(tab.Count))
             : string.Empty;
-        RangeText = window.Length == 0 ? string.Empty : AppTexts.LibraryPageRange(window.Start + 1, window.Start + window.Length, sorted.Count);
-        ViewSummary = AppTexts.LibrarySortAndPageSize(Formatting.SortLabel(view.LibrarySort), pageSize);
+        RangeText = window.Length == 0 ? string.Empty : AppTexts.LibraryPageRange(first: window.Start + 1, last: window.Start + window.Length, count: sorted.Count);
+        ViewSummary = AppTexts.LibrarySortAndPageSize(sort: Formatting.SortLabel(view.LibrarySort), pageSize: pageSize);
     }
 
     /// <summary>A tab's games sorted, what they were sorted from, its count line, what it offers to filter and what its filter shows.</summary>

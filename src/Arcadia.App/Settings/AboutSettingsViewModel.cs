@@ -16,7 +16,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
     public const string InstallKey = "arcadia-install";
 
     /// <summary>The download's progress, here and on the status modal's update entry.</summary>
-    public static string LoadingText(string version, int percent) => AppTexts.AboutLoading(version, percent);
+    public static string LoadingText(string version, int percent) => AppTexts.AboutLoading(version: version, percent: percent);
 
     private readonly ArcadiaUpdateService _updates;
     private readonly InfoRowViewModel _version;

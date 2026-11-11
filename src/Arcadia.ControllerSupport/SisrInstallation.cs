@@ -212,7 +212,7 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException or InvalidOperationException or System.ComponentModel.Win32Exception)
             {
                 notRemoved.Add(what);
-                cause ??= ControllerSupportTexts.SisrNotRemovable(what, ex.Message);
+                cause ??= ControllerSupportTexts.SisrNotRemovable(what: what, message: ex.Message);
             }
         }
 

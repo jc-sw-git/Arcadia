@@ -30,7 +30,7 @@ public sealed class UiTextTests : IDisposable
     [Trait("TestCase", "T480-1")]
     public void A_text_filled_with_all_its_values_shows_them_and_logs_nothing()
     {
-        Assert.Equal("„Hollow Crown“ wird in Steam geöffnet …", FallbackTestTexts.GameOpening("Hollow Crown", "Steam"));
+        Assert.Equal("„Hollow Crown“ wird in Steam geöffnet …", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
         Assert.Empty(_logged);
     }
 
@@ -57,6 +57,29 @@ public sealed class UiTextTests : IDisposable
         Assert.Equal("Noch 5 Minuten", shown);
         Assert.Equal("UI-Text T2BadFormat: ungültiges Format für {minutes}", Assert.Single(_logged));
     }
+
+    [Fact]
+    [Trait("TestCase", "T480-9")]
+    public void A_reworded_text_that_moves_its_placeholders_keeps_each_value_in_its_place()
+    {
+        var previous = FallbackTestTexts.Resources;
+        FallbackTestTexts.Resources = Texts("GameOpening", "In {launcher} öffnet sich „{game}“ …");
+        try
+        {
+            Assert.Equal("In Steam öffnet sich „Hollow Crown“ …", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
+        }
+        finally
+        {
+            FallbackTestTexts.Resources = previous;
+        }
+    }
+
+    [Fact]
+    [Trait("TestCase", "T480-9")]
+    public void A_text_method_takes_its_placeholders_in_name_order_not_text_order() =>
+        Assert.Equal(
+            ["count", "size", "time"],
+            typeof(FallbackTestTexts).GetMethod(nameof(FallbackTestTexts.Size))!.GetParameters().Select(parameter => parameter.Name));
 
     [Fact]
     [Trait("TestCase", "T480-3")]
@@ -93,7 +116,7 @@ public sealed class UiTextTests : IDisposable
     [InlineData("{{game}}")]
     public void A_value_with_braces_is_shown_as_it_is(string title)
     {
-        Assert.Equal($"„{title}“ wird in Steam geöffnet …", FallbackTestTexts.GameOpening(title, "Steam"));
+        Assert.Equal($"„{title}“ wird in Steam geöffnet …", FallbackTestTexts.GameOpening(game: title, launcher: "Steam"));
         Assert.Empty(_logged);
     }
 
@@ -146,8 +169,8 @@ public sealed class UiTextTests : IDisposable
         try
         {
             var (size, count, time) = (12.5, 1234, new DateTime(2026, 1, 2, 9, 5, 0, DateTimeKind.Local));
-            Assert.Equal($"{size:0.0} GB · {count:N0} Dateien · seit {time:HH:mm} Uhr", FallbackTestTexts.Size(size, count, time));
-            Assert.Equal(expected, FallbackTestTexts.Size(size, count, time));
+            Assert.Equal($"{size:0.0} GB · {count:N0} Dateien · seit {time:HH:mm} Uhr", FallbackTestTexts.Size(size: size, count: count, time: time));
+            Assert.Equal(expected, FallbackTestTexts.Size(size: size, count: count, time: time));
         }
         finally
         {

@@ -822,7 +822,7 @@ public sealed class TakenOverControllers
             }
 
             _gaveUp = true;
-            message = ControllerSupportTexts.ControllersForGamesViiperGaveUp(_losses.Count, CrashWindow.TotalMinutes);
+            message = ControllerSupportTexts.ControllersForGamesViiperGaveUp(count: _losses.Count, minutes: CrashWindow.TotalMinutes);
         }
 
         _log(message);

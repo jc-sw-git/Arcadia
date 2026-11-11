@@ -174,7 +174,7 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         }
         else if (usbip < UsbipDriver.MinimumVersion)
         {
-            issues.Add(new("usbip-outdated", HealthSeverity.Warning, ControllerSupportTexts.UsbipOutdatedTitle, ControllerSupportTexts.UsbipOutdatedText(usbip, UsbipDriver.MinimumVersion), HealthFix.InstallDrivers, ControllerSupportTexts.Update));
+            issues.Add(new("usbip-outdated", HealthSeverity.Warning, ControllerSupportTexts.UsbipOutdatedTitle, ControllerSupportTexts.UsbipOutdatedText(installed: usbip, minimumVersion: UsbipDriver.MinimumVersion), HealthFix.InstallDrivers, ControllerSupportTexts.Update));
         }
         else if (!UsbipDriver.IsRunning())
         {
@@ -208,10 +208,10 @@ public sealed class ControllerSupportPlatform : IControllerSupportPlatform
         null => new("hidhide-missing", HealthSeverity.Warning, ControllerSupportTexts.HidHideMissingTitle, HidHideMissingText, HealthFix.InstallDrivers, ControllerSupportTexts.Install),
         _ when HidHideRelease.IsSupported(installed) => null,
         _ when HidHideNeedsInstaller(installed) => new("hidhide-unsupported", HealthSeverity.Warning, ControllerSupportTexts.HidHideUnsupportedTitle,
-            ControllerSupportTexts.HidHideTooOldText(installed.ToString(3), HidHideRelease.Version),
+            ControllerSupportTexts.HidHideTooOldText(installed: installed.ToString(3), version: HidHideRelease.Version),
             HealthFix.InstallDrivers, ControllerSupportTexts.Update),
         _ => new("hidhide-unsupported", HealthSeverity.Warning, ControllerSupportTexts.HidHideUnsupportedTitle,
-            ControllerSupportTexts.HidHideTooNewText(installed.ToString(3), SteamControllerHiding.SupportedMajorVersion)),
+            ControllerSupportTexts.HidHideTooNewText(installed: installed.ToString(3), supportedMajorVersion: SteamControllerHiding.SupportedMajorVersion)),
     };
 
     private static string HidHideMissingText =>

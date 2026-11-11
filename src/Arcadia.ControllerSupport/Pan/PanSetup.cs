@@ -125,7 +125,7 @@ public static class PanSetup
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(command, PanTimeouts.Restore.TotalMinutes));
+                throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(command: command, minutes: PanTimeouts.Restore.TotalMinutes));
             }
         }
 
@@ -148,7 +148,7 @@ public static class PanSetup
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(arguments[0], wait.TotalMinutes));
+            throw new System.TimeoutException(ControllerSupportTexts.PanCommandNoAnswer(command: arguments[0], minutes: wait.TotalMinutes));
         }
 
         if (process.ExitCode != 0)

@@ -13,7 +13,7 @@ namespace Arcadia.Texts.Generator;
 /// <summary>
 /// For every <c>*Texts.resx</c> of a project (an AdditionalFile, see <c>Directory.Build.targets</c>) a static class of
 /// the same name in the namespace of its folder: a property per text without placeholders, a method per text with
-/// placeholders whose parameters are the placeholders' names. Both read through <c>UiText</c>, the one helper that
+/// placeholders whose parameters are the placeholders' names, in name order. Both read through <c>UiText</c>, the one helper that
 /// fills texts and never throws.
 /// </summary>
 [Generator(LanguageNames.CSharp)]
@@ -85,7 +85,10 @@ public sealed class TextsGenerator : IIncrementalGenerator
 
             source.AppendLine();
             source.AppendLine("    /// <summary>" + System.Security.SecurityElement.Escape(value).Replace("\r", string.Empty).Replace("\n", "\n    /// ") + "</summary>");
-            var names = Placeholder.Matches(value).Cast<Match>().Select(match => match.Groups[1].Value).Distinct().ToList();
+            // Parameters in name order, not text order: a translation or rewording that moves a placeholder must not change
+            // the method's signature and so swap the values of calls that pass them by position.
+            var names = Placeholder.Matches(value).Cast<Match>().Select(match => match.Groups[1].Value).Distinct()
+                .OrderBy(name => name, System.StringComparer.Ordinal).ToList();
             if (names.Count == 0)
             {
                 source.AppendLine("    public static string " + key + " => global::Arcadia.Launchers.Abstractions.Texts.UiText.Get(Resources, \"" + key + "\");");

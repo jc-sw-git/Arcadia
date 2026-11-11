@@ -755,14 +755,14 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         UnknownKeywordsText = _scope.UnknownKeywords.Count switch
         {
             0 => null,
-            1 => AppTexts.SearchUnknownKeyword(SearchQuery.PrefixMarker, _scope.UnknownKeywords[0]),
+            1 => AppTexts.SearchUnknownKeyword(prefix: SearchQuery.PrefixMarker, keyword: _scope.UnknownKeywords[0]),
             _ => AppTexts.SearchUnknownKeywords + string.Join(", ", _scope.UnknownKeywords.Select(k => $"{SearchQuery.PrefixMarker}{k}")),
         };
 
         Hits = _search.Find(query.Term, _scope.LauncherIds.ToHashSet(), Sort);
         _hitsChanged = true;
         var launchersHit = Hits.Select(g => g.LauncherId).Distinct().Count();
-        ResultsTitle = launchersHit == 1 ? AppTexts.SearchHitsInOneLauncher(Hits.Count) : AppTexts.SearchHitsInLaunchers(Hits.Count, launchersHit);
+        ResultsTitle = launchersHit == 1 ? AppTexts.SearchHitsInOneLauncher(Hits.Count) : AppTexts.SearchHitsInLaunchers(count: Hits.Count, launchers: launchersHit);
         Empty = query.Term.Trim().Length == 0
             ? new SearchEmptyState(false, AppTexts.SearchTypeTerm, AppTexts.SearchExplanation)
             : Hits.Count == 0
@@ -814,7 +814,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         ScrollStart = _window.Start;
         ScrollEnd = _window.LastStart;
         ScrollViewport = _window.Size;
-        RangeText = _window.CanTurn ? AppTexts.SearchHitRange(_window.Start + 1, Math.Min(Hits.Count, _window.Start + _window.Size), Hits.Count) : string.Empty;
+        RangeText = _window.CanTurn ? AppTexts.SearchHitRange(first: _window.Start + 1, last: Math.Min(Hits.Count, _window.Start + _window.Size), count: Hits.Count) : string.Empty;
         ShowFocus();
         WindowMoved?.Invoke(previousStart);
     }

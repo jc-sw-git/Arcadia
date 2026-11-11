@@ -500,7 +500,7 @@ public sealed class PanRows
             var (tool, controller, it) = vendor.Key == ControllerList.Sony
                 ? ("PlayStation Accessories", AppTexts.FirmwareToolTheDualSense, AppTexts.FirmwareToolItMasculine)
                 : (AppTexts.FirmwareToolXboxAccessories, AppTexts.FirmwareToolTheXboxController, AppTexts.FirmwareToolItNeuter);
-            var row = Row($"pan:firmware-tool:{vendor.Key:X4}", AppTexts.FirmwareToolOpen(tool), AppTexts.FirmwareToolWaiting(controller, it), HealthSeverity.Warning,
+            var row = Row($"pan:firmware-tool:{vendor.Key:X4}", AppTexts.FirmwareToolOpen(tool), AppTexts.FirmwareToolWaiting(controller: controller, it: it), HealthSeverity.Warning,
                 vendor.Key == ControllerList.Sony ? AppTexts.FirmwareToolInfoDualSense(tool) : AppTexts.FirmwareToolInfoXbox(tool),
                 null, null);
             row.Info = [.. row.Info, new InfoSection(AppTexts.FirmwareToolGroup, [.. vendor.Select(waiting => new InfoText(waiting.Name))])];
@@ -649,21 +649,21 @@ public sealed class PanRows
         "usbip-missing" => (AppTexts.PanUsbipSubtitle,
             AppTexts.PanUsbipInfo(Admin), issue.Severity),
         "usbip-outdated" => (issue.Detail.TrimEnd('.'),
-            AppTexts.PanUsbipOutdatedInfo(UsbipRelease.MinimumVersion, Admin), issue.Severity),
+            AppTexts.PanUsbipOutdatedInfo(minimumVersion: UsbipRelease.MinimumVersion, admin: Admin), issue.Severity),
         "usbip-stopped" => (AppTexts.PanRestartPcHelps,
             AppTexts.PanUsbipNotLoadedInfo(Admin), issue.Severity),
         "viiper-missing" => (AppTexts.PanViiperSubtitle, issue.Detail, issue.Severity),
         "pan-missing" => (AppTexts.PanServiceSubtitle,
             AppTexts.PanServiceInfo(Admin), issue.Severity),
         "pan-failing" => (AppTexts.PanServiceReinstallHelps,
-            AppTexts.PanServiceEndsInfo(PanPaths.LogPath, Admin), issue.Severity),
+            AppTexts.PanServiceEndsInfo(logPath: PanPaths.LogPath, admin: Admin), issue.Severity),
         "hidhide-missing" => (AppTexts.PanHidHideSubtitle,
             AppTexts.PanHidHideInfo(Admin), issue.Severity),
         "hidhide-unsupported" => (AppTexts.PanHidHideNeedsVersion(HidHideRelease.Version), $"{issue.Detail} {Admin}", issue.Severity),
         "hidhide-inactive" => (AppTexts.PanRestartPcHelps,
             AppTexts.PanHidHideNotRunningInfo, issue.Severity),
         "hidhide-interface" => (AppTexts.PanHidHideReinstallHelps(HidHideRelease.Version),
-            AppTexts.PanHidHideUnknownRequestInfo(HidHideRelease.Version, HidHideRelease.ManualInstallUrl), issue.Severity),
+            AppTexts.PanHidHideUnknownRequestInfo(version: HidHideRelease.Version, url: HidHideRelease.ManualInstallUrl), issue.Severity),
         "hidhide-busy" => (AppTexts.PanHidHideCloseIt,
             AppTexts.PanHidHideConfigOpenInfo, issue.Severity),
         "hidhide-inverse" => (AppTexts.PanHidHideInverseSubtitle,

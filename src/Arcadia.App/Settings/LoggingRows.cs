@@ -87,7 +87,7 @@ public sealed class LoggingRows
 
         _list.Subtitle = all.Count == 0 ? AppTexts.LoggingNoMessagesYet
             : shown.Count == all.Count ? AppTexts.LoggingCountSinceStart(all.Count)
-            : AppTexts.LoggingShownOf(shown.Count, all.Count);
+            : AppTexts.LoggingShownOf(shown: shown.Count, total: all.Count);
         IReadOnlyList<InfoBlock> list =
         [
             new InfoText(ListIntro),

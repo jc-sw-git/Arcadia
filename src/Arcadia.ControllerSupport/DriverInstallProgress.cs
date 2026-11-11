@@ -202,7 +202,7 @@ public sealed class DriverInstallProgress
         }
 
         entry.Fraction = total is > 0 ? Math.Clamp((double)received / total.Value, 0, 1) : 0;
-        entry.Detail = total is > 0 ? ControllerSupportTexts.DownloadProgress(Megabytes(received), Megabytes(total.Value)) : null;
+        entry.Detail = total is > 0 ? ControllerSupportTexts.DownloadProgress(received: Megabytes(received), total: Megabytes(total.Value)) : null;
     });
 
     public void Complete(DriverInstallStepKind kind) => Update(kind, entry =>

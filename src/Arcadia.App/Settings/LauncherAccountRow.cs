@@ -71,9 +71,9 @@ internal sealed class LauncherAccountRow : IDisposable
             row.ActionText = state.Step == AccountStep.SignedIn ? AppTexts.SignOut : AppTexts.SignIn;
             row.Subtitle = (isActive, state.AccountName) switch
             {
-                (false, { } accountName) => AppTexts.AccountOnlyWhenActive(accountName, launcherName),
+                (false, { } accountName) => AppTexts.AccountOnlyWhenActive(account: accountName, launcher: launcherName),
                 (false, null) => AppTexts.AccountOnlyWhenActiveNoAccount(launcherName),
-                (true, { } accountName) => AppTexts.AccountLauncherNotFound(accountName, launcherName),
+                (true, { } accountName) => AppTexts.AccountLauncherNotFound(account: accountName, launcher: launcherName),
                 (true, null) => AppTexts.AccountLauncherNotFoundNoAccount(launcherName),
             };
             row.Severity = null;

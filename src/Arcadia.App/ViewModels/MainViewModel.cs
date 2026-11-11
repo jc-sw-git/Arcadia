@@ -957,7 +957,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             // The system's message is English and may name the user's profile: only the log gets it (without the profile).
             AppLog.Write($"Log {kind} nicht geöffnet: {ex.GetType().Name}: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, AppTexts.LogOpenFailed(LogNames.Of(kind), LogNames.WhyNotOpened(ex)));
+            Toast.Show(HealthSeverity.Error, AppTexts.LogOpenFailed(log: LogNames.Of(kind), reason: LogNames.WhyNotOpened(ex)));
             return;
         }
 

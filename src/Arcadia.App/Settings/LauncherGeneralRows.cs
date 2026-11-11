@@ -103,9 +103,9 @@ internal sealed class LauncherGeneralRows
         [
             new InfoText(AppTexts.LauncherKeywordInfo),
             new InfoExample($"{keyword} hollow", AppTexts.LauncherKeywordSearchesOnlyIn(name)),
-            .. other is null ? Array.Empty<InfoBlock>() : [new InfoExample($"{keyword}{SearchQuery.KeywordSeparator}{other.SearchKeyword} hollow", AppTexts.LauncherKeywordSearchesIn(name, other.DisplayName))],
+            .. other is null ? Array.Empty<InfoBlock>() : [new InfoExample($"{keyword}{SearchQuery.KeywordSeparator}{other.SearchKeyword} hollow", AppTexts.LauncherKeywordSearchesIn(launcher: name, other: other.DisplayName))],
             new InfoText(AppTexts.LauncherKeywordRules(LauncherNames.MaxKeywordLength)),
-            new InfoFootnote(AppTexts.DefaultKeywordAppliesImmediately(SearchQuery.PrefixMarker, original.SearchKeyword)),
+            new InfoFootnote(AppTexts.DefaultKeywordAppliesImmediately(prefix: SearchQuery.PrefixMarker, keyword: original.SearchKeyword)),
         ];
 
         var hasOwnLogo = _category.Changes.Current.PreferencesOf(id).LogoFile is not null;
@@ -122,7 +122,7 @@ internal sealed class LauncherGeneralRows
         _defaultLogoRow.Preview = [tabBar];
         _defaultLogoRow.Info =
         [
-            new InfoText(AppTexts.LauncherLogoRemoveInfo(name, defaultLogo)),
+            new InfoText(AppTexts.LauncherLogoRemoveInfo(launcher: name, defaultLogo: defaultLogo)),
         ];
 
         return [ActiveRow, _nameRow, _keywordRow, _logoRow, .. hasOwnLogo ? [_defaultLogoRow] : Array.Empty<SettingsRowViewModel>()];
@@ -163,7 +163,7 @@ internal sealed class LauncherGeneralRows
         _category.Editor = null;
         if (editor.Rejection is { } reason)
         {
-            _category.Host.Warn(AppTexts.SettingNotApplied(row.Title, reason));
+            _category.Host.Warn(AppTexts.SettingNotApplied(row: row.Title, reason: reason));
         }
 
         editor.Dispose();

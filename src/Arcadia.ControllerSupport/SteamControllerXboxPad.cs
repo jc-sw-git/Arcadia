@@ -349,7 +349,7 @@ public sealed class SteamControllerXboxPad
             }
 
             _gaveUp = true;
-            message = ControllerSupportTexts.SteamControllerForGamesViiperGaveUp(_losses.Count, CrashWindow.TotalMinutes);
+            message = ControllerSupportTexts.SteamControllerForGamesViiperGaveUp(count: _losses.Count, minutes: CrashWindow.TotalMinutes);
         }
 
         _log($"Xbox-Pad: {message}");

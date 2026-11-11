@@ -230,5 +230,5 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private GameDetailPageViewModel CreatePage(int offset) =>
         new(_createTile(Games[Carousel.At(Index, offset, Games.Count)!.Value]), offset, _actions, Rotate);
 
-    private string Position() => AppTexts.DetailPosition(Index + 1, Games.Count);
+    private string Position() => AppTexts.DetailPosition(position: Index + 1, count: Games.Count);
 }

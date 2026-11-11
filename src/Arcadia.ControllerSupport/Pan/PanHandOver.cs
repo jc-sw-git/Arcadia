@@ -59,7 +59,7 @@ internal sealed class PanHandOver : IAsyncDisposable
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                throw new TimeoutException(ControllerSupportTexts.PanUnreachableAborted(DriverInstallation.PanConnectTimeout.TotalSeconds, what));
+                throw new TimeoutException(ControllerSupportTexts.PanUnreachableAborted(seconds: DriverInstallation.PanConnectTimeout.TotalSeconds, what: what));
             }
 
             // Only the Pan Arcadia started may take the message: a pipe of another process is left at once.

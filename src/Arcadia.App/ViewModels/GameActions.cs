@@ -202,7 +202,7 @@ public sealed class GameActions : IGameActionHost
         {
             _toast.Show(HealthSeverity.Info, install.Phase == InstallPhase.Uninstalling
                     ? AppTexts.GameBeingUninstalled(tile.Title)
-                    : tile.IsInstalled ? AppTexts.GameAlreadyUpdating(tile.Title, tile.LauncherName) : AppTexts.GameAlreadyInstalling(tile.Title, tile.LauncherName));
+                    : tile.IsInstalled ? AppTexts.GameAlreadyUpdating(game: tile.Title, launcher: tile.LauncherName) : AppTexts.GameAlreadyInstalling(game: tile.Title, launcher: tile.LauncherName));
             return;
         }
 
@@ -227,7 +227,7 @@ public sealed class GameActions : IGameActionHost
         // wait for or switch to.
         if (tile.IsSoundtrack)
         {
-            if (HandOver(tile, tile.Game.Launch, AppTexts.GameOpeningInLauncher(tile.Title, tile.LauncherName), AppTexts.DemoWouldPlay(tile.Title)))
+            if (HandOver(tile, tile.Game.Launch, AppTexts.GameOpeningInLauncher(game: tile.Title, launcher: tile.LauncherName), AppTexts.DemoWouldPlay(tile.Title)))
             {
                 Task.Delay(LinkGap, _time).ContinueWith(_ => ShowInLauncher(tile), TaskScheduler.FromCurrentSynchronizationContext())
                     .Forget(AppTexts.ErrorContextShowSoundtrack);
@@ -269,7 +269,7 @@ public sealed class GameActions : IGameActionHost
         switch (result)
         {
             case { Outcome: LaunchOutcome.Failed, Error: { } error }:
-                _toast.Show(HealthSeverity.Error, AppTexts.GameStartFailed(tile.Title, error.Message));
+                _toast.Show(HealthSeverity.Error, AppTexts.GameStartFailed(game: tile.Title, message: error.Message));
                 break;
             case { Outcome: LaunchOutcome.FailedUnexpectedly }:
                 _toast.Show(HealthSeverity.Error, AppTexts.GameStartFailedUnexpected(tile.Title));
@@ -315,7 +315,7 @@ public sealed class GameActions : IGameActionHost
     {
         if (tile.Game.InstallBlockedReason is { } blocked)
         {
-            _toast.Show(HealthSeverity.Warning, AppTexts.GameInstallBlocked(tile.Title, blocked));
+            _toast.Show(HealthSeverity.Warning, AppTexts.GameInstallBlocked(game: tile.Title, reason: blocked));
             return;
         }
 
@@ -325,20 +325,20 @@ public sealed class GameActions : IGameActionHost
             {
                 tile.InstallState = _installs.Started(tile.Game);
                 _toast.Show(HealthSeverity.Info, tile.Game.InstallStartsInLauncher
-                    ? AppTexts.GameInstallOpenLauncher(tile.LauncherName, tile.Title)
-                    : AppTexts.GameInstallOpening(tile.Title, tile.LauncherName));
+                    ? AppTexts.GameInstallOpenLauncher(launcher: tile.LauncherName, game: tile.Title)
+                    : AppTexts.GameInstallOpening(game: tile.Title, launcher: tile.LauncherName));
             }
             else
             {
                 var isDemo = tile.Game.Install is LaunchTarget.None;
                 _toast.Show(isDemo ? HealthSeverity.Info : HealthSeverity.Warning, isDemo
                     ? AppTexts.DemoWouldInstall(tile.Title)
-                    : AppTexts.GameInstallOnlyInLauncher(tile.Title, tile.LauncherName));
+                    : AppTexts.GameInstallOnlyInLauncher(game: tile.Title, launcher: tile.LauncherName));
             }
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show(HealthSeverity.Error, AppTexts.GameInstallOpenFailed(tile.Title, ex.Message));
+            _toast.Show(HealthSeverity.Error, AppTexts.GameInstallOpenFailed(game: tile.Title, message: ex.Message));
         }
     }
 
@@ -353,7 +353,7 @@ public sealed class GameActions : IGameActionHost
                     TaskScheduler.FromCurrentSynchronizationContext()).Forget(AppTexts.ErrorContextWindowToFront);
                 break;
             case LaunchStage.LauncherNotReady:
-                _toast.Show(HealthSeverity.Warning, AppTexts.LauncherNotRespondingStillAsking(tile.LauncherName, tile.Title));
+                _toast.Show(HealthSeverity.Warning, AppTexts.LauncherNotRespondingStillAsking(launcher: tile.LauncherName, game: tile.Title));
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.LauncherReady:
@@ -361,7 +361,7 @@ public sealed class GameActions : IGameActionHost
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? AppTexts.GameStartingMaybeUpdate(tile.Title, tile.LauncherName) : AppTexts.GameStarting(tile.Title));
+                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? AppTexts.GameStartingMaybeUpdate(game: tile.Title, launcher: tile.LauncherName) : AppTexts.GameStarting(tile.Title));
                 break;
             case LaunchStage.NotStartable:
                 StartFailed(tile);
@@ -369,7 +369,7 @@ public sealed class GameActions : IGameActionHost
                 break;
             case LaunchStage.NotConfirmed:
                 StartFailed(tile);
-                _toast.Show(HealthSeverity.Warning, AppTexts.GameNotStartedCheckLauncher(tile.Title, tile.LauncherName));
+                _toast.Show(HealthSeverity.Warning, AppTexts.GameNotStartedCheckLauncher(game: tile.Title, launcher: tile.LauncherName));
                 break;
         }
     }
@@ -397,12 +397,12 @@ public sealed class GameActions : IGameActionHost
             var offered = opened || target is LaunchTarget.None;
             _toast.Show(offered ? HealthSeverity.Info : HealthSeverity.Warning, opened ? handedOver
                 : target is LaunchTarget.None ? demo
-                : AppTexts.LauncherDoesNotOffer(tile.LauncherName, tile.Title));
+                : AppTexts.LauncherDoesNotOffer(launcher: tile.LauncherName, game: tile.Title));
             return opened;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            _toast.Show(HealthSeverity.Error, AppTexts.LauncherOpenFailed(tile.LauncherName, ex.Message));
+            _toast.Show(HealthSeverity.Error, AppTexts.LauncherOpenFailed(launcher: tile.LauncherName, message: ex.Message));
             return false;
         }
     }
@@ -440,7 +440,7 @@ public sealed class GameActions : IGameActionHost
         if (tile.Game.Uninstall is not { } uninstall)
         {
             // Only the launcher's own window can do it.
-            HandOver(tile, tile.Game.OpenInLauncher, AppTexts.GameUninstallOnlyInLauncher(tile.Title, tile.LauncherName), AppTexts.DemoWouldOpenLauncher(tile.LauncherName));
+            HandOver(tile, tile.Game.OpenInLauncher, AppTexts.GameUninstallOnlyInLauncher(game: tile.Title, launcher: tile.LauncherName), AppTexts.DemoWouldOpenLauncher(tile.LauncherName));
             return;
         }
 
@@ -448,7 +448,7 @@ public sealed class GameActions : IGameActionHost
             AppTexts.GameAskUninstall(tile.Title),
             AppTexts.GameAskUninstallText(tile.LauncherName),
             AppTexts.Uninstall,
-            () => HandOver(tile, uninstall, AppTexts.GameUninstallOpening(tile.Title, tile.LauncherName), AppTexts.DemoWouldUninstall(tile.Title))));
+            () => HandOver(tile, uninstall, AppTexts.GameUninstallOpening(game: tile.Title, launcher: tile.LauncherName), AppTexts.DemoWouldUninstall(tile.Title))));
     }
 
     bool IGameActionHost.ShowGameMouseMode => _owner.ShowGameMouseMode;

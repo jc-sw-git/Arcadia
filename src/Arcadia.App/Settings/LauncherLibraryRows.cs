@@ -76,7 +76,7 @@ internal sealed class LauncherLibraryRows
             (true, false, _) => AppTexts.NotFound,
             (true, true, null) => AppTexts.Scanning,
             (true, true, { Games.Count: 0 }) when scannedAt is null => LauncherTexts.GameCount(0),
-            (true, true, { Games.Count: 0 }) => AppTexts.GamesScannedAgo(LauncherTexts.GameCount(0), Ago(scannedAt)),
+            (true, true, { Games.Count: 0 }) => AppTexts.GamesScannedAgo(games: LauncherTexts.GameCount(0), ago: Ago(scannedAt)),
             (true, true, _) when scannedAt is null => null,
             // After the count line (#141).
             (true, true, _) => AppTexts.ScannedAgo(Ago(scannedAt)),
@@ -150,7 +150,7 @@ internal sealed class LauncherLibraryRows
 
             if (await Task.Run(() => choice.Find(folder)) is not { } root)
             {
-                host.Warn(AppTexts.LauncherFolderWrong(name, choice.Expected));
+                host.Warn(AppTexts.LauncherFolderWrong(launcher: name, expected: choice.Expected));
                 return;
             }
 

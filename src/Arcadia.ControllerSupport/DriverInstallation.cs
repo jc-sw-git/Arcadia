@@ -314,7 +314,7 @@ internal sealed class DriverInstallation(
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new TimeoutException(ControllerSupportTexts.InstallTookTooLong(what, timeout.TotalMinutes));
+            throw new TimeoutException(ControllerSupportTexts.InstallTookTooLong(what: what, minutes: timeout.TotalMinutes));
         }
     }
 

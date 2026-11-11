@@ -100,7 +100,7 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
             }
 
             var installed = games.Count(g => g.IsInstalled);
-            return installed == games.Count ? GameCount(games.Count) : AppTexts.CountOfThemInstalled(games.Count, installed);
+            return installed == games.Count ? GameCount(games.Count) : AppTexts.CountOfThemInstalled(count: games.Count, installed: installed);
         }
     }
 

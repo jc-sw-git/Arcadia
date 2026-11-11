@@ -69,7 +69,7 @@ internal sealed class LauncherControllerRows
             .. panOff,
             .. PanRows.ModeCards,
             new InfoFootnote(gamesUseSteamInput
-                ? AppTexts.LauncherControllerFactorySteam(ControllerModes.Steam, name)
+                ? AppTexts.LauncherControllerFactorySteam(mode: ControllerModes.Steam, launcher: name)
                 : AppTexts.LauncherControllerFactoryArcadia(ControllerModes.Arcadia)),
         ];
 
@@ -84,7 +84,7 @@ internal sealed class LauncherControllerRows
         _resetRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? AppTexts.LauncherControllerOwnModeOne : AppTexts.LauncherControllerOwnModeMany(own.Count);
         _resetRow.Info =
         [
-            new InfoText(AppTexts.LauncherControllerOwnModeInfo(name, preset)),
+            new InfoText(AppTexts.LauncherControllerOwnModeInfo(launcher: name, preset: preset)),
             new InfoFacts(string.Empty, [.. own.Select(game => new InfoFact(game.Title, ControllerModes.Of(game.Choice!.Value)))]),
             .. panOff,
             new InfoText(AppTexts.LauncherControllerAsksFirst),
@@ -132,18 +132,18 @@ internal sealed class LauncherControllerRows
         var preset = ControllerModes.Of(_category.Changes.Current.LauncherUsesArcadiaPad(id, host.Launchers.GamesUseSteamInput));
         _category.Dialog = new SettingsQuestionViewModel(
             AppTexts.LauncherControllerAskReset,
-            AppTexts.LauncherControllerAskResetText(ResetGames(_ownModeTitles, name), preset, TitleList(_ownModeTitles)),
+            AppTexts.LauncherControllerAskResetText(games: ResetGames(_ownModeTitles, name), preset: preset, titles: TitleList(_ownModeTitles)),
             AppTexts.Reset,
             () => Reset(id),
             () => _category.Dialog = null);
     }
 
     private static string ResetGames(IReadOnlyList<string> titles, string launcher) =>
-        titles.Count == 1 ? AppTexts.LauncherControllerResetGamesOne(launcher) : AppTexts.LauncherControllerResetGamesMany(titles.Count, launcher);
+        titles.Count == 1 ? AppTexts.LauncherControllerResetGamesOne(launcher) : AppTexts.LauncherControllerResetGamesMany(count: titles.Count, launcher: launcher);
 
     /// <summary>The first few titles; a long list ends with how many more there are.</summary>
     private static string TitleList(IReadOnlyList<string> titles) =>
-        titles.Count <= MaxTitlesInQuestion ? string.Join(", ", titles) : AppTexts.TitleListAndMore(string.Join(", ", titles.Take(MaxTitlesInQuestion)), titles.Count - MaxTitlesInQuestion);
+        titles.Count <= MaxTitlesInQuestion ? string.Join(", ", titles) : AppTexts.TitleListAndMore(titles: string.Join(", ", titles.Take(MaxTitlesInQuestion)), more: titles.Count - MaxTitlesInQuestion);
 
     /// <summary>Every game of the launcher back on "Standard", missing ones too, in one write; the focus goes to "Steam Controller".</summary>
     private void Reset(string id)

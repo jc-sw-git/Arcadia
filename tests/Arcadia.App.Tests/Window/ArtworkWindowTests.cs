@@ -17,7 +17,7 @@ using Avalonia.VisualTree;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// #487 in the real window: the images fill their frames cropped centred, swap in for the placeholder without moving
+/// #487 in the real window (Epic's source in the same window: <see cref="EpicArtworkWindowTests"/>): the images fill their frames cropped centred, swap in for the placeholder without moving
 /// anything, show the right game wherever a slot is reused, and never hold up the library. Every game's images are made up
 /// in one colour of its own, so a pixel tells which game's image is drawn.
 /// </summary>
@@ -186,7 +186,16 @@ public sealed class ArtworkWindowTests : IDisposable
 
         await ShowArtworkAsync(window, source, games);
         AssertEveryImageShowsItsGame(window, games, "Bibliothek");
+        await WalkWithTheControllerAsync(window, games);
+    }
 
+    /// <summary>
+    /// T487-22's walk over 30 games named "Spiel 01" to "Spiel 30", 24 per page: library, detail page, the next page, the
+    /// search and a hit's detail page, back with B; every place shows its own game's images.
+    /// </summary>
+    internal static async Task WalkWithTheControllerAsync(ArcadiaWindow window, Game[] games)
+    {
+        var arcadia = window.Arcadia;
         window.Press(UiAction.Right, times: 3);
         await Step(window, games, "Fokus auf dem vierten Cover");
         arcadia.Hold(UiAction.Accept, PastHoldTime);
@@ -222,12 +231,22 @@ public sealed class ArtworkWindowTests : IDisposable
         IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games)];
         using var server = new SlowImageServer(TimeSpan.FromSeconds(2));
         using var window = await ArcadiaWindow.ShowAsync(launchers, imageServer: server);
+
+        await AssertFastWhileDownloadingAsync(window, server, new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), new DownloadArtwork()));
+    }
+
+    /// <summary>
+    /// While a run downloads <paramref name="library"/>'s images from <paramref name="server"/>, a focus move stays under
+    /// 50 ms and the search opens as fast as without a run.
+    /// </summary>
+    internal static async Task AssertFastWhileDownloadingAsync(ArcadiaWindow window, SlowImageServer server, LibraryArtwork library)
+    {
         var arcadia = window.Arcadia;
 
         // The second opening of the search, without a run going: what it must stay at (#477).
         var withoutImages = OpenSearchTwice(window);
 
-        arcadia.Artwork.Update([new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), new DownloadArtwork())]);
+        arcadia.Artwork.Update([library]);
         await server.Asked.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(arcadia.Artwork.WhenIdleAsync().IsCompleted, "Der Lauf ist schon fertig; er soll während der Messung laden.");
 
@@ -268,7 +287,7 @@ public sealed class ArtworkWindowTests : IDisposable
     private static double TotalOf(string line) =>
         double.Parse(System.Text.RegularExpressions.Regex.Match(line, @"nach (?<total>\d+\.\d) ms").Groups["total"].Value, System.Globalization.CultureInfo.InvariantCulture);
 
-    private static async Task Step(ArcadiaWindow window, Game[] games, string where)
+    internal static async Task Step(ArcadiaWindow window, Game[] games, string where)
     {
         window.Settle().WaitForTransitions();
         await WaitShowingAsync(window);
@@ -287,7 +306,7 @@ public sealed class ArtworkWindowTests : IDisposable
     }
 
     /// <summary>Lets the window draw until every visible image with a file is decoded and shown.</summary>
-    private static async Task WaitShowingAsync(ArcadiaWindow window)
+    internal static async Task WaitShowingAsync(ArcadiaWindow window)
     {
         for (var round = 0; round < 500; round++)
         {
@@ -305,7 +324,7 @@ public sealed class ArtworkWindowTests : IDisposable
     }
 
     /// <summary>Every image drawn on the screen is its own game's: the pixel in it has that game's colour, no other's.</summary>
-    private static void AssertEveryImageShowsItsGame(ArcadiaWindow window, Game[] games, string where = "")
+    internal static void AssertEveryImageShowsItsGame(ArcadiaWindow window, Game[] games, string where = "")
     {
         var colours = games.Select((game, i) => (game.Key, Colour: ColourOf(i))).ToDictionary(g => g.Key, g => g.Colour);
         var shown = ShownArt(window).ToList();
@@ -367,7 +386,7 @@ public sealed class ArtworkWindowTests : IDisposable
 
     private static Color ColourOf(int i) => Color.FromRgb((byte)(30 + (i * 37 % 190)), (byte)(30 + (i * 71 % 190)), (byte)(30 + (i * 113 % 190)));
 
-    private static byte[] Solid(int i, int width, int height)
+    internal static byte[] Solid(int i, int width, int height)
     {
         var colour = ColourOf(i);
         return DemoArtwork.Png(width, height, _ => (colour.R, colour.G, colour.B));
@@ -404,7 +423,7 @@ public sealed class ArtworkWindowTests : IDisposable
     }
 
     /// <summary>An image server that answers every request after <paramref name="delay"/> of real time, with no image.</summary>
-    private sealed class SlowImageServer(TimeSpan delay) : HttpMessageHandler
+    internal sealed class SlowImageServer(TimeSpan delay) : HttpMessageHandler
     {
         public TaskCompletionSource Asked { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

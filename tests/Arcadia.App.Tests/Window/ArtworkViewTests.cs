@@ -13,7 +13,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// #487: covers and backgrounds are decoded only where they are drawn, at the size they are drawn (T487-19). The images are
-/// made up (<see cref="DemoArtwork"/>: covers 600 × 900, backgrounds 1920 × 620) and reach the cache as a launcher's.
+/// made up (<see cref="DemoArtwork"/>: covers 600 × 900 or 1200 × 1600, backgrounds 1920 × 620 or 2560 × 1440) and reach the cache as a launcher's.
 /// </summary>
 public sealed class ArtworkViewTests : IDisposable
 {
@@ -49,16 +49,15 @@ public sealed class ArtworkViewTests : IDisposable
         var firstPage = arcadia.PageGames.Select(tile => tile.Game.Key).ToHashSet();
         var shown = await DecodedAsync(window, expected: 25);
 
-        // The page's 24 covers at 146 × 219 (the focused one lifted by 7 %) and the focused game's background in the
+        // The page's 24 covers filling 146 × 219 (the focused one lifted by 7 %) and the focused game's background in the
         // preview at 400 × 180; nothing else.
         var focused = arcadia.PageGames[0].Game.Key;
         Assert.Equal(firstPage, shown.Where(d => d.File.Kind == ArtworkKind.Cover).Select(d => d.File.GameKey).ToHashSet());
-        Assert.All(shown.Where(d => d.File.Kind == ArtworkKind.Cover && d.File.GameKey != focused), d => Assert.Equal(new PixelSize(146, 219), d.Size));
-        Assert.Equal(new PixelSize(157, 235), Assert.Single(shown, d => d.File.Kind == ArtworkKind.Cover && d.File.GameKey == focused).Size);
+        Assert.All(shown.Where(d => d.File.Kind == ArtworkKind.Cover && d.File.GameKey != focused), d => AssertFills(d.Size, 146, 219));
+        AssertFills(Assert.Single(shown, d => d.File.Kind == ArtworkKind.Cover && d.File.GameKey == focused).Size, 157, 235);
         var preview = Assert.Single(shown, d => d.File.Kind == ArtworkKind.Hero);
         Assert.Equal(focused, preview.File.GameKey);
-        Assert.Equal(180, preview.Size.Height);
-        Assert.True(preview.Size.Width >= 400, $"Der Hintergrund der Vorschau ist {preview.Size.Width} breit.");
+        AssertFills(preview.Size, 400, 180);
 
         window.Press(UiAction.NextPage);
         var secondPage = arcadia.PageGames.Select(tile => tile.Game.Key).ToHashSet();
@@ -67,22 +66,34 @@ public sealed class ArtworkViewTests : IDisposable
 
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         window.Settle().WaitForTransitions();
-        // The front cover at its 180 × 270, the background filling the page (here the image's own 1920 × 620, never more),
+        // The front cover filling its 180 × 270, the background filling the page (or at the image's own size, never more),
         // the covers of the stacks as their turn into the depth draws them; nothing of the library's games behind it.
         var detail = await DecodedAsync(window, expected: 8);
         var shownDetail = arcadia.Detail!.Current.Tile.Game.Key;
-        Assert.Contains(detail, d => d is { File.Kind: ArtworkKind.Cover, Size: { Width: 180, Height: 270 } } && d.File.GameKey == shownDetail);
-        Assert.Contains(detail, d => d is { File.Kind: ArtworkKind.Hero, Size: { Width: 1920, Height: 620 } } && d.File.GameKey == shownDetail);
+        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Cover && Fills(d.Size, 180, 270) && d.File.GameKey == shownDetail);
+        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Hero && d.File.GameKey == shownDetail
+            && (Fills(d.Size, 1920, 1080) || (d.Size.Width == d.File.Size.Width && d.Size.Height == d.File.Size.Height)));
         Assert.DoesNotContain(detail, d => d.File.Kind == ArtworkKind.Hero && d.File.GameKey != shownDetail);
         var carousel = arcadia.Detail.Covers.Select(cover => cover.Tile.Game.Key).ToHashSet();
         Assert.All(detail, d => Assert.Contains(d.File.GameKey, carousel));
 
         window.Press(UiAction.Back).Press(UiAction.Search).Type("Spiel 07").Settle();
         var hits = await DecodedAsync(window, expected: 1);
-        Assert.Contains(hits, d => d is { File.Kind: ArtworkKind.Cover, Size: { Width: 190, Height: 285 } });
+        Assert.Contains(hits, d => d.File.Kind == ArtworkKind.Cover && Fills(d.Size, 190, 285));
         Assert.All(window.Window.GetVisualDescendants().OfType<ArtworkImage>().Where(image => image.IsShowing),
             image => Assert.True(image.IsEffectivelyVisible, "Ein verstecktes Bild ist geladen."));
     }
+
+    /// <summary>
+    /// Decoded to fill a <paramref name="width"/> × <paramref name="height"/> frame cropped centred: one side as the frame,
+    /// the other as long as the image's format needs (the demo's images come in two formats each, #488); a pixel either way
+    /// where the scale rounds.
+    /// </summary>
+    private static bool Fills(PixelSize size, int width, int height) =>
+        (Math.Abs(size.Width - width) <= 1 && size.Height >= height - 1) || (Math.Abs(size.Height - height) <= 1 && size.Width >= width - 1);
+
+    private static void AssertFills(PixelSize size, int width, int height) =>
+        Assert.True(Fills(size, width, height), $"{size.Width} × {size.Height} füllt nicht {width} × {height}.");
 
     /// <summary>Lets the window draw until at least <paramref name="expected"/> images were decoded and no more follow; those since the last call.</summary>
     private async Task<List<(ArtworkFile File, PixelSize Size)>> DecodedAsync(ArcadiaWindow window, int expected)

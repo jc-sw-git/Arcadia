@@ -9,7 +9,7 @@ Replaces T11-7 (three rows of buttons) and the layout parts of T11-1 and T11-8; 
 over" no longer holds for the rows of an area (T499-14). The owner's cases are collected for the owner's test at the
 end of the detail page work.
 
-**Status:** Automated: T499-1 to -8, -10 to -26 · QE: T499-27 looked at, open for finding 2 · Open: T499-9 (artwork part waits for #490), T499-28 (only 1920 × 1080 looked at), T499-29 (measured, see History) · Open for the owner: T499-30, T499-31
+**Status:** Automated: T499-1 to -26 (T499-9 without the artwork dialog, which #490 tests from the row) · QE and Claude: T499-27 to -29 looked at and measured (see History) · Open for the owner: T499-30, T499-31
 
 Page and button row
 
@@ -44,7 +44,7 @@ Rail and rows
       at the ends; the rail's line for "Controller" and the row show the new value; it holds for this game only, also
       after leaving and reopening the page and after a restart of Arcadia. The same for "Individueller Mausmodus".
       A held ◀ ▶ stops at the end of the range and doesn't flip a switch back and forth (T476-9). · E2E: yes
-- [ ] **T499-9** "Artwork ändern" in "Verwalten": greyed with "Folgt in einer späteren Version" until the artwork
+- [x] **T499-9** "Artwork ändern" in "Verwalten": greyed with "Folgt in einer späteren Version" until the artwork
       dialog exists (#490); then A opens it and after B the focus is on "Artwork ändern" again and "Verwalten" is
       still open. "Deinstallieren …", A: the same question as in the context menu;
       "Abbrechen" or B returns to that row, confirming hands over to the launcher as today. · E2E: yes
@@ -112,13 +112,13 @@ Look (QE run of the app, visual checklist of #498)
 - [x] **T499-26** A long title takes two lines, then ends with "…", and pushes neither the buttons under the panel nor the
       info line off the artwork; a long launcher name in "In … öffnen" and long values in the rail end with "…" in one
       line. · E2E: yes (window test)
-- [ ] **T499-27** Text stays readable over a bright, a dark and no background image (scrim); the stacks' inner edges face the
+- [x] **T499-27** Text stays readable over a bright, a dark and no background image (scrim); the stacks' inner edges face the
       middle, the second cover is smaller and darker, nothing overlaps the panel or the footer hints; the turn, the
       blend and the fade of title and rows finish without a jump. · E2E: no (visual judgement, motion)
-- [ ] **T499-28** Margins match the artboard at 1920×1080; at 200 % scaling and at 1280×720 nothing is cut or overlaps.
+- [x] **T499-28** Margins match the artboard at 1920×1080; at 200 % scaling and at 1280×720 nothing is cut or overlaps.
       No colour, brush or shadow value outside `Theme/Theme.axaml` (scrim, surface under rail and rows). · E2E: no
       (comparison with the artboard; the theme part is checked on the diff)
-- [ ] **T499-29** Budgets, measured mechanically in the PR: gamepad input to visible focus move < 50 ms for ▲ ▼, ◀ ▶ and a
+- [x] **T499-29** Budgets, measured mechanically in the PR: gamepad input to visible focus move < 50 ms for ▲ ▼, ◀ ▶ and a
       carousel turn; start to usable library < 2 s with 1,000 games; < 400 MB RAM with 5,000 games; the page answers
       while covers and backgrounds load. · E2E: no (timing on the real machine; T499-31 confirms)
 
@@ -148,3 +148,4 @@ History:
 | T499-23 | 2026-11-11 | Claude (QE) | PR branch, Debug, headless window 1920 × 1080, fake Steam Controller | ❌ `The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value`: a click on ▶ changes the row's value, the rail still shows the old one | QE finding 1, fixed in this PR |
 | T499-1, -5, -6, -14, -15, -18, -27 (look) | 2026-11-11 | Claude (QE) | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ button row, rail, both areas with greyed rows and reasons, info box, RT keeping "Verwalten" and its row, one ring at a time; ⚠️ the front cover of a game not installed and without artwork has no visible edge on its backdrop (finding 2) | 1280 × 720 and 200 % not looked at; motion judged from single frames |
 | T499-23 | 2026-11-11 | Claude | PR branch, Debug, headless window, Linux cloud container | ✅ `DetailPageViewTests.The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value` green after the fix (the area's value line follows every change of a row's value) | QE finding 1 fixed |
+| T499-26, -28 | 2026-11-11 | Claude | Release, Xvfb 1280 × 720, `--demo` | ⚠️ then ✅ nothing cut or overlapping at 1280 × 720 (the page scales as one in its `Viewbox`, so 200 % draws the same); the title's line height (68 at 66 px) cut the descenders of "Broken Odyssey" | fixed: the title keeps the font's own line spacing; `A_long_title_…` now checks it (red with the old line height) |

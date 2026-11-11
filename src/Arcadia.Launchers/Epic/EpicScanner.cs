@@ -349,7 +349,8 @@ public sealed class EpicScanner(
     private static string AppPath(string catalogNamespace, string catalogItemId, string appName) =>
         $"{Uri.EscapeDataString(catalogNamespace)}%3A{Uri.EscapeDataString(catalogItemId)}%3A{Uri.EscapeDataString(appName)}";
 
-    private static string? CatalogItemIdOf(string uri)
+    /// <summary>The catalog item id in a launch or install address of Epic's; null for any other address.</summary>
+    internal static string? CatalogItemIdOf(string uri)
     {
         const string prefix = "com.epicgames.launcher://apps/";
         if (!uri.StartsWith(prefix, StringComparison.Ordinal))

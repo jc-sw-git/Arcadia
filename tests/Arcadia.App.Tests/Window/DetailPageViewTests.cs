@@ -261,6 +261,8 @@ public sealed class DetailPageViewTests
         Assert.True(heading.TextLayout.TextLines.Count <= 2);
         var drawn = arcadia.Bounds(heading);
         Assert.True(drawn.Height >= heading.TextLayout.Height - 0.5, "Titel kleiner gezeichnet, als sein Text braucht");
+        // A line lower than the font's own spacing cuts the descenders (g, y) off.
+        Assert.All(heading.TextLayout.TextLines, line => Assert.True(line.Height >= heading.FontSize * 1.15, $"Zeile {line.Height} hoch, Unterlängen abgeschnitten"));
         var panel = arcadia.Bounds(Part<Border>(arcadia, "Panel"));
         Assert.All(DetailButtons(arcadia), button => Assert.True(arcadia.Bounds(button).Bottom + (7 * arcadia.ScaleOf(button)) <= panel.Top,
             $"{Label(button)} samt Fokusrahmen reicht in das Panel."));

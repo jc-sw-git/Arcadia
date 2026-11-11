@@ -136,7 +136,7 @@
           </StackPanel>
         </Border>
       </StackPanel>
-      <TextBlock Name="Title" Margin="0,10,0,0" Text="{Binding Tile.Title}" FontSize="66" FontWeight="ExtraBold" LineHeight="68" TextWrapping="Wrap" MaxLines="2"
+      <TextBlock Name="Title" Margin="0,10,0,0" Text="{Binding Tile.Title}" FontSize="66" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2"
                  TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
       <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). -->
       <DockPanel Margin="0,20,0,0">

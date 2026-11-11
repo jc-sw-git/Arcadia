@@ -935,7 +935,7 @@
   <data name="ArtworkScore" xml:space="preserve"><value>★ {score}</value></data>
   <data name="ArtworkOwnFile" xml:space="preserve"><value>Eigene Datei</value></data>
   <data name="ArtworkOwnFileTag" xml:space="preserve"><value>EIGENE DATEI</value></data>
-  <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · bis 20 MB</value></data>
+  <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · bis 20&#160;MB</value></data>
   <data name="ArtworkSuggestionHero" xml:space="preserve"><value>SteamGridDB · {size}</value></data>
   <data name="ArtworkNoKeyTitle" xml:space="preserve"><value>Mehr Vorschläge mit SteamGridDB</value></data>
   <data name="ArtworkNoKeyText" xml:space="preserve"><value>Mit einem kostenlosen Schlüssel zeigt Arcadia hier bis zu 20 Bilder je Spiel. Du trägst ihn in den Einstellungen unter „Datenquellen“ ein.</value></data>

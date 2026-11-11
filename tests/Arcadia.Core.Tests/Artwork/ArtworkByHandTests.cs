@@ -206,6 +206,18 @@ public sealed class ArtworkByHandTests : IDisposable
         Assert.Null(Stored.OwnHero);
     }
 
+    [UnixFact]
+    [Trait("TestCase", "T490-15")]
+    public async Task A_file_that_claims_no_length_is_read_only_to_20_mb()
+    {
+        // /dev/zero says it is empty and never ends, like a pipe or device picked in the file dialog.
+        LauncherImages();
+        await ScanAsync();
+
+        Assert.Equal(OwnFileResult.TooLarge, await _service.UseFileAsync(Game, ArtworkKind.Cover, "/dev/zero"));
+        Assert.Null(Stored.OwnCover);
+    }
+
     [Theory]
     [Trait("TestCase", "T490-16")]
     [InlineData("text")]
@@ -422,6 +434,18 @@ public sealed class ArtworkByHandTests : IDisposable
         {
             Asked++;
             return Task.FromResult(Images);
+        }
+    }
+}
+
+/// <summary>Only where <c>/dev/zero</c> exists.</summary>
+public sealed class UnixFactAttribute : FactAttribute
+{
+    public UnixFactAttribute()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Skip = "Needs /dev/zero";
         }
     }
 }

@@ -344,28 +344,31 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         }
         else if (tile.Offer is { } offer)
         {
-            Run(() => UseOfferAsync(offer));
+            var kind = Kind;
+            Run(() => UseOfferAsync(kind, offer));
         }
         else
         {
-            Run(UseOwnFileAsync);
+            var kind = Kind;
+            Run(() => UseOwnFileAsync(kind));
         }
     }
 
-    private async Task UseOfferAsync(ArtworkOffer offer)
+    // The tab is taken when the choice is made: LB/RB while it waits on the artwork run must not move it to the other tab.
+    private async Task UseOfferAsync(ArtworkKind kind, ArtworkOffer offer)
     {
-        if (!await _artwork.UseAsync(Tile.Game, Kind, offer))
+        if (!await _artwork.UseAsync(Tile.Game, kind, offer))
         {
             _host.Warn(AppTexts.ArtworkOfferFailed);
         }
 
-        await RefreshInUseAsync();
+        await RefreshInUseAsync(kind);
     }
 
-    private async Task UseOwnFileAsync()
+    private async Task UseOwnFileAsync(ArtworkKind kind)
     {
-        await _artwork.UseOwnFileAsync(Tile.Game, Kind);
-        await RefreshInUseAsync();
+        await _artwork.UseOwnFileAsync(Tile.Game, kind);
+        await RefreshInUseAsync(kind);
     }
 
     private async Task PickFileAsync()
@@ -395,8 +398,9 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
 
     private async Task RestoreAsync()
     {
-        await _artwork.RestoreAsync(Tile.Game, Kind);
-        await ReloadAsync(Kind);
+        var kind = Kind;
+        await _artwork.RestoreAsync(Tile.Game, kind);
+        await ReloadAsync(kind);
     }
 
     /// <summary>The tab's choices again, after the own file or the launcher's image changed; the focus stays.</summary>
@@ -411,9 +415,8 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>After a choice: the tick, the facts and Y follow the image now in use.</summary>
-    private async Task RefreshInUseAsync()
+    private async Task RefreshInUseAsync(ArtworkKind kind)
     {
-        var kind = Kind;
         var current = await _artwork.InUseAsync(Tile.Game, kind);
         if (_choices.TryGetValue(kind, out var known))
         {

@@ -156,16 +156,10 @@ public sealed partial class ArtworkService
     /// </summary>
     public async Task<OwnFileResult> UseFileAsync(Game game, ArtworkKind kind, string path, CancellationToken cancel = default)
     {
-        byte[] content;
+        byte[]? content;
         try
         {
-            if (new FileInfo(path).Length > ImageCheck.MaxBytes)
-            {
-                Log($"Artwork: eigene Datei für {Name(kind)} von {game.Key} ist größer als 20 MB");
-                return OwnFileResult.TooLarge;
-            }
-
-            content = await File.ReadAllBytesAsync(path, cancel);
+            content = await ReadAtMostAsync(path, ImageCheck.MaxBytes, cancel);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -174,8 +168,9 @@ public sealed partial class ArtworkService
             return OwnFileResult.Unreadable;
         }
 
-        if (content.Length > ImageCheck.MaxBytes)
+        if (content is null)
         {
+            Log($"Artwork: eigene Datei für {Name(kind)} von {game.Key} ist größer als 20 MB");
             return OwnFileResult.TooLarge;
         }
 
@@ -370,5 +365,28 @@ public sealed partial class ArtworkService
         }));
 
         return offers.OfType<ArtworkOffer>().ToList();
+    }
+
+    /// <summary>
+    /// The file's bytes, or null past <paramref name="limit"/>. Read to the limit, not by the length the file claims:
+    /// a pipe or device says 0 and would otherwise be read until memory runs out.
+    /// </summary>
+    private static async Task<byte[]?> ReadAtMostAsync(string path, long limit, CancellationToken cancel)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        using var content = new MemoryStream();
+        var buffer = new byte[81920];
+        int read;
+        while ((read = await stream.ReadAsync(buffer, cancel)) > 0)
+        {
+            if (content.Length + read > limit)
+            {
+                return null;
+            }
+
+            content.Write(buffer, 0, read);
+        }
+
+        return content.ToArray();
     }
 }

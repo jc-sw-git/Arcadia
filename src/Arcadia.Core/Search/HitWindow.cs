@@ -51,9 +51,10 @@ public readonly record struct HitWindow(int Start, int Size, int RowLength, int 
     /// ends, a grid stays there. <paramref name="focus"/> keeps its place in the window where the
     /// new one has a hit there.
     /// </summary>
-    public (HitWindow Window, int Focus) Turn(int direction, int focus)
+    /// <param name="held">A held LT/RT repeating (#476): it stops at the end, only a fresh press wraps.</param>
+    public (HitWindow Window, int Focus) Turn(int direction, int focus, bool held = false)
     {
-        var wraps = Size == RowLength;
+        var wraps = Size == RowLength && !held;
         if (!CanTurn || (!wraps && Start == (direction > 0 ? LastStart : 0)))
         {
             return (this, focus);

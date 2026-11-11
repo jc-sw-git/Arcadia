@@ -31,11 +31,18 @@ public enum GamepadButton
     RightStickRight,
 }
 
-/// <summary>A source of gamepad button presses and releases, including auto-repeat for held directions.</summary>
+/// <summary>A source of gamepad button presses and releases, and the repeats of held directions and shoulder buttons.</summary>
 public interface IGamepadSource : IDisposable
 {
     /// <summary>Raised on a background thread; marshal to the UI thread before touching UI state.</summary>
     event Action<GamepadButton>? ButtonPressed;
+
+    /// <summary>
+    /// Raised while a button that repeats stays held (D-pad, sticks, LB/RB, LT/RT): first after a delay, then at an
+    /// interval (#476). Not a press: a list stops at its end for a repeat, only a press wraps round. Same thread rules
+    /// as <see cref="ButtonPressed"/>.
+    /// </summary>
+    event Action<GamepadButton>? ButtonRepeated;
 
     /// <summary>Raised once when a pressed button is let go; same thread rules as <see cref="ButtonPressed"/>.</summary>
     event Action<GamepadButton>? ButtonReleased;
@@ -112,6 +119,12 @@ public interface IGamepadSource : IDisposable
 public sealed class NullGamepadSource : IGamepadSource
 {
     public event Action<GamepadButton>? ButtonPressed
+    {
+        add { }
+        remove { }
+    }
+
+    public event Action<GamepadButton>? ButtonRepeated
     {
         add { }
         remove { }

@@ -135,4 +135,18 @@ public class HitWindowTests
         Assert.Equal(10, back.Start);
         Assert.True(back.Contains(16));
     }
+
+    /// <summary>#476: a held LT/RT in the single row stops at the last or first window; a fresh press wraps.</summary>
+    [Fact]
+    [Trait("TestCase", "T476-9")]
+    public void Turning_held_stops_at_the_ends_of_a_single_row()
+    {
+        var first = HitWindow.Of(16, rows: 1, rowLength: 7);
+        var (last, _) = first.Turn(-1, 0);
+
+        Assert.Equal((last, 12), last.Turn(1, 12, held: true));
+        Assert.Equal((first, 3), first.Turn(-1, 3, held: true));
+        Assert.Equal(7, first.Turn(1, 0, held: true).Window.Start);
+        Assert.Equal(0, last.Turn(1, 12).Window.Start);
+    }
 }

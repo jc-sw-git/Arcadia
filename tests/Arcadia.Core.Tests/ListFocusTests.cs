@@ -48,4 +48,15 @@ public sealed class ListFocusTests
     [InlineData(0, 1, 0, -1)]
     public void Cycle_wraps_round_like_the_launcher_tabs(int index, int delta, int count, int expected) =>
         Assert.Equal(expected, ListFocus.Cycle(index, delta, count));
+
+    /// <summary>#476: a held LB/RB or LT/RT stops at the end once; only a fresh press goes round.</summary>
+    [Theory]
+    [Trait("TestCase", "T476-9")]
+    [InlineData(2, 1, 3, 2)]
+    [InlineData(0, -1, 3, 0)]
+    [InlineData(1, 1, 3, 2)]
+    [InlineData(1, -1, 3, 0)]
+    [InlineData(0, 1, 0, -1)]
+    public void Cycle_held_stops_at_the_end(int index, int delta, int count, int expected) =>
+        Assert.Equal(expected, ListFocus.Cycle(index, delta, count, held: true));
 }

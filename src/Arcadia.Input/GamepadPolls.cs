@@ -2,21 +2,31 @@ namespace Arcadia.Input;
 
 /// <summary>
 /// Turns what the controllers report in each poll into button presses and releases. The left stick counts as the
-/// D-pad; the D-pad and the right stick repeat while held, so holding one moves the focus on. Platform-free, so the
-/// acceptance tests hold the D-pad and tilt the stick through the same rules as <see cref="SdlGamepadSource"/>.
+/// D-pad; the D-pad, the right stick, LB/RB and LT/RT repeat while held, so holding one moves the focus or turns on
+/// (#476). A repeat comes as <see cref="ButtonRepeated"/>, not as a press, so a list can stop at its end for a hold and
+/// wrap round only on a fresh press. Platform-free, so the acceptance tests hold the D-pad and tilt the stick through
+/// the same rules as <see cref="SdlGamepadSource"/>.
 /// </summary>
 public sealed class GamepadPolls
 {
     public const int RepeatDelayMs = 400;
     public const int RepeatIntervalMs = 90;
 
+    /// <summary>LB/RB and LT/RT turn a tab, a page or a game; slower than a step of the focus, so each turn can be seen.</summary>
+    public const int TurnRepeatIntervalMs = 150;
+
     /// <summary>About half way; far outside any stick's dead zone, so a resting stick never navigates.</summary>
     private const double StickThreshold = 16000 / 32767.0;
 
-    private static readonly GamepadButton[] Repeating =
+    private static readonly GamepadButton[] Moving =
     [
         GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight,
         GamepadButton.RightStickUp, GamepadButton.RightStickDown, GamepadButton.RightStickLeft, GamepadButton.RightStickRight,
+    ];
+
+    private static readonly GamepadButton[] Turning =
+    [
+        GamepadButton.LeftShoulder, GamepadButton.RightShoulder, GamepadButton.LeftTrigger, GamepadButton.RightTrigger,
     ];
 
     private static readonly (PadButtons Flag, GamepadButton Button)[] Buttons =
@@ -48,6 +58,9 @@ public sealed class GamepadPolls
 
     public event Action<GamepadButton>? ButtonPressed;
 
+    /// <summary>A held button acts again (<see cref="IGamepadSource.ButtonRepeated"/>).</summary>
+    public event Action<GamepadButton>? ButtonRepeated;
+
     public event Action<GamepadButton>? ButtonReleased;
 
     /// <summary>Takes one poll of all controllers.</summary>
@@ -65,12 +78,12 @@ public sealed class GamepadPolls
                 _lastRepeat[button] = nowMs;
                 ButtonPressed?.Invoke(button);
             }
-            else if (Array.IndexOf(Repeating, button) >= 0
+            else if (RepeatIntervalOf(button) is { } interval
                      && nowMs - _heldSince[button] >= RepeatDelayMs
-                     && nowMs - _lastRepeat[button] >= RepeatIntervalMs)
+                     && nowMs - _lastRepeat[button] >= interval)
             {
                 _lastRepeat[button] = nowMs;
-                ButtonPressed?.Invoke(button);
+                ButtonRepeated?.Invoke(button);
             }
         }
 
@@ -84,6 +97,12 @@ public sealed class GamepadPolls
 
         _previous = current;
     }
+
+    /// <summary>How often <paramref name="button"/> repeats once held past the delay; null if it doesn't repeat.</summary>
+    private static int? RepeatIntervalOf(GamepadButton button) =>
+        Array.IndexOf(Moving, button) >= 0 ? RepeatIntervalMs
+        : Array.IndexOf(Turning, button) >= 0 ? TurnRepeatIntervalMs
+        : null;
 
     /// <summary>
     /// Every controller was let go (Pan hides or shows one): what is held is released now, and a button still held

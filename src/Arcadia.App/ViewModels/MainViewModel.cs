@@ -35,6 +35,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private readonly FirstRunSetup _firstRun;
     private readonly TimeProvider _time;
     private readonly GameActions _actions;
+    private readonly RepeatGate _repeats = new();
     private Func<ViewOptionsViewModel?>? _createViewOptions;
 
     // The page whose options the dialog shows.
@@ -277,10 +278,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private IEnumerable<IPage> OpenPages() => new IPage?[] { FirstRun, Settings, Detail, Search, Library }.OfType<IPage>();
 
     /// <summary>A gamepad button was pressed: the hints show the controller's buttons, the search its button legend.</summary>
-    public void HandleGamepad(UiAction action)
+    /// <param name="repeat">The button is held and acts again (<see cref="Handle(UiAction, bool)"/>).</param>
+    public void HandleGamepad(UiAction action, bool repeat = false)
     {
         NoteInput(InputKind.Gamepad);
-        Handle(action);
+        Handle(action, repeat);
     }
 
     /// <summary>A key went down on a real keyboard: the search puts its on-screen keyboard and legend away.</summary>
@@ -307,7 +309,33 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// window; under them a dialog takes it before the page; what the page leaves (≡, X) opens a page over it. A press
     /// that closes a dialog doesn't reach the page below. A held press ends with <see cref="Release"/>.
     /// </summary>
-    public void Handle(UiAction action)
+    /// <param name="repeat">
+    /// The button or key is held and acts again (#476): a step past the end stops there (<see cref="HeldPress"/>). It acts
+    /// only where its press did: once the page, a dialog or the page's layout changed, it does nothing until let go.
+    /// </param>
+    public void Handle(UiAction action, bool repeat = false)
+    {
+        if (!_repeats.Allows(action, repeat, ShownLayer()))
+        {
+            return;
+        }
+
+        HeldPress.Run(repeat, () => HandleOnTop(action));
+    }
+
+    /// <summary>
+    /// What a press acts on: the page on top (by kind, so the detail page turning to another tab's game stays the same),
+    /// the dialog over it, and the page's own layout (<see cref="IPage.Layout"/>).
+    /// </summary>
+    private ShownLayer ShownLayer()
+    {
+        var page = OpenPages().First();
+        object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
+            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? FilterModal;
+        return new ShownLayer(page.GetType(), dialog, page.Layout);
+    }
+
+    private void HandleOnTop(UiAction action)
     {
         if (PanDialogs.Handle(action))
         {
@@ -407,6 +435,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
+        _repeats.Release(action);
         PanDialogs.Release(action);
         _actions.Release(action);
         foreach (var page in OpenPages())
@@ -418,6 +447,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>Drops held buttons, e.g. when the window loses focus and their release may never arrive.</summary>
     public void CancelHold()
     {
+        _repeats.Clear();
         PanDialogs.CancelHold();
         _actions.CancelHold();
         foreach (var page in OpenPages())

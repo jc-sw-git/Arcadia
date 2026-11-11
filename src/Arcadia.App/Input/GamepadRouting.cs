@@ -103,6 +103,15 @@ public sealed class GamepadRouting
         }
     }
 
+    /// <summary>A held button acts again (<see cref="IGamepadSource.ButtonRepeated"/>); View and Menu never repeat.</summary>
+    public void Repeat(GamepadButton button)
+    {
+        if (!_isMouseModeOn() && !_viewAndMenu.Handles(button))
+        {
+            Act(button, repeat: true);
+        }
+    }
+
     public void Release(GamepadButton button)
     {
         if (_viewAndMenu.Handles(button))
@@ -115,7 +124,9 @@ public sealed class GamepadRouting
         }
     }
 
-    private void Act(GamepadButton button)
+    private void Act(GamepadButton button) => Act(button, repeat: false);
+
+    private void Act(GamepadButton button, bool repeat)
     {
         var pressedAt = _soloPressedAt.Remove(button, out var soloPressedAt) ? soloPressedAt : InputLatency.Now();
 
@@ -128,12 +139,12 @@ public sealed class GamepadRouting
 
         if (UiActionMap.FromGamepad(button) is { } action)
         {
-            AppLog.Write($"Gamepad: {button} → {action}");
+            AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             Dispatcher.UIThread.Post(() =>
             {
                 if (_isArcadiaActive())
                 {
-                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action));
+                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
                 }
             });
         }

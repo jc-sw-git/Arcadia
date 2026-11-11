@@ -86,6 +86,7 @@ internal sealed class ArcadiaDriver : IDisposable
             ? new DemoIntegration(spec.Launcher, spec.Games, Now, canUninstall: spec.CanUninstall)
             : (ILauncherIntegration)new TestLauncher(spec, Now, starts, installs)).ToList();
         _pad.ButtonPressed += button => PressButton(button);
+        _pad.ButtonRepeated += button => RepeatButton(button);
         _pad.ButtonReleased += button => ReleaseButton(button);
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
@@ -402,6 +403,14 @@ internal sealed class ArcadiaDriver : IDisposable
         return this;
     }
 
+    /// <summary>A held button acting again, as the controller's repeat does (#476).</summary>
+    public ArcadiaDriver RepeatButton(GamepadButton button)
+    {
+        _gamepad.Repeat(button);
+        Dispatcher.UIThread.RunJobs();
+        return this;
+    }
+
     public ArcadiaDriver ReleaseButton(GamepadButton button)
     {
         _gamepad.Release(button);
@@ -464,9 +473,10 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>
     /// The controller held as <paramref name="buttons"/> and <paramref name="leftStick"/> say for
-    /// <paramref name="duration"/>, then let go: read every 8 ms as the App reads it, held directions repeat.
+    /// <paramref name="duration"/>, then let go: read every 8 ms as the App reads it, held buttons repeat.
     /// </summary>
-    public ArcadiaDriver HoldPad(TimeSpan duration, PadButtons buttons = PadButtons.None, StickPosition leftStick = default)
+    /// <param name="letGo">False: still held afterwards, so the next call goes on with the same hold (or adds a button).</param>
+    public ArcadiaDriver HoldPad(TimeSpan duration, PadButtons buttons = PadButtons.None, StickPosition leftStick = default, bool letGo = true)
     {
         var held = new GamepadReading(0, buttons, leftStick, default);
         for (var waited = TimeSpan.Zero; waited <= duration; waited += PadPoll)
@@ -477,8 +487,12 @@ internal sealed class ArcadiaDriver : IDisposable
             Dispatcher.UIThread.RunJobs();
         }
 
-        _pad.Update([new GamepadReading(0, PadButtons.None, default, default)], (long)Time.GetElapsedTime(0).TotalMilliseconds);
-        Dispatcher.UIThread.RunJobs();
+        if (letGo)
+        {
+            _pad.Update([new GamepadReading(0, PadButtons.None, default, default)], (long)Time.GetElapsedTime(0).TotalMilliseconds);
+            Dispatcher.UIThread.RunJobs();
+        }
+
         return this;
     }
 

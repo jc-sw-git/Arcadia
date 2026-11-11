@@ -219,18 +219,20 @@ public partial class MainWindow : Window
 
         if (_viewModel is not null && ActionFor(e) is { } action)
         {
-            // A held key repeats its KeyDown. Moving and turning may repeat; A acts on the release or after a hold, like the
-            // gamepad button, and a dialog must not open and close again with every repeat.
-            if (!_keysDown.Add(e.Key) && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions or UiAction.Status
+            // A held key repeats its KeyDown. Moving and turning may repeat, and stop at a list's end like a held button
+            // (#476); A acts on the release or after a hold, like the gamepad button, and a dialog must not open and close
+            // again with every repeat.
+            var repeat = !_keysDown.Add(e.Key);
+            if (repeat && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions or UiAction.Status
                 or UiAction.KeyboardLayout)
             {
                 e.Handled = true;
                 return;
             }
 
-            Services.AppLog.Write($"Taste: {e.Key} → {action}");
+            Services.AppLog.Write($"Taste: {e.Key} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             var viewModel = _viewModel;
-            Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action));
+            Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action, repeat));
             e.Handled = true;
         }
     }

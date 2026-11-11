@@ -13,7 +13,7 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 - A game's rumble on the pad (VIIPER's `Xbox360Output`, two motor bytes) goes back to the Steam Controller through SDL
   (`IGamepadSource.HoldRumble`), and stops when the pad goes. The Steam button is never the pad's Guide: it is Steam's.
 - Back + Start never reaches the game (`ComboWithholding`, Input): ⧉ and ≡ are held back for the 100 ms in which the
-  other may still join (`MouseMode.ComboWindow`). The rules are a product decision: `docs/product/controls.md`.
+  other may still join (`MouseMode.ComboWindow`). The rules are a product decision: `docs/product/controllers-in-games.md`.
 - The pad passes input only while a library game on "Arcadia" owns the foreground window and the mouse mode is off
   (`SteamControllerCopyRules.PadPasses`, #357); otherwise it reports rest (`ForwardingAllowed`). Passing anywhere else
   let Steam read the Steam Controller through the pad (its glyphs flashed to Xbox icons) right after a switch to

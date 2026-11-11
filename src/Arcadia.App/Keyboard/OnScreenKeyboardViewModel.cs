@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Search;
 using Arcadia.Input;
@@ -159,6 +160,12 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     /// </summary>
     public void ButtonDown(KeyboardButton button)
     {
+        // Held LB/RB repeat where they turn (#476); here they are shift and AltGr, which a hold only keeps down.
+        if (HeldPress.IsRepeat && button is not (KeyboardButton.Up or KeyboardButton.Down or KeyboardButton.Left or KeyboardButton.Right))
+        {
+            return;
+        }
+
         if (LayoutMenu.IsOpen && HandleLayoutMenu(button))
         {
             return;

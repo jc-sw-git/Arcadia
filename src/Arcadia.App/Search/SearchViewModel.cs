@@ -242,6 +242,9 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     [NotifyPropertyChangedFor(nameof(ShowsStickHint), nameof(ShowsRowScrollBar), nameof(ShowsGridScrollBar), nameof(CanTurnUpInGrid), nameof(CanTurnDownInGrid))]
     public partial bool IsKeyboardOut { get; set; }
 
+    /// <summary>The keyboard out or in, its layout menu open or not: each gives the buttons other meanings.</summary>
+    object? IPage.Layout => (IsKeyboardOut, Keyboard.LayoutMenu.IsOpen);
+
     /// <summary>Beside the keyboard only the right stick picks a hit, so it's said above the hits too, not only in the legend.</summary>
     public bool ShowsStickHint => UsesController && IsKeyboardOut && !IsInMouseMode;
 
@@ -671,7 +674,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         if (_window.CanTurn)
         {
             var previous = _window.Start;
-            (_window, _focus) = _window.Turn(direction, _focus);
+            (_window, _focus) = _window.Turn(direction, _focus, HeldPress.IsRepeat);
             ShowWindow(previous);
         }
     }

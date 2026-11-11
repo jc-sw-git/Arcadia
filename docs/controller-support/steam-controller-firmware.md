@@ -20,7 +20,7 @@
 - A firmware message (`SteamMessageKind.Firmware`: `0x90`, `0xB7`–`0xB9`) raises `UpdateTraffic`; other dropped types
   don't. `FirmwareAttemptWatch` raises one notice per attempt (messages under 30 s apart are one). With no library
   game in front Arcadia comes to the front with "Steam will die Firmware aktualisieren" (`FirmwareAttemptViewModel`,
-  texts in `docs/product/controls.md`): "Controller freigeben" and "Arcadia beenden" (held 1 s) act at once,
+  texts in `docs/product/controllers-in-games.md`): "Controller freigeben" and "Arcadia beenden" (held 1 s) act at once,
   "Schließen" or [B] keeps the takeover. With a game in front only `SteamControllerForGames.FirmwareInGameText` shows
   over the game.
 - "Controller freigeben" (`PanEmulation.ReleaseForFirmwareAsync`) ends the emulation, so Pan shows the puck, and keeps

@@ -184,11 +184,14 @@ public sealed class PanRows
     {
         var status = _pan.Status;
         var notHere = !_support.IsSupportedPlatform;
-        var allMissing = !notHere && EmulationParts.AllMissing(_support.Issues);
-        // #407: a pending restart or a firmware update keeps the install greyed out, with the reason as a row below.
+        var allMissing = !notHere && _support.AllPartsMissing;
+        // #407: a firmware update keeps the install greyed out, with the reason as a row below; a removal waiting for
+        // the Windows restart too, with the restart row below (#382, F02).
         var blockers = allMissing && !IsBusy ? _support.InstallBlockers : [];
-        var installFailed = allMissing && _support.FailedFix == HealthFix.InstallDrivers && _support.LastError is not null;
         var game = _gameInTheWay();
+        var restartRow = notHere ? null : WindowsRestartRow(game);
+        var installBlocked = blockers.Count > 0 || (allMissing && _support.PausesForWindowsRestart);
+        var installFailed = allMissing && _support.FailedFix == HealthFix.InstallDrivers && _support.LastError is not null;
         var warnings = !notHere && !allMissing && IsOn ? WarningRows(status) : [];
         var excluded = !notHere && !allMissing && IsOn && status.Problem == PanEmulationProblem.Excluded;
 
@@ -199,11 +202,11 @@ public sealed class PanRows
         Main.Update(
             notHere ? SetupRowMode.Unavailable : allMissing ? SetupRowMode.Install : SetupRowMode.Switch,
             !notHere && !allMissing && IsOn,
-            isLocked: IsBusy || _updating || (game is not null && !allMissing) || blockers.Count > 0,
+            isLocked: IsBusy || _updating || (game is not null && !allMissing) || installBlocked,
             unavailableText: "Auf diesem System noch nicht verfügbar",
             status: Subtitle(status, allMissing, installFailed, problem, game, excluded, updateDue));
         // A running game would lose its controller mid-game: greyed out like "Auf Werkseinstellungen zurücksetzen".
-        Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy) || blockers.Count > 0;
+        Main.IsDimmed = notHere || (game is not null && !allMissing && !IsBusy) || installBlocked;
         Main.Severity = installFailed ? HealthSeverity.Error : updateDue && !_updating ? HealthSeverity.Info : null;
         Main.ShowLamp(notHere || allMissing || updateDue ? null
             : !IsOn ? RowLamp.Resting
@@ -221,7 +224,7 @@ public sealed class PanRows
             : problem || allMissing ? HealthSeverity.Warning
             : null;
         var blockerRows = blockers.Select(blocker => IssueRow(blocker, failed: null)).ToList();
-        FirstWarningKey = blockerRows.FirstOrDefault()?.Key
+        FirstWarningKey = blockerRows.FirstOrDefault()?.Key ?? restartRow?.Key
             ?? warnings.FirstOrDefault(row => row.Severity > HealthSeverity.Info)?.Key ?? warnings.FirstOrDefault()?.Key;
         // Nothing to assign while a missing part keeps the emulation from running (#410); an old usbip-win2 or HidHide may
         // still let it run, and then the controllers can be assigned.
@@ -229,6 +232,7 @@ public sealed class PanRows
         return
         [
             Main,
+            .. restartRow is null ? Array.Empty<SettingsRowViewModel>() : [restartRow],
             .. blockerRows,
             .. warnings,
             .. layouts ? [Layouts] : Array.Empty<SettingsRowViewModel>(),
@@ -281,6 +285,7 @@ public sealed class PanRows
             _ when game is not null => $"Erst änderbar, wenn „{game}“ beendet ist",
             _ when updateDue => _updating ? UpdatingSubtitle : UpdateDueSubtitle,
             (_, false) => "Aus – Spiele und Launcher sehen deine echten Controller direkt",
+            _ when _support.PausesForWindowsRestart => PanEmulation.WindowsRestartReason,
             _ when status.State == PanEmulationState.Stopped => "Angehalten – der Grund steht darunter",
             _ when problem => "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.",
             _ when excluded => ExcludedSubtitle,
@@ -367,7 +372,7 @@ public sealed class PanRows
         var ids = new HashSet<string>();
         // Several parts share "Installieren": its error shows once, at the first of them.
         var errorShown = false;
-        foreach (var issue in _support.Issues)
+        foreach (var issue in _support.Issues.Where(issue => issue.Id != EmulationParts.WindowsRestartId))
         {
             var failed = !errorShown && issue.Fix != HealthFix.None && _support.FailedFix == issue.Fix ? _support.LastError : null;
             errorShown |= failed is not null;
@@ -456,6 +461,35 @@ public sealed class PanRows
                     null, null));
                 break;
         }
+    }
+
+    /// <summary>
+    /// "Windows-Neustart ausstehend" (#382, D2, artboards T382F01–F04): one row for every pending restart, also while Pan
+    /// is off or nothing is installed, so the player always has the button. Greyed out while a game runs or starts.
+    /// </summary>
+    private ActionRowViewModel? WindowsRestartRow(string? game)
+    {
+        if (_support.Issues.FirstOrDefault(issue => issue.Id == EmulationParts.WindowsRestartId) is not { } issue)
+        {
+            return null;
+        }
+
+        var row = IssueRow(issue, failed: null);
+        var paused = issue == EmulationParts.WindowsRestartRequired;
+        row.Info =
+        [
+            new InfoText(paused ? EmulationParts.PausedText : EmulationParts.RecommendedText),
+            new InfoText(paused ? EmulationParts.PausedMore : EmulationParts.RecommendedMore),
+            new InfoSection(paused ? EmulationParts.PausedBoxTitle : EmulationParts.RecommendedBoxTitle,
+                [new InfoText(paused ? EmulationParts.PausedBoxText : EmulationParts.RecommendedBoxText)]),
+        ];
+        if (game is not null)
+        {
+            row.Subtitle = $"Erst möglich, wenn „{game}“ beendet ist";
+            row.IsEnabled = false;
+        }
+
+        return row;
     }
 
     /// <summary>One warning per firmware tool that runs (#238 D8, artboards T238F06–F07); it goes once the tool has ended.</summary>
@@ -636,10 +670,6 @@ public sealed class PanRows
             "In HidHide ist „Inverse application cloak“ eingeschaltet. Dann versteckt HidHide die Geräte vor Arcadia statt vor allen anderen. Schalte es in der HidHide-Konfiguration aus.", issue.Severity),
         "hidhide-cloaking-off" => ("Sonst würde Pan auch deine anderen Geräte dort verstecken",
             "In HidHide sind Geräte eingetragen, aber „Enable device hiding“ ist aus. Pan müsste es einschalten und würde diese Geräte dann mit verstecken, deshalb tut es das nicht. Schalte es in der HidHide-Konfiguration ein oder trage die Geräte dort aus.", issue.Severity),
-        // Nothing to do but wait for the restart: the blue i, not the triangle (designs).
-        "reboot-pending" => ("Bis dahin können Controller in Spielen kurz aussetzen",
-            "Der usbip-Treiber wurde aktualisiert und ist erst nach einem Neustart des PCs ganz aktiv. Bis dahin kann ein emulierter Controller kurz aussetzen; Arcadia verbindet ihn dann selbst neu.", issue.Severity),
-        "hidhide-removal-pending" => (EmulationParts.HidHideRemovalPending.Summary!, EmulationParts.HidHideRemovalPendingText, issue.Severity),
         _ => (issue.ShortText, issue.Detail, issue.Severity),
     };
 

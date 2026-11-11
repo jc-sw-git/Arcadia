@@ -35,11 +35,16 @@ public static class ServiceSetup
     public static void Install(string source, string? expectedHash, Action<string> log)
     {
         var target = PanPaths.InstalledExecutable;
+        using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
+        if (KeepUnchanged(manager, source, target, expectedHash, log))
+        {
+            return;
+        }
+
         var runsFromTarget = string.Equals(Path.GetFullPath(source), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase);
         var staged = runsFromTarget ? null : Stage(source, target, expectedHash, log);
 
         var backup = target + ".old";
-        using var manager = OpenManager(Native.ScManagerConnect | Native.ScManagerCreateService);
         bool hadService;
         try
         {
@@ -92,6 +97,42 @@ public static class ServiceSetup
         {
             log($"{backup} could not be removed ({ex.Message}); the next install replaces it");
         }
+    }
+
+    /// <summary>
+    /// The installed Pan already is <paramref name="source"/> and its service exists (<see cref="UnchangedPan"/>, #382 S2):
+    /// exe and running service stay, only the configuration is set again and a stopped service started. False: install.
+    /// </summary>
+    private static bool KeepUnchanged(ServiceHandle manager, string source, string target, string? expectedHash, Action<string> log)
+    {
+        using var service = TryOpenService(manager, Native.ServiceChangeConfig | Native.WriteDac | Native.ServiceStart | Native.ServiceQueryStatus);
+        if (!File.Exists(target) || !UnchangedPan.IsKept(HashOf(target), HashOf(source), expectedHash, service is not null))
+        {
+            return false;
+        }
+
+        Describe(service!, ServiceDescriptions.ForSystem());
+        SetRecovery(service!);
+        SetPreshutdown(service!, (uint)StopWait.TotalMilliseconds);
+        SetSecurity(service!, ServiceSddl);
+        log($"Pan unchanged ({target}): service kept, its configuration set again");
+        if (QueryState(service!) == Native.ServiceStopped)
+        {
+            if (!Native.StartServiceW(service!.Handle, 0, 0))
+            {
+                throw new Win32Exception();
+            }
+
+            log("Service started");
+        }
+
+        return true;
+    }
+
+    private static string HashOf(string path)
+    {
+        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return Convert.ToHexString(SHA256.HashData(file));
     }
 
     /// <summary>Stops and deletes the installed service, if any; true when there was one.</summary>

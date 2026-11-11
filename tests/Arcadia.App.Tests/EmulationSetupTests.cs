@@ -241,29 +241,32 @@ public sealed class EmulationSetupTests
     }
 
     /// <summary>
-    /// #407 (owner's rc.2 test): Arcadia uninstalled with its drivers, installed again before the PC restarted. The
-    /// install would meet the half removed HidHide, so "Treiber installieren" is greyed out until the restart.
+    /// #407 (owner's rc.2 test), #382 F02: Arcadia uninstalled with its drivers, installed again before the PC restarted.
+    /// The install would meet the half removed HidHide, so "Treiber installieren" is greyed out, and the one restart row
+    /// below it says why and offers the restart.
     /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T407-2")]
-    public async Task While_a_driver_change_waits_for_the_restart_Treiber_installieren_is_greyed_out_and_says_why()
+    [Trait("TestCase", "T382-9")]
+    public async Task While_a_driver_removal_waits_for_the_restart_Treiber_installieren_is_greyed_out_and_the_restart_row_says_why()
     {
         var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideRemovalPending = true };
         steam.Viiper.IsInstalled = false;
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:install-restart-pending"), "die Zeile „Windows-Neustart ausstehend“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
         var pan = Switch(controller);
         Assert.True(pan.IsInstall);
         Assert.True(pan.IsLocked);
         Assert.True(pan.IsDimmed);
-        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:install-restart-pending"));
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
         Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Treiberänderungen stehen noch aus", row.Subtitle);
+        Assert.Equal("Starte Windows neu, danach kannst du die fehlenden Teile installieren.", row.Subtitle);
         Assert.True(row.IsInfo);
-        Assert.Equal(string.Empty, row.ActionText);
+        Assert.Equal("Windows neu starten", row.ActionText);
         Assert.Equal(row.Key, controller.PanWarningKey);
+        Assert.Equal(1, controller.Rows.IndexOf(row));
 
         pan.Activate();
         Assert.Equal(SettingsPrompt.None, controller.Prompt);
@@ -274,12 +277,14 @@ public sealed class EmulationSetupTests
         steam.HidHideVersion = null;
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => !Switch(controller).IsLocked, "„Treiber installieren“ wieder wählbar");
-        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:install-restart-pending");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
         Switch(controller).Activate();
         ConfirmDriversInstall(arcadia, controller);
         await arcadia.WaitUntilAsync(() => Switch(controller).IsSwitch, "eingerichtet");
         Assert.Equal(1, steam.DriverInstalls);
     }
+
+    private static readonly string RestartRowKey = PanRows.IssueKey(EmulationParts.WindowsRestartId);
 
     /// <summary>#407: an install restarts the puck and controllers, so it waits while a firmware update runs.</summary>
     [AvaloniaFact]
@@ -297,7 +302,7 @@ public sealed class EmulationSetupTests
         Assert.Equal("Controller-Update wird durchgeführt", row.Title);
         Assert.Equal("Treiber kann während eines Firmware-Updates nicht installiert werden", row.Subtitle);
         Assert.True(row.IsInfo);
-        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:install-restart-pending");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
 
         steam.FirmwareUpdateRuns = false;
         await arcadia.TickControllerSupportAsync();
@@ -477,7 +482,8 @@ public sealed class EmulationSetupTests
     [AvaloniaFact]
     [Trait("TestCase", "T243-41")]
     [Trait("TestCase", "T407-2")]
-    public async Task An_uninstalled_HidHide_waiting_for_the_restart_says_so_and_offers_no_install()
+    [Trait("TestCase", "T382-7")]
+    public async Task An_uninstalled_HidHide_waiting_for_the_restart_pauses_Pan_and_offers_only_the_restart()
     {
         // Owner's B2 test (2026-10-27): until the restart HidHide's service and driver file stay, so its version read as
         // installed and the settings showed nothing; its setup would fail while the old service waits for deletion.
@@ -486,43 +492,47 @@ public sealed class EmulationSetupTests
         using var _ = arcadia;
         arcadia.Pan.Hiding = PanReason.HidHideBusy;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-removal-pending"), "die Meldung „HidHide: Neustart ausstehend“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
         await arcadia.TickControllerSupportAsync();
-        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-removal-pending"));
-        Assert.Equal("HidHide: Neustart ausstehend", row.Title);
-        // #407: says what happened and what comes after the restart.
-        Assert.Equal("HidHide wurde deinstalliert, Windows entfernt es beim Neustart", row.Subtitle);
-        Assert.Contains(row.Info, block => block is InfoText { Text: var text } && text.Contains("Nach dem Neustart bietet Arcadia hier „Installieren“ an.", StringComparison.Ordinal));
-        Assert.Equal(string.Empty, row.ActionText);
-        // Nothing to do but restart: the blue i (#242).
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
+        Assert.Equal("Windows-Neustart ausstehend", row.Title);
+        Assert.Equal("Starte Windows neu, danach kannst du die fehlenden Teile installieren.", row.Subtitle);
+        Assert.Equal("Windows neu starten", row.ActionText);
         Assert.True(row.IsInfo);
-        // Pan isn't asked about a HidHide on its way out: one row, not a second one from its state.
-        Assert.Single(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
+        Assert.Contains(row.Info, block => block is InfoSection { Title: "NACH DEM NEUSTART" });
+        // #382, D1: the switch stays on and says it waits; no part row, and Pan isn't asked about a HidHide on its way out.
+        Assert.True(arcadia.Settings.Current.PanEnabled);
+        Assert.Equal("Pausiert bis zum Neustart von Windows", Switch(controller).Subtitle);
+        Assert.DoesNotContain(controller.Rows, row => row.Key.StartsWith("issue:hidhide", StringComparison.Ordinal));
+        Assert.DoesNotContain(controller.Rows, row => row is ActionRowViewModel { ActionText: "Installieren" });
 
         // After the restart HidHide is gone and can be installed again.
         steam.HidHideRemovalPending = false;
         steam.HidHideVersion = null;
         await arcadia.TickControllerSupportAsync();
         await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:hidhide-missing"), "die Meldung „HidHide fehlt“");
-        Assert.DoesNotContain(controller.Rows, row => row.Key == "issue:hidhide-removal-pending");
+        Assert.DoesNotContain(controller.Rows, row => row.Key == RestartRowKey);
         Assert.Equal("Installieren", Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:hidhide-missing")).ActionText);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T243-42")]
-    public async Task A_pending_restart_after_the_usbip_update_offers_no_SISR_restart_any_more()
+    [Trait("TestCase", "T382-10")]
+    public async Task A_fresh_usbip_win2_recommends_the_restart_with_its_button_and_no_SISR_restart()
     {
         var steam = new FakeSteam { UsbipRebootPending = true };
         var (arcadia, controller) = await OpenControllerSettingsAsync(steam);
         using var _ = arcadia;
 
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == "issue:reboot-pending"), "die Meldung „Windows-Neustart ausstehend“");
-        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == "issue:reboot-pending"));
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == RestartRowKey), "die Zeile „Windows-Neustart ausstehend“");
+        var row = Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == RestartRowKey));
         Assert.Equal("Windows-Neustart ausstehend", row.Title);
-        Assert.Equal("Bis dahin können Controller in Spielen kurz aussetzen", row.Subtitle);
-        Assert.Equal(string.Empty, row.ActionText);
+        Assert.Equal("Starte Windows neu, damit der neue Treiber ganz aktiv ist.", row.Subtitle);
+        Assert.Equal("Windows neu starten", row.ActionText);
         Assert.True(row.IsInfo);
-        Assert.DoesNotContain("SISR", row.Info.OfType<InfoText>().Single().Text);
+        Assert.Contains(row.Info, block => block is InfoSection { Title: "KEINE EILE" });
+        Assert.DoesNotContain(row.Info.OfType<InfoText>(), text => text.Text.Contains("SISR", StringComparison.Ordinal));
+        Assert.NotEqual("Pausiert bis zum Neustart von Windows", Switch(controller).Subtitle);
     }
 
     [AvaloniaFact]

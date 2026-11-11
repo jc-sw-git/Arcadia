@@ -531,6 +531,9 @@ internal sealed class ArcadiaDriver : IDisposable
     /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) reports <paramref name="game"/> as running from now.</summary>
     public void RunInLauncher(Game game) => MonitorOf(game).Run(game.Id, Time.GetUtcNow());
 
+    /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) no longer reports <paramref name="game"/> as running.</summary>
+    public void EndInLauncher(Game game) => MonitorOf(game).End(game.Id);
+
     /// <summary>The launcher of a test (<see cref="LauncherSpec.Running"/> set) aborts the start of <paramref name="game"/> now (#277).</summary>
     public void RefuseInLauncher(Game game, string? reason, string detail) =>
         MonitorOf(game).Refuse(new RefusedStart(game.Id, Time.GetUtcNow(), reason, detail));

@@ -1705,6 +1705,7 @@
                       <TextBlock Text="Steam-Spiel läuft" IsVisible="{Binding IsGamePrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding SteamStopTitle}" IsVisible="{Binding IsSteamStopPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                       <TextBlock Text="SISR wird entfernt" IsVisible="{Binding IsRemovingSisrPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+                      <TextBlock Text="{x:Static settings:ControllerSettingsViewModel.RestartTitle}" IsVisible="{Binding IsRestartPrompt}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel Spacing="14" IsVisible="{Binding IsGamePrompt}">
@@ -1726,6 +1727,7 @@
                         </Grid>
                       </Border>
                     </StackPanel>
+                    <TextBlock Classes="promptBody" Text="{x:Static settings:ControllerSettingsViewModel.RestartText}" IsVisible="{Binding IsRestartPrompt}" />
                     <StackPanel Spacing="18" IsVisible="{Binding IsRemovingSisrPrompt}">
                       <TextBlock Classes="promptBody" Text="{Binding RemovingSisrText}" />
                       <StackPanel Orientation="Horizontal" Spacing="12">
@@ -1746,10 +1748,16 @@
                       <Button Classes="plain action" Classes.focused="{Binding CancelSteamStopItem.IsFocused}"
                               Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsRestartPrompt}">
+                      <Button Classes="plain action primaryAction" Classes.focused="{Binding ConfirmRestartItem.IsFocused}"
+                              Command="{Binding ConfirmRestartCommand}" Content="Neu starten" />
+                      <Button Classes="plain action" Classes.focused="{Binding CancelRestartItem.IsFocused}"
+                              Command="{Binding ClosePromptCommand}" Content="Abbrechen" />
+                    </StackPanel>
 
                     <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding !IsRemovingSisrPrompt}">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="Auswählen" />
+                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding PromptSelectText}" />
                         <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
                       </StackPanel>
                     </Border>

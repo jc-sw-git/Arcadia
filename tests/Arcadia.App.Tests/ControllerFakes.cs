@@ -173,7 +173,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
     /// <summary>Pan is installed but its last run ended with an error (a data folder it refuses); its install repairs it.</summary>
     public bool PanFailing { get; set; }
 
-    /// <summary>The usbip driver was updated and Windows wants a restart: the platform's "reboot-pending" row.</summary>
+    /// <summary>usbip-win2 was installed or updated since Windows started: the restart is recommended, Pan keeps running (#382, S6).</summary>
     public bool UsbipRebootPending { get; set; }
 
     /// <summary>How often "Treiber installieren" ran, i.e. asked Windows for administrator rights.</summary>
@@ -189,10 +189,34 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
 
     public bool InstallsHidHide => ControllerSupportPlatform.HidHideNeedsInstaller(HidHideVersion) && !HidHideRemovalPending;
 
-    /// <summary>A driver change waits for the PC's restart (#407); the uninstalled HidHide counts too, as on Windows.</summary>
-    public bool DriverChangeWaits { get; set; }
+    /// <summary>usbip-win2 was uninstalled and Windows removes it at the next restart (#382); Pan pauses, as for HidHide.</summary>
+    public bool UsbipRemovalPending { get; set; }
 
-    public bool DriverChangePending(AppSettings settings, DateTimeOffset now) => DriverChangeWaits || HidHideRemovalPending;
+    /// <summary>
+    /// Set, the pending-restart check throws a new exception from this (a registry read that fails, #382's failure case):
+    /// the tick and the settings' refresh may check at once, and one instance thrown on two threads keeps one stack trace.
+    /// </summary>
+    public Func<Exception>? PendingRestartError { get; set; }
+
+    public PendingRestart CheckPendingRestart(AppSettings settings, DateTimeOffset now) =>
+        PendingRestartError is { } error ? throw error()
+        : UsbipRemovalPending || HidHideRemovalPending ? PendingRestart.Required
+        : UsbipRebootPending ? PendingRestart.Recommended
+        : PendingRestart.None;
+
+    /// <summary>How often Windows was asked to restart ("Windows neu starten", #382).</summary>
+    public int WindowsRestarts => Volatile.Read(ref _windowsRestarts);
+
+    private int _windowsRestarts;
+
+    /// <summary>Set, Windows refuses the restart with this (policy, a blocking program, no answer in time).</summary>
+    public Exception? WindowsRestartError { get; set; }
+
+    public Task RestartWindowsAsync(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _windowsRestarts);
+        return WindowsRestartError is { } error ? Task.FromException(error) : Task.CompletedTask;
+    }
 
     /// <summary>A controller's firmware is flashed now (#407).</summary>
     public bool FirmwareUpdateRuns { get; set; }
@@ -311,7 +335,6 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
         .. IsUsbipReady ? Array.Empty<HealthIssue>() : [new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber.", HealthFix.InstallDrivers, "Installieren")],
         .. PanFailing ? [EmulationParts.PanFailing] : Array.Empty<HealthIssue>(),
         .. _panInstalled ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")],
-        .. UsbipRebootPending ? [EmulationParts.RebootPending] : Array.Empty<HealthIssue>(),
         .. ControllerSupportPlatform.CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
     ];
 }

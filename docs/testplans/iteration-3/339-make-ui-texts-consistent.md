@@ -1,0 +1,44 @@
+# #339 Make UI texts consistent
+
+**Status:** Automated: T339-1 to -6, T339-12 to -15, T339-19 · QE: T339-7 to -11, T339-16, T339-17 · Open for the owner: none (T339-18 passed)
+
+"Resource files" means every `*Texts.resx` under `src/` (App, ControllerSupport, Core, Input, each launcher folder).
+
+- [x] **T339-1** Every text in every resource file, filled with a sample value of the right kind per placeholder (text, number, date, with its format such as `{seconds:0}`): no `{` or `}` is left in the result, no key is shown, and `UiText` logs nothing · E2E: no (unit test over all resource files)
+- [x] **T339-2** The test of T339-1 goes red, naming file and key, on a text with an unclosed brace (`{game`), a stray closing brace, an empty `{}`, a numbered placeholder (`{0}`) and a placeholder in German (`{Spiel}`) · E2E: no (unit test with broken resource fixtures)
+- [x] **T339-3** The test of T339-1 runs in a normal test project of `dotnet test`, so it runs on every PR and every OS, not behind the owner-only condition · E2E: no (review of the test and the CI run)
+- [x] **T339-4** In the running app, a text with a count and one with a game name, both reworded in this PR: the launcher rows' game count shows the right singular and plural for 1 and several games, and the game start text shows the game's name in „…“ quotes; no placeholder or key is visible · E2E: yes
+- [x] **T339-5** The check goes red on each forbidden spelling, one fixture each, and names file, key and spelling: "emuliert" (the stem "emulier" in any form and case), "z. B.", "ggf.", "Windows neu starten", "neustarten", straight quotes `"…"`, "...", " - ". A fixture in a launcher folder's resource file is found too · E2E: no (script test in `tools/ci/tests`)
+- [x] **T339-6** The check stays green on what is allowed: "Emulation", "Controller-Emulation", "virtueller Controller", „…“ quotes, "Wird geladen …", " – ", "PC neu starten", units ("Std.", "Min.", "GB", "%"), a hyphen inside a word ("Steam-Controller-Modus"), keys that contain a forbidden word (`RestartWindows`), XML comments and the resx header · E2E: no (script test)
+- [x] **T339-7** On a PR by `jc-sw-git` the check runs and is green on the PR's head; on a PR by anyone else the job is skipped, not failed · E2E: no (workflow condition, review and the PR's own run)
+- [x] **T339-8** Every value the PR changes is listed in the PR's old → new list, grouped by page, and every listed change is in the diff; code changes beyond the resource files are named in the PR · E2E: no (mechanical check of the diff, QE review)
+- [x] **T339-9** Each changed value equals its approved Doc cell, or differs from it only where a glossary or typography rule requires it; texts added after `0cb2b7c` are marked as such in the list · E2E: no (QE review, text by text against the Doc)
+- [x] **T339-10** Judgement rules the CI check can't see, checked on every occurrence in the resource files: "Windows" only where the player acts in a Windows place (Startmenü, Windows-Einstellungen → Apps); "HidHide", "usbip-win2", "VIIPER" only in rows that install, update or repair them or where the player changes something in HidHide; "SISR" only in its settings group and the "Beende SISR" warning; "Steam Input", "Steam-Controller" (alone), "Wächterdienst", "Features", "Computer" and other abbreviations gone; "aktualisieren" only for new versions, a rescan says "neu einlesen"; no "Wir" · E2E: no (QE review of a grep per word)
+- [x] **T339-11** "Controller-Wächter (Pan)" at the first mention on each page, "Pan" after it: Settings › Controller, the first-run page, the driver installation dialog · E2E: no (QE review of the screenshots)
+- [x] **T339-12** Restart: a driver change waits for a restart (fake driver state). In Settings › Controller, with the gamepad only, the row, its button, the question before the restart and the message for a refused restart all say "PC" and none says "Windows"; B closes the question and focus is back on the row · E2E: yes
+- [x] **T339-13** Technical names: the controller emulation fails several times (fake). The toast names "die Controller-Emulation" and no visible part of it names VIIPER · E2E: yes
+- [x] **T339-14** Same term everywhere: in Settings › Controller (every row and its info text), the first-run page and the driver installation dialog, no visible text contains "emulier"; the copy games see is called "virtueller Controller" · E2E: yes
+- [x] **T339-15** Subtitles fit: at 1920×1080, every row subtitle in every settings category and on the launcher page takes one line, not wrapped and not cut off · E2E: yes (window test, measured line count)
+- [x] **T339-16** Screenshots at 1920×1080 with `--demo` of each page whose subtitle got longer (the PR lists them): one line each, looked at · E2E: no (real rendering, Linux, `arcadia-verify`)
+- [x] **T339-17** `docs/product/ui-texts.md` holds the glossary, the rules and the note that the designs' texts are examples; every UI text quoted in `docs/product/` is quoted as it now stands in a resource file; every doc stays within 10 KB · E2E: no (QE review, grep, `Doc sizes` check)
+- [x] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the Windows prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
+- [x] **T339-19** No German UI text is left in the code: the check of #480 also finds the forms it missed (a badge such as "Pausiert", a relative date such as "Vor {days} Tagen", a heading in capitals such as "GRENZEN", an exception message the player sees in a toast, the install dialog or a reason on the controller page), and every text it finds now comes from a resource file; a German exception message that only reaches the log carries `// not a UI text` · E2E: no (unit test `UiTextsStayInResourcesTests`)
+
+Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App); T339-19 `UiTextsStayInResourcesTests` (Core).
+
+History:
+
+| Test | Date | Who | Build / environment | Result | Consequence |
+|---|---|---|---|---|---|
+| T339-1 | 2026-11-11 | Claude | branch, Linux cloud container, .NET 10 | ❌ once on a stray `}` added to a text, then ✅ | – |
+| T339-2, -3 | 2026-11-11 | Claude | branch, Linux cloud container | ✅ | – |
+| T339-4 | 2026-11-11 | Claude | branch, Linux, headless | ❌ the start toast never said the launcher may install the update first | fixed in this PR (`GameActions` reads the update before the tile counts as starting) |
+| T339-5, -6 | 2026-11-11 | Claude | branch, Linux, `tools/ci/tests/run.sh` | ✅ | – |
+| T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless | ✅ | – |
+| T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless, one text each broken on purpose ("Windows neu starten", "VIIPER fiel", "emuliert", a subtitle twice as long) | ❌ each, then ✅ with the texts restored | – |
+| T339-14 | 2026-11-11 | Claude | branch, Linux, headless, "virtuelle" and "Controller-Wächter (Pan)" each removed from the texts on purpose | ❌ each, then ✅ | – |
+| T339-19 | 2026-11-11 | Claude | branch, Linux | ❌ 88 texts found in code, then 29 exception messages; ✅ after moving or marking them | – |
+| T339-7 to -11, -17 | 2026-11-11 | Claude (QE) | `3d21916`, Linux; the 113 reworded values compared by script with every cell of the approved Doc, each difference against the glossary; the old → new list against the diff; a grep per word over every resource file; the 87 + 21 moved texts against the code they replaced; the workflow condition; `Doc sizes` | ❌ on `b77af76`: a docs quote still said "Xbox 360 Controller", the list named a wrong old layout name, T339-14 asserted nothing for "Controller-Wächter (Pan)" and nothing for "virtuelle", two exception texts the player reads were literals in code; ✅ on `3d21916` | fixed in this PR |
+| T339-16 | 2026-11-11 | Claude (QE) | `3d21916`, Linux, Xvfb 1920×1080, `--demo`: library, launcher list, launcher page, Controller with its info panel scrolled to the firmware note, Über Arcadia | ✅ every subtitle on one line, firmware heading bold above its note | – |
+| Owner, exploratory | 2026-11-11 | owner | his PC | ❌ the firmware note stood inside the Steam Controller's box | fixed in this PR: the note stands right below the box (`PanEmulationTests`, red without the fix, then ✅) |
+| T339-18 | 2026-11-11 | owner | his PC with Pan, a Steam Controller and the real drivers | ✅ after the firmware note was moved below the Steam Controller's box | – |

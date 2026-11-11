@@ -33,7 +33,7 @@ public static partial class XusbDevices
         var set = SetupDiGetClassDevsW(ref guid, 0, 0, DigcfPresent | DigcfDeviceInterface);
         if (set == -1)
         {
-            throw new InvalidOperationException($"SetupDiGetClassDevs: Fehler {Marshal.GetLastPInvokeError()}");
+            throw new InvalidOperationException($"SetupDiGetClassDevs: Fehler {Marshal.GetLastPInvokeError()}"); // not a UI text (logged)
         }
 
         try
@@ -49,7 +49,7 @@ public static partial class XusbDevices
                         return devices;
                     }
 
-                    throw new InvalidOperationException($"SetupDiEnumDeviceInterfaces: Fehler {Marshal.GetLastPInvokeError()}");
+                    throw new InvalidOperationException($"SetupDiEnumDeviceInterfaces: Fehler {Marshal.GetLastPInvokeError()}"); // not a UI text (logged)
                 }
 
                 if (Describe(set, ref interfaceData) is { } device)

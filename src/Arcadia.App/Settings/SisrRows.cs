@@ -24,7 +24,7 @@ public sealed class SisrRows
         {
             Group = Group,
             Indent = 1,
-            ActionText = "Ausblenden",
+            ActionText = AppTexts.Hide,
             Subtitle = AppTexts.SisrHideSubtitle,
             Info =
             [

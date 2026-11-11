@@ -419,7 +419,7 @@ public sealed class ControllerSupportService
         ];
         return parts.Length switch
         {
-            0 => "nichts Neues",
+            0 => "nichts Neues", // not a UI text (log)
             1 => parts[0],
             _ => $"{string.Join(", ", parts[..^1])} und {parts[^1]}", // not a UI text (log)
         };

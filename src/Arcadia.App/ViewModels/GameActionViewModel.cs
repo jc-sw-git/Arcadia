@@ -275,7 +275,7 @@ public static class ControllerModes
     public const string Arcadia = "Arcadia";
 
     /// <summary>No pad of Arcadia's; the game's own Steam configuration applies.</summary>
-    public const string Steam = "Steam-Eingabe";
+    public static string Steam => AppTexts.ControllerModeSteam;
 
     /// <summary>Why the mode is greyed out while Pan's emulation is on but doesn't run (#242); [A] leads to the reason.</summary>
     public static string PanNotRunning => AppTexts.ActionPanNotRunning;
@@ -283,7 +283,7 @@ public static class ControllerModes
     public static string Of(bool useArcadiaPad) => useArcadiaPad ? Arcadia : Steam;
 
     /// <summary>A game's mode; "Standard" names its launcher's default, e.g. "Standard (Arcadia)" (#178, like the mouse mode's).</summary>
-    public static string Of(bool? choice, bool launcherUsesArcadiaPad) => choice is { } own ? Of(own) : $"Standard ({Of(launcherUsesArcadiaPad)})";
+    public static string Of(bool? choice, bool launcherUsesArcadiaPad) => choice is { } own ? Of(own) : AppTexts.ControllerModeDefault(Of(launcherUsesArcadiaPad));
 
     /// <summary>Standard → Arcadia → Steam-Eingabe → Standard.</summary>
     public static bool? Next(bool? choice) => choice switch

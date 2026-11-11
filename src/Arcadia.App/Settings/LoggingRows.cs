@@ -10,7 +10,7 @@ namespace Arcadia.App.Settings;
 /// </summary>
 public sealed class LoggingRows
 {
-    public const string Group = "LOGGING";
+    public static string Group => AppTexts.LoggingGroup;
     public static string ListTitle => AppTexts.LoggingListTitle;
     public static string ListIntro => AppTexts.LoggingListIntro;
     public static string EmptyText => AppTexts.LoggingEmpty;
@@ -39,24 +39,24 @@ public sealed class LoggingRows
         _changes = changes;
         _logs = logs;
         _list = new InfoRowViewModel("logging-list", ListTitle) { Group = Group, ScrollText = AppTexts.Browse };
-        _info = Filter("logging-info", "Info", AppTexts.LoggingInfoSubtitle, s => s.ListsInfoMessages, (s, on) => s with { ListsInfoMessages = on });
-        _warnings = Filter("logging-warnings", "Warnungen", AppTexts.LoggingWarningSubtitle, s => s.ListsWarnings, (s, on) => s with { ListsWarnings = on });
+        _info = Filter("logging-info", AppTexts.LevelInfo, AppTexts.LoggingInfoSubtitle, s => s.ListsInfoMessages, (s, on) => s with { ListsInfoMessages = on });
+        _warnings = Filter("logging-warnings", AppTexts.LoggingWarnings, AppTexts.LoggingWarningSubtitle, s => s.ListsWarnings, (s, on) => s with { ListsWarnings = on });
         _errors = Filter("logging-errors", AppTexts.LevelError, AppTexts.LoggingErrorSubtitle, s => s.ListsErrors, (s, on) => s with { ListsErrors = on });
         _clear = new ActionRowViewModel("logging-clear", AppTexts.LoggingClearList, messages.Clear)
         {
             Group = Group,
             Subtitle = AppTexts.LoggingKeepsAll,
-            ActionText = "Leeren",
+            ActionText = AppTexts.Clear,
             PanelTitle = ListPanelTitle,
             ScrollText = AppTexts.Browse,
         };
         _logRows =
         [
-            (LogKind.Arcadia, LogRow(LogKind.Arcadia, AppTexts.LoggingOpenArcadiaLog, "ARCADIA-LOG",
+            (LogKind.Arcadia, LogRow(LogKind.Arcadia, AppTexts.LoggingOpenArcadiaLog, AppTexts.ArcadiaLogHeading,
                 AppTexts.LoggingArcadiaLogInfo, openLog)),
-            (LogKind.Viiper, LogRow(LogKind.Viiper, AppTexts.LoggingOpenViiperLog, "VIIPER-LOG",
+            (LogKind.Viiper, LogRow(LogKind.Viiper, AppTexts.LoggingOpenViiperLog, AppTexts.ViiperLogHeading,
                 AppTexts.LoggingViiperLogInfo, openLog)),
-            (LogKind.Pan, LogRow(LogKind.Pan, AppTexts.LoggingOpenPanLog, "PAN-LOG",
+            (LogKind.Pan, LogRow(LogKind.Pan, AppTexts.LoggingOpenPanLog, AppTexts.PanLogHeading,
                 AppTexts.LoggingPanLogInfo, openLog)),
         ];
         Refresh();
@@ -157,7 +157,7 @@ public sealed class LoggingRows
             [
                 new InfoText(holds),
                 new InfoText(OpensWithMouseText),
-                new InfoSection("SPEICHERORT", [new InfoText(_logs.ShownPathOf(kind))]),
+                new InfoSection(AppTexts.LocationCaption, [new InfoText(_logs.ShownPathOf(kind))]),
             ],
         };
 

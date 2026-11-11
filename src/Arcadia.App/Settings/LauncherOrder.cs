@@ -138,7 +138,7 @@ internal sealed class LauncherOrder(ILauncherCategory category)
             _switchedOff.Insert(0, switchedOff);
         }
 
-        category.Changes.Apply(settings => settings with { ActiveLaunchers = active }, "Launcher");
+        category.Changes.Apply(settings => settings with { ActiveLaunchers = active }, "Launcher"); // not a UI text (log)
         AppLog.Write($"Aktive Launcher: {string.Join(", ", active)}");
         category.Host.LauncherChoiceChanged();
         category.Refresh();

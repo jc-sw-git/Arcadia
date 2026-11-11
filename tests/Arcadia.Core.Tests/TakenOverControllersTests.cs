@@ -177,7 +177,7 @@ public sealed class TakenOverControllersTests
         Assert.False(_emulation.SteamControllerTakenOver);
         Assert.Equal(2, _others.Plugged);
         Assert.Contains("Controller für Spiele: DualSense für \"DualSense Wireless Controller\" (054C:0CE6) angesteckt", _log);
-        Assert.Contains("Controller für Spiele: Xbox 360 Controller für \"8BitDo Ultimate 2 Wireless Controller for PC\" (2DC8:310B) angesteckt", _log);
+        Assert.Contains("Controller für Spiele: Xbox Controller für \"8BitDo Ultimate 2 Wireless Controller for PC\" (2DC8:310B) angesteckt", _log);
 
         // Once hidden, a model isn't hidden again; Pan hides its new instances itself.
         _events.Clear();
@@ -646,7 +646,7 @@ public sealed class TakenOverControllersTests
         Assert.Equal(1, _pads.Unplugged);
         Assert.Equal(["pad unplugged", "pad plugged"], _events);
         Assert.Equal([PadKind.DualSense, PadKind.Xbox360, PadKind.Xbox360], _pads.All.Select(pad => pad.Kind));
-        Assert.Contains(_log, line => line.StartsWith("Controller für Spiele: DualSense für \"DualSense Wireless Controller\" abgesteckt (Layout Xbox 360 Controller)", StringComparison.Ordinal));
+        Assert.Contains(_log, line => line.StartsWith("Controller für Spiele: DualSense für \"DualSense Wireless Controller\" abgesteckt (Layout Xbox Controller)", StringComparison.Ordinal));
 
         // Applied once: the next tick changes nothing.
         _events.Clear();

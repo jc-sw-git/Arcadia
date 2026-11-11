@@ -8,8 +8,9 @@ namespace Arcadia.Core.Tests.Texts;
 
 /// <summary>
 /// Finds German texts written into code or views instead of a <c>*Texts.resx</c> (#480). A string counts as German by
-/// its umlauts and quotes or by a common German word, so "Abbrechen" counts too. Log lines and exception messages stay
-/// in the code: they are diagnostics, not texts the player reads.
+/// its umlauts and quotes or by a common German word, so "Abbrechen" counts too. Log lines stay in the code: they are
+/// diagnostics, not texts the player reads. An exception message often reaches the player (a toast, the install dialog,
+/// a reason on the controller page), so it counts unless its line is marked as not shown.
 /// </summary>
 internal static partial class GermanUiLiterals
 {
@@ -92,8 +93,6 @@ internal static partial class GermanUiLiterals
             {
                 case AttributeSyntax:
                     return true;
-                case BaseObjectCreationExpressionSyntax creation when IsException(creation):
-                    return true;
                 case InvocationExpressionSyntax call when IsLogCall(call):
                     return true;
             }
@@ -101,12 +100,6 @@ internal static partial class GermanUiLiterals
 
         return false;
     }
-
-    private static bool IsException(BaseObjectCreationExpressionSyntax creation) => creation switch
-    {
-        ObjectCreationExpressionSyntax named => named.Type.ToString().EndsWith("Exception", StringComparison.Ordinal),
-        _ => creation.Parent is ThrowExpressionSyntax or ThrowStatementSyntax,
-    };
 
     private static bool IsLogCall(InvocationExpressionSyntax call) => call.Expression switch
     {
@@ -125,6 +118,6 @@ internal static partial class GermanUiLiterals
     [GeneratedRegex("[äöüÄÖÜß„“‚‘]")]
     private static partial Regex GermanMarks();
 
-    [GeneratedRegex(@"\b(?:der|das|den|dem|des|ein|eine|einen|einem|einer|und|oder|nicht|kein|keine|ist|sind|wird|werden|wurde|mit|für|auf|bei|von|zum|zur|im|nach|noch|schon|jetzt|alle|alles|neu|bitte|hier|aus|spiel|spiele|starten|gestartet|beenden|beendet|abbrechen|weiter|auswählen|installieren|installiert|deinstallieren|aktualisieren|suchen|suche|einstellungen|bibliothek|fertig|laden|gefunden|fehlt|fehler|hilfe|konto|anmelden|abmelden|ja|nein|ansicht|sortierung|seite|tastatur|treffer|wählen|erneut|versuchen|umschalten|wechseln|eingeben|verwerfen|wiederherstellen|entfernen|einlesen|eingelesen|launchern|gespielt|zuletzt|neueste|älteste|mausmodus|vorgabe|weitere)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"\b(?:der|das|den|dem|des|ein|eine|einen|einem|einer|und|oder|nicht|kein|keine|ist|sind|wird|werden|wurde|mit|für|auf|bei|von|zum|zur|im|nach|noch|schon|jetzt|alle|alles|neu|bitte|hier|aus|spiel|spiele|starten|gestartet|beenden|beendet|abbrechen|weiter|auswählen|installieren|installiert|deinstallieren|aktualisieren|suchen|suche|einstellungen|bibliothek|fertig|laden|gefunden|fehlt|fehler|hilfe|konto|anmelden|abmelden|ja|nein|ansicht|sortierung|seite|tastatur|treffer|wählen|erneut|versuchen|umschalten|wechseln|eingeben|verwerfen|wiederherstellen|entfernen|einlesen|eingelesen|launchern|gespielt|zuletzt|neueste|älteste|mausmodus|vorgabe|weitere|startet|wartet|pausiert|meldung|meldungen|warnung|warnungen|dringlichkeit|heute|gestern|vor|tagen|wochen|monaten|std|uhr|min|laufwerk|relevanz|typ|wert|werte|kategorie|mehrere|aktiv|ordner|bearbeiten|verschieben|zuordnen|beheben|behoben|erlaubt|deaktiviert|automatisch|individuell|leeren|ausblenden|umschalt|leertaste|stand|bilder|sekunde|sekunden|halten|laut|standard|standardlogo|installationen|installationsdatum|haltedauer|zeigergeschwindigkeit|mauszeiger|pfeiltasten|werkzeug|werkzeuge|abrocken|spielen|anmeldung|herunterladen|abstecken|einzelner|infotext|eingabe|ort|grenzen|betroffen|allgemein|speicherort|reihenfolge|steuerung)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex GermanWord();
 }

@@ -167,7 +167,7 @@ public static class ViiperConnection
 }
 
 /// <summary>VIIPER answered the handshake with an error: the key is wrong, or it takes none.</summary>
-public sealed class ViiperRefusedException() : IOException("VIIPER hat die Anmeldung abgelehnt");
+public sealed class ViiperRefusedException() : IOException("VIIPER hat die Anmeldung abgelehnt"); // not a UI text (exception)
 
 /// <summary>
 /// VIIPER's encrypted framing after the handshake: each write is one packet (4-byte big-endian length, 12-byte nonce
@@ -239,7 +239,7 @@ public sealed class ViiperEncryptedStream : Stream
             var length = BinaryPrimitives.ReadUInt32BigEndian(header);
             if (length is < NonceLength + TagLength or > MaxPacket)
             {
-                throw new InvalidDataException($"VIIPER-Paket mit {length} Bytes");
+                throw new InvalidDataException($"VIIPER-Paket mit {length} Bytes"); // not a UI text (protocol check)
             }
 
             var packet = new byte[length];
@@ -247,7 +247,7 @@ public sealed class ViiperEncryptedStream : Stream
             var nonce = packet.AsSpan(0, NonceLength);
             if (BinaryPrimitives.ReadUInt64BigEndian(nonce[4..]) != _received)
             {
-                throw new InvalidDataException("VIIPER-Paket außer der Reihe");
+                throw new InvalidDataException("VIIPER-Paket außer der Reihe"); // not a UI text (protocol check)
             }
 
             var plain = new byte[length - NonceLength - TagLength];

@@ -216,11 +216,11 @@ public static class UsbipDriver
     public static async Task<string> DownloadInstallerAsync(HttpClient http, string folder, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken = default)
     {
         var release = await new GitHubReleaseClient(http).GetLatestAsync("vadimgrn", "usbip-win2", cancellationToken)
-            ?? throw new InvalidOperationException("Die aktuelle usbip-win2-Version konnte nicht ermittelt werden.");
+            ?? throw new InvalidOperationException(ControllerSupportTexts.UsbipVersionUnknown);
         var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64";
         var asset = release.FindAsset(n => n.StartsWith("USBip-", StringComparison.OrdinalIgnoreCase)
                                            && n.EndsWith($"-{arch}.exe", StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException($"Kein usbip-win2-Installer für {arch} gefunden.");
+            ?? throw new InvalidOperationException(ControllerSupportTexts.UsbipNoInstaller(arch));
 
         // The name is the release's: only a plain file name lands in the run's folder.
         var installer = Path.Combine(folder, Path.GetFileName(asset.Name));

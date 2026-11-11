@@ -163,6 +163,7 @@ public sealed class SteamControllerXboxPadTests
     /// <summary>T213-6 (automated part): VIIPER lost is plugged in again; lost too often, a toast says so and Arcadia stops trying.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T213-6")]
+    [Trait("TestCase", "T339-13")]
     public async Task A_lost_VIIPER_comes_back_and_too_many_losses_show_a_notice()
     {
         var (arcadia, _) = await StartInBackgroundAsync();
@@ -175,8 +176,9 @@ public sealed class SteamControllerXboxPadTests
         }
 
         Assert.Equal(SteamControllerXboxPad.MaxReplugsPerWindow + 1, arcadia.XboxPads.Plugged);
-        // A game is in front: the overlay's notice, not a toast (#243 B2).
-        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Any(notice => notice.Contains("VIIPER fiel")), "the notice about VIIPER");
+        // A game is in front: the overlay's notice, not a toast (#243 B2). It names the emulation, not VIIPER (#339).
+        await arcadia.WaitUntilAsync(() => arcadia.OverlayNotices.Any(notice => notice.Contains("die Controller-Emulation fiel")), "the notice about the emulation");
+        Assert.All(arcadia.OverlayNotices, notice => Assert.DoesNotContain("VIIPER", notice, StringComparison.Ordinal));
         Assert.False(arcadia.XboxPad.IsPlugged);
     }
 
@@ -195,7 +197,7 @@ public sealed class SteamControllerXboxPadTests
             Assert.True(arcadia.XboxPad.IsPlugged);
         }
 
-        Assert.DoesNotContain(arcadia.OverlayNotices, notice => notice.Contains("VIIPER fiel"));
+        Assert.DoesNotContain(arcadia.OverlayNotices, notice => notice.Contains("die Controller-Emulation fiel"));
     }
 
     /// <summary>T243-40 (automated part): after Arcadia gave up on VIIPER, "Controller wiederherstellen" brings the pad back without a restart.</summary>

@@ -33,7 +33,7 @@ public class ControllerSupportRemovalTests
     [Trait("TestCase", "T407-1")]
     public void The_restart_notice_says_to_restart_before_installing_again()
     {
-        Assert.Contains("Windows entfernt die Treiber für die Controller-Emulation erst beim nächsten Neustart des PCs ganz", ControllerSupportRemoval.RestartNotice);
+        Assert.Contains("Die Treiber für die Controller-Emulation sind erst nach dem nächsten Neustart des PCs ganz entfernt", ControllerSupportRemoval.RestartNotice);
         Assert.Contains("Starte den PC neu, bevor du Arcadia wieder installierst.", ControllerSupportRemoval.RestartNotice);
     }
 

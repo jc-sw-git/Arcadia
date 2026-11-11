@@ -28,9 +28,9 @@ public interface IStatusModalHost
 /// </summary>
 public sealed partial class StatusModalViewModel : ViewModelBase
 {
-    public const string Title = "Status";
+    public static string Title => AppTexts.StatusTitle;
 
-    public const string UrgencyText = "Dringlichkeit";
+    public static string UrgencyText => AppTexts.StatusUrgency;
 
     public static string NewestText => AppTexts.NewestFirst;
 
@@ -81,7 +81,7 @@ public sealed partial class StatusModalViewModel : ViewModelBase
 
     public string AcceptText => Focused?.FocusedLabel ?? string.Empty;
 
-    public string CountText => Entries.Count == 1 ? "1 Meldung" : $"{Entries.Count} Meldungen";
+    public string CountText => Entries.Count == 1 ? AppTexts.MessageCountOne : AppTexts.MessageCountMany(Entries.Count);
 
     public string OrderText => NewestFirst ? NewestText : UrgencyText;
 

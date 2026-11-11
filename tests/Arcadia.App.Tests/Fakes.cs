@@ -215,6 +215,9 @@ internal sealed class RecordedStarts
     /// <summary>Thrown by the launcher at every start while set, as by a launcher whose start fails.</summary>
     public Exception? Failure { get; set; }
 
+    /// <summary>Reported by the launcher after the start while set, as a launcher that says how far it got.</summary>
+    public LaunchStage? Stage { get; set; }
+
     public IReadOnlyList<string> Keys
     {
         get
@@ -249,6 +252,11 @@ internal sealed class RecordingClient(string launcherId, RecordedStarts starts) 
         if (starts.Failure is { } failure)
         {
             throw failure;
+        }
+
+        if (starts.Stage is { } stage)
+        {
+            progress?.Report(stage);
         }
 
         return Task.CompletedTask;

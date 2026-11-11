@@ -36,7 +36,7 @@ public static class HidProxyFrames
     {
         if (payload.Length > MaxPayload)
         {
-            throw new ArgumentException($"Nutzlast von {payload.Length} Bytes, höchstens {MaxPayload}", nameof(payload));
+            throw new ArgumentException($"Nutzlast von {payload.Length} Bytes, höchstens {MaxPayload}", nameof(payload)); // not a UI text (protocol check)
         }
 
         buffer[0] = kind;
@@ -68,13 +68,13 @@ public static class HidProxyFrames
         var length = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(2));
         if (length > MaxPayload)
         {
-            throw new InvalidDataException($"VIIPER schickt einen Frame mit {length} Bytes, höchstens {MaxPayload}");
+            throw new InvalidDataException($"VIIPER schickt einen Frame mit {length} Bytes, höchstens {MaxPayload}"); // not a UI text (protocol check)
         }
 
         var payload = new byte[length];
         if (!await FillAsync(stream, payload, cancellationToken))
         {
-            throw new EndOfStreamException("VIIPER hat die Verbindung mitten im Frame beendet");
+            throw new EndOfStreamException("VIIPER hat die Verbindung mitten im Frame beendet"); // not a UI text (protocol check)
         }
 
         return new HidProxyFrame(header[0], header[1], payload);
@@ -88,7 +88,7 @@ public static class HidProxyFrames
             var n = await stream.ReadAsync(buffer.AsMemory(read), cancellationToken);
             if (n == 0)
             {
-                return read == 0 ? false : throw new EndOfStreamException("VIIPER hat die Verbindung mitten im Frame beendet");
+                return read == 0 ? false : throw new EndOfStreamException("VIIPER hat die Verbindung mitten im Frame beendet"); // not a UI text (protocol check)
             }
 
             read += n;

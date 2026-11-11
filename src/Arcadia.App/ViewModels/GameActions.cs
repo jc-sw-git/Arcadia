@@ -247,13 +247,15 @@ public sealed class GameActions : IGameActionHost
 
     private async Task LaunchAsync(GameTileViewModel tile, bool again = false)
     {
+        // Read before the tile counts as starting: a starting tile no longer shows its update.
+        var updateAvailable = tile.UpdateAvailable;
         if (!again)
         {
             _running.Starting(tile.Game.Key);
             _owner.RunStatesChanged();
         }
 
-        var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage));
+        var progress = new Progress<LaunchStage>(stage => OnLaunchStage(tile, stage, updateAvailable));
 
         // A game on "Steam-Eingabe" must find neither Arcadia's pad nor Steam kept from the Steam Controller.
         var result = await _launcher.TryStartAsync(tile.Game, async token =>
@@ -342,7 +344,7 @@ public sealed class GameActions : IGameActionHost
         }
     }
 
-    private void OnLaunchStage(GameTileViewModel tile, LaunchStage stage)
+    private void OnLaunchStage(GameTileViewModel tile, LaunchStage stage, bool updateAvailable)
     {
         switch (stage)
         {
@@ -361,7 +363,7 @@ public sealed class GameActions : IGameActionHost
                 ForegroundRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case LaunchStage.Starting:
-                _toast.Show(HealthSeverity.Info, tile.UpdateAvailable ? AppTexts.GameStartingMaybeUpdate(game: tile.Title, launcher: tile.LauncherName) : AppTexts.GameStarting(tile.Title));
+                _toast.Show(HealthSeverity.Info, updateAvailable ? AppTexts.GameStartingMaybeUpdate(game: tile.Title, launcher: tile.LauncherName) : AppTexts.GameStarting(tile.Title));
                 break;
             case LaunchStage.NotStartable:
                 StartFailed(tile);

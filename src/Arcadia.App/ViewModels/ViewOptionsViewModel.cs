@@ -185,13 +185,13 @@ public sealed class ViewOptionsViewModel : ViewModelBase
         List<SortRowViewModel> rows =
         [
             new(AppTexts.SortName, [SortOption(SortField.Name, SortDirection.Ascending, "A → Z"), SortOption(SortField.Name, SortDirection.Descending, "Z → A")]),
-            new("Installationsdatum", [SortOption(SortField.InstalledAt, SortDirection.Descending, AppTexts.NewestFirst), SortOption(SortField.InstalledAt, SortDirection.Ascending, AppTexts.SortOldestFirst)]),
+            new(AppTexts.SortInstalledAt, [SortOption(SortField.InstalledAt, SortDirection.Descending, AppTexts.NewestFirst), SortOption(SortField.InstalledAt, SortDirection.Ascending, AppTexts.SortOldestFirst)]),
             new(AppTexts.SortLastPlayed, [SortOption(SortField.LastPlayed, SortDirection.Descending, AppTexts.NewestFirst), SortOption(SortField.LastPlayed, SortDirection.Ascending, AppTexts.SortOldestFirst)]),
         ];
 
         if (withRelevance)
         {
-            rows.Insert(0, new("Relevanz", [new OptionViewModel(AppTexts.BestHitsFirst, sort is null, true, () => apply(null))]));
+            rows.Insert(0, new(AppTexts.SortRelevance, [new OptionViewModel(AppTexts.BestHitsFirst, sort is null, true, () => apply(null))]));
         }
 
         return rows;

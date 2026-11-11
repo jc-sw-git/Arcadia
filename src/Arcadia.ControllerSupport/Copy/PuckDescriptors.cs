@@ -209,7 +209,7 @@ public sealed class PuckDescriptors
     {
         if (!IsValidSerial(serial))
         {
-            throw new ArgumentException("Die Seriennummer des Pucks ist ungültig", nameof(serial));
+            throw new ArgumentException("Die Seriennummer des Pucks ist ungültig", nameof(serial)); // not a UI text (protocol check)
         }
 
         var strings = new Dictionary<string, string>(_strings) { [SerialIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)] = serial };
@@ -226,7 +226,7 @@ public sealed class PuckDescriptors
     private static PuckDescriptors Load(SteamControllerConnection connection, string file)
     {
         using var stream = typeof(PuckDescriptors).Assembly.GetManifestResourceStream($"Arcadia.ControllerSupport.Copy.{file}")
-            ?? throw new InvalidOperationException($"Die Beschreibung des Steam Controllers fehlt in Arcadia ({file})");
+            ?? throw new InvalidOperationException(ControllerSupportTexts.SteamControllerDescriptionMissing(file));
         using var json = JsonDocument.Parse(stream);
         var root = json.RootElement;
         return new PuckDescriptors(

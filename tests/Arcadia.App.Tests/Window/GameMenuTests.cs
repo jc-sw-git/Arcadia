@@ -139,7 +139,7 @@ public sealed class GameMenuTests
             ["Spielen", "Details anzeigen", "Zu Favoriten hinzufügen", "Artwork ändern …", "In GOG Galaxy öffnen", "Deinstallieren …"],
             entries.Select(entry => entry.Label));
         Assert.Equal([true, true, false, false, true, true], entries.Select(entry => entry.IsEnabled));
-        Assert.Equal("GOG Galaxy installiert ggf. vorher das Update", entries[0].Note);
+        Assert.Equal("GOG Galaxy installiert eventuell vorher das Update", entries[0].Note);
         Assert.All(entries.Where(entry => !entry.IsEnabled), entry => Assert.Equal(AppTexts.ActionNotYetAvailable, entry.Note));
         Assert.DoesNotContain(entries, entry => entry.Label.Contains("Update", StringComparison.Ordinal) || entry.Label.Contains("Controller-Layout", StringComparison.Ordinal));
 

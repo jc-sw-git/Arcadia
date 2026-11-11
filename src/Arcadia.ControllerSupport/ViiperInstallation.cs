@@ -80,7 +80,7 @@ public sealed class ViiperInstallation(string executable, ReleaseAsset pinned) :
     {
         if (pinned.Sha256 is null)
         {
-            throw new InvalidOperationException("Diese Arcadia-Version hat keine geprüfte VIIPER-Version.");
+            throw new InvalidOperationException(ControllerSupportTexts.NoCheckedViiperVersion);
         }
 
         // Downloaded beside it and moved only once checked, so a viiper.exe that failed the check never sits where it runs.

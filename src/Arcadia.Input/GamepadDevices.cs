@@ -147,7 +147,7 @@ public static class GamepadDevices
 
         if (device.Type is PadType.JoyConLeft or PadType.JoyConRight)
         {
-            return "einzelner Joy-Con";
+            return "einzelner Joy-Con"; // not a UI text (log)
         }
 
         // Wheels, flight sticks and the like can be in SDL's controller database, but aren't controllers for Arcadia.

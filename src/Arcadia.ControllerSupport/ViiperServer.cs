@@ -144,7 +144,7 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
     private InvalidOperationException Untrusted(string problem)
     {
         log($"VIIPER: Ports nicht wie erwartet: {problem}");
-        return new InvalidOperationException("VIIPER lauscht nicht wie erwartet");
+        return new InvalidOperationException(ControllerSupportTexts.ViiperNotListening);
     }
 
     private ProcessStartInfo StartInfo()
@@ -181,7 +181,7 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
         {
             if (process.HasExited)
             {
-                throw new InvalidOperationException("viiper.exe hat sich gleich wieder beendet");
+                throw new InvalidOperationException(ControllerSupportTexts.ViiperExitedAtOnce);
             }
 
             var (ports, problem) = ViiperListeners.OfServer(host.Listeners(), process.Id);
@@ -197,7 +197,7 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
 
             if (clock.Elapsed > StartTimeout)
             {
-                throw new TimeoutException($"viiper.exe lauscht nach {clock.Elapsed.TotalSeconds:0} s nicht auf beiden Ports");
+                throw new TimeoutException(ControllerSupportTexts.ViiperPortsTimeout(clock.Elapsed.TotalSeconds));
             }
 
             await Task.Delay(ListenPoll, cancellationToken);
@@ -211,7 +211,7 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
         var answering = ports.Where((_, i) => answers[i] == ViiperAnswer.Answered).ToList();
         return answering.Count == 1
             ? answering[0]
-            : throw new InvalidOperationException($"VIIPER antwortet nicht mit dem Schlüssel ({string.Join(", ", answers)})");
+            : throw new InvalidOperationException($"VIIPER antwortet nicht mit dem Schlüssel ({string.Join(", ", answers)})"); // not a UI text (protocol check)
     }
 
     /// <summary>
@@ -224,7 +224,7 @@ public sealed class ViiperServer(string executable, string configRoot, string lo
         var wrongKey = await host.PingAsync(apiPort, RandomNumberGenerator.GetBytes(32), PingTimeout, cancellationToken);
         if (withoutKey != ViiperAnswer.Refused || wrongKey != ViiperAnswer.Refused)
         {
-            throw new InvalidOperationException($"VIIPER verlangt den Schlüssel nicht (ohne: {withoutKey}, falscher: {wrongKey})");
+            throw new InvalidOperationException($"VIIPER verlangt den Schlüssel nicht (ohne: {withoutKey}, falscher: {wrongKey})"); // not a UI text (protocol check)
         }
     }
 }

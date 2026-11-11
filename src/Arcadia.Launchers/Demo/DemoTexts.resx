@@ -10,4 +10,8 @@
   <data name="DemoToolsTitle" xml:space="preserve"><value>Werkzeuge einbeziehen</value></data>
   <data name="DemoSoftwareTitle" xml:space="preserve"><value>Software einbeziehen</value></data>
   <data name="DemoSoundtracksTitle" xml:space="preserve"><value>Soundtracks einbeziehen</value></data>
+  <data name="DemoToolsSubtitle" xml:space="preserve"><value>Demo-Werkzeuge</value></data>
+  <data name="DemoSoftwareSubtitle" xml:space="preserve"><value>Demo-Software</value></data>
+  <data name="DemoSoundtracksSubtitle" xml:space="preserve"><value>Demo-Soundtracks</value></data>
+  <data name="DemoLocation" xml:space="preserve"><value>Demo-Daten</value></data>
 </root>

@@ -1372,7 +1372,7 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
 
         public IReadOnlyList<HealthIssue> CheckDrivers(AppSettings settings, DateTimeOffset now) =>
         [
-            .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Test", HealthFix.InstallDrivers, "Installieren")],
+            .. IsPanReady ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Controller-Wächter (Pan) fehlt", "Test", HealthFix.InstallDrivers, "Installieren")],
             .. ControllerSupportPlatform.CheckHidHide(HidHideVersion) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
         ];
     }

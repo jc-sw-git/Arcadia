@@ -28,7 +28,7 @@ internal sealed class LauncherLibraryRows
     {
         _category = category;
         _order = order;
-        _folderRow = new ActionRowViewModel("launcher-folder", "Ordner", () => PickFolderAsync().Forget(AppTexts.ErrorContextPickFolder))
+        _folderRow = new ActionRowViewModel("launcher-folder", AppTexts.Folder, () => PickFolderAsync().Forget(AppTexts.ErrorContextPickFolder))
         {
             Group = LibraryGroup,
             ActionText = AppTexts.PickFolder,
@@ -58,7 +58,7 @@ internal sealed class LauncherLibraryRows
             [
                 new InfoText(AppTexts.LauncherFolderInfo(name)),
                 new InfoText(AppTexts.LauncherFolderCheckInfo(folderChoice.Expected)),
-                new InfoFacts("ORT",
+                new InfoFacts(AppTexts.FactsLocation,
                 [
                     new InfoFact(AppTexts.Chosen, preferences.Folder ?? "–", IsMuted: preferences.Folder is null),
                     new InfoFact(AppTexts.FoundAt, launchers.LocationOf(id) ?? AppTexts.NotFound, IsMuted: !isFound),
@@ -154,7 +154,7 @@ internal sealed class LauncherLibraryRows
                 return;
             }
 
-            _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { Folder = root }), "Launcher-Ordner");
+            _category.Changes.Apply(settings => settings.WithLauncherPreferences(id, p => p with { Folder = root }), "Launcher-Ordner"); // not a UI text (log)
             AppLog.Write($"Ordner für {id} gewählt");
             var active = host.Launchers.ActiveIds;
             if (active.Contains(id))

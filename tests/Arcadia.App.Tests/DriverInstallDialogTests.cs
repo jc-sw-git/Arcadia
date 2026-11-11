@@ -23,7 +23,7 @@ public sealed class DriverInstallDialogTests
 
     private static async Task InstallPanFromItsRowAsync(ArcadiaDriver arcadia, ControllerSettingsViewModel controller)
     {
-        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == PanMissing), "die Meldung „Wächterdienst Pan fehlt“");
+        await arcadia.WaitUntilAsync(() => controller.Rows.Any(row => row.Key == PanMissing), "die Meldung „Controller-Wächter (Pan) fehlt“");
         Assert.IsType<ActionRowViewModel>(controller.Rows.Single(row => row.Key == PanMissing)).Activate();
     }
 

@@ -15,10 +15,10 @@ public sealed class MouseModeRows
     private static string Group => AppTexts.MouseModeGroup;
 
     /// <summary>The values of "Mausmodus", in the order of <see cref="MouseModeActivation"/>.</summary>
-    private static readonly string[] ActivationNames = [AppTexts.Off, AppTexts.MouseModeManual, "Automatisch"];
+    private static readonly string[] ActivationNames = [AppTexts.Off, AppTexts.MouseModeManual, AppTexts.MouseModeAutomatic];
 
     /// <summary>The values of "Beenden des Mausmodus in Spielen erzwingen", in the order of <see cref="MouseModeInGames"/>.</summary>
-    private static readonly string[] InGamesNames = [AppTexts.No, AppTexts.Yes, "Individuell"];
+    private static readonly string[] InGamesNames = [AppTexts.No, AppTexts.Yes, AppTexts.MouseModeIndividual];
 
     private readonly SettingsChanges _changes;
     private readonly ChoiceRowViewModel _activation;
@@ -46,7 +46,7 @@ public sealed class MouseModeRows
         };
         _hold = new ChoiceRowViewModel(
             "mouse-mode-hold",
-            "Haltedauer",
+            AppTexts.HoldTime,
             () => Current.HoldSeconds,
             value => Change(s => s with { HoldSeconds = value }),
             ChoiceRowViewModel.Seconds,
@@ -60,7 +60,7 @@ public sealed class MouseModeRows
         };
         _speed = new ChoiceRowViewModel(
             "mouse-mode-speed",
-            "Zeigergeschwindigkeit",
+            AppTexts.PointerSpeed,
             () => Current.PointerSpeed,
             value => Change(s => s with { PointerSpeed = value }),
             value => value.ToString(Formatting.Culture),
@@ -127,18 +127,18 @@ public sealed class MouseModeRows
     /// <summary>The mouse mode's buttons, as <see cref="Arcadia.Input.MouseMode"/> maps them.</summary>
     public static IReadOnlyList<MouseModeHelpRow> HelpRows { get; } =
     [
-        new("LS", "Mauszeiger"),
+        new("LS", AppTexts.MousePointer),
         new("L3", AppTexts.MouseModeHelpL3),
         new(AppTexts.MouseModeHelpRtOrA, AppTexts.MouseModeHelpLeftClick),
         new(AppTexts.MouseModeHelpLtOrX, AppTexts.MouseModeHelpRightClick),
         new("RS", AppTexts.MouseModeHelpWheel),
-        new("D-Pad", "Pfeiltasten"),
+        new("D-Pad", AppTexts.MouseModeHelpArrowKeys),
         new("B", "Esc"),
         new("LB / RB", AppTexts.MouseModeHelpShiftTab),
         new("≡", "Enter"),
         new("Y", AppTexts.MouseModeHelpKeyboard),
-        new("⧉ halten", AppTexts.MouseModeHelpBackToArcadia),
-        new("⧉ + ≡ halten", AppTexts.MouseModeHelpBackToController),
+        new(AppTexts.MouseModeHelpHoldView, AppTexts.MouseModeHelpBackToArcadia),
+        new(AppTexts.MouseModeHelpHoldViewMenu, AppTexts.MouseModeHelpBackToController),
     ];
 
     /// <summary>Where the mouse mode can't help, so nobody wonders why.</summary>
@@ -159,7 +159,7 @@ public sealed class MouseModeRows
     [
         new InfoText(AppTexts.MouseModeHelp),
         .. HelpRows.Select(r => new InfoKey(r.Input, r.Effect)),
-        new InfoHeading("GRENZEN"),
+        new InfoHeading(AppTexts.MouseModeLimitsHeading),
         .. HelpLimits.Select(l => new InfoBullet(l)),
     ]);
 
@@ -221,7 +221,7 @@ public sealed class ReturnWithViewRows
         };
         _hold = new ChoiceRowViewModel(
             "return-with-view-hold",
-            "Haltedauer",
+            AppTexts.HoldTime,
             () => Current.HoldSeconds,
             value => Change(s => s with { HoldSeconds = value }),
             ChoiceRowViewModel.Seconds,
@@ -253,8 +253,8 @@ public sealed class ReturnWithViewRows
 /// <summary>The values of "Individueller Mausmodus" on a game (owner, 2026-10-20).</summary>
 public static class GameMouseModes
 {
-    public const string Allowed = "Erlaubt";
-    public const string Blocked = "Deaktiviert";
+    public static string Allowed => AppTexts.GameMouseAllowed;
+    public static string Blocked => AppTexts.GameMouseBlocked;
 
     /// <summary>"Standard" names what it means now, e.g. "Standard (erlaubt)" (owner, 2026-10-21).</summary>
     public static string Of(bool? choice, bool defaultAllowed) => choice switch

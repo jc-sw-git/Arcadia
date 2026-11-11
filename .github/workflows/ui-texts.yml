@@ -1,0 +1,19 @@
+name: UI texts
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-texts:
+    # The glossary is our own way of writing texts (docs/product/ui-texts.md), not a rule for contributors: their PRs
+    # skip it, which a required check counts as passed. The placeholder test runs for everyone in `dotnet test`.
+    if: github.event.pull_request.user.login == 'jc-sw-git'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resource files use the glossary's spellings
+        run: tools/ci/check-ui-texts.sh

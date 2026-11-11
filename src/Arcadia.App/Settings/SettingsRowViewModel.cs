@@ -1,3 +1,4 @@
+using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Navigation;
@@ -250,7 +251,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     {
         if (CanStep(delta))
         {
-            Set(ValueCycle.Step(_get(), delta, _min, _max));
+            Set(ValueCycle.Step(_get(), delta, _min, _max, HeldPress.IsRepeat));
         }
     }
 

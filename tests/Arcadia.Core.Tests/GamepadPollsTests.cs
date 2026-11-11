@@ -10,6 +10,7 @@ public sealed class GamepadPollsTests
     public GamepadPollsTests()
     {
         _polls.ButtonPressed += button => _events.Add($"+{button}");
+        _polls.ButtonRepeated += button => _events.Add($"*{button}");
         _polls.ButtonReleased += button => _events.Add($"-{button}");
     }
 
@@ -71,7 +72,7 @@ public sealed class GamepadPollsTests
 
         Poll(579, PadButtons.DPadRight);
         Poll(580, PadButtons.DPadRight);
-        Assert.Equal(["+DPadRight", "+DPadRight", "+DPadRight", "+DPadRight"], _events);
+        Assert.Equal(["+DPadRight", "*DPadRight", "*DPadRight", "*DPadRight"], _events);
     }
 
     [Fact]
@@ -81,7 +82,63 @@ public sealed class GamepadPollsTests
         _polls.Update([held], 0);
         _polls.Update([held], 400);
 
-        Assert.Equal(["+A", "+RightStickDown", "+RightStickDown"], _events.Order());
+        Assert.Equal(["*RightStickDown", "+A", "+RightStickDown"], _events.Order());
+    }
+
+    /// <summary>#476: held LT/RT and LB/RB turn on, first after 400 ms, then every 150 ms (written out, not taken from the code).</summary>
+    [Theory]
+    [Trait("TestCase", "T476-8")]
+    [InlineData(PadButtons.LeftTrigger, GamepadButton.LeftTrigger)]
+    [InlineData(PadButtons.RightTrigger, GamepadButton.RightTrigger)]
+    [InlineData(PadButtons.LeftShoulder, GamepadButton.LeftShoulder)]
+    [InlineData(PadButtons.RightShoulder, GamepadButton.RightShoulder)]
+    public void LT_RT_LB_and_RB_repeat_after_400_ms_and_then_every_150_ms(PadButtons held, GamepadButton button)
+    {
+        Poll(0, held);
+        Poll(399, held);
+        Assert.Equal([$"+{button}"], _events);
+
+        Poll(400, held);
+        Poll(549, held);
+        Assert.Equal([$"+{button}", $"*{button}"], _events);
+
+        Poll(550, held);
+        Poll(699, held);
+        Poll(700, held);
+        Poll(800);
+        Assert.Equal([$"+{button}", $"*{button}", $"*{button}", $"*{button}", $"-{button}"], _events);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T476-8")]
+    [InlineData(PadButtons.A)]
+    [InlineData(PadButtons.B)]
+    [InlineData(PadButtons.X)]
+    [InlineData(PadButtons.Y)]
+    [InlineData(PadButtons.View)]
+    [InlineData(PadButtons.Menu)]
+    [InlineData(PadButtons.LeftStickClick)]
+    [InlineData(PadButtons.RightStickClick)]
+    public void The_other_buttons_dont_repeat(PadButtons held)
+    {
+        Poll(0, held);
+        Poll(400, held);
+        Poll(2000, held);
+
+        Assert.Single(_events);
+    }
+
+    /// <summary>#476 with #367: Pan hiding or showing a controller while RT is held releases it, and no repeat follows.</summary>
+    [Fact]
+    [Trait("TestCase", "T476-12")]
+    public void A_held_RT_doesnt_repeat_after_a_let_go()
+    {
+        Poll(0, PadButtons.RightTrigger);
+        _polls.LetGo();
+        Poll(1000, PadButtons.RightTrigger);
+        Poll(2000, PadButtons.RightTrigger);
+
+        Assert.Equal(["+RightTrigger", "-RightTrigger"], _events);
     }
 
     [Theory]

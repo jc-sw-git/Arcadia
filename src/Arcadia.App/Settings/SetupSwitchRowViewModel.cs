@@ -1,3 +1,4 @@
+using Arcadia.App.Input;
 using Arcadia.ControllerSupport;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -51,7 +52,14 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
     public override string ActivateText => IsInstall ? InstallText : AppTexts.Toggle;
 
     /// <summary>◀ and ▶ both switch it, like every ◀ ▶ selector (owner, 2026-10-24).</summary>
-    public override void Change(int delta) => activate(null);
+    /// <summary>Once per press; held ◀ ▶ don't switch it again (#476).</summary>
+    public override void Change(int delta)
+    {
+        if (!HeldPress.IsRepeat)
+        {
+            activate(null);
+        }
+    }
 
     public override void Activate() => activate(null);
 

@@ -69,7 +69,7 @@
   "Steam-Eingabe", subtitle "Vorauswahl für die Spiele dieses Launchers"): the mode its games on "Standard" get
   (designs T178Launcher/T178Spiel). Factory value: the launcher's own (`LauncherInfo.GamesUseSteamInput`: Steam
   "Steam-Eingabe", all others "Arcadia"), stored only when it differs (`LauncherPreferences.UsesArcadiaPad`), so no
-  launcher is a special case. Per game: `docs/product/controls.md`.
+  launcher is a special case. Per game: `docs/product/controllers-in-games.md`.
 - Below it, indented and only while a game of the launcher's library has its own mode, "Alle Spiele auf die
   Vorauswahl setzen" (pill "Zurücksetzen", subtitle "N Spiele haben einen eigenen Modus", the info panel lists them).
   [A] asks ("Alle Spiele auf die Vorauswahl setzen?", [A] Zurücksetzen, [B] Abbrechen), then every game of the launcher

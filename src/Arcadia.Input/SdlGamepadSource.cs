@@ -88,6 +88,7 @@ public sealed class SdlGamepadSource : IGamepadSource
     private readonly Action<Exception> _failed;
     private readonly GuardedHandlers<GamepadButton> _buttonPressed;
     private readonly GuardedHandlers<GamepadButton> _buttonReleased;
+    private readonly GuardedHandlers<GamepadButton> _buttonRepeated;
     private readonly GuardedHandlers<IReadOnlyList<GamepadReading>> _polled;
     private readonly GuardedHandlers<IReadOnlyList<GamepadReading>> _sampled;
     private readonly IEmulatedPads _emulated;
@@ -144,10 +145,12 @@ public sealed class SdlGamepadSource : IGamepadSource
         unexpected ??= (error, context, _) => log($"Unerwarteter Fehler ({context}): {error}");
         time ??= TimeProvider.System;
         _buttonPressed = new(HandlerContext, unexpected, log, time);
+        _buttonRepeated = new(HandlerContext, unexpected, log, time);
         _buttonReleased = new(HandlerContext, unexpected, log, time);
         _polled = new(HandlerContext, unexpected, log, time);
         _sampled = new(HandlerContext, unexpected, log, time);
         _polls.ButtonPressed += _buttonPressed.Raise;
+        _polls.ButtonRepeated += _buttonRepeated.Raise;
         _polls.ButtonReleased += _buttonReleased.Raise;
     }
 
@@ -159,6 +162,12 @@ public sealed class SdlGamepadSource : IGamepadSource
     {
         add => _buttonPressed.Add(value);
         remove => _buttonPressed.Remove(value);
+    }
+
+    public event Action<GamepadButton>? ButtonRepeated
+    {
+        add => _buttonRepeated.Add(value);
+        remove => _buttonRepeated.Remove(value);
     }
 
     public event Action<GamepadButton>? ButtonReleased

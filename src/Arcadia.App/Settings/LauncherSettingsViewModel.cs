@@ -351,7 +351,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         }
 
         var order = _order.ListOrder();
-        var next = order[ListFocus.Cycle(order.ToList().IndexOf(id), delta, order.Count)];
+        var next = order[ListFocus.Cycle(order.ToList().IndexOf(id), delta, order.Count, HeldPress.IsRepeat)];
         if (next != id)
         {
             _account.PageAccount?.CancelSignIn();

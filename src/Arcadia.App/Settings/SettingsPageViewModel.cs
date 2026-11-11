@@ -41,6 +41,9 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     [ObservableProperty]
     public partial SettingsCategoryViewModel Selected { get; private set; } = null!;
 
+    /// <summary>A category's dialog or a text being written takes the buttons for itself.</summary>
+    object? IPage.Layout => (Selected?.Dialog, Selected?.Editor);
+
     /// <summary>The focused row of the shown category; the footer and the info panel follow it.</summary>
     [ObservableProperty]
     public partial SettingsRowViewModel? FocusedRow { get; private set; }
@@ -175,7 +178,8 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     /// <summary>Opens a category as its tab would, e.g. from a row of another category that leads there.</summary>
     public void Open(SettingsCategoryViewModel category) => ChooseTab(category);
 
-    private void Cycle(int delta) => ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count)]);
+    private void Cycle(int delta) =>
+        ChooseTab(Categories[ListFocus.Cycle(Categories.ToList().IndexOf(Selected), delta, Categories.Count, HeldPress.IsRepeat)]);
 
     /// <summary>A category's tab is chosen: it opens at its top level, not where it was left.</summary>
     private void ChooseTab(SettingsCategoryViewModel category)

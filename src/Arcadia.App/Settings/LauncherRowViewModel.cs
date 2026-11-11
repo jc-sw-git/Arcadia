@@ -1,3 +1,4 @@
+using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Launchers.Abstractions;
@@ -94,7 +95,8 @@ public sealed partial class LauncherRowViewModel : SettingsRowViewModel
 
     public override void Change(int delta)
     {
-        if (HasSwitch)
+        // A switch flips once per press; held ◀ ▶ don't flip it back and forth (#476).
+        if (HasSwitch && !HeldPress.IsRepeat)
         {
             _switch(this, !IsActive);
         }

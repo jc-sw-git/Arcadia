@@ -45,4 +45,10 @@ public interface IPage
     /// open dialog does. Other pages leave a dialog over them the press first.
     /// </summary>
     bool CoversWindow => false;
+
+    /// <summary>
+    /// How the page is laid out right now where that changes what a button does, e.g. the search with its keyboard out
+    /// or in; compared by value. A held button stops repeating when it changes (<see cref="Input.RepeatGate"/>).
+    /// </summary>
+    object? Layout => null;
 }

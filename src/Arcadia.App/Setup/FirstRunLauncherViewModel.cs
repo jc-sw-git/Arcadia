@@ -1,3 +1,4 @@
+using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Search;
@@ -122,8 +123,14 @@ public sealed partial class FirstRunLauncherViewModel : ViewModelBase
         OnPropertyChanged(nameof(LocationText));
     }
 
-    /// <summary>◀ and ▶ both flip it.</summary>
-    public void Change(int delta) => Toggle();
+    /// <summary>◀ and ▶ both flip it, once per press: held, they don't flip it back and forth (#476).</summary>
+    public void Change(int delta)
+    {
+        if (!HeldPress.IsRepeat)
+        {
+            Toggle();
+        }
+    }
 
     /// <summary>A and a click on the switch flip it.</summary>
     public void Toggle()

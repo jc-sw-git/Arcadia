@@ -197,6 +197,7 @@ internal sealed class ArcadiaComposition
         gamepad.Sampled += forGames.Others.Feed;
         gamepad.Lost += forGames.Others.Drop;
         gamepad.ButtonPressed += routing.Press;
+        gamepad.ButtonRepeated += routing.Repeat;
         gamepad.ButtonReleased += routing.Release;
         gamepad.Lost += routing.Drop;
         if (gamepad is NullGamepadSource)

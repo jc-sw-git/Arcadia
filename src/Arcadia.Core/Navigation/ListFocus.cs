@@ -30,5 +30,11 @@ public static class ListFocus
     }
 
     /// <summary>The next of <paramref name="count"/> tabs, round from the last to the first like the launcher tabs.</summary>
-    public static int Cycle(int index, int delta, int count) => count == 0 ? -1 : (((index + delta) % count) + count) % count;
+    /// <param name="held">
+    /// The step repeats a held button or key (#476): it stops at the last or first one, and only a fresh press goes round.
+    /// </param>
+    public static int Cycle(int index, int delta, int count, bool held = false) =>
+        count == 0 ? -1
+        : held && (index + delta < 0 || index + delta >= count) ? Math.Clamp(index, 0, count - 1)
+        : (((index + delta) % count) + count) % count;
 }

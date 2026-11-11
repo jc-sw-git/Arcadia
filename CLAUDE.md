@@ -116,7 +116,8 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 |---|---|
 | Principles: vision, launchers opt-in, feature parity, controllers alike, platforms, performance, plugins | `docs/product/README.md` |
 | Library, page sizes, sorting, header tab strip | `docs/product/library.md` |
-| Buttons and keys (gamepad, WASD), button hints, dialogs | `docs/product/controls.md` |
+| Buttons and keys (gamepad, WASD), button hints, held buttons, dialogs | `docs/product/controls.md` |
+| Controllers in games: Pan's emulated pads, the Steam Controller, the per-game mode | `docs/product/controllers-in-games.md` |
 | A / game start, detail page, game actions, updates | `docs/product/detail-page.md` |
 | Search | `docs/product/search.md` |
 | On-screen keyboard | `docs/product/on-screen-keyboard.md` |

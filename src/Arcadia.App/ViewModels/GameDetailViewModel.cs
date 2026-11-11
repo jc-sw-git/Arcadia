@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.Core.Library;
+using Arcadia.Core.Navigation;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -158,7 +159,8 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// </summary>
     public void Rotate(int delta)
     {
-        if (Games.Count < 2)
+        // Held LT/RT stop at the first and the last game; only a fresh press goes round (#476).
+        if (Games.Count < 2 || (HeldPress.IsRepeat && ListFocus.Cycle(Index, delta, Games.Count, held: true) == Index))
         {
             return;
         }

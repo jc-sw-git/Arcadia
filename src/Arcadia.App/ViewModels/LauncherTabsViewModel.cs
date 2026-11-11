@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Core.Library;
+using Arcadia.Core.Navigation;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -104,7 +106,7 @@ public sealed partial class LauncherTabsViewModel(Func<LauncherInfo, LauncherBad
         Chosen?.Invoke(tab);
     }
 
-    /// <summary>LB (-1) and RB (1): the previous or next tab, round from the last to the first.</summary>
+    /// <summary>LB (-1) and RB (1): the previous or next tab, round from the last to the first; held, it stops there (#476).</summary>
     public void Cycle(int delta)
     {
         if (Items.Count == 0 || SelectedTab is null)
@@ -112,7 +114,11 @@ public sealed partial class LauncherTabsViewModel(Func<LauncherInfo, LauncherBad
             return;
         }
 
-        Choose(Items[(Items.IndexOf(SelectedTab) + delta + Items.Count) % Items.Count]);
+        var next = Items[ListFocus.Cycle(Items.IndexOf(SelectedTab), delta, Items.Count, HeldPress.IsRepeat)];
+        if (next != SelectedTab || !HeldPress.IsRepeat)
+        {
+            Choose(next);
+        }
     }
 
     [RelayCommand]

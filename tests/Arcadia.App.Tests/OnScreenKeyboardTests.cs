@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.Core.Search;
+using Arcadia.Input;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -17,7 +18,8 @@ public sealed class OnScreenKeyboardTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T12-2")]
-    public async Task The_D_pad_walks_the_keys_to_the_nearest_one_and_stops_at_the_edges_A_types_Y_a_space_X_erases()
+    [Trait("TestCase", "T476-5")]
+    public async Task The_D_pad_walks_the_keys_to_the_nearest_one_and_goes_round_at_the_edges_A_types_Y_a_space_X_erases()
     {
         using var arcadia = await OpenSearchAsync();
         var search = arcadia.Search!;
@@ -29,12 +31,18 @@ public sealed class OnScreenKeyboardTests
         arcadia.Press(UiAction.Accept);
         Assert.Equal("q", search.Text);
 
-        // The edges: nothing above the number row, nothing left of its first key.
+        // The edges (#476): up from the number row goes round to the nearest key counted from below the keyboard, <
+        // right below 1 (the space bar in the last row lies far to the right); left of the first key round to the
+        // row's last, the layout key, and right back to ^.
         arcadia.GoTo("1").Press(UiAction.Up);
-        Assert.Equal("1", arcadia.FocusedLabel());
-        arcadia.Press(UiAction.Left);
+        Assert.Equal("<", arcadia.FocusedLabel());
+        arcadia.GoTo("^").Press(UiAction.Left);
+        Assert.Equal(BoardKeyKind.Layout, arcadia.Keyboard().FocusedKey.Key.Kind);
+        arcadia.Press(UiAction.Right);
         Assert.Equal("^", arcadia.FocusedLabel());
-        arcadia.Press(UiAction.Left);
+
+        // A held D-pad stops at the edge; only a fresh press goes round.
+        arcadia.GoTo("2").HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadLeft);
         Assert.Equal("^", arcadia.FocusedLabel());
 
         arcadia.TypeOnKeys("uiz");

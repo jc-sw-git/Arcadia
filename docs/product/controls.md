@@ -12,6 +12,13 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   Q/E = LT/RT, Shift+Q/E = LB/RB, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
   the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real keyboard types, so only keys
   without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
+- Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
+  first and back, left/right in a row, up/down in a column; greyed-out items are passed over. That holds for the
+  library and the search (`library.md`, `search.md`), the tabs, the settings' rows and the first start's, menus
+  (context menu, keyboard layouts), "Ansicht", the filter, the status messages, the detail page's buttons, every
+  dialog's buttons and the on-screen keyboard (`on-screen-keyboard.md`). Where a step past an edge leads to another
+  area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
+  the mouse wheel and the scroll bars stop at the ends.
 - Held buttons repeat (#476): the D-pad and both sticks after 400 ms, then every 90 ms; LT/RT and LB/RB, wherever
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every
   150 ms; keys repeat as Windows repeats them. On the on-screen keyboard LB/RB are shift and AltGr and don't repeat.

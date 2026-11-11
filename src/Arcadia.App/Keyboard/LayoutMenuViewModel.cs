@@ -1,4 +1,6 @@
+using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
+using Arcadia.Core.Navigation;
 using Arcadia.Core.Search;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -83,7 +85,7 @@ public sealed partial class LayoutMenuViewModel : ViewModelBase
 
     private void MoveFocus(int step)
     {
-        _focus = Math.Clamp(_focus + step, 0, Items.Count - 1);
+        _focus = ListFocus.Cycle(_focus, step, Items.Count, HeldPress.IsRepeat);
         UpdateItems();
     }
 

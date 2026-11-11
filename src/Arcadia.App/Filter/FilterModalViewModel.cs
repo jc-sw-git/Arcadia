@@ -2,6 +2,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Library;
+using Arcadia.Core.Navigation;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -168,10 +169,10 @@ public sealed partial class FilterModalViewModel : ViewModelBase
         switch (action)
         {
             case UiAction.Up:
-                FocusCategoryAt(Math.Max(index - 1, 0));
+                FocusCategoryAt(ListFocus.Cycle(index, -1, rows, HeldPress.IsRepeat));
                 break;
             case UiAction.Down:
-                FocusCategoryAt(Math.Min(index + 1, rows - 1));
+                FocusCategoryAt(ListFocus.Cycle(index, 1, rows, HeldPress.IsRepeat));
                 break;
             case UiAction.Accept when IsResetFocused:
                 Reset();
@@ -193,13 +194,12 @@ public sealed partial class FilterModalViewModel : ViewModelBase
         var columns = ShowsTypes ? TypeColumns : 1;
         switch (action)
         {
+            // Round at the ends like the library's grid (#476); from a full row onto a shorter last one: the last value.
             case UiAction.Up:
-                FocusValue(_focusedValue - columns >= 0 ? _focusedValue - columns : _focusedValue);
+                FocusValue(GridFocus.Step(_focusedValue, Values.Count, Values.Count, columns, 0, -1, HeldPress.IsRepeat));
                 break;
             case UiAction.Down:
-                // From a full row onto a shorter last one: the last value, as in the library's grid.
-                FocusValue(_focusedValue + columns < Values.Count ? _focusedValue + columns
-                    : _focusedValue / columns < (Values.Count - 1) / columns ? Values.Count - 1 : _focusedValue);
+                FocusValue(GridFocus.Step(_focusedValue, Values.Count, Values.Count, columns, 0, 1, HeldPress.IsRepeat));
                 break;
             case UiAction.Left when _focusedValue % columns == 0:
             case UiAction.Back:
@@ -208,8 +208,9 @@ public sealed partial class FilterModalViewModel : ViewModelBase
             case UiAction.Left:
                 FocusValue(_focusedValue - 1);
                 break;
-            case UiAction.Right when columns > 1 && _focusedValue % columns < columns - 1 && _focusedValue + 1 < Values.Count:
-                FocusValue(_focusedValue + 1);
+            // Left out of the first column goes back to the categories; right goes on into the next row, round from the last value to the first.
+            case UiAction.Right when columns > 1:
+                FocusValue(GridFocus.Step(_focusedValue, Values.Count, Values.Count, columns, 1, 0, HeldPress.IsRepeat));
                 break;
             case UiAction.Accept:
                 Choose(Values[_focusedValue]);

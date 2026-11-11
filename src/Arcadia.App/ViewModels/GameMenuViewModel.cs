@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Core.Navigation;
 
 namespace Arcadia.App.ViewModels;
 
@@ -49,19 +50,18 @@ public sealed class GameMenuViewModel : ViewModelBase
 
     private void Move(int delta)
     {
-        for (var i = _focus + delta; i >= 0 && i < Actions.Count; i += delta)
+        var next = ListFocus.Next(_focus, delta, Actions.Count, i => Actions[i].IsEnabled, HeldPress.IsRepeat);
+        if (next == _focus || next < 0)
         {
-            if (Actions[i].IsEnabled)
-            {
-                if (_focus >= 0)
-                {
-                    Actions[_focus].IsFocused = false;
-                }
-
-                _focus = i;
-                Actions[i].IsFocused = true;
-                return;
-            }
+            return;
         }
+
+        if (_focus >= 0)
+        {
+            Actions[_focus].IsFocused = false;
+        }
+
+        _focus = next;
+        Actions[next].IsFocused = true;
     }
 }

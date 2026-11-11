@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -72,11 +73,12 @@ public sealed partial class EmptyTabViewModel(LauncherTabViewModel? tab, Action 
     {
         switch (action)
         {
+            case UiAction.Left or UiAction.Right when CanRescan:
+                // Two buttons side by side: a step past either goes round to the other (#476).
+                IsSettingsFocused = ListFocus.Cycle(IsSettingsFocused ? 0 : 1, action == UiAction.Left ? -1 : 1, 2, HeldPress.IsRepeat) == 0;
+                break;
             case UiAction.Left:
                 IsSettingsFocused = true;
-                break;
-            case UiAction.Right when CanRescan:
-                IsSettingsFocused = false;
                 break;
             case UiAction.Accept when IsSettingsFocused:
                 OpenSettings();

@@ -113,7 +113,7 @@ public sealed class SettingsRowsFadeTests
     {
         using var arcadia = await ControllerCategoryAsync();
         var settings = arcadia.Arcadia.Main.Settings!;
-        arcadia.Press(UiAction.Down, times: settings.Selected.Rows.Count);
+        arcadia.Press(UiAction.Down, times: settings.Selected.Rows.Count - 1);
         AssertFades(arcadia, top: true, bottom: false);
 
         // The category before fits: no fade, from its top.

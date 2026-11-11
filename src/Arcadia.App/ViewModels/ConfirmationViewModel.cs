@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -43,11 +44,9 @@ public sealed partial class ConfirmationViewModel : ViewModelBase
     {
         switch (action)
         {
-            case UiAction.Left:
-                IsConfirmFocused = true;
-                return ConfirmationAnswer.Open;
-            case UiAction.Right:
-                IsConfirmFocused = false;
+            case UiAction.Left or UiAction.Right:
+                // Two buttons side by side: a step past either goes round to the other (#476).
+                IsConfirmFocused = ListFocus.Cycle(IsConfirmFocused ? 0 : 1, action == UiAction.Left ? -1 : 1, 2, HeldPress.IsRepeat) == 0;
                 return ConfirmationAnswer.Open;
             case UiAction.Accept:
                 return IsConfirmFocused ? ConfirmationAnswer.Confirmed : ConfirmationAnswer.Cancelled;

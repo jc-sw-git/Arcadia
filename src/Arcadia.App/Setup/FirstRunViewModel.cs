@@ -122,10 +122,10 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
         switch (action)
         {
             case UiAction.Up:
-                FocusAt(ListFocus.Move(_focus, -1, Rows().Count()));
+                FocusAt(ListFocus.Cycle(_focus, -1, Rows().Count(), HeldPress.IsRepeat));
                 break;
             case UiAction.Down:
-                FocusAt(ListFocus.Move(_focus, 1, Rows().Count()));
+                FocusAt(ListFocus.Cycle(_focus, 1, Rows().Count(), HeldPress.IsRepeat));
                 break;
             case UiAction.Left:
                 FocusedRow?.Change(-1);

@@ -210,12 +210,14 @@ public sealed class LibraryTests
         Assert.True(options.PageSizeOptions.Single(o => o.Label == "24").IsSelected);
 
         // From the selected sort (first row) down to the page sizes, onto 64, and choose it.
-        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Right).Press(UiAction.Accept);
         Assert.True(main.IsViewOptionsOpen);
         Assert.Equal(31, arcadia.PageGames.Count);
 
-        // A on 128, which can't be chosen, changes nothing.
-        arcadia.Press(UiAction.Right).Press(UiAction.Accept);
+        // 128 can't be chosen: right passes over it round to 24 (#476), left goes back to 64.
+        arcadia.Press(UiAction.Right);
+        Assert.Equal("24", main.ViewOptions!.PageSizeOptions.Single(o => o.IsFocused).Label);
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
         Assert.True(main.ViewOptions!.PageSizeOptions.Single(o => o.Label == "64").IsSelected);
         Assert.Equal(64, arcadia.Settings.Current.PreferredPageSize);
 
@@ -271,11 +273,7 @@ public sealed class LibraryTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync([SortLibrary]);
 
-        // From wherever the focus starts up to "Name A → Z", then to the wanted cell.
-        arcadia.Press(UiAction.ViewOptions)
-            .Press(UiAction.Up, times: 3).Press(UiAction.Left)
-            .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
-            .Press(UiAction.Accept).Press(UiAction.Back);
+        ChooseSort(arcadia, row, column);
 
         Assert.True(expected.SequenceEqual(arcadia.PageGames.Select(tile => tile.Title)), $"{sort}: {string.Join(", ", arcadia.PageGames.Select(tile => tile.Title))}");
     }
@@ -292,7 +290,7 @@ public sealed class LibraryTests
         var pageOne = first.PageGames.Select(tile => tile.Title).ToList();
 
         first.Press(UiAction.ViewOptions)
-            .Press(UiAction.Down, times: 3).Press(UiAction.Left, times: 3).Press(UiAction.Right).Press(UiAction.Accept) // 64 per page
+            .Press(UiAction.Down, times: 3).Press(UiAction.Accept) // from "Z → A" straight down onto 64 per page
             .Press(UiAction.Back);
 
         // Arcadia is closed elsewhere than its first game.
@@ -450,11 +448,18 @@ public sealed class LibraryTests
     }
 
     /// <summary>"Ansicht", from wherever the focus starts up to "Name A → Z", then to the sort in that cell.</summary>
-    private static void ChooseSort(ArcadiaDriver arcadia, int row, int column) =>
-        arcadia.Press(UiAction.ViewOptions)
-            .Press(UiAction.Up, times: 3).Press(UiAction.Left)
+    /// <summary>
+    /// From wherever the focus starts (the chosen sort) up to "Name A → Z", then to the wanted cell; step by step,
+    /// since a step past the first row or column goes round (#476).
+    /// </summary>
+    private static void ChooseSort(ArcadiaDriver arcadia, int row, int column)
+    {
+        arcadia.Press(UiAction.ViewOptions);
+        var (fromRow, fromColumn) = arcadia.Main.ViewOptions!.FocusPosition;
+        arcadia.Press(UiAction.Up, times: fromRow).Press(UiAction.Left, times: fromColumn)
             .Press(UiAction.Down, times: row).Press(UiAction.Right, times: column)
             .Press(UiAction.Accept).Press(UiAction.Back);
+    }
 
     private static List<string> Titles(ArcadiaDriver arcadia) => arcadia.PageGames.Select(tile => tile.Title).ToList();
 

@@ -132,7 +132,7 @@ public class FullKeyboardTests
     }
 
     [Fact]
-    public void Left_of_the_first_key_of_a_row_the_focus_goes_to_the_key_beside_it_in_a_neighbouring_row()
+    public void Left_of_the_first_key_of_a_row_the_focus_goes_to_the_key_beside_it_in_a_neighbouring_row_and_a_held_one_stays_at_the_edge()
     {
         var board = FullKeyboard.For(KeyboardLayout.German);
         var rows = Spots(board, KeyLevel.Normal);
@@ -140,6 +140,19 @@ public class FullKeyboardTests
         var tab = Find(board, 1, k => k.Kind == BoardKeyKind.Tab);
 
         Assert.Equal(tab, KeyGrid.Sideways(rows, a.Row, a.Column, -1));
-        Assert.Equal(tab, KeyGrid.Sideways(rows, tab.Row, tab.Column, -1));
+        Assert.Equal(tab, KeyGrid.Sideways(rows, tab.Row, tab.Column, -1, held: true));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-5")]
+    public void Left_of_the_first_key_of_the_board_the_focus_goes_round_to_the_rows_last_key()
+    {
+        var board = FullKeyboard.For(KeyboardLayout.German);
+        var rows = Spots(board, KeyLevel.Normal);
+        var tab = Find(board, 1, k => k.Kind == BoardKeyKind.Tab);
+        var last = rows[tab.Row].Select((spot, column) => (spot, column)).Last(s => !s.spot.IsEmpty).column;
+
+        Assert.Equal((tab.Row, last), KeyGrid.Sideways(rows, tab.Row, tab.Column, -1));
+        Assert.Equal(tab, KeyGrid.Sideways(rows, tab.Row, last, 1));
     }
 }

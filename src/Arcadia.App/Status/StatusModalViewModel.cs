@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
+using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -127,7 +128,8 @@ public sealed partial class StatusModalViewModel : ViewModelBase
                 Move(1);
                 break;
             case UiAction.Left or UiAction.Right when Focused is { HasFix: true } entry:
-                entry.FixChosen = action == UiAction.Left;
+                // Two buttons side by side: a step past either goes round to the other (#476).
+                entry.FixChosen = ListFocus.Cycle(entry.FixChosen ? 0 : 1, action == UiAction.Left ? -1 : 1, 2, HeldPress.IsRepeat) == 0;
                 OnPropertyChanged(nameof(AcceptText));
                 break;
             case UiAction.Accept when Focused is { } entry:
@@ -193,7 +195,7 @@ public sealed partial class StatusModalViewModel : ViewModelBase
         }
 
         var index = Focused is { } focused ? Entries.ToList().IndexOf(focused) : -1;
-        var next = Math.Clamp(index + step, 0, Entries.Count - 1);
+        var next = ListFocus.Cycle(index, step, Entries.Count, HeldPress.IsRepeat);
         if (next != index)
         {
             Focus(Entries[next]);

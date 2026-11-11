@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
+using Arcadia.Core.Navigation;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -238,7 +239,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         SetFocus(-1, -1);
     }
 
-    /// <summary>Left/right skip buttons that aren't available and stop at the ends of the row.</summary>
+    /// <summary>Left/right skip buttons that aren't available; past the ends of the row they go round (#476).</summary>
     private void MoveInRow(int delta)
     {
         if (Row(_focusRow) is not { } actions || _focusColumn < 0)
@@ -246,19 +247,16 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             return;
         }
 
-        for (var column = _focusColumn + delta; column >= 0 && column < actions.Count; column += delta)
+        var column = ListFocus.Next(_focusColumn, delta, actions.Count, c => actions[c].IsEnabled, HeldPress.IsRepeat);
+        if (column != _focusColumn)
         {
-            if (actions[column].IsEnabled)
-            {
-                SetFocus(_focusRow, column);
-                return;
-            }
+            SetFocus(_focusRow, column);
         }
     }
 
     /// <summary>
     /// Up/down go to the next row in that direction with an available button (an empty settings row is skipped) and
-    /// land on the one nearest in order, preferring the left one; they stop at the first and last row.
+    /// land on the one nearest in order, preferring the left one; past the first or last row they go round (#476).
     /// </summary>
     private void MoveToRow(int delta)
     {
@@ -267,8 +265,17 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             return;
         }
 
-        for (var row = _focusRow + delta; Row(row) is { } actions; row += delta)
+        var row = _focusRow;
+        for (var tried = 1; tried < RowCount; tried++)
         {
+            var next = ListFocus.Cycle(row, delta, RowCount, HeldPress.IsRepeat);
+            if (next == row)
+            {
+                return;
+            }
+
+            row = next;
+            var actions = Row(row)!;
             for (var distance = 0; distance < actions.Count + _focusColumn + 1; distance++)
             {
                 foreach (var column in new[] { _focusColumn - distance, _focusColumn + distance })

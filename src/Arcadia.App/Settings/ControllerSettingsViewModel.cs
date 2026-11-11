@@ -2,6 +2,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
+using Arcadia.Core.Navigation;
 using Arcadia.Pan;
 using Arcadia.ControllerSupport.Pan;
 using Avalonia.Threading;
@@ -778,7 +779,7 @@ public sealed partial class ControllerSettingsViewModel : SettingsCategoryViewMo
         }
 
         buttons[_promptFocus].IsFocused = false;
-        _promptFocus = Math.Clamp(_promptFocus + delta, 0, buttons.Count - 1);
+        _promptFocus = ListFocus.Cycle(_promptFocus, delta, buttons.Count, HeldPress.IsRepeat);
         buttons[_promptFocus].IsFocused = true;
         OnPropertyChanged(nameof(PromptSelectText));
     }

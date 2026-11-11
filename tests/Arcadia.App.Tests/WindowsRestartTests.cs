@@ -441,4 +441,25 @@ public sealed class WindowsRestartTests
         // A stack trace follows; which frames it shows depends on the JIT (a Release build may inline the fake's check).
         Assert.Contains($"(Test 382-28){Environment.NewLine}   at ", log[line..], StringComparison.Ordinal);
     }
+
+    /// <summary>#476: the question's two buttons go round; a held arrow stays on the last one.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-5")]
+    public async Task The_restart_questions_two_buttons_go_round_and_a_held_arrow_stays()
+    {
+        using var arcadia = await StartAsync(new FakeSteam { HidHideRemovalPending = true });
+        var controller = OpenControllerSettings(arcadia);
+        await WaitForRestartRowAsync(arcadia, controller);
+        controller.FocusRow(RestartRowKey);
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal(SettingsPrompt.ConfirmWindowsRestart, controller.Prompt);
+        Assert.True(controller.ConfirmRestartItem.IsFocused);
+
+        arcadia.Press(UiAction.Left);
+        Assert.True(controller.CancelRestartItem.IsFocused);
+        arcadia.Press(UiAction.Right);
+        Assert.True(controller.ConfirmRestartItem.IsFocused);
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), Arcadia.Input.PadButtons.DPadRight);
+        Assert.True(controller.CancelRestartItem.IsFocused);
+    }
 }

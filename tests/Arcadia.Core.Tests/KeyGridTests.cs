@@ -24,12 +24,36 @@ public class KeyGridTests
     }
 
     [Fact]
-    public void Sideways_stays_at_the_edge_and_before_only_empty_keys()
+    [Trait("TestCase", "T476-5")]
+    public void Sideways_goes_round_to_the_rows_other_end_past_its_edge_and_before_only_empty_keys()
     {
         var rows = Rows("a.b..");
 
-        Assert.Equal((0, 0), KeyGrid.Sideways(rows, 0, 0, -1));
-        Assert.Equal((0, 2), KeyGrid.Sideways(rows, 0, 2, 1));
+        Assert.Equal((0, 2), KeyGrid.Sideways(rows, 0, 0, -1));
+        Assert.Equal((0, 0), KeyGrid.Sideways(rows, 0, 2, 1));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-5")]
+    public void Held_sideways_stays_at_the_edge()
+    {
+        var rows = Rows("a.b..");
+
+        Assert.Equal((0, 0), KeyGrid.Sideways(rows, 0, 0, -1, held: true));
+        Assert.Equal((0, 2), KeyGrid.Sideways(rows, 0, 2, 1, held: true));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-5")]
+    public void Up_and_down_go_round_to_the_nearest_key_in_the_bottom_or_top_row()
+    {
+        var rows = Rows("1234567890abc", "qwertzuiopüd", "..yx.....");
+
+        // Up from 4 to the bottom row's nearest key y, down from y to the top row's nearest, 5.
+        Assert.Equal((2, 2), KeyGrid.Vertical(rows, 0, 3, -1));
+        Assert.Equal((0, 4), KeyGrid.Vertical(rows, 2, 2, 1));
+        Assert.Equal((0, 3), KeyGrid.Vertical(rows, 0, 3, -1, held: true));
+        Assert.Equal((2, 2), KeyGrid.Vertical(rows, 2, 2, 1, held: true));
     }
 
     [Fact]
@@ -39,7 +63,8 @@ public class KeyGridTests
         var rows = Rows("..b..", "a.c...", ".....", "e....");
 
         Assert.Equal((1, 0), KeyGrid.Sideways(rows, 0, 2, -1));
-        Assert.Equal((1, 2), KeyGrid.Sideways(rows, 1, 2, 1));
+        Assert.Equal((1, 0), KeyGrid.Sideways(rows, 1, 2, 1));
+        Assert.Equal((1, 2), KeyGrid.Sideways(rows, 1, 2, 1, held: true));
         Assert.Equal((3, 0), KeyGrid.Sideways(rows, 3, 0, -1));
     }
 
@@ -75,13 +100,13 @@ public class KeyGridTests
     }
 
     [Fact]
-    public void A_row_with_nothing_to_go_to_is_passed_over_and_the_last_row_keeps_the_focus()
+    public void A_row_with_nothing_to_go_to_is_passed_over_and_the_last_row_keeps_a_held_focus()
     {
         var rows = Rows("ab", "....", "cd");
 
         Assert.Equal((2, 0), KeyGrid.Vertical(rows, 0, 0, 1));
         Assert.Equal((0, 1), KeyGrid.Vertical(rows, 2, 1, -1));
-        Assert.Equal((2, 1), KeyGrid.Vertical(rows, 2, 1, 1));
+        Assert.Equal((2, 1), KeyGrid.Vertical(rows, 2, 1, 1, held: true));
     }
 
     [Fact]

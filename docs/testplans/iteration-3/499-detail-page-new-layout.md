@@ -69,7 +69,8 @@ Settings that don't apply now, info box
       the mouse mode in games isn't set per game; "Deinstallieren …" during an installation, while the game runs, and
       when only the launcher can uninstall and Arcadia can't open it. "Deinstallieren …" that opens the launcher
       instead stays active and its info box says so. Pan's emulation not running (#242): the mode row says so and A
-      leads to the row in the settings that says why, as today. · E2E: yes
+      leads to the row in the settings that says why, as today. A game that isn't installed: every row greyed,
+      "Artwork ändern" and the controller rows say "Einstellbar, sobald das Spiel installiert ist." · E2E: yes
 - [x] **T499-16** Info box: with the focus on a row of "Controller" or "Verwalten" the box beside the rows shows the
       row's name and what it does, and follows the focus (▲ ▼, mouse over a row). "Übersicht" has no box. · E2E: yes
 - [x] **T499-17** A long info text scrolls or fades inside the box; the rows keep their width whatever the box shows.

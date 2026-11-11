@@ -183,8 +183,12 @@ public sealed class DetailAreasTests
         Assert.All(page.Areas.SelectMany(area => area.Rows), row => Assert.True(row.IsGreyed && row.HasNote, $"{row.Title} nicht ausgegraut mit Grund"));
 
         // Greyed rows take the focus.
-        var uninstall = arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Uninstall);
-        Assert.Equal(AppTexts.NotInstalled, uninstall.Note);
+        var artwork = arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Artwork);
+        Assert.Equal(AppTexts.DetailSetAfterInstall, artwork.Note);
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(arcadia.Main.ChangeArtwork);
+        arcadia.Press(UiAction.Down);
+        Assert.Equal(AppTexts.NotInstalled, page.FocusedRow!.Note);
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Confirmation);
     }

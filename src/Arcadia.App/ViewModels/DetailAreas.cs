@@ -36,7 +36,7 @@ public static class DetailAreas
         GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, Action<DetailRowViewModel> point) =>
     [
         new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
-            Find(actions, GameActionKind.Artwork), AppTexts.ActionNotYetAvailable, value: null, point),
+            Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
         new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.DetailUninstallSubtitle(tile.LauncherName), AppTexts.DetailUninstallInfo(tile.LauncherName),
             Find(actions, GameActionKind.Uninstall), AppTexts.NotInstalled, value: null, point),
     ];

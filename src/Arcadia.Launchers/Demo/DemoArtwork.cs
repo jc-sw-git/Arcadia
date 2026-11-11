@@ -22,15 +22,20 @@ public sealed class DemoArtwork(string folder) : ILauncherArtwork
             Directory.CreateDirectory(folder);
             for (var i = 0; i < Variants; i++)
             {
-                Write(PathOf(ArtworkKind.Cover, i), 600, 900, i);
-                Write(PathOf(ArtworkKind.Hero, i), 1920, 620, i);
+                var epic = InEpicsFormats(i);
+                Write(PathOf(ArtworkKind.Cover, i), epic ? 1200 : 600, epic ? 1600 : 900, i);
+                Write(PathOf(ArtworkKind.Hero, i), epic ? 2560 : 1920, epic ? 1440 : 620, i);
             }
         }
 
         return new Lookup(this);
     }
 
-    private string PathOf(ArtworkKind kind, int variant) => Path.Combine(folder, $"{(kind == ArtworkKind.Cover ? "cover" : "hero")}-{variant}.png");
+    /// <summary>Every fourth in Epic's catalog formats (#488), 3 : 4 and 16 : 9, so the crop to 2 : 3 and 3.1 : 1 can be looked at.</summary>
+    private static bool InEpicsFormats(int variant) => variant % 4 == 3;
+
+    private string PathOf(ArtworkKind kind, int variant) =>
+        Path.Combine(folder, $"{(kind == ArtworkKind.Cover ? "cover" : "hero")}-{variant}{(InEpicsFormats(variant) ? "-epic" : string.Empty)}.png");
 
     private static void Write(string path, int width, int height, int variant)
     {

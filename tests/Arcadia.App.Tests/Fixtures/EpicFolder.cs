@@ -27,6 +27,9 @@ internal sealed record EpicApp(string AppName, string Title)
 
     /// <summary>The game an add-on belongs to, e.g. Fortnite for Unreal Editor for Fortnite (#141); null for a game.</summary>
     public string? MainGameAppName { get; init; }
+
+    /// <summary>The catalog entry's <c>keyImages</c> (#488), e.g. <c>("DieselGameBoxTall", "https://cdn1.epicgames.com/…")</c>.</summary>
+    public (string Type, string Url)[] KeyImages { get; init; } = [];
 }
 
 /// <summary>
@@ -88,6 +91,7 @@ internal sealed class EpicFolder(string root)
             ["categories"] = item.Categories.Select(path => new { path }).ToArray(),
             ["mainGameItem"] = item.MainGame is { } main ? new { id = main.CatalogItemId, @namespace = main.Namespace } : null,
             ["releaseInfo"] = new[] { new { appId = item.App.AppName, platform = new[] { "Windows" } } },
+            ["keyImages"] = item.App.KeyImages.Select(image => new { type = image.Type, url = image.Url, width = 1, height = 1 }).ToArray(),
         }));
         Directory.CreateDirectory(Path.GetDirectoryName(Folders.CatalogPath)!);
         File.WriteAllText(Folders.CatalogPath, Convert.ToBase64String(Encoding.UTF8.GetBytes(json)));

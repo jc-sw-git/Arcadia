@@ -473,9 +473,10 @@ public sealed class ArtworkService : IDisposable
             var (candidates, from) = source == ArtworkSourceKind.SteamGridDb
                 ? (await SteamGridDbCandidatesAsync(game, kind, lookup, cachedSize, run, cancel), ArtworkSource.SteamGridDb)
                 : (lookup.For(game, kind), ArtworkSource.Launcher);
+            var replaced = IsReplaced(cached, candidates);
             foreach (var candidate in candidates)
             {
-                if (await OptionOfAsync(game, kind, candidate, from, cached, cachedSize, run, cancel) is not var (option, size))
+                if (await OptionOfAsync(game, kind, candidate, from, replaced, cached, cachedSize, run, cancel) is not var (option, size))
                 {
                     continue;
                 }
@@ -494,7 +495,7 @@ public sealed class ArtworkService : IDisposable
 
     /// <summary>What a candidate offers and its size; null if it offers nothing now (gone, unreadable, not downloadable).</summary>
     private async Task<(Pick Option, ImageSize Size)?> OptionOfAsync(
-        Game game, ArtworkKind kind, ArtworkCandidate candidate, ArtworkSource from, CachedImage? cached, ImageSize? cachedSize, RunState run, CancellationToken cancel)
+        Game game, ArtworkKind kind, ArtworkCandidate candidate, ArtworkSource from, bool replaced, CachedImage? cached, ImageSize? cachedSize, RunState run, CancellationToken cancel)
     {
         if (candidate.File is { } path)
         {
@@ -522,20 +523,24 @@ public sealed class ArtworkService : IDisposable
             return null;
         }
 
-        if (cached is not null && cachedSize is { } held && (ArtworkFormat.Fits(held, kind, run.Tolerance) || cached.Stamp == url.AbsoluteUri))
+        if (cached is not null && cachedSize is { } held && (cached.Stamp == url.AbsoluteUri || (ArtworkFormat.Fits(held, kind, run.Tolerance) && !replaced)))
         {
-            // Nothing earlier fits and the cache holds an image: no download for what is there already.
+            // Nothing earlier fits and the cache holds an image the launcher didn't replace: no download for what is there already.
             return (new Pick.Keep(), held);
         }
 
-        if (run.Offline || !run.Tried.Add(url))
+        if (run.Offline || run.Failed.Contains(url))
         {
             return null;
         }
 
-        return await DownloadAsync(game, kind, url, run, cancel) is { } downloadedContent && ImageCheck.Of(new MemoryStream(downloadedContent)) is { } downloaded
-            ? (new Pick.Take(candidate, from, downloadedContent, downloaded, url.AbsoluteUri), downloaded)
-            : null;
+        if (await DownloadAsync(game, kind, url, run, cancel) is { } downloadedContent && ImageCheck.Of(new MemoryStream(downloadedContent)) is { } downloaded)
+        {
+            return (new Pick.Take(candidate, from, downloadedContent, downloaded, url.AbsoluteUri), downloaded);
+        }
+
+        run.Failed.Add(url);
+        return null;
     }
 
     /// <summary>
@@ -575,6 +580,15 @@ public sealed class ArtworkService : IDisposable
 
     /// <summary>The <see cref="CachedImage.Origin"/> of SteamGridDB's images.</summary>
     public const string SteamGridDbOrigin = "steamgriddb";
+
+    /// <summary>
+    /// The launcher no longer offers the address the cached image came from but another one of the same origin: it changed
+    /// the image (e.g. Epic's catalog names new art, #488). A second host of the same files that is still offered is no change.
+    /// </summary>
+    private static bool IsReplaced(CachedImage? cached, IReadOnlyList<ArtworkCandidate> candidates) =>
+        cached is not null
+        && candidates.Any(c => c.Download is not null && c.Origin == cached.Origin)
+        && !candidates.Any(c => c.Download?.AbsoluteUri == cached.Stamp);
 
     /// <summary>Length and time of a launcher's file, to tell it changed; null if it is missing or too large.</summary>
     private static string? LocalStamp(string path)
@@ -814,8 +828,9 @@ public sealed class ArtworkService : IDisposable
 
         public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
 
-        // A server that has no image now is asked again by the next run: a rescan may find what it added meanwhile.
-        public HashSet<Uri> Tried { get; } = [];
+        // An address that gave no image is not asked again in this run, but by the next: a rescan may find what the server
+        // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
+        public HashSet<Uri> Failed { get; } = [];
 
         public bool Offline { get; set; }
 

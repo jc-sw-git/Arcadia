@@ -245,26 +245,16 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
             this.stream = stream;
             this.serverEnded = serverEnded;
             stream.OnDisconnect = () => _broken = true;
-            stream.OnOutput = ReadOutputAsync;
+            stream.OnOutput = new XboxPadRumbleReader(rumble => Rumbled?.Invoke(rumble), OutputEnded, _reading.Token).ReadAsync;
         }
 
         public event Action<XboxRumble>? Rumbled;
 
-        /// <summary>VIIPER's output of an Xbox 360 pad: the two motors, one byte each (large, then small).</summary>
-        private async Task ReadOutputAsync(Stream output)
+        /// <summary>Clearing the handler ends Viiper.Client's read loop without an exception; it still reports the disconnect.</summary>
+        private void OutputEnded()
         {
-            var motors = new byte[2];
-            try
-            {
-                await output.ReadExactlyAsync(motors, _reading.Token);
-            }
-            catch (OperationCanceledException) when (_reading.IsCancellationRequested)
-            {
-                // The pad is being unplugged: no exception into Viiper.Client's read loop, it ends with the dispose.
-                return;
-            }
-
-            Rumbled?.Invoke(new XboxRumble(motors[0], motors[1]));
+            _broken = true;
+            stream.OnOutput = null;
         }
 
         public bool IsConnected => !_broken && !serverEnded();

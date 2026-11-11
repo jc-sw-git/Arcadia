@@ -239,7 +239,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         SetFocus(-1, -1);
     }
 
-    /// <summary>Left/right skip buttons that aren't available and stop at the ends of the row.</summary>
+    /// <summary>Left/right skip buttons that aren't available; past the ends of the row they go round (#476).</summary>
     private void MoveInRow(int delta)
     {
         if (Row(_focusRow) is not { } actions || _focusColumn < 0)

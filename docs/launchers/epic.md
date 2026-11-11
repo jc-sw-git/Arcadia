@@ -31,6 +31,24 @@ re-sends once if no process appears from the install directory within 30 s. If t
   `com.epicgames.launcher://ue/library` instead; no dialog opens there either: the user starts the installation
   (`Game.InstallStartsInLauncher`), and only then does it show in Arcadia with its progress.
 
+## Covers and backgrounds (`EpicArtwork`, #13, #488)
+
+- Each catalog item has `keyImages`: an array of `{ "type", "url", "width", "height", "md5", "uploadedDate" }`. Arcadia
+  reads `DieselGameBoxTall` (3 : 4, mostly 1200 × 1600) as the cover and `DieselGameBox` (16 : 9, mostly 2560 × 1440)
+  as the background, the first usable entry of each type, type names matched exactly; other types (`Thumbnail`,
+  `DieselStoreFrontWide`, `OfferImageTall`, `DieselGameBoxLogo`, …) are ignored. On the owner's PC: of 486 entries
+  without DLCs 371 have a tall image, 364 a 16 : 9 one, 103 none.
+- An item's images are filed under each of its `releaseInfo[].appId` and its `id`; a game is found by its app name, else
+  by the catalog item id in its launch address. A base game wins over a DLC or edition naming the same app.
+- The cache can be written by any local program, so only `https` addresses on `epicgames.com` or `unrealengine.com`
+  (or a subdomain, e.g. `cdn1.epicgames.com`, `cdn2.unrealengine.com`), on the default port and without user data, are
+  downloaded; any other is skipped with the log line `Epic-Katalogbilder: Bild von Katalogeintrag <id> übergangen …`
+  naming its host. The two domains are what Epic's catalog is known to use; not yet checked against the owner's
+  catalog (T488-16 looks for that log line).
+- The 3 : 4 cover fits the 2 : 3 tile within "Normal" (11 % cut away); the 16 : 9 image never fits the hero (43 %), so
+  it is the cropped fallback until a source with a fitting hero (SteamGridDB, #489) has one. Downloaded once; a new
+  address in the catalog for the same image (new art) is downloaded at the next scan.
+
 ## Installs (`EpicInstallMonitor`, verified with real installs)
 
 - Queue order from `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

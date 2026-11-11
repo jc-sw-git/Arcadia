@@ -8,7 +8,8 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
   Epic build their own `LauncherInfo`, the others are demo tabs). Integrations: `SteamIntegration` with
   `SteamFolderChoice` and `SteamProgram`, `EpicIntegration`, `DemoIntegration` (`DemoScanner`: a fictional library per
   launcher).
-- `Demo/DemoArtwork`: made-up covers and backgrounds for `--demo-games`, so the budgets are measured with images (#487).
+- `Demo/DemoArtwork`: made-up covers and backgrounds for `--demo-games`, so the budgets are measured with images (#487);
+  every fourth in Epic's formats, 3 : 4 and 16 : 9, to look at the crop (#488).
 - `DirectLauncherClient`, `GameLaunchService` (every game start, `TryStartAsync` never throws).
 - Arcadia's data folder comes in from the App (`BuiltInLaunchers.Create`), as a plugin would get it.
 
@@ -18,6 +19,7 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
   `EpicInstallMonitor`, `EpicRunningGames`.
 
 **Steam** (`Steam/`)
+- `EpicArtwork`: the `keyImages` of Epic's catalog cache, only on Epic's image hosts (#488, `docs/launchers/epic.md`).
 - `SteamArtwork`: the account's own images, Steam's library cache, Steam's image server (#487,
   `docs/launchers/steam/artwork.md`).
 - `SteamScanner`, `SteamInstallation`, `SteamInstallMonitor`, `SteamRunningGames`, `SteamProgram` (Steam the

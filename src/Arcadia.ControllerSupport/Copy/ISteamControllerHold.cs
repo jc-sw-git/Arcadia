@@ -46,5 +46,5 @@ public sealed class NoSteamControllerCopy : ISteamControllerHold
     public SteamControllerConnection? Connected => null;
 
     public Task<ISteamControllerCopy> AttachAsync(SteamControllerConnection connection, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Diese Arcadia-Version kann den Steam Controller noch nicht für Steam kopieren");
+        throw new NotSupportedException(ControllerSupportTexts.CopyNotSupported);
 }

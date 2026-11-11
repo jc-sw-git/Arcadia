@@ -298,7 +298,7 @@ public sealed class SettingsStore(string path)
     {
         if (_keepUnreadFile)
         {
-            throw new IOException($"{System.IO.Path.GetFileName(Path)} ließ sich beim Start nicht lesen und wird deshalb nicht überschrieben.");
+            throw new IOException($"{System.IO.Path.GetFileName(Path)} ließ sich beim Start nicht lesen und wird deshalb nicht überschrieben."); // not a UI text (logged)
         }
 
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);

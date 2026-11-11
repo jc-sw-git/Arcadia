@@ -152,7 +152,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
     {
         if (_server is not { HasExited: false } running)
         {
-            throw new InvalidOperationException("VIIPER läuft nicht");
+            throw new InvalidOperationException(ControllerSupportTexts.ViiperNotRunning);
         }
 
         server.CheckListeners(running);

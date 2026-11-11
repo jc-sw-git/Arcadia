@@ -145,8 +145,8 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
         if (!callsEnded || !puckClosed)
         {
             throw new InvalidOperationException(callsEnded
-                ? "Der Puck ließ sich nicht schließen; die Kopie ist nicht sicher beendet"
-                : "Ein Aufruf an den Puck endet nicht; die Kopie ist nicht sicher beendet");
+                ? ControllerSupportTexts.PuckNotClosed
+                : ControllerSupportTexts.PuckCallHangs);
         }
     }
 
@@ -214,7 +214,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
                         Control(frame.Interface, frame.Payload);
                         break;
                     default:
-                        throw new InvalidDataException($"VIIPER schickt einen unbekannten Frame 0x{frame.Kind:X2}");
+                        throw new InvalidDataException($"VIIPER schickt einen unbekannten Frame 0x{frame.Kind:X2}"); // not a UI text (protocol check)
                 }
             }
 
@@ -244,7 +244,7 @@ public sealed class SteamControllerCopyBridge : IAsyncDisposable
     {
         if (payload.Length < 2 + SetupPacket.Size)
         {
-            throw new InvalidDataException($"VIIPER schickt eine Steueranfrage mit {payload.Length} Bytes");
+            throw new InvalidDataException($"VIIPER schickt eine Steueranfrage mit {payload.Length} Bytes"); // not a UI text (protocol check)
         }
 
         var sequence = BinaryPrimitives.ReadUInt16LittleEndian(payload);

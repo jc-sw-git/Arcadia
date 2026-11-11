@@ -8,8 +8,9 @@ namespace Arcadia.Core.Tests.Texts;
 
 /// <summary>
 /// Finds German texts written into code or views instead of a <c>*Texts.resx</c> (#480). A string counts as German by
-/// its umlauts and quotes or by a common German word, so "Abbrechen" counts too. Log lines and exception messages stay
-/// in the code: they are diagnostics, not texts the player reads.
+/// its umlauts and quotes or by a common German word, so "Abbrechen" counts too. Log lines stay in the code: they are
+/// diagnostics, not texts the player reads. An exception message often reaches the player (a toast, the install dialog,
+/// a reason on the controller page), so it counts unless its line is marked as not shown.
 /// </summary>
 internal static partial class GermanUiLiterals
 {
@@ -92,8 +93,6 @@ internal static partial class GermanUiLiterals
             {
                 case AttributeSyntax:
                     return true;
-                case BaseObjectCreationExpressionSyntax creation when IsException(creation):
-                    return true;
                 case InvocationExpressionSyntax call when IsLogCall(call):
                     return true;
             }
@@ -101,12 +100,6 @@ internal static partial class GermanUiLiterals
 
         return false;
     }
-
-    private static bool IsException(BaseObjectCreationExpressionSyntax creation) => creation switch
-    {
-        ObjectCreationExpressionSyntax named => named.Type.ToString().EndsWith("Exception", StringComparison.Ordinal),
-        _ => creation.Parent is ThrowExpressionSyntax or ThrowStatementSyntax,
-    };
 
     private static bool IsLogCall(InvocationExpressionSyntax call) => call.Expression switch
     {

@@ -197,4 +197,25 @@ Andere Programme, die sie nutzen (etwa DS4Windows mit HidHide), funktionieren da
   <data name="SisrData" xml:space="preserve"><value>SISR-Daten ({folder})</value></data>
   <data name="SisrUninstallEntry" xml:space="preserve"><value>SISR-Deinstallationseintrag</value></data>
   <data name="StepUsbipDownload" xml:space="preserve"><value>usbip-win2 herunterladen</value></data>
+  <data name="PanHandOverNotOurs" xml:space="preserve"><value>Die Übergabe an Pan gehört nicht dem gestarteten Pan (Prozess {server} statt {started}) – {what} wurde abgebrochen.</value></data>
+  <data name="UsbipVersionUnknown" xml:space="preserve"><value>Die aktuelle usbip-win2-Version konnte nicht ermittelt werden.</value></data>
+  <data name="UsbipNoInstaller" xml:space="preserve"><value>Kein usbip-win2-Installer für {arch} gefunden.</value></data>
+  <data name="PanOnlyOnWindows" xml:space="preserve"><value>Pan gibt es nur unter Windows</value></data>
+  <data name="CopyNotAttached" xml:space="preserve"><value>Kopie für Steam nach {seconds:0} s nicht angesteckt</value></data>
+  <data name="CopyNotSupported" xml:space="preserve"><value>Diese Arcadia-Version kann den Steam Controller noch nicht für Steam kopieren</value></data>
+  <data name="PuckCableMissing" xml:space="preserve"><value>Der Steam Controller am Kabel ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)</value></data>
+  <data name="PuckMissing" xml:space="preserve"><value>Der Puck des Steam Controllers ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)</value></data>
+  <data name="PuckSerialInvalid" xml:space="preserve"><value>Der Puck meldet eine ungültige Seriennummer</value></data>
+  <data name="PuckCapabilitiesUnreadable" xml:space="preserve"><value>Puck: Fähigkeiten nicht lesbar</value></data>
+  <data name="ViiperNotRunning" xml:space="preserve"><value>VIIPER läuft nicht</value></data>
+  <data name="ViiperCannotBind" xml:space="preserve"><value>viiper.exe ließe sich nicht mit Arcadia beenden (Fehler {error})</value></data>
+  <data name="ViiperNotListening" xml:space="preserve"><value>VIIPER lauscht nicht wie erwartet</value></data>
+  <data name="ViiperExitedAtOnce" xml:space="preserve"><value>viiper.exe hat sich gleich wieder beendet</value></data>
+  <data name="ViiperPortsTimeout" xml:space="preserve"><value>viiper.exe lauscht nach {seconds:0} s nicht auf beiden Ports</value></data>
+  <data name="ViiperDoesNotStart" xml:space="preserve"><value>viiper.exe startet nicht</value></data>
+  <data name="SteamControllerDescriptionMissing" xml:space="preserve"><value>Die Beschreibung des Steam Controllers fehlt in Arcadia ({file})</value></data>
+  <data name="PuckSerialUnreadable" xml:space="preserve"><value>Die Seriennummer des Pucks ist nicht lesbar</value></data>
+  <data name="PuckCannotOpen" xml:space="preserve"><value>Puck nicht zu öffnen</value></data>
+  <data name="PuckNotClosed" xml:space="preserve"><value>Der Puck ließ sich nicht schließen; die Kopie ist nicht sicher beendet</value></data>
+  <data name="PuckCallHangs" xml:space="preserve"><value>Ein Aufruf an den Puck endet nicht; die Kopie ist nicht sicher beendet</value></data>
 </root>

@@ -22,7 +22,7 @@
 - [ ] **T339-16** Screenshots at 1920×1080 with `--demo` of each page whose subtitle got longer (the PR lists them): one line each, looked at · E2E: no (real rendering, Linux, `arcadia-verify`)
 - [ ] **T339-17** `docs/product/ui-texts.md` holds the glossary, the rules and the note that the designs' texts are examples; every UI text quoted in `docs/product/` is quoted as it now stands in a resource file; every doc stays within 10 KB · E2E: no (QE review, grep, `Doc sizes` check)
 - [ ] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the Windows prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
-- [x] **T339-19** No German UI text is left in the code: the check of #480 also finds the forms it missed (a badge such as "Pausiert", a relative date such as "Vor {days} Tagen", a heading in capitals such as "GRENZEN"), and every text it finds now comes from a resource file · E2E: no (unit test `UiTextsStayInResourcesTests`)
+- [x] **T339-19** No German UI text is left in the code: the check of #480 also finds the forms it missed (a badge such as "Pausiert", a relative date such as "Vor {days} Tagen", a heading in capitals such as "GRENZEN", an exception message the player sees in a toast, the install dialog or a reason on the controller page), and every text it finds now comes from a resource file; a German exception message that only reaches the log carries `// not a UI text` · E2E: no (unit test `UiTextsStayInResourcesTests`)
 
 Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App); T339-19 `UiTextsStayInResourcesTests` (Core).
 
@@ -37,4 +37,4 @@ History:
 | T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless | ✅ | – |
 | T339-12 to -15 | 2026-11-11 | Claude | branch, Linux, headless, one text each broken on purpose ("Windows neu starten", "VIIPER fiel", "emuliert", a subtitle twice as long) | ❌ each, then ✅ with the texts restored | – |
 | T339-14 | 2026-11-11 | Claude | branch, Linux, headless, "virtuelle" and "Controller-Wächter (Pan)" each removed from the texts on purpose | ❌ each, then ✅ | – |
-| T339-19 | 2026-11-11 | Claude | branch, Linux | ❌ 88 texts found in code, then ✅ after moving them | – |
+| T339-19 | 2026-11-11 | Claude | branch, Linux | ❌ 88 texts found in code, then 29 exception messages; ✅ after moving or marking them | – |

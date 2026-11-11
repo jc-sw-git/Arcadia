@@ -66,6 +66,7 @@ public sealed class UiTextsStayInResourcesTests
     [InlineData("""var urgency = "Dringlichkeit";""")]
     [InlineData("""var heading = new InfoHeading("GRENZEN");""")]
     [InlineData("""var facts = new InfoFacts("ORT", rows);""")]
+    [InlineData("""throw new InvalidOperationException("Der Puck meldet eine ungültige Seriennummer");""")]
     public void Code_with_a_German_text_fails(string code) =>
         Assert.NotEmpty(GermanUiLiterals.InCSharp($"class C {{ void M() {{ {code} }} }}"));
 
@@ -74,12 +75,12 @@ public sealed class UiTextsStayInResourcesTests
     [InlineData("""AppLog.Write($"Spiel {key} gestartet");""")]
     [InlineData("""_log("Controller: Gerät geöffnet");""")]
     [InlineData("""Log?.Invoke($"Pan geprüft in {ms} ms");""")]
-    [InlineData("""throw new InvalidOperationException("Pan ist nicht verbunden");""")]
+    [InlineData("""throw new InvalidOperationException("Pan ist nicht verbunden"); // not a UI text (protocol check)""")]
     [InlineData("""var name = AppTexts.Cancel;""")]
     [InlineData("""var file = Path.Combine(folder, "arcadia.log");""")]
     [InlineData("""var url = "https://github.com/jc-sw-git/Arcadia";""")]
     [InlineData("""var brand = "Steam Controller";""")]
-    public void Logs_exceptions_keys_files_urls_and_names_pass(string code) =>
+    public void Logs_marked_exceptions_keys_files_urls_and_names_pass(string code) =>
         Assert.Empty(GermanUiLiterals.InCSharp($"class C {{ void M() {{ {code} }} }}"));
 
     [Theory]

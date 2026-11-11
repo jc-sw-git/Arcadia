@@ -239,7 +239,7 @@ public sealed class ViiperEncryptedStream : Stream
             var length = BinaryPrimitives.ReadUInt32BigEndian(header);
             if (length is < NonceLength + TagLength or > MaxPacket)
             {
-                throw new InvalidDataException($"VIIPER-Paket mit {length} Bytes");
+                throw new InvalidDataException($"VIIPER-Paket mit {length} Bytes"); // not a UI text (protocol check)
             }
 
             var packet = new byte[length];
@@ -247,7 +247,7 @@ public sealed class ViiperEncryptedStream : Stream
             var nonce = packet.AsSpan(0, NonceLength);
             if (BinaryPrimitives.ReadUInt64BigEndian(nonce[4..]) != _received)
             {
-                throw new InvalidDataException("VIIPER-Paket außer der Reihe");
+                throw new InvalidDataException("VIIPER-Paket außer der Reihe"); // not a UI text (protocol check)
             }
 
             var plain = new byte[length - NonceLength - TagLength];

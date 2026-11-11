@@ -315,5 +315,5 @@ public sealed partial class PanPipeTransport(Action<string> log, Func<string?>? 
 public sealed class NoPanTransport : IPanTransport
 {
     public Task<PanLink> ConnectAsync(CancellationToken cancellationToken) =>
-        throw new PanUnavailableException("Pan gibt es nur unter Windows", permanent: true);
+        throw new PanUnavailableException(ControllerSupportTexts.PanOnlyOnWindows, permanent: true);
 }

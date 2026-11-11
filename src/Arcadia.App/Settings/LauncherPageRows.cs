@@ -28,7 +28,7 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
 
     public override bool CanActivate => true;
 
-    public override string ActivateText => "Bearbeiten";
+    public override string ActivateText => AppTexts.Edit;
 
     public override void Activate() => edit(this);
 
@@ -64,7 +64,7 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
 /// is active and no longer found can be switched off.
 /// </summary>
 public sealed partial class LauncherActiveRowViewModel(Func<bool> isActive, Action<bool> switchTo, Func<bool> isFound)
-    : SwitchRowViewModel("launcher-active", "Aktiv", isActive, switchTo)
+    : SwitchRowViewModel("launcher-active", AppTexts.Active, isActive, switchTo)
 {
     protected override bool Allows(int value) => value == 0 || isFound();
 }

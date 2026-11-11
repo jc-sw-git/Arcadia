@@ -27,7 +27,7 @@ public static class VirtualPadReports
         PadKind.DualShock4 => 8,
         PadKind.DualSense or PadKind.DualSenseEdge => 6,
         PadKind.Switch2Pro => 34,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"), // not a UI text (a call out of order)
     };
 
     /// <summary>One input packet for the kind.</summary>
@@ -36,7 +36,7 @@ public static class VirtualPadReports
         PadKind.DualShock4 => PlayStation(state, Ds4),
         PadKind.DualSense or PadKind.DualSenseEdge => PlayStation(state, DualSense),
         PadKind.Switch2Pro => Switch2Pro(state),
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"), // not a UI text (a call out of order)
     };
 
     /// <summary>One feedback packet of the kind: rumble and light bar where it changed them.</summary>
@@ -50,7 +50,7 @@ public static class VirtualPadReports
             new XboxRumble(Large: packet[1], Small: packet[0]),
             packet[2] != 0 || packet[3] != 0 || packet[4] != 0 ? new PadLight(packet[2], packet[3], packet[4]) : null),
         PadKind.Switch2Pro => new PadFeedback((packet[32] & 0x01) != 0 ? Switch2ProRumble(packet) : null, null),
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "kein Rohdatenstrom"), // not a UI text (a call out of order)
     };
 
     private sealed record PlayStationLayout(

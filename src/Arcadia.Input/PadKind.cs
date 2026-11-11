@@ -38,8 +38,8 @@ public static class PadKinds
         PadKind.DualShock4 => "DualShock 4",
         PadKind.DualSense => "DualSense",
         PadKind.DualSenseEdge => "DualSense Edge",
-        PadKind.Switch2Pro => "Switch 2 Pro Controller",
-        _ => "Xbox 360 Controller",
+        PadKind.Switch2Pro => "Switch 2 Pro",
+        _ => "Xbox Controller",
     };
 
     /// <summary>Whether the kind carries gyro and accelerometer: the controller's motion sensors must be read for it.</summary>

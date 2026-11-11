@@ -125,7 +125,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Settings page, status messages | `docs/product/settings.md` |
 | Settings category "Controller": Pan's switch and rows, "Controller zuordnen", SISR | `docs/product/settings-controller.md` |
 | Installing the drivers from the settings: questions first, the progress dialog | `docs/product/settings-controller-install.md` |
-| A driver change waiting for the Windows restart, Pan paused, "Windows neu starten" | `docs/product/settings-controller-restart.md` |
+| A driver change waiting for the PC restart, Pan paused, "PC neu starten" | `docs/product/settings-controller-restart.md` |
 | Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |
 | Running games, Arcadia back to the front | `docs/product/running-games.md` |
 | UI texts: wording, length, listing new texts in the PR | `docs/product/ui-texts.md` |

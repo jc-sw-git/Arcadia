@@ -67,6 +67,11 @@ public sealed class PanEmulationTests
         Assert.Equal(AppTexts.Change, pan.ActivateText);
         Assert.Equal(AppTexts.PanInfoTitle, pan.InfoTitle);
         Assert.Contains(pan.Info.OfType<InfoSection>(), section => section.Title == AppTexts.PanWhatItNeeds);
+        // #339: the firmware note concerns every controller, so it stands right below the Steam Controller's box.
+        var steamBox = pan.Info.ToList().FindIndex(block => block is InfoSection { Title: var title } && title == AppTexts.SteamControllerGroup);
+        Assert.True(steamBox >= 0, "Die Box zum Steam Controller fehlt");
+        Assert.DoesNotContain(((InfoSection)pan.Info[steamBox]).Blocks, block => block is InfoNote { Title: var t } && t == AppTexts.PanFirmwareUpdatesHeading);
+        Assert.Equal(AppTexts.PanFirmwareUpdatesHeading, Assert.IsType<InfoNote>(pan.Info[steamBox + 1]).Title);
         Assert.Empty(RowsBelow(controller));
         Assert.Contains(controller.Rows, row => row.Key == PanRows.RestoreKey);
 

@@ -2155,6 +2155,9 @@
   <Style Selector="Border.infoNote.bold TextBlock.noteText">
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
+  <Style Selector="Border.infoNote TextBlock.noteTitle">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
   <Style Selector="Border.miniTabs">
     <Setter Property="Background" Value="{StaticResource Bg}" />
     <Setter Property="CornerRadius" Value="14" />

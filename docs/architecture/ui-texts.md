@@ -13,8 +13,9 @@ rules: `docs/product/ui-texts.md`.
 | `src/Arcadia.Input/InputTexts.resx` | `Arcadia.Input.InputTexts` | controller names |
 | `src/Arcadia.Launchers/<Launcher>/<Launcher>Texts.resx` | `Arcadia.Launchers.<Launcher>.<Launcher>Texts` | one launcher's texts, kept in its folder so a plugin brings its own |
 
-Not in resources: log lines and exception messages (diagnostics, not shown on purpose; an exception's message that
-reaches a toast does so as a detail), brand and product names, key names such as `Esc`. Pan and `Arcadia.Pan.Core`
+Not in resources: log lines, exception messages that only reach the log (marked `// not a UI text (…)` on their line),
+brand and product names, key names such as `Esc`. An exception message the player can read (a toast's detail, the
+install dialog, a reason on the controller page) is a UI text and comes from a resource. Pan and `Arcadia.Pan.Core`
 keep their few texts in code: Pan runs as a Windows service without Arcadia's assemblies, and its service
 description is translated by Windows' own means (`ServiceDescriptions`).
 
@@ -47,5 +48,5 @@ description is translated by Windows' own means (`ServiceDescriptions`).
 3. Plural or conditional texts are separate keys chosen in code (`GameCountOne` / `GameCountMany(count)`), whole
    sentences where possible, so a translation can change word order.
 
-`UiTextsStayInResourcesTests` fails on a German text left in code or written into a view (log calls and exception
-messages exempt); `UiTextTests` covers the fallback.
+`UiTextsStayInResourcesTests` fails on a German text left in code or written into a view (log calls exempt, and any
+line marked `// not a UI text`); `UiTextTests` covers the fallback.

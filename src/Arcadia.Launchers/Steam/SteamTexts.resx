@@ -11,8 +11,7 @@
   <data name="SteamAccountTitle" xml:space="preserve"><value>Steam-Konto</value></data>
   <data name="SteamAccountPurpose" xml:space="preserve"><value>Melde dich an, um vollen Zugriff auf deine Spielebibliothek zu haben</value></data>
   <data name="SteamAccountAbout1" xml:space="preserve"><value>Hinterlegst du in Arcadia dein Steam-Konto, erhältst du auch in Arcadia vollen Zugriff auf deine Spielebibliothek. </value></data>
-  <data name="SteamAccountAbout2" xml:space="preserve"><value>Ohne Anmeldung kann Arcadia nur die Spiele auflisten, die auf diesem PC installiert sind. </value></data>
-  <data name="SteamAccountAbout3" xml:space="preserve"><value>Ob du sie auch erfolgreich aus Arcadia starten kannst, hängt davon ab, ob das Konto, das aktuell in Steam angemeldet ist, die Berechtigung dafür hat.</value></data>
+  <data name="SteamAccountAbout2" xml:space="preserve"><value>Ohne Anmeldung kann Arcadia nur die Spiele auflisten, die auf diesem PC installiert sind.</value></data>
   <data name="SteamSignInMethod" xml:space="preserve"><value>Die Anmeldung erfolgt auf der Anmeldeseite von Steam, per QR-Code mit der Steam Mobile App oder mit Name und Passwort. Arcadia sieht deine Anmelde-Informationen nie.</value></data>
   <data name="ErrorContextSignOut" xml:space="preserve"><value>Abmelden</value></data>
   <data name="ErrorContextCheckSteamAccount" xml:space="preserve"><value>Steam-Konto prüfen</value></data>
@@ -21,7 +20,7 @@
   <data name="SteamRefusedNotOwned" xml:space="preserve"><value>Das angemeldete Steam-Konto besitzt dieses Spiel nicht.</value></data>
   <data name="SteamFolderExpected" xml:space="preserve"><value>steam.exe und den Ordner steamapps</value></data>
   <data name="SteamToolsSubtitle" xml:space="preserve"><value>Etwa SteamVR und SDKs</value></data>
-  <data name="SteamToolsInfo" xml:space="preserve"><value>Steam führt unter „Werkzeuge“ Programme für Spiele und ihre Entwicklung. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten; Laufzeitumgebungen und Redistributables bleiben immer draußen:</value></data>
+  <data name="SteamToolsInfo" xml:space="preserve"><value>Steam führt unter „Werkzeuge“ Programme für Spiele und ihre Entwicklung. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten; Laufzeitumgebungen und Redistributables werden immer ignoriert:</value></data>
   <data name="SteamSoftwareSubtitle" xml:space="preserve"><value>Etwa Wallpaper Engine und Blender</value></data>
   <data name="SteamSoftwareInfo" xml:space="preserve"><value>Steam verkauft auch Programme, die keine Spiele sind. Eingeschaltet erscheinen sie auch in Arcadia, mit Steam-Konto auch die nicht installierten:</value></data>
   <data name="SteamSoundtracksSubtitle" xml:space="preserve"><value>Die Soundtracks deiner Spiele</value></data>

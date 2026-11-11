@@ -12,18 +12,18 @@ public static class GameTypeTexts
     public static string Name(GameType type) => type switch
     {
         GameType.Game => AppTexts.GameTypeGame,
-        GameType.Tool => "Werkzeug",
-        GameType.Soundtrack => "Soundtrack",
-        _ => "Software",
+        GameType.Tool => AppTexts.GameTypeTool,
+        GameType.Soundtrack => AppTexts.GameTypeSoundtrack,
+        _ => AppTexts.GameTypeSoftware,
     };
 
     /// <summary>"Werkzeuge", for the filter's values and its summary (#44).</summary>
     public static string PluralName(GameType type) => type switch
     {
         GameType.Game => AppTexts.GameTypeGames,
-        GameType.Tool => "Werkzeuge",
-        GameType.Soundtrack => "Soundtracks",
-        _ => "Software",
+        GameType.Tool => AppTexts.GameTypeTools,
+        GameType.Soundtrack => AppTexts.GameTypeSoundtracks,
+        _ => AppTexts.GameTypeSoftware,
     };
 
     /// <summary>"331 Spiele", "1 Werkzeug", for the count line's tooltip.</summary>
@@ -33,11 +33,11 @@ public static class GameTypeTexts
         {
             (GameType.Game, true) => AppTexts.GameTypeGame,
             (GameType.Game, false) => AppTexts.GameTypeGames,
-            (GameType.Tool, true) => "Werkzeug",
-            (GameType.Tool, false) => "Werkzeuge",
-            (GameType.Soundtrack, true) => "Soundtrack",
-            (GameType.Soundtrack, false) => "Soundtracks",
-            _ => "Software",
+            (GameType.Tool, true) => AppTexts.GameTypeTool,
+            (GameType.Tool, false) => AppTexts.GameTypeTools,
+            (GameType.Soundtrack, true) => AppTexts.GameTypeSoundtrack,
+            (GameType.Soundtrack, false) => AppTexts.GameTypeSoundtracks,
+            _ => AppTexts.GameTypeSoftware,
         };
         return $"{Formatting.Count(count)} {name}";
     }
@@ -54,8 +54,8 @@ public static class GameTypeTexts
     /// <summary>What A does with an installed entry (owner, 2026-10-26), the same on the button, in the menu and in the hint.</summary>
     public static string PrimaryAction(GameType type) => type switch
     {
-        GameType.Game => "Spielen",
-        GameType.Soundtrack => "Abrocken",
+        GameType.Game => AppTexts.GameTypePlay,
+        GameType.Soundtrack => AppTexts.GameTypeRock,
         _ => AppTexts.GameTypeTinker,
     };
 

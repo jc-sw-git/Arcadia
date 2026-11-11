@@ -204,7 +204,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
         : UsbipRebootPending ? PendingRestart.Recommended
         : PendingRestart.None;
 
-    /// <summary>How often Windows was asked to restart ("Windows neu starten", #382).</summary>
+    /// <summary>How often Windows was asked to restart ("PC neu starten", #382).</summary>
     public int WindowsRestarts => Volatile.Read(ref _windowsRestarts);
 
     private int _windowsRestarts;
@@ -348,7 +348,7 @@ internal sealed class FakeSteam : IControllerSupportPlatform, ILauncherProgram
     [
         .. IsUsbipReady ? Array.Empty<HealthIssue>() : [new("usbip-missing", HealthSeverity.Warning, "usbip-Treiber fehlt", "Arcadia erzeugt den virtuellen Controller über diesen Treiber.", HealthFix.InstallDrivers, "Installieren")],
         .. PanFailing ? [EmulationParts.PanFailing] : Array.Empty<HealthIssue>(),
-        .. _panInstalled ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")],
+        .. _panInstalled ? Array.Empty<HealthIssue>() : [new("pan-missing", HealthSeverity.Warning, "Controller-Wächter (Pan) fehlt", "Ohne Pan kein Xbox Controller.", HealthFix.InstallDrivers, "Installieren")],
         .. ControllerSupportPlatform.CheckHidHide(HidHideVersion, HidHideRemovalPending) is { } hidHide ? [hidHide] : Array.Empty<HealthIssue>(),
     ];
 }

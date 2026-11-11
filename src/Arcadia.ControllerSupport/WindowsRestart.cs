@@ -25,7 +25,7 @@ internal static class WindowsRestart
             start.ArgumentList.Add(argument);
         }
 
-        using var process = Process.Start(start) ?? throw new InvalidOperationException("shutdown.exe startet nicht");
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("shutdown.exe startet nicht"); // not a UI text (logged, the toast has its own text)
         using var timer = new CancellationTokenSource(Timeout);
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
         try
@@ -34,12 +34,12 @@ internal static class WindowsRestart
         }
         catch (OperationCanceledException) when (timer.IsCancellationRequested)
         {
-            throw new TimeoutException($"shutdown.exe hat nicht innerhalb von {Timeout.TotalSeconds:0} Sekunden geantwortet");
+            throw new TimeoutException($"shutdown.exe hat nicht innerhalb von {Timeout.TotalSeconds:0} Sekunden geantwortet"); // not a UI text (logged, the toast has its own text)
         }
 
         if (process.ExitCode != 0)
         {
-            throw new InvalidOperationException($"shutdown.exe endete mit {process.ExitCode}");
+            throw new InvalidOperationException($"shutdown.exe endete mit {process.ExitCode}"); // not a UI text (logged, the toast has its own text)
         }
     }
 }

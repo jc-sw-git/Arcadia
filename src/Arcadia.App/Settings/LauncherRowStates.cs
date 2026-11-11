@@ -53,7 +53,7 @@ internal sealed class LauncherRowStates(ILauncherCategory category)
         InfoBlock[] preview = [new InfoTabBar([.. tabs.Select(tab => new InfoTab(tab.Launcher.DisplayName, tab.Badge, tab == row))])];
 
         // Whether it is active, its tab, key and keyword are in the preview and the row already (owner, 2026-10-22).
-        List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? $"Aktiv · Tab {tabNumber}" : isFound ? AppTexts.NotActive : AppTexts.NotInstalled, isActive)];
+        List<InfoBlock> info = [new InfoLauncher(name, row.Badge, isActive ? AppTexts.LauncherActiveTab(tabNumber ?? 0) : isFound ? AppTexts.NotActive : AppTexts.NotInstalled, isActive)];
         if (notice is { } message && note is not null)
         {
             info.Add(new InfoNote(note, message.Severity));
@@ -68,10 +68,10 @@ internal sealed class LauncherRowStates(ILauncherCategory category)
                 : CountsFact(TypeCountLine.Of(library.Games)),
             new InfoFact(AppTexts.FactLastScanned, LauncherTexts.Ago(category.Time, scannedAt), IsMuted: scannedAt is null),
         ]));
-        info.Add(new InfoFacts("ORT",
+        info.Add(new InfoFacts(AppTexts.FactsLocation,
         [
             new InfoFact(AppTexts.FoundAt, location ?? AppTexts.NotFound, IsMuted: location is null),
-            new InfoFact("Installationen", (isActive, integration?.InstallMonitor) switch
+            new InfoFact(AppTexts.FactInstalls, (isActive, integration?.InstallMonitor) switch
             {
                 (false, _) => AppTexts.FactNotWatched,
                 (true, null) => AppTexts.FactOnlyStartedFromArcadia,

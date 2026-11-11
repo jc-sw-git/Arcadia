@@ -15,7 +15,7 @@ public sealed class EmulationPartsTests
         var issues = EmulationParts.InRowOrder([Row("hidhide-missing"), Row("steam-stopped"), Row("pan-missing"), Row("viiper-missing"), Row("usbip-outdated")]);
 
         Assert.Equal(["usbip-outdated", "viiper-missing", "pan-missing", "hidhide-missing", "steam-stopped"], issues.Select(i => i.Id));
-        Assert.Equal(["usbip-Treiber", "VIIPER", "Wächterdienst Pan", "HidHide"], EmulationParts.MissingNames(issues));
+        Assert.Equal(["usbip-Treiber", "VIIPER", "Controller-Wächter (Pan)", "HidHide"], EmulationParts.MissingNames(issues));
         Assert.True(EmulationParts.AllMissing(issues));
     }
 
@@ -25,7 +25,7 @@ public sealed class EmulationPartsTests
     {
         IReadOnlyList<HealthIssue> issues = [Row("usbip-missing"), Row("viiper-missing"), Row("pan-missing"), EmulationParts.FromHidingCheck(PanReason.HidHideBusy)!];
 
-        Assert.Equal(["usbip-Treiber", "VIIPER", "Wächterdienst Pan"], EmulationParts.MissingNames(issues));
+        Assert.Equal(["usbip-Treiber", "VIIPER", "Controller-Wächter (Pan)"], EmulationParts.MissingNames(issues));
         Assert.False(EmulationParts.AllMissing(issues));
         Assert.False(EmulationParts.IsMissingPart(issues[^1]));
     }
@@ -61,7 +61,7 @@ public sealed class EmulationPartsTests
 
         Assert.Equal("Neu installieren", issue.FixLabel);
         Assert.Equal($"HidHide {HidHideRelease.Version} neu installieren hilft", issue.ShortText);
-        Assert.Contains("Windows fragt einmal nach Administratorrechten", issue.Detail);
+        Assert.Contains("Arcadia fragt einmal nach Administratorrechten", issue.Detail);
     }
 
     [Theory]

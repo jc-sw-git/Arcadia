@@ -97,7 +97,7 @@ public sealed class RecentMessagesTests
         var messages = new RecentMessages(_time, _ => { });
         var status = new StatusMessageChanges(messages, _ => { });
 
-        status.Show([new StatusMessage("pan-missing", HealthSeverity.Warning, "Wächterdienst Pan fehlt")]);
+        status.Show([new StatusMessage("pan-missing", HealthSeverity.Warning, "Controller-Wächter (Pan) fehlt")]);
         Assert.Null(Assert.Single(messages.Entries).ResolvedAt);
         _time.Advance(TimeSpan.FromMinutes(3));
         status.Show([]);

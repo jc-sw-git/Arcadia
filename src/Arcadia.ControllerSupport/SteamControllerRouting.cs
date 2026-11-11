@@ -45,7 +45,7 @@ public static class SteamControllerCopyRules
         if (now.ArcadiaActive || now.MouseModeOn)
         {
             var who = now.MouseModeOn ? "Mausmodus an" : "Arcadia vorne"; // not a UI text (log)
-            return desktopLayoutIgnored ? (false, $"{who}, Steams Desktop-Belegung ignoriert") : (true, $"{who}, Steams Desktop-Belegung aktiv");
+            return desktopLayoutIgnored ? (false, $"{who}, Steams Desktop-Belegung ignoriert") : (true, $"{who}, Steams Desktop-Belegung aktiv"); // not a UI text (log)
         }
 
         if (route.SteamUsesController)

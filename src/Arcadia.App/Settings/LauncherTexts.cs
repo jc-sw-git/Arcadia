@@ -6,7 +6,7 @@ namespace Arcadia.App.Settings;
 internal static class LauncherTexts
 {
     /// <summary>The box with the tabs in miniature beside the list and the page (owner, 2026-10-23).</summary>
-    public const string OrderPreviewTitle = "LAUNCHER-REIHENFOLGE";
+    public static string OrderPreviewTitle => AppTexts.LauncherOrderHeading;
 
     public static string OrderPreviewSubtitle => AppTexts.LauncherOrderPreviewSubtitle;
 
@@ -22,7 +22,7 @@ internal static class LauncherTexts
 
         var age = clock.GetUtcNow() - time;
         return age < TimeSpan.FromMinutes(1) ? AppTexts.JustNow
-            : age < TimeSpan.FromHours(1) ? $"vor {(int)age.TotalMinutes} Min."
-            : $"um {time.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)} Uhr";
+            : age < TimeSpan.FromHours(1) ? AppTexts.MinutesAgo((int)age.TotalMinutes)
+            : AppTexts.AtTime(time.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture));
     }
 }

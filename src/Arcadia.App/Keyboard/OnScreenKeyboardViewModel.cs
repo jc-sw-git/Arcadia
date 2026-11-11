@@ -446,7 +446,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
                     key.AltGrHint = level == KeyLevel.Normal ? key.Key.Cap.AltGr?.ToString() : null;
                     break;
                 case BoardKeyKind.Layout:
-                    key.Text = $"Layout: {_board.Layout.Code}";
+                    key.Text = AppTexts.KeyLayout(_board.Layout.Code);
                     break;
                 case BoardKeyKind.Shift:
                     key.IsOn = level == KeyLevel.Shift;

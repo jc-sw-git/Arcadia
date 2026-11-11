@@ -39,14 +39,14 @@ public sealed partial class WindowsViiperHost(Action<string> log) : IViiperHost
 
     public IViiperProcess Start(ProcessStartInfo start)
     {
-        var process = Process.Start(start) ?? throw new InvalidOperationException("viiper.exe startet nicht");
+        var process = Process.Start(start) ?? throw new InvalidOperationException(ControllerSupportTexts.ViiperDoesNotStart);
         if (!EndsWithArcadia.TryAdd(process))
         {
             var error = Marshal.GetLastPInvokeError();
             var started = new ViiperProcess(process, log);
             started.Stop();
             started.Dispose();
-            throw new InvalidOperationException($"viiper.exe ließe sich nicht mit Arcadia beenden (Fehler {error})");
+            throw new InvalidOperationException(ControllerSupportTexts.ViiperCannotBind(error));
         }
 
         return new ViiperProcess(process, log);

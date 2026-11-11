@@ -76,8 +76,8 @@ public sealed partial class WindowsPuck : IRealPuck
         if (found.Count == 0)
         {
             throw new InvalidOperationException(descriptors.Connection == SteamControllerConnection.Cable
-                ? "Der Steam Controller am Kabel ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)"
-                : "Der Puck des Steam Controllers ist nicht da (oder Arcadia steht nicht auf der Liste von HidHide)");
+                ? ControllerSupportTexts.PuckCableMissing
+                : ControllerSupportTexts.PuckMissing);
         }
 
         var collections = new Dictionary<byte, Collection>();
@@ -94,10 +94,10 @@ public sealed partial class WindowsPuck : IRealPuck
             }
 
             var serial = collections.Values.Select(c => c.Serial()).FirstOrDefault(s => s is not null)
-                ?? throw new InvalidOperationException("Die Seriennummer des Pucks ist nicht lesbar");
+                ?? throw new InvalidOperationException(ControllerSupportTexts.PuckSerialUnreadable);
             if (!PuckDescriptors.IsValidSerial(serial))
             {
-                throw new InvalidOperationException("Der Puck meldet eine ungültige Seriennummer");
+                throw new InvalidOperationException(ControllerSupportTexts.PuckSerialInvalid);
             }
 
             return new WindowsPuck(collections, serial, pucks);
@@ -242,7 +242,7 @@ public sealed partial class WindowsPuck : IRealPuck
             var reader = CreateFileW(path, GenericRead | GenericWrite, FileShareReadWrite, 0, OpenExisting, 0, 0);
             if (reader.IsInvalid)
             {
-                throw new Win32Exception(Marshal.GetLastPInvokeError(), "Puck nicht zu öffnen");
+                throw new Win32Exception(Marshal.GetLastPInvokeError(), ControllerSupportTexts.PuckCannotOpen);
             }
 
             var writer = CreateFileW(path, GenericRead | GenericWrite, FileShareReadWrite, 0, OpenExisting, 0, 0);
@@ -250,14 +250,14 @@ public sealed partial class WindowsPuck : IRealPuck
             {
                 var error = Marshal.GetLastPInvokeError();
                 reader.Dispose();
-                throw new Win32Exception(error, "Puck nicht zu öffnen");
+                throw new Win32Exception(error, ControllerSupportTexts.PuckCannotOpen);
             }
 
             if (Caps(reader) is not { } caps)
             {
                 reader.Dispose();
                 writer.Dispose();
-                throw new InvalidOperationException("Puck: Fähigkeiten nicht lesbar");
+                throw new InvalidOperationException(ControllerSupportTexts.PuckCapabilitiesUnreadable);
             }
 
             return new Collection(reader, writer, caps, sizes);
@@ -355,7 +355,7 @@ public sealed partial class WindowsPuck : IRealPuck
             var offset = _sizes.UsesIds ? 0 : 1;
             if (report.Length + offset > length)
             {
-                throw new ArgumentException($"Report mit {report.Length} Bytes ist länger als die {length} Bytes des Pucks");
+                throw new ArgumentException($"Report mit {report.Length} Bytes ist länger als die {length} Bytes des Pucks"); // not a UI text (protocol check)
             }
 
             var buffer = new byte[length];

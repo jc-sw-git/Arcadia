@@ -65,7 +65,7 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
 - Pan stops itself after 30 s without a client (nothing idles in the background), unless a retry still has to show
   the puck. Arcadia starts it on connect (`ServiceController.Start`; users have `SERVICE_START` by the DACL), waiting
   for one still stopping itself. One that ends at once after Arcadia's start counts as permanent (15 s retry), and a
-  service stopped with a Win32 exit code (data folder refused, crash) gives the row "Wächterdienst Pan startet nicht"
+  service stopped with a Win32 exit code (data folder refused, crash) gives the row "Controller-Wächter (Pan) startet nicht"
   with "Neu einrichten" instead of a start every 2 s. Recovery: 3 restarts, 1 s, reset daily, also on non-zero exit.
 
 ## Journal

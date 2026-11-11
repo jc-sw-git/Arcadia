@@ -65,7 +65,7 @@ internal sealed class PanHandOver : IAsyncDisposable
             // Only the Pan Arcadia started may take the message: a pipe of another process is left at once.
             if (!PanPipeTransport.GetNamedPipeServerProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out var server) || server != process.Id)
             {
-                throw new InvalidOperationException($"Die Übergabe an Pan gehört nicht dem gestarteten Pan (Prozess {server} statt {process.Id}) – {what} wurde abgebrochen.");
+                throw new InvalidOperationException(ControllerSupportTexts.PanHandOverNotOurs(server: server, started: process.Id, what: what));
             }
 
             return new PanHandOver(process, pipe, command);

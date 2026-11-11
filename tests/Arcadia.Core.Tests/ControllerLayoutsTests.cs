@@ -50,10 +50,10 @@ public sealed class ControllerLayoutsTests
     public void The_choices_cycle_through_the_kinds_then_not_taken_over_and_name_the_Edge_only_for_an_Edge()
     {
         Assert.Equal(
-            ["Xbox 360 Controller", "DualShock 4", "DualSense", "Switch 2 Pro Controller", "Nicht übernehmen"],
+            ["Xbox Controller", "DualShock 4", "DualSense", "Switch 2 Pro", "Nicht übernehmen"],
             ControllerLayouts.Choices(PadKind.Xbox360).Select(ControllerLayouts.DisplayName));
         Assert.Equal(
-            ["Xbox 360 Controller", "DualShock 4", "DualSense", "DualSense Edge", "Switch 2 Pro Controller", "Nicht übernehmen"],
+            ["Xbox Controller", "DualShock 4", "DualSense", "DualSense Edge", "Switch 2 Pro", "Nicht übernehmen"],
             ControllerLayouts.Choices(PadKind.DualSenseEdge).Select(ControllerLayouts.DisplayName));
     }
 

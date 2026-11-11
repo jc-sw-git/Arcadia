@@ -21,13 +21,13 @@ public static class Formatting
         var days = (int)(now.Date - value.ToLocalTime().Date).TotalDays;
         return days switch
         {
-            <= 0 => "Heute",
-            1 => "Gestern",
-            < 7 => $"Vor {days} Tagen",
+            <= 0 => AppTexts.Today,
+            1 => AppTexts.Yesterday,
+            < 7 => AppTexts.DaysAgo(days),
             < 14 => AppTexts.PlayedAWeekAgo,
-            < 30 => $"Vor {days / 7} Wochen",
+            < 30 => AppTexts.WeeksAgo(days / 7),
             < 60 => AppTexts.PlayedAMonthAgo,
-            < 365 => $"Vor {days / 30} Monaten",
+            < 365 => AppTexts.MonthsAgo(days / 30),
             _ => AppTexts.PlayedOverAYearAgo,
         };
     }
@@ -36,7 +36,7 @@ public static class Formatting
     public static string Count(int count) => count.ToString("N0", Culture);
 
     public static string Playtime(TimeSpan? playtime) =>
-        playtime is { } value ? $"{Math.Max(1, (int)value.TotalHours)} Std." : "–";
+        playtime is { } value ? AppTexts.Hours(Math.Max(1, (int)value.TotalHours)) : "–";
 
     public static string Size(long? bytes) =>
         bytes is { } value ? (value / 1024d / 1024d / 1024d).ToString("0.0", Culture) + " GB" : "–";
@@ -61,12 +61,12 @@ public static class Formatting
 
     /// <summary>"Laufwerk D:" for a Windows path, otherwise null.</summary>
     public static string? Drive(string? path) =>
-        path is { Length: >= 2 } && char.IsAsciiLetter(path[0]) && path[1] == ':' ? $"Laufwerk {char.ToUpperInvariant(path[0])}:" : null;
+        path is { Length: >= 2 } && char.IsAsciiLetter(path[0]) && path[1] == ':' ? AppTexts.Drive(char.ToUpperInvariant(path[0])) : null;
 
     /// <summary>"Name A–Z"; null is the search's own order, "Relevanz".</summary>
     public static string SortLabel(SortOrder? sort) => (sort?.Field, sort?.Direction) switch
     {
-        (null, _) => "Relevanz",
+        (null, _) => AppTexts.SortRelevance,
         (SortField.Name, SortDirection.Ascending) => AppTexts.SortNameAscending,
         (SortField.Name, SortDirection.Descending) => AppTexts.SortNameDescending,
         (SortField.InstalledAt, SortDirection.Descending) => AppTexts.SortInstalledNewest,

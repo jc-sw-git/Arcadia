@@ -26,7 +26,7 @@ The category itself: [settings-controller.md](settings-controller.md). How Pan i
   downloaded). Only a run that needs no prompt (VIIPER alone missing) starts without it, with VIIPER's one step.
 - Content: the title "Treiber werden installiert", a bar, "Schritt n von m" and the percentage, then this run's steps
   in order, each ✓, running (spinner, row highlighted), pending (muted) or failed (red ✕). Steps that don't run aren't
-  listed: Windows-Abfrage bestätigen, VIIPER herunterladen und einrichten, Steam beenden, usbip-win2 herunterladen,
+  listed: Abfrage nach Administratorrechten bestätigen, VIIPER herunterladen und einrichten, Steam beenden, usbip-win2 herunterladen,
   HidHide herunterladen, usbip-win2 installieren ("kann einige Minuten dauern"), HidHide installieren, Pan einrichten,
   Steam starten, Arcadia neu starten. The bar is weighted per step (usbip-win2's install most), downloads fill their
   share by bytes, and it never goes back. When Pan reports no steps Arcadia can read, its steps show as the one step

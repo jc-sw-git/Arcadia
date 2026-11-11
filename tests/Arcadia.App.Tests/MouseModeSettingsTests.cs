@@ -79,7 +79,7 @@ public sealed class MouseModeSettingsTests
         Assert.Equal(AppTexts.MouseModeHelpKeyboard, keys["Y"]);
         Assert.Contains(help.Blocks, block => block is InfoHeading { Text: "GRENZEN" });
         var limits = help.Blocks.OfType<InfoBullet>().Select(bullet => bullet.Text).ToList();
-        Assert.Contains(limits, limit => limit.Contains("Administratorrechten (UAC)", StringComparison.Ordinal));
+        Assert.Contains(limits, limit => limit.Contains("Abfragen nach Administratorrechten", StringComparison.Ordinal));
         Assert.Contains(limits, limit => limit.Contains("als Administrator laufen", StringComparison.Ordinal));
         Assert.Contains(limits, limit => limit.Contains("exklusiven Vollbild", StringComparison.Ordinal) && limit.Contains("Bildschirmtastatur", StringComparison.Ordinal));
 

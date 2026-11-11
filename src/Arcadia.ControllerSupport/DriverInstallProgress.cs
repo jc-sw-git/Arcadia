@@ -393,7 +393,7 @@ public sealed class DriverInstallProgress
         DriverInstallStepKind.Prompt => ControllerSupportTexts.StepConfirmPrompt,
         DriverInstallStepKind.Viiper => ControllerSupportTexts.StepViiper,
         DriverInstallStepKind.SteamClose => ControllerSupportTexts.StepSteamStop,
-        DriverInstallStepKind.UsbipDownload => "usbip-win2 herunterladen",
+        DriverInstallStepKind.UsbipDownload => ControllerSupportTexts.StepUsbipDownload,
         DriverInstallStepKind.HidHideDownload => ControllerSupportTexts.StepHidHideDownload,
         DriverInstallStepKind.UsbipInstall => ControllerSupportTexts.StepUsbipInstall,
         DriverInstallStepKind.HidHideInstall => ControllerSupportTexts.StepHidHideInstall,

@@ -346,14 +346,14 @@ public sealed class PanEmulation : IVirtualXboxPads
 
     public async Task<IVirtualXboxPad> PlugAsync(CancellationToken cancellationToken)
     {
-        var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht");
+        var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht"); // not a UI text (a call out of order)
         var pad = await _pads.PlugAsync(cancellationToken);
         var guarded = new GuardedXboxPad(pad, session, _guardian);
         if (!session.Add(guarded))
         {
             // The emulation ended while the pad was plugged in.
             await pad.DisposeAsync();
-            throw new InvalidOperationException("Pan-Emulation wurde beendet");
+            throw new InvalidOperationException("Pan-Emulation wurde beendet"); // not a UI text (a call out of order)
         }
 
         return guarded;
@@ -362,13 +362,13 @@ public sealed class PanEmulation : IVirtualXboxPads
     /// <summary>A pad of the kind (#238 D3), taken out with the emulation like the Xbox pad.</summary>
     public async Task<IVirtualPad> PlugAsync(PadKind kind, CancellationToken cancellationToken)
     {
-        var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht");
+        var session = _session ?? throw new InvalidOperationException("Pan-Emulation läuft nicht"); // not a UI text (a call out of order)
         var pad = await _pads.PlugAsync(kind, cancellationToken);
         var guarded = new GuardedKindPad(pad, session, _guardian);
         if (!session.Add(guarded))
         {
             await pad.DisposeAsync();
-            throw new InvalidOperationException("Pan-Emulation wurde beendet");
+            throw new InvalidOperationException("Pan-Emulation wurde beendet"); // not a UI text (a call out of order)
         }
 
         return guarded;
@@ -840,7 +840,7 @@ public sealed class PanEmulation : IVirtualXboxPads
             }
             catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
-                throw new TimeoutException($"Kopie für Steam nach {AttachTimeout.TotalSeconds:0} s nicht angesteckt");
+                throw new TimeoutException(ControllerSupportTexts.CopyNotAttached(AttachTimeout.TotalSeconds));
             }
 
             _log("Pan-Emulation: Kopie für Steam angesteckt");

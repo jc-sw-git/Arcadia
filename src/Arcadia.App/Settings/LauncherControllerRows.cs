@@ -12,7 +12,7 @@ namespace Arcadia.App.Settings;
 /// </summary>
 internal sealed class LauncherControllerRows
 {
-    private const string ControllerGroup = "CONTROLLER";
+    private static string ControllerGroup => AppTexts.ControllerGroup;
     private static string PanOffSubtitle => AppTexts.LauncherControllerPanOff;
 
     // As Pan's own row says it, so the rows don't send the user to a switch that can't help (QE review PR #319).

@@ -324,7 +324,7 @@ public partial class App : Application
     {
         try
         {
-            var start = new ProcessStartInfo(Environment.ProcessPath ?? throw new InvalidOperationException("der eigene Pfad ist unbekannt"))
+            var start = new ProcessStartInfo(Environment.ProcessPath ?? throw new InvalidOperationException("der eigene Pfad ist unbekannt")) // not a UI text (logged)
             {
                 UseShellExecute = false,
             };
@@ -335,7 +335,7 @@ public partial class App : Application
 
             start.ArgumentList.Add(Program.WaitForExitArgument);
             start.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            using var restarted = Process.Start(start) ?? throw new InvalidOperationException("Windows hat keinen Prozess gestartet");
+            using var restarted = Process.Start(start) ?? throw new InvalidOperationException("Windows hat keinen Prozess gestartet"); // not a UI text (logged)
             AppLog.Write($"Arcadia startet neu ({reason})");
             desktop.Shutdown();
         }

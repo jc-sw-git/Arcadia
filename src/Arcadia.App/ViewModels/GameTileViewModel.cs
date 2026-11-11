@@ -115,7 +115,7 @@ public partial class GameTileViewModel : ViewModelBase
     public string RunStateShortText => RunState?.Phase switch
     {
         null => string.Empty,
-        RunPhase.Starting => "Startet",
+        RunPhase.Starting => AppTexts.TileBadgeStarting,
         _ => AppTexts.TileRunning,
     };
 
@@ -172,8 +172,8 @@ public partial class GameTileViewModel : ViewModelBase
         { Phase: InstallPhase.AwaitingConfirmation } => AppTexts.TileConfirmInLauncher(LauncherName),
         { Phase: InstallPhase.Queued, QueuePosition: { } position } => AppTexts.TileQueuedAt(position),
         { Phase: InstallPhase.Queued } => AppTexts.TileQueued,
-        { Phase: InstallPhase.Paused, Fraction: { } f } => $"Pausiert · {Formatting.Percent(f)}",
-        { Phase: InstallPhase.Paused } => "Pausiert",
+        { Phase: InstallPhase.Paused, Fraction: { } f } => AppTexts.TilePausedAt(Formatting.Percent(f)),
+        { Phase: InstallPhase.Paused } => AppTexts.TileBadgePaused,
         { Phase: InstallPhase.Finishing } => AppTexts.TileFinishing,
         { Phase: InstallPhase.Uninstalling } => AppTexts.TileUninstalling,
         { Fraction: { } f } => $"{InstallVerb} · {Formatting.Percent(f)}",
@@ -187,11 +187,11 @@ public partial class GameTileViewModel : ViewModelBase
     public string InstallShortText => InstallState switch
     {
         null => string.Empty,
-        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => "Wartet",
+        { Phase: InstallPhase.AwaitingConfirmation } when Game.InstallStartsInLauncher => AppTexts.TileBadgeWaiting,
         { Phase: InstallPhase.AwaitingConfirmation } => AppTexts.TileConfirm,
-        { Phase: InstallPhase.Queued, QueuePosition: { } position } => $"Wartet · {position}",
-        { Phase: InstallPhase.Queued } => "Wartet",
-        { Phase: InstallPhase.Paused } => "Pausiert",
+        { Phase: InstallPhase.Queued, QueuePosition: { } position } => AppTexts.TileBadgeWaitingAt(position),
+        { Phase: InstallPhase.Queued } => AppTexts.TileBadgeWaiting,
+        { Phase: InstallPhase.Paused } => AppTexts.TileBadgePaused,
         { Phase: InstallPhase.Finishing } => AppTexts.TileAlmostDone,
         { Phase: InstallPhase.Uninstalling } => AppTexts.TileRemoving,
         { Fraction: { } f } => Formatting.Percent(f),

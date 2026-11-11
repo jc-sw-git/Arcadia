@@ -38,7 +38,7 @@ internal sealed class MonitorPolls<TAnswer>(TimeProvider time, TimeSpan deadline
             if (!poll.IsCompleted)
             {
                 _overdue[launcherId] = poll;
-                Failed(launcherId, new TimeoutException($"keine Antwort nach {deadline.TotalSeconds:0} s"));
+                Failed(launcherId, new TimeoutException($"keine Antwort nach {deadline.TotalSeconds:0} s")); // not a UI text (logged)
             }
             else if (poll.IsCompletedSuccessfully)
             {

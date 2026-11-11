@@ -94,7 +94,7 @@ public sealed class LauncherRegistry
     /// <exception cref="ArgumentException">No launcher with this id is registered.</exception>
     public LauncherInfo Info(string launcherId)
     {
-        var own = Registered(launcherId)?.Launcher ?? throw new ArgumentException($"Launcher „{launcherId}“ ist nicht registriert.", nameof(launcherId));
+        var own = Registered(launcherId)?.Launcher ?? throw new ArgumentException($"Launcher „{launcherId}“ ist nicht registriert.", nameof(launcherId)); // not a UI text (a call out of order)
         var preferences = _preferences(launcherId);
         var name = preferences.Name is { } chosenName && LauncherNames.NameProblem(chosenName) is null ? chosenName.Trim() : own.DisplayName;
         var keyword = preferences.Keyword is { } chosenKeyword && chosenKeyword.Length is > 0 and <= LauncherNames.MaxKeywordLength && chosenKeyword.All(LauncherNames.IsKeywordCharacter)

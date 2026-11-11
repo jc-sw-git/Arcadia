@@ -216,10 +216,10 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
             }
         }
 
-        Step("SISR-Ordner", () => DeleteDirectory(InstallDirectory));
+        Step(ControllerSupportTexts.SisrFolder, () => DeleteDirectory(InstallDirectory));
         foreach (var data in DataDirectories)
         {
-            Step($"SISR-Daten ({Path.GetFileName(data)})", () => DeleteDirectory(data));
+            Step(ControllerSupportTexts.SisrData(Path.GetFileName(data)), () => DeleteDirectory(data));
         }
 
         Step(ControllerSupportTexts.SisrShortcuts, () =>
@@ -229,7 +229,7 @@ public sealed class SisrInstallation(SisrPaths paths, ILauncherProgram? steam, I
                 DeleteFile(link);
             }
         });
-        Step("SISR-Deinstallationseintrag", () =>
+        Step(ControllerSupportTexts.SisrUninstallEntry, () =>
         {
             if (system.HasUninstallEntry)
             {

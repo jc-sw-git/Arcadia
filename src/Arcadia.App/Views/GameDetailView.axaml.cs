@@ -1,3 +1,4 @@
+using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Animation;
@@ -5,12 +6,25 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Styling;
 
 namespace Arcadia.App.Views;
 
 public partial class GameDetailView : UserControl
 {
-    private static readonly TimeSpan SlideTime = TimeSpan.FromMilliseconds(340);
+    // Title, buttons and the panel's content fade in and rise a little when the shown game changes (#499); the covers move
+    // and the background blends as long (DepthSlot.TurnTime).
+    private static readonly Animation ShowGame = new()
+    {
+        Duration = TimeSpan.FromMilliseconds(420),
+        Easing = new CubicEaseOut(),
+        FillMode = FillMode.Forward,
+        Children =
+        {
+            new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, 0d), new Setter(TranslateTransform.YProperty, 10d) } },
+            new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, 1d), new Setter(TranslateTransform.YProperty, 0d) } },
+        },
+    };
 
     private GameDetailViewModel? _viewModel;
 
@@ -20,6 +34,8 @@ public partial class GameDetailView : UserControl
     public GameDetailView()
     {
         InitializeComponent();
+        Heading.RenderTransform = new TranslateTransform();
+        AreaContent.RenderTransform = new TranslateTransform();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -37,11 +53,6 @@ public partial class GameDetailView : UserControl
         }
 
         _wheel = 0;
-        if (Track.RenderTransform is TranslateTransform slide)
-        {
-            slide.Transitions = null;
-            slide.X = 0;
-        }
     }
 
     /// <summary>One notch of the wheel turns the carousel by one game: down is the next, up the previous.</summary>
@@ -66,31 +77,19 @@ public partial class GameDetailView : UserControl
         }
     }
 
-    /// <summary>
-    /// The pages already moved one place along. The track jumps back by one page, so nothing
-    /// visibly changes, and slides to its rest position from there; a turn during a slide
-    /// continues from where it is.
-    /// </summary>
+    /// <summary>The mouse over a row focuses it, so the info box explains it before a click (as in the settings).</summary>
+    private void OnRowPointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (sender is Control { DataContext: DetailRowViewModel row })
+        {
+            row.Point();
+        }
+    }
+
+    /// <summary>Another game is shown: its title and content fade in while the covers move and the background blends.</summary>
     private void OnRotated(int delta)
     {
-        if (Track.RenderTransform is not TranslateTransform slide)
-        {
-            return;
-        }
-
-        // Reading X during a slide gives the animated value; removing the transition stops it.
-        var from = Math.Clamp(slide.X + (delta * GameDetailPageViewModel.Pitch), -GameDetailPageViewModel.Pitch, GameDetailPageViewModel.Pitch);
-        slide.Transitions = null;
-        slide.X = from;
-        slide.Transitions =
-        [
-            new DoubleTransition
-            {
-                Property = TranslateTransform.XProperty,
-                Duration = SlideTime,
-                Easing = new SplineEasing(0.25, 0.8, 0.25, 1),
-            },
-        ];
-        slide.X = 0;
+        ShowGame.RunAsync(Heading).Forget("Detailseite: Titel einblenden");
+        ShowGame.RunAsync(AreaContent).Forget("Detailseite: Inhalt einblenden");
     }
 }

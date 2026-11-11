@@ -47,8 +47,8 @@ public sealed class CoverAndIconTests
         driver.Hold(UiAction.Accept, PastHoldTime);
         arcadia.Settle().WaitForTransitions();
         var detail = arcadia.Window.GetVisualDescendants().OfType<GameDetailView>().Single();
-        var cover = detail.GetVisualDescendants().OfType<Border>().First(border => border.IsEffectivelyVisible && border.Background is not null && border.Bounds.Width == 210);
-        AssertCover(210, 315, cover.Bounds.Size, "Detailseite");
+        var cover = detail.GetVisualDescendants().OfType<Border>().First(border => border.IsEffectivelyVisible && border.Background is not null && border.Bounds.Width == 180);
+        AssertCover(180, 270, cover.Bounds.Size, "Detailseite");
     }
 
     /// <summary>T24-7: the monogram stays top left and a long title at the bottom, inside the taller cover.</summary>

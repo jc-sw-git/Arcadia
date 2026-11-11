@@ -45,8 +45,8 @@ public sealed class SteamUpdateTests
 
         var page = OpenDetail(arcadia, Kupferwald);
         Assert.True(page.HasUpdateNote);
-        Assert.Equal("Steam installiert das Update eventuell, bevor das Spiel startet.", page.UpdateNote);
-        Assert.Equal((GameActionKind.Play, "Spielen"), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel));
+        Assert.Equal("Steam installiert es eventuell vor dem Start.", page.UpdateNote);
+        Assert.Equal((GameActionKind.Play, "Spielen"), (page.Buttons[0].Kind, page.Buttons[0].ButtonLabel));
     }
 
     [AvaloniaFact]

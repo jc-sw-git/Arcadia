@@ -17,16 +17,16 @@
 - [x] **T11-5** Y öffnet „Ansicht“ mit dem Hinweis, dass die Detailseite immer ein Spiel zeigt; eine
       andere Sortierung lässt das aktuelle Spiel in der Mitte, Nachbarn und Position folgen der neuen
       Sortierung. · E2E: ja
-- [x] **T11-6** B (und ein Klick auf die Pfadleiste) führt zurück in die Bibliothek, auf die Seite des
+- [x] **T11-6** B (~~und ein Klick auf die Pfadleiste~~ – seit #499 ohne Pfadleiste, ein Klick auf den Hinweis „B Zurück“, T499-11) führt zurück in die Bibliothek, auf die Seite des
       zuletzt gezeigten Spiels mit Fokus darauf. · E2E: ja
-- [x] **T11-7** Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“, in drei Reihen (Owner, 2026-10-21):
+- [x] **T11-7** ~~Schaltflächen wie im Kontextmenü, ohne „Details anzeigen“, in drei Reihen (Owner, 2026-10-21):
       oben „A Spielen“ (fokussiert), „Zu Favoriten“ (deaktiviert), „In <Launcher> öffnen“, „Artwork ändern“
       (deaktiviert); darunter die Einstellungen des Spiels, mit verbundenem Steam Controller
       „STEAM CONTROLLER <Modus>“ (A wechselt) und bei „Individuell“ „INDIVIDUELLER MAUSMODUS“ (ohne beide fehlt die
       Reihe, ↑/↓ überspringen sie); zuletzt allein „Deinstallieren …“ in Rot mit derselben Rückfrage wie im Menü.
       Nichts ragt aus der Karte, auch mit beiden Einstellungen und „Standard (deaktiviert)“. Das D-Pad
       überspringt deaktivierte Schaltflächen; unter den Reihen steht der Hinweis der fokussierten
-      Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja
+      Schaltfläche (z. B. „Nur in Epic Games möglich – öffnet Epic Games“). ⧉ öffnet hier kein Menü. · E2E: ja~~ Ersetzt durch #499 (eine Knopfreihe, Bereiche „Controller“ und „Verwalten“, T499-1 bis T499-16).
 - [x] **T11-8** Mit Update: Chip „UPDATE VERFÜGBAR“, „Spielen“ bleibt, darunter „<Launcher> installiert
       das Update eventuell, bevor das Spiel startet.“ Nicht installiert: „Installieren“, abgedunkeltes
       Cover, „Nicht installiert“ unter „Installiert am“, nur die erste Reihe. Während einer Installation

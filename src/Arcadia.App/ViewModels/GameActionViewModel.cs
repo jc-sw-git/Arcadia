@@ -1,4 +1,5 @@
 using Arcadia.App.Settings;
+using Arcadia.Core.Navigation;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -39,8 +40,11 @@ public interface IGameActionHost
 
     void OpenInLauncher(GameTileViewModel tile);
 
-    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178).</summary>
-    void CycleControllerMode(GameTileViewModel tile);
+    /// <summary>Why the mode doesn't show now: no Steam Controller, or Pan off (#499); null while it shows.</summary>
+    string? ControllerModeHiddenReason { get; }
+
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178); a negative <paramref name="delta"/> the other way (#499).</summary>
+    void StepControllerMode(GameTileViewModel tile, int delta);
 
     /// <summary>The game's mode after the next [A], named as <see cref="ControllerModeOf"/> names it.</summary>
     string NextControllerModeOf(Game game);
@@ -54,7 +58,8 @@ public interface IGameActionHost
     /// <summary>What "Standard" means now: allowed or forbidden.</summary>
     bool DefaultGameMouseModeAllowed { get; }
 
-    void CycleGameMouseMode(GameTileViewModel tile);
+    /// <summary>Standard → Erlaubt → Deaktiviert → Standard; a negative <paramref name="delta"/> the other way (#499).</summary>
+    void StepGameMouseMode(GameTileViewModel tile, int delta);
 
     void Uninstall(GameTileViewModel tile);
 }
@@ -71,6 +76,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
     public static string NextStartOnly => AppTexts.ActionNextStartOnly;
 
     private readonly Action _invoke;
+
+    // ◀ ▶ on a value (#499): steps it back or on; null for an action.
+    private Action<int>? _step;
 
     private GameActionViewModel(GameActionKind kind, string label, string? note, bool isEnabled, Action invoke, string? buttonLabel = null)
     {
@@ -156,6 +164,18 @@ public sealed partial class GameActionViewModel : ViewModelBase
         }
     }
 
+    /// <summary>A value with ◀ ▶ (the game's modes), not an action.</summary>
+    public bool IsChoice => _step is not null;
+
+    /// <summary>◀ ▶ on the detail page (#499): the value one step back or on; nothing while it can't change.</summary>
+    public void Step(int delta)
+    {
+        if (IsEnabled && !IsBroken)
+        {
+            _step?.Invoke(delta);
+        }
+    }
+
     /// <summary>The actions for <paramref name="tile"/> in menu order; actions that don't apply are left out.</summary>
     public static IReadOnlyList<GameActionViewModel> For(GameTileViewModel tile, IGameActionHost host)
     {
@@ -201,6 +221,12 @@ public sealed partial class GameActionViewModel : ViewModelBase
         if (host.ShowControllerMode)
         {
             GameActionViewModel? mode = null;
+            void StepMode(int delta)
+            {
+                host.StepControllerMode(tile, delta);
+                mode!.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
+            }
+
             // Broken, it stays focusable: [A] leads to the row that says why (#242).
             mode = new(GameActionKind.ControllerMode, string.Empty, null, host.ControllerModeBroken || !tile.IsRunningOrStarting, () =>
             {
@@ -210,9 +236,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
                     return;
                 }
 
-                host.CycleControllerMode(tile);
-                mode!.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
+                StepMode(1);
             });
+            mode._step = StepMode;
             mode.ShowControllerMode(host.ControllerModeOf(game), host.NextControllerModeOf(game));
             mode.IsBroken = host.ControllerModeBroken;
             if (host.ControllerModeBroken)
@@ -230,11 +256,14 @@ public sealed partial class GameActionViewModel : ViewModelBase
         if (host.ShowGameMouseMode)
         {
             GameActionViewModel? mouse = null;
-            mouse = new(GameActionKind.MouseMode, string.Empty, null, true, () =>
+            void StepMouse(int delta)
             {
-                host.CycleGameMouseMode(tile);
+                host.StepGameMouseMode(tile, delta);
                 mouse!.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseModeAllowed);
-            });
+            }
+
+            mouse = new(GameActionKind.MouseMode, string.Empty, null, true, () => StepMouse(1));
+            mouse._step = StepMouse;
             mouse.ShowGameMouseMode(host.GameMouseModeOf(game), host.DefaultGameMouseModeAllowed);
             actions.Add(mouse);
         }
@@ -286,10 +315,18 @@ public static class ControllerModes
     public static string Of(bool? choice, bool launcherUsesArcadiaPad) => choice is { } own ? Of(own) : AppTexts.ControllerModeDefault(Of(launcherUsesArcadiaPad));
 
     /// <summary>Standard → Arcadia → Steam-Eingabe → Standard.</summary>
-    public static bool? Next(bool? choice) => choice switch
-    {
-        null => true,
-        true => false,
-        false => null,
-    };
+    public static bool? Next(bool? choice) => ThreeWayChoice.Step(choice, 1);
+}
+
+/// <summary>
+/// A game's own choice out of three, Standard (null) → true → false (the Steam Controller mode, "Individueller Mausmodus"):
+/// ◀ ▶ step through it and go round at the ends like every value (#499).
+/// </summary>
+public static class ThreeWayChoice
+{
+    private static readonly bool?[] Order = [null, true, false];
+
+    /// <param name="held">A held ◀ or ▶ repeating (#476): it stops at the end, only a fresh press goes round.</param>
+    public static bool? Step(bool? choice, int delta, bool held = false) =>
+        Order[ValueCycle.Step(Array.IndexOf(Order, choice), delta, 0, Order.Length - 1, held)];
 }

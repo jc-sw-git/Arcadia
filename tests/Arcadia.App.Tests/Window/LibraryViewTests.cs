@@ -71,11 +71,10 @@ public sealed class LibraryViewTests
         AssertDrawn(arcadia, "Vorschau", preview);
         arcadia.Arcadia.PressDown(UiAction.Accept).Wait(TimeSpan.FromSeconds(1.1)).LetGo(UiAction.Accept);
         arcadia.Settle();
-        var detail = Logos(arcadia.Window).Where(logo => !tabs.IsVisualAncestorOf(logo) && logo.Badge?.Shape is not null && arcadia.Bounds(logo).Top > 300).ToList();
+        // On the detail page the logo stands in the chip above the title.
+        var detail = Logos(arcadia.Window.GetVisualDescendants().OfType<StackPanel>().Single(panel => panel.Name == "Heading")).ToList();
         AssertShapeIn(arcadia, "Detailseite", detail);
-        // Drawn is looked at on the page in the middle; its neighbours stand dimmed, cut off at the edges.
-        AssertDrawn(arcadia, "Detailseite", detail.Where(logo => logo.GetVisualAncestors().OfType<Panel>()
-            .Any(page => page.Classes.Contains("detailPage") && page.DataContext is GameDetailPageViewModel { IsCentre: true })));
+        AssertDrawn(arcadia, "Detailseite", detail);
         arcadia.Press(UiAction.Back);
 
         // Search: the hits on their dark plate and the filter chips.

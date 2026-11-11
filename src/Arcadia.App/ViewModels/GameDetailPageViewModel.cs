@@ -4,30 +4,40 @@ using Arcadia.App.Services;
 using Arcadia.Core.Navigation;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
+/// <summary>Where the focus is on the detail page (#499): the button row, the rail of areas, or the open area's rows.</summary>
+public enum DetailZone
+{
+    Buttons,
+    Rail,
+    Rows,
+}
+
 /// <summary>
-/// One game's page in the detail carousel. The page in the middle has the controller focus; its
-/// neighbours show the same content and a click on them turns the carousel.
+/// The focus of a detail page, carried to the next game when the carousel turns or the tab changes (#499): the open area
+/// and the focus stay; only a page opened anew starts on "Spielen" and "Übersicht".
+/// </summary>
+public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button, string AreaKey, int Row)
+{
+    public static DetailFocus Start { get; } = new(DetailZone.Buttons, GameActionKind.Play, DetailAreaViewModel.OverviewKey, 0);
+}
+
+/// <summary>
+/// The shown game of the detail page (#499): title and the button row "Spielen", "Zu Favoriten", "In … öffnen" with a quiet
+/// note beside it, and the rail of areas ("Übersicht", "Controller", "Verwalten") with the open area's content and the info
+/// box. ▼ leads from the buttons into the rail, A into the area's rows, B back; ◀ ▶ change a value at once, A starts an
+/// action, as on the settings page.
 /// </summary>
 public sealed partial class GameDetailPageViewModel : ViewModelBase
 {
-    /// <summary>Must match the page width in MainWindow.axaml.</summary>
-    public const double Width = 1152;
-
-    /// <summary>Distance between the left edges of two neighbouring pages.</summary>
-    public const double Pitch = 1200;
-
-    /// <summary>Left edge of the page in the middle of the 1920 px wide layout.</summary>
-    private const double CentreLeft = (1920 - Width) / 2;
-
     private readonly IGameActionHost _host;
-    private int _focusRow;
-    private int _focusColumn = -1;
+    private int _button = -1;
+    private int _area;
+    private int _row;
 
-    public GameDetailPageViewModel(GameTileViewModel tile, int offset, IGameActionHost host, Action<int> rotate)
+    public GameDetailPageViewModel(GameTileViewModel tile, IGameActionHost host, DetailFocus focus)
     {
         Tile = tile;
         _host = host;
@@ -37,15 +47,23 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         LastPlayedAt = Formatting.DateAndTime(game.LastPlayedAt);
         PlaytimeSource = game.Playtime is null ? AppTexts.DetailLauncherReportsNone(tile.LauncherName) : AppTexts.DetailPlaytimeFrom(tile.LauncherName);
         InstalledAt = Formatting.Date(game.IsInstalled ? game.InstalledAt : null);
-        Offset = offset;
-        SelectCommand = new RelayCommand(() => rotate(Math.Sign(Offset)));
+        Areas =
+        [
+            new(DetailAreaViewModel.OverviewKey, AppTexts.DetailAreaOverview, DetailAreas.OverviewIcon, OpenByPointer),
+            new(DetailAreaViewModel.ControllerKey, AppTexts.DetailAreaController, DetailAreas.ControllerIcon, OpenByPointer),
+            new(DetailAreaViewModel.ManageKey, AppTexts.DetailAreaManage, DetailAreas.ManageIcon, OpenByPointer),
+        ];
+        Areas[0].ValueLine = DetailAreas.OverviewLine(tile);
+        OpenArea = Areas[0];
 
         tile.PropertyChanged += OnTilePropertyChanged;
         RebuildActions();
+        Restore(focus);
     }
 
     public GameTileViewModel Tile { get; }
 
+    /// <summary>The background in the game's hue until artwork is there (#13), with its rings.</summary>
     public IBrush Backdrop { get; }
 
     public IBrush Ring { get; }
@@ -62,34 +80,41 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public string DriveText => Drive ?? "–";
 
-    /// <summary>Places away from the middle: -1 is the previous game, 1 the next.</summary>
+    /// <summary>"Spielen", "Zu Favoriten", "In … öffnen": what is done most with a game, on the artwork (#499).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Left), nameof(IsCentre), nameof(IsSide))]
-    public partial int Offset { get; set; }
+    public partial IReadOnlyList<GameActionViewModel> Buttons { get; private set; } = [];
 
-    public double Left => CentreLeft + (Offset * Pitch);
+    public IReadOnlyList<DetailAreaViewModel> Areas { get; }
 
-    public bool IsCentre => Offset == 0;
-
-    public bool IsSide => Offset != 0;
-
-    /// <summary>Spielen, Zu Favoriten, In … öffnen, Artwork ändern (owner, 2026-10-21).</summary>
+    /// <summary>The area whose content stands beside the rail.</summary>
     [ObservableProperty]
-    public partial IReadOnlyList<GameActionViewModel> TopRow { get; private set; } = [];
+    public partial DetailAreaViewModel OpenArea { get; private set; }
 
-    /// <summary>
-    /// What can be set for this game alone: Steam Controller mode, "Individueller Mausmodus"; later e.g. launch
-    /// options or the controller layout (owner, 2026-10-21). Empty when nothing applies.
-    /// </summary>
+    /// <summary>The row the info box explains: the focused one, or the area's first while the focus is in the rail.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasGameSettings))]
-    public partial IReadOnlyList<GameActionViewModel> GameSettingsRow { get; private set; } = [];
+    public partial DetailRowViewModel? InfoRow { get; private set; }
 
-    public bool HasGameSettings => GameSettingsRow.Count > 0;
-
-    /// <summary>"Deinstallieren …", alone in the last row.</summary>
     [ObservableProperty]
-    public partial GameActionViewModel? Uninstall { get; private set; }
+    [NotifyPropertyChangedFor(nameof(IsOnButtons), nameof(IsInRows), nameof(BackHint), nameof(ShowsAreasHint))]
+    public partial DetailZone Zone { get; private set; }
+
+    public bool IsOnButtons => Zone == DetailZone.Buttons;
+
+    public bool IsInRows => Zone == DetailZone.Rows;
+
+    /// <summary>What the footer says A does here; null where A does nothing.</summary>
+    [ObservableProperty]
+    public partial string? AcceptHint { get; private set; }
+
+    /// <summary>◀ ▶ change the focused row's value.</summary>
+    [ObservableProperty]
+    public partial bool ShowsChangeHint { get; private set; }
+
+    /// <summary>▼ leads from the buttons into the areas.</summary>
+    public bool ShowsAreasHint => Zone == DetailZone.Buttons;
+
+    /// <summary>B goes from the rows back to the rail, elsewhere back to where the page was opened from.</summary>
+    public string BackHint => Zone == DetailZone.Rows ? AppTexts.DetailAreas : AppTexts.Back;
 
     /// <summary>"LÄUFT SEIT 18:04" or "WIRD GESTARTET …" for the chip beside the launcher's (#95).</summary>
     public string RunStateUpper => Tile.RunStateText.ToUpper(Formatting.Culture);
@@ -104,85 +129,200 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public bool HasSoundtrackNote => SoundtrackNote is not null;
 
-    /// <summary>
-    /// Why "Spielen" isn't available, e.g. the running installation. The other buttons show nothing below them: their
-    /// label says what they do, and a disabled one explains itself in its tooltip (owner, 2026-10-21).
-    /// </summary>
+    /// <summary>Why "Spielen" isn't available, e.g. the running installation; a disabled other button tells why in its tooltip.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPlayNote), nameof(HasNotes))]
     public partial string? PlayNote { get; private set; }
 
     public bool HasPlayNote => PlayNote is not null;
 
-    /// <summary>The line below the buttons has something to say; without, it takes no room.</summary>
+    /// <summary>The quiet note beside the buttons has something to say.</summary>
     public bool HasNotes => HasUpdateNote || HasPlayNote || HasSoundtrackNote;
 
-    public IRelayCommand SelectCommand { get; }
+    /// <summary>The focus to carry to the next game.</summary>
+    public DetailFocus Focus => new(Zone, FocusedButton?.Kind ?? GameActionKind.Play, OpenArea.Key, _row);
 
-    /// <summary>The kind of the focused button, so a rebuilt page can keep the focus where it was.</summary>
-    public GameActionKind? FocusedKind => Focused?.Kind;
+    /// <summary>The kind of the focused button, null while the focus is in the areas.</summary>
+    public GameActionKind? FocusedKind => Zone == DetailZone.Buttons ? FocusedButton?.Kind : null;
 
-    private GameActionViewModel? Focused => _focusColumn >= 0 && Row(_focusRow) is { } row && _focusColumn < row.Count ? row[_focusColumn] : null;
+    /// <summary>The focused row, null while the focus is on the buttons or in the rail.</summary>
+    public DetailRowViewModel? FocusedRow => Zone == DetailZone.Rows && _row < OpenArea.Rows.Count ? OpenArea.Rows[_row] : null;
 
-    /// <summary>D-pad and A on the page in the middle.</summary>
-    public void Handle(UiAction action)
+    private GameActionViewModel? FocusedButton => _button >= 0 && _button < Buttons.Count ? Buttons[_button] : null;
+
+    /// <summary>D-pad and A. B only while the focus is in the rows: back to the rail (false: the page closes).</summary>
+    public bool Handle(UiAction action)
     {
-        switch (action)
+        switch (Zone, action)
         {
-            case UiAction.Left:
-                MoveInRow(-1);
+            case (_, UiAction.Back):
+                if (Zone != DetailZone.Rows)
+                {
+                    return false;
+                }
+
+                SetZone(DetailZone.Rail);
                 break;
-            case UiAction.Right:
-                MoveInRow(1);
+            case (DetailZone.Buttons, UiAction.Left or UiAction.Right):
+                MoveButton(action == UiAction.Left ? -1 : 1);
                 break;
-            case UiAction.Up:
-                MoveToRow(-1);
+            case (DetailZone.Buttons, UiAction.Down):
+                SetZone(DetailZone.Rail);
                 break;
-            case UiAction.Down:
-                MoveToRow(1);
-                break;
-            case UiAction.Accept when Focused is { } focused:
-                focused.Invoke();
+            case (DetailZone.Buttons, UiAction.Accept) when FocusedButton is { } button:
+                button.Invoke();
                 UpdatePlayNote();
                 break;
+            case (DetailZone.Rail, UiAction.Up) when _area == 0:
+                // ▲ on the first area leads back to the buttons, on "Spielen" (owner's scenario 2); a held ▲ stops there.
+                if (!HeldPress.IsRepeat)
+                {
+                    FocusButton(GameActionKind.Play);
+                    SetZone(DetailZone.Buttons);
+                }
+
+                break;
+            case (DetailZone.Rail, UiAction.Up or UiAction.Down):
+                ShowArea(ListFocus.Cycle(_area, action == UiAction.Up ? -1 : 1, Areas.Count, HeldPress.IsRepeat));
+                break;
+            case (DetailZone.Rail, UiAction.Accept) when OpenArea.HasRows:
+                _row = 0;
+                SetZone(DetailZone.Rows);
+                break;
+            case (DetailZone.Rows, UiAction.Up or UiAction.Down):
+                _row = ListFocus.Cycle(_row, action == UiAction.Up ? -1 : 1, OpenArea.Rows.Count, HeldPress.IsRepeat);
+                ShowFocus();
+                break;
+            case (DetailZone.Rows, UiAction.Left or UiAction.Right):
+                FocusedRow?.Change(action == UiAction.Left ? -1 : 1);
+                UpdateValueLines();
+                break;
+            case (DetailZone.Rows, UiAction.Accept):
+                FocusedRow?.Activate();
+                UpdateValueLines();
+                break;
         }
+
+        return true;
     }
 
     /// <summary>
-    /// Builds the buttons again, e.g. when an installation starts or the Steam Controller mode
-    /// became relevant. The focus stays on the same kind of button where it still can.
+    /// Builds buttons and rows again, e.g. when an installation finished or the Steam Controller connected. The rows of an
+    /// area stay the same in number, so the focus stays on its row; a button that can't be pressed now hands it to the next.
     /// </summary>
     public void RebuildActions()
     {
-        var focusedKind = FocusedKind;
+        var focusedKind = FocusedButton?.Kind;
         var actions = GameActionViewModel.For(Tile, _host);
-
-        // No context menu here: everything it offers is a button of its own, except "Details", which is this page.
-        List<GameActionViewModel> InOrder(params GameActionKind[] kinds) =>
-            kinds.SelectMany(kind => actions.Where(a => a.Kind == kind)).ToList();
-        TopRow = InOrder(GameActionKind.Play, GameActionKind.Favorite, GameActionKind.OpenInLauncher, GameActionKind.Artwork);
-        GameSettingsRow = InOrder(GameActionKind.ControllerMode, GameActionKind.MouseMode);
-        Uninstall = actions.FirstOrDefault(a => a.Kind == GameActionKind.Uninstall);
-
-        _focusColumn = -1;
-        if (IsCentre)
-        {
-            FocusKind(focusedKind);
-        }
-
+        Buttons = [.. new[] { GameActionKind.Play, GameActionKind.Favorite, GameActionKind.OpenInLauncher }
+            .SelectMany(kind => actions.Where(a => a.Kind == kind))];
+        Area(DetailAreaViewModel.ControllerKey).Rows = DetailAreas.ControllerRows(Tile, actions, _host, Point);
+        Area(DetailAreaViewModel.ManageKey).Rows = DetailAreas.ManageRows(Tile, actions, Point);
+        UpdateValueLines();
+        _button = -1;
+        FocusButton(focusedKind ?? GameActionKind.Play);
+        ShowFocus();
         UpdatePlayNote();
     }
 
-    partial void OnOffsetChanged(int value)
+    /// <summary>Stops following the game's cover; the page was replaced by the next game's.</summary>
+    public void Detach() => Tile.PropertyChanged -= OnTilePropertyChanged;
+
+    private DetailAreaViewModel Area(string key) => Areas.First(area => area.Key == key);
+
+    private void Restore(DetailFocus focus)
     {
-        if (value == 0)
+        FocusButton(focus.Button);
+        _area = Math.Max(0, Areas.ToList().FindIndex(area => area.Key == focus.AreaKey));
+        OpenArea = Areas[_area];
+        _row = Math.Clamp(focus.Row, 0, Math.Max(0, OpenArea.Rows.Count - 1));
+        SetZone(focus.Zone == DetailZone.Rows && !OpenArea.HasRows ? DetailZone.Rail : focus.Zone);
+    }
+
+    /// <summary>Focuses the button of <paramref name="kind"/>, else the first one that can be pressed; none if none can.</summary>
+    private void FocusButton(GameActionKind kind)
+    {
+        var index = Buttons.ToList().FindIndex(button => button.Kind == kind && button.IsEnabled);
+        _button = index >= 0 ? index : Buttons.ToList().FindIndex(button => button.IsEnabled);
+    }
+
+    /// <summary>◀ ▶ pass over buttons that can't be pressed and go round at the ends (#476).</summary>
+    private void MoveButton(int delta)
+    {
+        if (_button >= 0)
         {
-            FocusKind(null);
+            _button = ListFocus.Next(_button, delta, Buttons.Count, b => Buttons[b].IsEnabled, HeldPress.IsRepeat);
+            ShowFocus();
         }
-        else
+    }
+
+    private void ShowArea(int index)
+    {
+        _area = index;
+        _row = 0;
+        OpenArea = Areas[index];
+        ShowFocus();
+    }
+
+    private void OpenByPointer(DetailAreaViewModel area)
+    {
+        ShowArea(Areas.ToList().IndexOf(area));
+        SetZone(DetailZone.Rail);
+    }
+
+    /// <summary>The mouse over a row or a click on it: the focus goes there.</summary>
+    private void Point(DetailRowViewModel row)
+    {
+        var index = OpenArea.Rows.ToList().IndexOf(row);
+        if (index >= 0)
         {
-            SetFocus(-1, -1);
+            _row = index;
+            SetZone(DetailZone.Rows);
         }
+    }
+
+    private void SetZone(DetailZone zone)
+    {
+        Zone = zone;
+        ShowFocus();
+    }
+
+    /// <summary>Exactly one thing has the focus ring: a button, an area in the rail, or a row.</summary>
+    private void ShowFocus()
+    {
+        for (var b = 0; b < Buttons.Count; b++)
+        {
+            Buttons[b].IsFocused = Zone == DetailZone.Buttons && b == _button;
+        }
+
+        foreach (var area in Areas)
+        {
+            area.IsOpen = area == OpenArea;
+            area.IsFocused = Zone == DetailZone.Rail && area == OpenArea;
+            for (var r = 0; r < area.Rows.Count; r++)
+            {
+                area.Rows[r].IsFocused = Zone == DetailZone.Rows && area == OpenArea && r == _row;
+            }
+        }
+
+        InfoRow = OpenArea.HasRows ? OpenArea.Rows[Zone == DetailZone.Rows ? Math.Min(_row, OpenArea.Rows.Count - 1) : 0] : null;
+        var row = FocusedRow;
+        AcceptHint = Zone switch
+        {
+            DetailZone.Buttons => FocusedButton?.ButtonLabel,
+            DetailZone.Rail => OpenArea.HasRows ? AppTexts.Select : null,
+            _ => row is { IsAction: true, IsGreyed: false } ? row.Title : null,
+        };
+        ShowsChangeHint = row is { IsChoice: true, IsGreyed: false };
+        OnPropertyChanged(nameof(FocusedKind));
+        OnPropertyChanged(nameof(FocusedRow));
+    }
+
+    private void UpdateValueLines()
+    {
+        var controller = Area(DetailAreaViewModel.ControllerKey);
+        controller.ValueLine = DetailAreas.ControllerLine(controller.Rows);
+        Area(DetailAreaViewModel.ManageKey).ValueLine = AppTexts.DetailManageLine;
     }
 
     private void OnTilePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -197,118 +337,10 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         }
     }
 
-    private const int RowCount = 3;
-
-    private IReadOnlyList<GameActionViewModel>? Row(int row) => row switch
-    {
-        0 => TopRow,
-        1 => GameSettingsRow,
-        2 => Uninstall is null ? [] : [Uninstall],
-        _ => null,
-    };
-
-    /// <summary>Focuses the button of <paramref name="kind"/>, else "Spielen", else the first one available.</summary>
-    public void FocusKind(GameActionKind? kind)
-    {
-        for (var row = 0; row < RowCount; row++)
-        {
-            var actions = Row(row)!;
-            for (var column = 0; column < actions.Count; column++)
-            {
-                if (actions[column].IsEnabled && actions[column].Kind == (kind ?? GameActionKind.Play))
-                {
-                    SetFocus(row, column);
-                    return;
-                }
-            }
-        }
-
-        for (var row = 0; row < RowCount; row++)
-        {
-            var actions = Row(row)!;
-            for (var column = 0; column < actions.Count; column++)
-            {
-                if (actions[column].IsEnabled)
-                {
-                    SetFocus(row, column);
-                    return;
-                }
-            }
-        }
-
-        SetFocus(-1, -1);
-    }
-
-    /// <summary>Left/right skip buttons that aren't available; past the ends of the row they go round (#476).</summary>
-    private void MoveInRow(int delta)
-    {
-        if (Row(_focusRow) is not { } actions || _focusColumn < 0)
-        {
-            return;
-        }
-
-        var column = ListFocus.Next(_focusColumn, delta, actions.Count, c => actions[c].IsEnabled, HeldPress.IsRepeat);
-        if (column != _focusColumn)
-        {
-            SetFocus(_focusRow, column);
-        }
-    }
-
-    /// <summary>
-    /// Up/down go to the next row in that direction with an available button (an empty settings row is skipped) and
-    /// land on the one nearest in order, preferring the left one; past the first or last row they go round (#476).
-    /// </summary>
-    private void MoveToRow(int delta)
-    {
-        if (_focusColumn < 0)
-        {
-            return;
-        }
-
-        var row = _focusRow;
-        for (var tried = 1; tried < RowCount; tried++)
-        {
-            var next = ListFocus.Cycle(row, delta, RowCount, HeldPress.IsRepeat);
-            if (next == row)
-            {
-                return;
-            }
-
-            row = next;
-            var actions = Row(row)!;
-            for (var distance = 0; distance < actions.Count + _focusColumn + 1; distance++)
-            {
-                foreach (var column in new[] { _focusColumn - distance, _focusColumn + distance })
-                {
-                    if (column >= 0 && column < actions.Count && actions[column].IsEnabled)
-                    {
-                        SetFocus(row, column);
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    private void SetFocus(int row, int column)
-    {
-        if (Focused is { } previous)
-        {
-            previous.IsFocused = false;
-        }
-
-        _focusRow = Math.Max(row, 0);
-        _focusColumn = column;
-        if (Focused is { } focused)
-        {
-            focused.IsFocused = true;
-        }
-    }
-
     private void UpdatePlayNote()
     {
         // "Spielen" explains itself through the update note; a disabled "Spielen" is the running installation.
-        var play = TopRow.FirstOrDefault(a => a.Kind == GameActionKind.Play);
+        var play = Buttons.FirstOrDefault(a => a.Kind == GameActionKind.Play);
         // A blocked install whose reason the game's notice already gives (#83) needs no second line.
         PlayNote = Tile.UpdateAvailable || (Tile.IsInstallBlocked && Tile.HasNotice) ? null : play?.Note;
     }

@@ -15,7 +15,8 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 - Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
   first and back, left/right in a row, up/down in a column; greyed-out items are passed over. That holds for the
   library and the search (`library.md`, `search.md`), the tabs, the settings' rows and the first start's, menus
-  (context menu, keyboard layouts), "Ansicht", the filter, the status messages, the detail page's buttons, every
+  (context menu, keyboard layouts), "Ansicht", the filter, the status messages, the detail page's buttons, areas and rows (its greyed rows keep the
+  focus, `detail-page.md`), every
   dialog's buttons and the on-screen keyboard (`on-screen-keyboard.md`). Where a step past an edge leads to another
   area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
   the mouse wheel and the scroll bars stop at the ends.

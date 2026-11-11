@@ -71,13 +71,13 @@ public sealed class DetailPageTests
         one.Hold(UiAction.Accept, PastHoldTime);
         detail = one.Detail!;
         Assert.False(detail.HasNeighbours);
-        Assert.Equal(["Solo"], detail.Pages.Select(page => page.Tile.Title));
+        Assert.Equal(["Solo"], detail.Covers.Select(cover => cover.Tile.Title));
 
         // LT/RT have nothing to turn to.
         one.Press(UiAction.NextPage).Press(UiAction.PreviousPage);
         Assert.Equal("Solo", detail.Current.Tile.Title);
         Assert.Equal("1 von 1", detail.PositionText);
-        Assert.Single(detail.Pages);
+        Assert.Single(detail.Covers);
     }
 
     [AvaloniaFact]
@@ -143,15 +143,15 @@ public sealed class DetailPageTests
         page = arcadia.Detail!.Current;
         Assert.Equal("Alpha", page.Tile.Title);
         Assert.True(page.Tile.UpdateAvailable);
-        Assert.Equal("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet.", page.UpdateNote);
-        Assert.True(page.TopRow[0].IsFocused);
+        Assert.Equal("GOG Galaxy installiert es eventuell vor dem Start.", page.UpdateNote);
+        Assert.True(page.Buttons[0].IsFocused);
 
         arcadia.Installs.SetUpdate(alpha, false);
         await arcadia.FollowInstallsAsync();
         page = arcadia.Detail!.Current;
         Assert.False(page.Tile.UpdateAvailable);
         Assert.False(page.HasUpdateNote);
-        Assert.True(page.TopRow[0].IsFocused);
+        Assert.True(page.Buttons[0].IsFocused);
 
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.FocusedGame!.UpdateAvailable);
@@ -172,29 +172,31 @@ public sealed class DetailPageTests
 
         Assert.Equal("Alpha", page.Tile.Title);
         Assert.True(page.Tile.UpdateAvailable);
-        var play = page.TopRow[0];
+        var play = page.Buttons[0];
         Assert.Equal((GameActionKind.Play, "Spielen", true), (play.Kind, play.ButtonLabel, play.IsEnabled));
-        Assert.Equal("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet.", page.UpdateNote);
+        Assert.Equal("GOG Galaxy installiert es eventuell vor dem Start.", page.UpdateNote);
 
         arcadia.Press(UiAction.NextPage);
         page = arcadia.Detail!.Current;
         Assert.Equal("Bravo", page.Tile.Title);
         Assert.False(page.Tile.IsInstalled);
-        Assert.Equal((GameActionKind.Play, AppTexts.Install, true), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
+        Assert.Equal((GameActionKind.Play, AppTexts.Install, true), (page.Buttons[0].Kind, page.Buttons[0].ButtonLabel, page.Buttons[0].IsEnabled));
         Assert.Equal("–", page.InstalledAt);
         Assert.Equal(AppTexts.NotInstalled, page.Tile.LocationText);
         Assert.False(page.HasUpdateNote);
 
-        // Only the first row: no settings for the game, nothing to uninstall.
-        Assert.Empty(page.GameSettingsRow);
-        Assert.Null(page.Uninstall);
+        // The areas keep their rows, greyed out with the reason: nothing to set before the install, nothing to uninstall.
+        Assert.Equal(AppTexts.DetailSetAfterInstall, page.Row(GameActionKind.ControllerMode).Note);
+        Assert.Equal(AppTexts.DetailSetAfterInstall, page.Row(GameActionKind.MouseMode).Note);
+        Assert.True(page.Row(GameActionKind.Uninstall).IsGreyed);
+        Assert.Equal(AppTexts.NotInstalled, page.Row(GameActionKind.Uninstall).Note);
 
         // The launcher installs it: the first button shows how far, and can't be pressed.
         arcadia.Installs.Set(notInstalled, new InstallProgress(InstallPhase.Downloading, 0.42));
         await arcadia.FollowInstallsAsync();
         page = arcadia.Detail!.Current;
         Assert.Equal("Bravo", page.Tile.Title);
-        Assert.Equal((GameActionKind.Play, "Wird installiert · 42\u00A0%", false), (page.TopRow[0].Kind, page.TopRow[0].ButtonLabel, page.TopRow[0].IsEnabled));
+        Assert.Equal((GameActionKind.Play, "Wird installiert · 42\u00A0%", false), (page.Buttons[0].Kind, page.Buttons[0].ButtonLabel, page.Buttons[0].IsEnabled));
     }
 
     [AvaloniaFact]
@@ -243,6 +245,6 @@ public sealed class DetailPageTests
     private static Game Installed(string title) =>
         TestGames.Installed(KnownLaunchers.Gog, title, installedAt: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
-    /// <summary>The title shown beside the middle: -1 left, 1 right.</summary>
-    private static string Side(GameDetailViewModel detail, int offset) => detail.Pages.Single(page => page.Offset == offset).Tile.Title;
+    /// <summary>The title on the stack beside the shown game: -1 left, 1 right.</summary>
+    private static string Side(GameDetailViewModel detail, int offset) => (offset < 0 ? detail.Previous : detail.Next)!.Title;
 }

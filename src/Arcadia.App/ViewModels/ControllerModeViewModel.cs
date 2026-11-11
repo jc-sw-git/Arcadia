@@ -69,6 +69,12 @@ public sealed partial class ControllerModeViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial string FocusedControllerSupportText { get; private set; } = string.Empty;
 
+    /// <summary>Why the per-game mode doesn't show now (#499): Pan off or not available here, or no Steam Controller; null while it shows.</summary>
+    public string? HiddenReason => ShowControllerSupport ? null
+        : !IsPanSupported ? AppTexts.LauncherControllerPanUnsupported
+        : !_settings.Current.PanEnabled ? AppTexts.LauncherControllerNeedsPan
+        : AppTexts.DetailModeNoSteamController;
+
     /// <summary>Pan is switched on and can run here.</summary>
     public bool IsPanOn => _settings.Current.PanEnabled && IsPanSupported;
 
@@ -113,7 +119,7 @@ public sealed partial class ControllerModeViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        _actions.CycleControllerMode(game);
+        _actions.StepControllerMode(game, 1);
     }
 
     /// <summary>The controller settings with the row focused that says why Pan's emulation doesn't run; B goes back.</summary>

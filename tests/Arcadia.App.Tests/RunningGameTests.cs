@@ -42,10 +42,10 @@ public sealed class RunningGameTests
         var page = arcadia.Detail!.Current;
         Assert.Equal(game, page.Tile.Title);
         Assert.Equal(since.ToUpperInvariant(), page.RunStateUpper);
-        Assert.Equal(AppTexts.ReturnToGame, page.TopRow[0].ButtonLabel);
-        Assert.True(page.TopRow[0].IsFocused);
-        Assert.False(page.Uninstall!.IsEnabled);
-        Assert.Equal(AppTexts.ActionAfterGameEnded, page.Uninstall.DisabledReason);
+        Assert.Equal(AppTexts.ReturnToGame, page.Buttons[0].ButtonLabel);
+        Assert.True(page.Buttons[0].IsFocused);
+        Assert.True(page.Row(GameActionKind.Uninstall).IsGreyed);
+        Assert.Equal(AppTexts.ActionAfterGameEnded, page.Row(GameActionKind.Uninstall).Note);
 
         // A on "Zurück ins Spiel": a demo game has no window.
         arcadia.Press(UiAction.Accept);

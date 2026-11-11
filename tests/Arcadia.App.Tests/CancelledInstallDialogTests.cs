@@ -56,8 +56,8 @@ public sealed class CancelledInstallDialogTests
         Assert.True(tile.CanActivate);
 
         arcadia.Hold(UiAction.Accept, PastHoldTime);
-        Assert.Equal(AppTexts.Install, arcadia.Detail!.Current.TopRow[0].ButtonLabel);
-        Assert.True(arcadia.Detail.Current.TopRow[0].IsEnabled);
+        Assert.Equal(AppTexts.Install, arcadia.Detail!.Current.Buttons[0].ButtonLabel);
+        Assert.True(arcadia.Detail.Current.Buttons[0].IsEnabled);
     }
 
     [AvaloniaFact]

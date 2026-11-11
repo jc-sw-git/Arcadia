@@ -9,26 +9,25 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>
-/// The detail page (#11): a carousel through the games of a tab in the library's sort order, or
-/// through the hits of the search (#12), the shown game in the middle and its neighbours cut off
-/// at the sides. LT/RT turn it. B asks <see cref="IPageHost"/> to close it; ≡ and X are left to the window (#210).
+/// The detail page (#11, #499): a carousel through the games of a tab in the library's sort order, or through the hits of
+/// the search (#12). The shown game's cover stands in front beside its title, the games before and after it in stacks to
+/// the sides (<see cref="Covers"/>); LT/RT turn it and the shown game's page (<see cref="Current"/>) keeps the open area
+/// and the focus. B asks <see cref="IPageHost"/> to close it; ≡ and X are left to the window (#210).
 /// </summary>
 public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 {
-    /// <summary>
-    /// Pages kept on each side of the middle. One is seen; the second slides into view while
-    /// the carousel turns.
-    /// </summary>
-    private const int Reach = 2;
-
     private readonly Func<Game, GameTileViewModel> _createTile;
     private readonly IGameActionHost _actions;
     private readonly IPageHost _host;
     private readonly LauncherTabsViewModel _tabs;
     private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
 
+    // A held LT/RT turns only the covers; the page follows on release (#499).
+    private bool _pageBehind;
+
     /// <param name="tabName">Null when the page was opened from the search; then it has no sort order either.</param>
     /// <param name="createViewOptions">The library's "Ansicht" dialog for L3; null from the search, whose hits keep their order.</param>
+    /// <param name="focus">The focus of the page this one replaces (another tab, #499); null starts on "Spielen".</param>
     public GameDetailViewModel(
         string? tabName,
         IReadOnlyList<Game> games,
@@ -38,7 +37,8 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         IGameActionHost actions,
         IPageHost host,
         LauncherTabsViewModel tabs,
-        Func<ViewOptionsViewModel?>? createViewOptions)
+        Func<ViewOptionsViewModel?>? createViewOptions,
+        DetailFocus? focus = null)
     {
         TabName = tabName;
         _createTile = createTile;
@@ -51,10 +51,11 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         SortLabel = sortLabel;
         PreviousCommand = new RelayCommand(() => Rotate(-1));
         NextCommand = new RelayCommand(() => Rotate(1));
-        BuildPages();
+        BackCommand = new RelayCommand(() => Handle(UiAction.Back));
+        BuildCovers(focus ?? DetailFocus.Start);
     }
 
-    /// <summary>Raised after the carousel turned by one game (-1 back, 1 forward), so the view can slide it.</summary>
+    /// <summary>Raised after the shown game changed (-1 back, 1 forward), so the view can blend to it.</summary>
     public event Action<int>? Rotated;
 
     public string? TabName { get; }
@@ -70,10 +71,24 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// <summary>Index of the shown game in <see cref="Games"/>.</summary>
     public int Index { get; private set; }
 
-    public ObservableCollection<GameDetailPageViewModel> Pages { get; } = [];
+    /// <summary>The covers of the shown game and of its neighbours in the stacks.</summary>
+    public ObservableCollection<DetailCoverViewModel> Covers { get; } = [];
 
+    /// <summary>The shown game's page: title, buttons, areas. While LT/RT are held it keeps the game shown before.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Previous), nameof(Next))]
     public partial GameDetailPageViewModel Current { get; private set; } = null!;
+
+    /// <summary>
+    /// How many covers each stack shows: two with five games or more, one with two to four (two games: the other on both
+    /// sides), none for a single game. More would show a game twice.
+    /// </summary>
+    public int StackDepth => Games.Count >= 5 ? 2 : Games.Count >= 2 ? 1 : 0;
+
+    /// <summary>The game before the shown one, named under the left stack; null without neighbours.</summary>
+    public GameTileViewModel? Previous => Neighbour(-1);
+
+    public GameTileViewModel? Next => Neighbour(1);
 
     [ObservableProperty]
     public partial string? SortLabel { get; private set; }
@@ -84,9 +99,15 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 
     public bool HasNeighbours => Games.Count > 1;
 
+    /// <summary>A held button stops when the focus moves between buttons, rail and rows (#476).</summary>
+    object? IPage.Layout => Current.Zone;
+
     public IRelayCommand PreviousCommand { get; }
 
     public IRelayCommand NextCommand { get; }
+
+    /// <summary>A click on the footer's B hint does what B does: from the rows to the rail, else back to where the page was opened from.</summary>
+    public IRelayCommand BackCommand { get; }
 
     /// <summary>
     /// D-pad and A act on the buttons of the shown game, LT/RT turn the carousel, B closes the page. From a tab LB/RB switch
@@ -97,7 +118,11 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         switch (action)
         {
             case UiAction.Back:
-                _host.Close(this);
+                if (!Current.Handle(action))
+                {
+                    _host.Close(this);
+                }
+
                 break;
             case UiAction.PreviousPage:
                 Rotate(-1);
@@ -137,25 +162,27 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         }
     }
 
-    /// <summary>Its buttons act on the press; a held A on them is not a hold.</summary>
+    /// <summary>LT/RT let go after a hold: the page shows the game the covers turned to (#499). Its buttons act on the press.</summary>
     public void Release(UiAction action)
     {
+        if (action is UiAction.PreviousPage or UiAction.NextPage)
+        {
+            CatchUp();
+        }
     }
 
-    public void CancelHeldButtons()
-    {
-    }
+    public void CancelHeldButtons() => CatchUp();
 
-    /// <summary>The games of the carousel, the ones at the sides included.</summary>
-    public IEnumerable<GameTileViewModel> ShownTiles => Pages.Select(p => p.Tile);
+    /// <summary>The games of the carousel, the ones in the stacks included.</summary>
+    public IEnumerable<GameTileViewModel> ShownTiles => Covers.Select(c => c.Tile);
 
     public void InputKindChanged(InputKind kind)
     {
     }
 
     /// <summary>
-    /// Shows the next (1) or previous (-1) game. Only one page is built; the others move one place
-    /// along, so the turn starts without delay.
+    /// Shows the next (1) or previous (-1) game. One cover is built, coming in invisible at the far end; the others move one
+    /// place along. A held LT/RT turns only the covers, the page follows on release, so the text doesn't flicker (#499).
     /// </summary>
     public void Rotate(int delta)
     {
@@ -167,24 +194,32 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         }
 
         Index = Carousel.At(Index, delta, Games.Count)!.Value;
-        foreach (var page in Pages.ToList())
+        var reach = StackDepth + 1;
+        foreach (var cover in Covers.ToList())
         {
-            page.Offset -= delta;
-            if (Math.Abs(page.Offset) > Reach)
+            cover.Offset -= delta;
+            if (Math.Abs(cover.Offset) > reach)
             {
-                Pages.Remove(page);
+                Covers.Remove(cover);
             }
         }
 
-        Pages.Add(CreatePage(delta * Reach));
-        Current = Pages.First(p => p.IsCentre);
+        Covers.Add(new(_createTile(Games[Carousel.At(Index, delta * reach, Games.Count)!.Value]), delta * reach));
         PositionText = Position();
-        Rotated?.Invoke(delta);
+        OnPropertyChanged(nameof(Previous));
+        OnPropertyChanged(nameof(Next));
+        if (HeldPress.IsRepeat)
+        {
+            _pageBehind = true;
+            return;
+        }
+
+        ShowFront(delta);
     }
 
     /// <summary>
-    /// Takes over a re-sorted or rescanned list. The shown game stays in the middle, its
-    /// neighbours follow the new order. False if the list is empty and the page has nothing to show.
+    /// Takes over a re-sorted or rescanned list. The shown game stays in the middle, its neighbours follow the new order,
+    /// and the page keeps its area and focus. False if the list is empty and the page has nothing to show.
     /// </summary>
     public bool Update(IReadOnlyList<Game> games, string? sortLabel)
     {
@@ -194,42 +229,62 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             return false;
         }
 
-        var focusedKind = Current.FocusedKind;
+        var focus = Current.Focus;
         Games = games;
         Index = index;
         SortLabel = sortLabel;
         OnPropertyChanged(nameof(HasNeighbours));
-        BuildPages();
-        Current.FocusKind(focusedKind);
+        OnPropertyChanged(nameof(StackDepth));
+        BuildCovers(focus);
         return true;
     }
 
-    /// <summary>The buttons depend on whether the Steam Controller mode is shown.</summary>
-    public void RebuildActions()
-    {
-        foreach (var page in Pages)
-        {
-            page.RebuildActions();
-        }
-    }
+    /// <summary>The buttons and rows depend on whether the Steam Controller mode and the mouse mode apply.</summary>
+    public void RebuildActions() => Current.RebuildActions();
 
-    private void BuildPages()
+    private void BuildCovers(DetailFocus focus)
     {
-        Pages.Clear();
-        for (var offset = -Reach; offset <= Reach; offset++)
+        Covers.Clear();
+        var reach = Games.Count < 2 ? 0 : StackDepth + 1;
+        for (var offset = -reach; offset <= reach; offset++)
         {
-            if (Carousel.At(Index, offset, Games.Count) is not null)
-            {
-                Pages.Add(CreatePage(offset));
-            }
+            Covers.Add(new(_createTile(Games[Carousel.At(Index, offset, Games.Count)!.Value]), offset));
         }
 
-        Current = Pages.First(p => p.IsCentre);
+        _pageBehind = false;
+        ShowPage(focus);
         PositionText = Position();
     }
 
-    private GameDetailPageViewModel CreatePage(int offset) =>
-        new(_createTile(Games[Carousel.At(Index, offset, Games.Count)!.Value]), offset, _actions, Rotate);
+    private void CatchUp()
+    {
+        if (_pageBehind)
+        {
+            _pageBehind = false;
+            ShowFront(0);
+        }
+    }
+
+    /// <summary>The page of the game in front, with the focus of the page before.</summary>
+    private void ShowFront(int delta)
+    {
+        ShowPage(Current.Focus);
+        Rotated?.Invoke(delta);
+    }
+
+    private void ShowPage(DetailFocus focus)
+    {
+        var front = Covers.First(c => c.Offset == 0).Tile;
+        if (Current is { } shown)
+        {
+            shown.Detach();
+        }
+
+        Current = new GameDetailPageViewModel(front, _actions, focus);
+    }
+
+    private GameTileViewModel? Neighbour(int side) =>
+        Games.Count < 2 ? null : Covers.FirstOrDefault(c => c.Offset == side)?.Tile;
 
     private string Position() => AppTexts.DetailPosition(position: Index + 1, count: Games.Count);
 }

@@ -150,31 +150,8 @@
         </StackPanel>
       </Grid>
 
-      <!-- Detail page: path back, position in the list and the sort order -->
-      <Grid Grid.Row="1" Margin="80,0" ColumnDefinitions="*,Auto" IsVisible="{Binding IsDetailOpen}">
-        <Button Classes="plain" HorizontalAlignment="Left" Command="{Binding CloseDetailCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
-          <StackPanel Orientation="Horizontal" Spacing="14">
-            <ctl:KeyHint Pad="B" Keys="Esc" />
-            <TextBlock Classes="crumb" Text="{x:Static app:AppTexts.Library}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
-            <TextBlock Classes="crumb separator" Text="/" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
-            <TextBlock Classes="crumb" Text="{Binding Detail?.TabName, TargetNullValue=''}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
-            <TextBlock Classes="crumb" Text="{x:Static app:AppTexts.Search}" IsVisible="{Binding Detail?.IsFromSearch, TargetNullValue=False}" />
-            <TextBlock Classes="crumb separator" Text="/" />
-            <TextBlock Classes="crumb current" Text="{Binding Detail?.Current.Tile.Title, TargetNullValue=''}" />
-          </StackPanel>
-        </Button>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20">
-          <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <Button Classes="plain toolbar" Command="{Binding Detail?.OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <ctl:KeyHint Pad="L3" Keys="C" />
-              <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-        </StackPanel>
-      </Grid>
-
-      <Panel Grid.Row="2" IsVisible="{Binding IsDetailOpen}">
+      <!-- Detail page (#499): the whole layout under header and footer, its artwork behind both. -->
+      <Panel Grid.RowSpan="4" ZIndex="-1" IsVisible="{Binding IsDetailOpen}">
         <views:GameDetailView DataContext="{Binding Detail}" />
       </Panel>
 
@@ -485,13 +462,26 @@
         <Panel>
         <!-- The hints name the input in use: the controller's buttons, or the keyboard's keys and the mouse (#127). Search
              and settings aren't listed: their chips in the header name their keys (owner, 2026-10-21). -->
+        <!-- Detail page (#499): the position and the sort on the left, the hints follow the focus. -->
+        <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
+          <TextBlock Text="{Binding Detail?.PositionText, TargetNullValue=''}" FontSize="16" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+          <Button Classes="plain toolbar" Command="{Binding Detail?.OpenViewOptionsCommand}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="L3" Keys="C" />
+              <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
-          <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.ChooseAction}" />
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{x:Static app:AppTexts.Select}" />
-          <ctl:KeyHint Pad="L3" Keys="C" Text="{x:Static app:AppTexts.ViewOptionsTitle}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding Detail?.Current.AcceptHint, TargetNullValue=''}"
+                       IsVisible="{Binding Detail?.Current.AcceptHint, Converter={x:Static ObjectConverters.IsNotNull}, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="▼" Keys="S" Text="{x:Static app:AppTexts.DetailAreas}" IsVisible="{Binding Detail?.Current.ShowsAreasHint, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" />
-          <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+          <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
+            <ctl:KeyHint Pad="B" Keys="Esc" Alt="Klick" Text="{Binding Detail?.Current.BackHint, TargetNullValue=''}" />
+          </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.Switch}" IsVisible="{Binding Library.EmptyTab?.CanRescan, TargetNullValue=False}" />

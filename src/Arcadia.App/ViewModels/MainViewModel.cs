@@ -615,7 +615,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         {
             if (Library.PageGames.FirstOrDefault() is { } first)
             {
-                OpenDetail(first.Game.Key);
+                // The new tab's first game keeps the open area and the focus, like a turn of the carousel (#499).
+                OpenDetail(first.Game.Key, Detail.Current.Focus);
             }
             else
             {
@@ -625,12 +626,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>Opens the detail page on <paramref name="key"/> in the selected tab, or among the hits while the search is open.</summary>
-    private void OpenDetail(string key)
+    /// <param name="focus">Where the focus goes; null for a page opened anew: on "Spielen" with "Übersicht" open (#499).</param>
+    private void OpenDetail(string key, DetailFocus? focus = null)
     {
         if (Search is { } search)
         {
             var hit = Carousel.Find(search.Hits, key, 0);
-            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, focus);
             return;
         }
 
@@ -642,7 +644,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true));
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), focus);
     }
 
     /// <summary>
@@ -1101,15 +1103,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         if (Library.FocusedGame?.Game is { } game)
         {
-            CycleGameMouseModeOf(game);
+            StepGameMouseModeOf(game, 1);
         }
     }
 
-    private void CycleGameMouseModeOf(Game game)
+    private void StepGameMouseModeOf(Game game, int delta)
     {
+        var held = HeldPress.IsRepeat;
         try
         {
-            _settings.Update(s => s with { MouseMode = s.MouseMode.WithGameChoice(game.Key, GameMouseModes.Next(s.MouseMode.GameChoiceFor(game.Key))) });
+            _settings.Update(s => s with { MouseMode = s.MouseMode.WithGameChoice(game.Key, ThreeWayChoice.Step(s.MouseMode.GameChoiceFor(game.Key), delta, held)) });
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -1203,6 +1206,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     bool IGameActionsOwner.ControllerModeBroken => ControllerMode.ControllerModeBroken;
 
+    string? IGameActionsOwner.ControllerModeHiddenReason => ControllerMode.HiddenReason;
+
     void IGameActionsOwner.ShowPanProblem() => ControllerMode.ShowPanProblem();
 
     Task IGameActionsOwner.BeforeGameStartsAsync(CancellationToken cancellationToken) =>
@@ -1233,7 +1238,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    void IGameActionsOwner.CycleGameMouseMode(Game game) => CycleGameMouseModeOf(game);
+    void IGameActionsOwner.StepGameMouseMode(Game game, int delta) => StepGameMouseModeOf(game, delta);
 
     void IGameActionsOwner.RunStatesChanged() => UpdateRunStates();
 

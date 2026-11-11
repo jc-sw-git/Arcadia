@@ -220,7 +220,7 @@ public sealed class SteamAccountTests
 
         arcadia.Hold(UiAction.Accept, TimeSpan.FromSeconds(1.2));
         var page = arcadia.Detail!.Current;
-        var install = page.TopRow[0];
+        var install = page.Buttons[0];
         Assert.Equal(AppTexts.Install, install.ButtonLabel);
         Assert.False(install.IsEnabled);
         Assert.Equal(SteamTexts.SteamOtherAccountInstall, install.DisabledReason);

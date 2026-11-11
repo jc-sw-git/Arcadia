@@ -129,6 +129,35 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T499-23")]
+    [Trait("TestCase", "T499-8")]
+    public async Task The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync(
+            [new(KnownLaunchers.Steam, 3), new(Gog, 3)], new Core.Settings.AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true });
+        arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
+        arcadia.Arcadia.StartControllers();
+        await arcadia.Arcadia.TickSteamControllerAsync();
+        arcadia.Settle();
+        OpenByHoldingA(arcadia);
+        arcadia.Click(RailButtons(arcadia)[1]);
+        var page = arcadia.Arcadia.Detail!.Current;
+        var mode = page.Row(GameActionKind.ControllerMode);
+        Assert.False(mode.IsGreyed);
+        var arrows = Rows(arcadia)[0].GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("rowArrow")).ToList();
+        Assert.Equal(2, arrows.Count);
+
+        arcadia.Click(arrows[1]);
+        Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
+        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Arcadia), page.OpenArea.ValueLine);
+        Assert.Single(arcadia.WithText(AppTexts.DetailControllerLine(ControllerModes.Arcadia)), text => text.Classes.Contains("railValue"));
+
+        arcadia.Click(arrows[0]).Click(arrows[0]);
+        Assert.Equal(ControllerModes.Steam, mode.ValueText);
+        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Steam), page.OpenArea.ValueLine);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T499-2")]
     [Trait("TestCase", "T499-3")]
     public async Task The_buttons_stand_in_one_row_on_the_artwork_the_D_pad_skips_a_disabled_one_and_its_tooltip_says_why()

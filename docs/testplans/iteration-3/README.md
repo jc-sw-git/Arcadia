@@ -78,6 +78,7 @@ Charter: –. Time box: –. Findings: –.
 | T480-8, -9 | `BrokenTextTests`, `PluralTextsTests`; the fallback T480-1 to -7, -10, -11 in `UiTextTests`, T480-15 in `UiTextsStayInResourcesTests` (Core) |
 | T339-1 to -3 | `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`, T339-12 `WindowsRestartTests`, T339-13 `SteamControllerXboxPadTests`, T339-14, -15 `Window/ConsistentTextsViewTests` |
 | T24-1 to -4, -6 to -13 | `PagingTests`, `SettingsServiceTests`, `LibraryTests`, `GridFadeTests`, `LibrarySpeedTests`, `Window/CoverAndIconTests`, `Window/EmbeddedFontTests` |
+| T499-1 to -8, -10 to -26 | `DetailAreasTests`, `DetailPageStateTests`, `DetailPageTests` (T499-3), `Window/DetailPageViewTests` |
 | T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
 | T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |

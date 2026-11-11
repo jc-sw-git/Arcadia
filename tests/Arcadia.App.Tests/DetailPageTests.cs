@@ -130,6 +130,7 @@ public sealed class DetailPageTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T499-3")]
     public async Task An_update_the_launcher_reports_or_drops_shows_and_goes_live_where_focus_stays()
     {
         var alpha = Installed("Alpha");

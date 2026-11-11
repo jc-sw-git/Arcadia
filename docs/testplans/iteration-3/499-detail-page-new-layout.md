@@ -9,7 +9,7 @@ Replaces T11-7 (three rows of buttons) and the layout parts of T11-1 and T11-8; 
 over" no longer holds for the rows of an area (T499-14). The owner's cases are collected for the owner's test at the
 end of the detail page work.
 
-**Status:** Automated: T499-1, -2, -4 to -8, -10, -11, -14 to -20, -25, -26 · QE: – · Open for the owner: T499-30, T499-31
+**Status:** Automated: T499-1 to -8, -10 to -22, -24 to -26; T499-23 red until the arrows update the rail (QE finding 1) · QE: T499-27 looked at, open for finding 2 · Open: T499-9 (artwork part waits for #490), T499-23, T499-28 (only 1920 × 1080 looked at), T499-29 (measured, see History) · Open for the owner: T499-30, T499-31
 
 Page and button row
 
@@ -22,7 +22,7 @@ Page and button row
       without a launcher target) is passed over and tells why in its tooltip; A on each does what it does today. A
       says "Tüfteln" for software, "Abrocken" for a soundtrack, "Installieren" when not installed, shows the progress
       during an installation and "Zurück ins Spiel" / "Weiter tüfteln" while it runs (regression). · E2E: yes
-- [ ] **T499-3** The quiet note beside the buttons: with an update "Update verfügbar" and "<Launcher> installiert es
+- [x] **T499-3** The quiet note beside the buttons: with an update "Update verfügbar" and "<Launcher> installiert es
       eventuell vor dem Start."; for a soundtrack "Steam spielt den Soundtrack ab."; the installation note as today.
       The focus never lands on it (▶ on the last button goes round to "Spielen", ▼ goes to the rail). An update
       Steam's install monitor reports appears within a poll, without a rescan or toast, and goes again when Steam drops
@@ -53,11 +53,11 @@ Rail and rows
       names it, and B leads back to the rail. LT/RT "Spiel" and LB/RB "Launcher" show only where they act. · E2E: yes
 - [x] **T499-11** B from the button row or the rail: back in the library on the page of the game shown last, the focus
       on it; opened from the search, back in the search as today. · E2E: yes
-- [ ] **T499-12** LB/RB switch the launcher tab and stay on the detail page with the tab's first game; L3 opens "Ansicht"
+- [x] **T499-12** LB/RB switch the launcher tab and stay on the detail page with the tab's first game; L3 opens "Ansicht"
       and a new sort keeps the shown game; X opens the search over the page and B returns to it; Y opens the status
       messages and B closes them. After each the focus and the open area are where they were (open question 2).
       · E2E: yes
-- [ ] **T499-13** While the artwork dialog or the uninstall question is open, LT/RT and LB/RB do nothing and the page
+- [x] **T499-13** While the artwork dialog or the uninstall question is open, LT/RT and LB/RB do nothing and the page
       behind keeps its game, area and focus. · E2E: yes
 
 Settings that don't apply now, info box
@@ -88,19 +88,19 @@ Carousel into depth
       · E2E: yes
 - [x] **T499-20** Stacks: with three or more games each side shows a stack; with two the other game on both sides; with one
       no stacks, LT/RT do nothing and their hint is gone. · E2E: yes
-- [ ] **T499-21** A game without artwork: the background is the launcher's colour as today and title, info line, buttons,
+- [x] **T499-21** A game without artwork: the background is the launcher's colour as today and title, info line, buttons,
       rail and rows stay readable. · E2E: yes (backdrop), visual part in T499-27
 
 State changes, mouse, regression
 
-- [ ] **T499-22** While the page is open: an installation finishes ("Installieren" becomes "Spielen", "Deinstallieren …"
+- [x] **T499-22** While the page is open: an installation finishes ("Installieren" becomes "Spielen", "Deinstallieren …"
       active), an update appears or goes, a game starts or ends, a rescan changes the tab's games: buttons, note, rows
       and value lines update in place; the page stays on its game and the focus on its button, area or row. A rescan
       that removes the shown game behaves as today. · E2E: yes
 - [ ] **T499-23** Mouse: a click on an area opens it, a click on a row focuses it, the mouse over a row focuses it, the
       arrows beside a value change it, a click on a stack turns the carousel, the buttons click as today, the dialogs
       show ✕. · E2E: yes (window test)
-- [ ] **T499-24** The library's context menu offers the same actions as the detail page (incl. "Artwork ändern",
+- [x] **T499-24** The library's context menu offers the same actions as the detail page (incl. "Artwork ändern",
       "Steam-Controller-Modus", "Individueller Mausmodus", "Deinstallieren …") with the same results. · E2E: yes
 
 Look (QE run of the app, visual checklist of #498)
@@ -144,3 +144,6 @@ History:
 | T499-1, -3, -5, -6, -18, -27 (look) | 2026-11-11 | Claude | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ screenshots: layout as the artboard, stacks' inner edges to the middle, greyed rows with the reason in the info box, RT keeps "Verwalten" and its second row | software rendering only; motion judged from single frames |
 | T499-29 | 2026-11-11 | Claude | Release, Xvfb software rendering, `--demo --demo-games 5000`, `main` measured the same way | ⚠️ start to library 1.74 s (main 1.75 s), 271 MB at the library (main 266 MB), same RSS after the page; ▲ ▼ ◀ ▶ 5 to 37 ms; a carousel turn 29 to 94 ms to the frame (main 25 to 60 ms), of it 4 to 26 ms work | the frame wait is software rendering of the full-screen page while covers move; T499-31 on the owner's PC decides |
 | All new tests in `DetailAreasTests`, `DetailPageViewTests` | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container, deliberately broken builds | ✅ each red once: focus reset on a turn (T499-12, -18), the page following a held RT (T499-19), rows never greyed (T499-14, -15), ▲ on "Übersicht" ignored (T499-5), the button row stacked (T499-2, -25, -26), the page opening in the rail (T499-4), B in the rows closing the page (T499-6, -9), ◀ stepping forward (T499-8), no A hint (T499-10), two covers per stack from three games (T499-20), the click on an area ignored (T499-23), the stacks swapped (T11-2), no "▼ Bereiche" hint (T499-1), the info box without fixed width (T499-17) | – |
+| T499-3, -12, -13, -21, -22, -24 | 2026-11-11 | Claude (QE) | PR branch, Debug, Linux cloud container, made-up GOG libraries | ✅ new `DetailPageStateTests`, each red once (L3 rebuilding the page on `DetailFocus.Start`; the confirmation letting LT/RT/LB/RB through; no `RebuildActions` on a tile change; no backdrop; uninstall row without its action) | T499-3: the existing poll test in `DetailPageTests` now carries its ID; Y not automated: Arcadia opens the status messages only with entries; covered by the #166 tests |
+| T499-23 | 2026-11-11 | Claude (QE) | PR branch, Debug, headless window 1920 × 1080, fake Steam Controller | ❌ `The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value`: a click on ▶ changes the row's value, the rail still shows the old one | QE finding 1, fixed in this PR |
+| T499-1, -5, -6, -14, -15, -18, -27 (look) | 2026-11-11 | Claude (QE) | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ button row, rail, both areas with greyed rows and reasons, info box, RT keeping "Verwalten" and its row, one ring at a time; ⚠️ the front cover of a game not installed and without artwork has no visible edge on its backdrop (finding 2) | 1280 × 720 and 200 % not looked at; motion judged from single frames |

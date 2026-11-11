@@ -244,6 +244,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         {
             Show(libraries);
         }
+        else
+        {
+            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
+            UpdateArtwork();
+        }
 
         // "Zuletzt eingelesen" changed even if nothing else did.
         LaunchersRead?.Invoke(this, EventArgs.Empty);
@@ -355,6 +360,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         {
             Show(libraries);
         }
+        else
+        {
+            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
+            UpdateArtwork();
+        }
 
         LaunchersRead?.Invoke(this, EventArgs.Empty);
     }
@@ -407,6 +417,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         await RefreshLibraryAsync(force: true);
     }
 
+    /// <summary>Every type the scanners delivered, so a switched-off type keeps its images for when it is switched on again.</summary>
+    private void UpdateArtwork()
+    {
+        var launchers = _library.Launchers;
+        _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
+    }
+
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
         // A scan still running when the session ended shows nothing: the window is closing.
@@ -428,8 +445,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);
 
-        // Every type the scanners delivered, so a switched-off type keeps its images for when it is switched on again.
-        _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
+        UpdateArtwork();
         if (newlyFailed.Count > 0)
         {
             Noticed?.Invoke(this, new LibraryNotice.ScanFailed(newlyFailed));

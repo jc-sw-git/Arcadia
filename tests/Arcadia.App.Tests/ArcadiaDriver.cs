@@ -1,4 +1,5 @@
 using System.Globalization;
+using Arcadia.Core.Artwork;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.Input;
@@ -107,10 +108,13 @@ internal sealed class ArcadiaDriver : IDisposable
         Updates.Log = AppLog.Write;
         FolderCheck = new InstallFolderCheck(Folders.Exists, action => Dispatcher.UIThread.Post(action));
         var controllerPlatform = (IControllerSupportPlatform?)steam ?? (IControllerSupportPlatform?)files?.ControllerSupport ?? new NoControllerSupportPlatform();
+        // The artwork cache in the test's folder; Steam's image server is the fake network's, which knows no image (#487).
+        Artwork = new ArtworkService(new ArtworkCache(Path.Combine(folder, "artwork")), _http, time) { Log = AppLog.Write };
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
+            Artwork = Artwork,
             Open = Open,
             Logs = Logs,
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
@@ -150,6 +154,9 @@ internal sealed class ArcadiaDriver : IDisposable
     }
 
     public string Folder { get; }
+
+    /// <summary>The games' covers and backgrounds (#487), cached in <see cref="Folder"/>.</summary>
+    public ArtworkService Artwork { get; }
 
     /// <summary>The logs "Über Arcadia" opens (#433), never the real ones.</summary>
     public FakeLogFiles Logs { get; } = new();
@@ -645,6 +652,8 @@ internal sealed class ArcadiaDriver : IDisposable
     public void Dispose()
     {
         Main.Dispose();
+        Artwork.Dispose();
+        Artwork.WhenIdleAsync().Wait(WaitLimit);
         SteamAccount?.Dispose();
         _controllers.Dispose();
         _http.Dispose();

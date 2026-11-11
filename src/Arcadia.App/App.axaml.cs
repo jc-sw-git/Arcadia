@@ -114,7 +114,10 @@ public partial class App : Application
                 updates,
                 LauncherLogos.DefaultFolder,
                 new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)),
-                webPages));
+                webPages)
+            {
+                Artwork = ArtworkFolder.CreateService(time),
+            });
             var launchers = app.Launchers;
             var controllerSupport = app.ControllerSupport;
             var launchedGames = app.LaunchedGames;

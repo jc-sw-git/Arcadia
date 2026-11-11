@@ -17,6 +17,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   (the launcher whose program holds the Steam Controller: Steam), `LaunchTarget`. `LauncherIds`: the rule for a
   launcher id (a-z, 0-9, `-`).
 - `LibraryTypeOption`: a launcher's switch for software, tools or soundtracks.
+- `ILauncherArtwork`: a launcher's own covers and backgrounds per game (`ArtworkCandidate`: a file or an `https`
+  address), best first (#487).
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
   in Arcadia's data folder.
@@ -56,6 +58,16 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `KeyboardLayout` (the real layouts, three levels per key), `KeyGrid` (focus over its keys), `FullKeyboard` (a layout
   as the real keyboard's keys, ISO or ANSI), `KeyboardPlacement` (the mouse mode keyboard's edge and size on a
   monitor).
+
+**Artwork** (`Artwork/`, #13, #487)
+- `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
+  launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
+  cut away at most), else the first at all; downloads only for what is missing, 10 s each, the run stops downloading
+  at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
+  what the views show (`GameArtwork`), `Changed` says for which games it changed.
+- `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), every file
+  through a temporary file and a rename; folder names from the key that never leave the cache; unreadable metadata
+  makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB, and its size.
 
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per

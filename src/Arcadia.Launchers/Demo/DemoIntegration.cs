@@ -10,9 +10,11 @@ public sealed class DemoIntegration : ILauncherIntegration
 {
     /// <param name="withOtherTypes">Software, tools and soundtracks besides the games, with a switch for each (#141).</param>
     /// <param name="canUninstall">False plays a launcher that uninstalls only in its own window, as Epic does.</param>
-    public DemoIntegration(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false, bool canUninstall = true)
+    /// <param name="artwork">Made-up covers and backgrounds (<c>--demo-games</c>, #487); null: placeholders.</param>
+    public DemoIntegration(LauncherInfo launcher, int gameCount, DateTimeOffset now, bool withOtherTypes = false, bool canUninstall = true, ILauncherArtwork? artwork = null)
     {
         Launcher = launcher;
+        Artwork = artwork;
         var scanner = new DemoScanner(launcher, gameCount, now, withOtherTypes, canUninstall);
         Scanner = scanner;
         RunningGames = new DemoRunningGames(scanner, now);
@@ -27,6 +29,8 @@ public sealed class DemoIntegration : ILauncherIntegration
     ];
 
     public IReadOnlyList<LibraryTypeOption> LibraryOptions { get; }
+
+    public ILauncherArtwork? Artwork { get; }
 
     public LauncherInfo Launcher { get; }
 

@@ -8,6 +8,7 @@ you touch:
 | Library, installs, updates, soundtracks, `content_log.txt` | `library-and-installs.md` |
 | Online account, sign-in, owned games (#83) | `account.md` |
 | Running games, play stats (#95) | `running-games.md` |
+| Covers and backgrounds: own images, library cache, image server (#487) | `artwork.md` |
 
 ## Shortcuts
 

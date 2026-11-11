@@ -59,6 +59,12 @@
     <!-- Backdrop behind dialogs, and the shade over covers of games that aren't installed. -->
     <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
+    <!-- Over a game's background on the detail page (#487): clear at the top, dark behind the name and the chips. -->
+    <LinearGradientBrush x:Key="HeroScrim" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#00121820" />
+      <GradientStop Offset="0.45" Color="#33121820" />
+      <GradientStop Offset="1" Color="#E6121820" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
 
     <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
@@ -415,6 +421,11 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
+  </Style>
+
+  <Style Selector="Border.heroScrim">
+    <Setter Property="Background" Value="{StaticResource HeroScrim}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
 
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->

@@ -37,6 +37,7 @@ its file.
 | [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-1 to -17 |
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
+| [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
 
 ## Release candidate tests (restart or installation)
 
@@ -74,3 +75,4 @@ Charter: –. Time box: –. Findings: –.
 | T477-1, -2, -5, -6, -9 | `SearchSpeedTests`; T477-6 in `Window/LauncherPageViewTests`, T477-9 in `Window/OnScreenKeyboardViewTests` |
 | T480-8, -9 | `BrokenTextTests`, `PluralTextsTests`; the fallback T480-1 to -7, -10, -11 in `UiTextTests`, T480-15 in `UiTextsStayInResourcesTests` (Core) |
 | T24-1 to -4, -6 to -13 | `PagingTests`, `SettingsServiceTests`, `LibraryTests`, `GridFadeTests`, `LibrarySpeedTests`, `Window/CoverAndIconTests`, `Window/EmbeddedFontTests` |
+| T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |

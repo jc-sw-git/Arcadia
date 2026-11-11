@@ -10,6 +10,7 @@ using Arcadia.App.Setup;
 using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
+using Arcadia.Core.Artwork;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
@@ -37,6 +38,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private readonly TimeProvider _time;
     private readonly GameActions _actions;
     private readonly RepeatGate _repeats = new();
+    private readonly ArtworkService? _artwork;
+
     private Func<ViewOptionsViewModel?>? _createViewOptions;
 
     // The page whose options the dialog shows.
@@ -62,8 +65,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         LauncherLogos logos,
         FirstRunSetup firstRun,
         TimeProvider time,
-        InstallFolderCheck installFolders)
+        InstallFolderCheck installFolders,
+        ArtworkService? artwork = null)
     {
+        _artwork = artwork;
+        ArtworkLoader = new ArtworkLoader(artwork);
         _logos = logos;
         _controllerSupport = controllerSupport;
         _updates = updates;
@@ -75,7 +81,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
-        Session = new LibrarySession(library, installs, running, launchedGames, time);
+        Session = new LibrarySession(library, installs, running, launchedGames, time, artwork);
+        if (artwork is not null)
+        {
+            artwork.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateArtwork(keys));
+            artwork.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextArtwork));
+            artwork.Open();
+        }
+
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
         Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
         Session.InstallStatesChanged += (_, _) => UpdateInstallStates();
@@ -124,6 +137,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>The launcher tabs, shared by the library, the detail page and the search.</summary>
     public LauncherTabsViewModel LauncherTabs { get; }
+
+    /// <summary>Decodes the cached covers and backgrounds for the views (#487).</summary>
+    public ArtworkLoader ArtworkLoader { get; }
 
     /// <summary>The cover grid of the selected tab, under every other page.</summary>
     public LibraryViewModel Library { get; }
@@ -674,6 +690,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A new cover takes its game's install and run state.</summary>
     private void ShowStates(GameTileViewModel tile)
     {
+        tile.Artwork = _artwork?.Of(tile.Game.Key);
         tile.InstallState = Session.InstallStateOf(tile.Game.Key);
         tile.LauncherReportsUpdate = Session.UpdateOf(tile.Game.Key);
         tile.RunState = Session.RunStateOf(tile.Game.Key);
@@ -681,6 +698,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>The covers of every open page, also of one covered by another.</summary>
     private IEnumerable<GameTileViewModel> ShownTiles() => OpenPages().SelectMany(p => p.ShownTiles);
+
+    /// <summary>The cache has other images for these games (#487): every shown cover takes them.</summary>
+    private void UpdateArtwork(IReadOnlyCollection<string> gameKeys)
+    {
+        var changed = gameKeys as ISet<string> ?? gameKeys.ToHashSet(StringComparer.Ordinal);
+        foreach (var tile in ShownTiles().Where(t => changed.Contains(t.Game.Key)))
+        {
+            tile.Artwork = _artwork?.Of(tile.Game.Key);
+        }
+    }
 
     private void UpdateInstallStates()
     {

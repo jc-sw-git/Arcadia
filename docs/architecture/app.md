@@ -104,15 +104,12 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/AppErrors`: the last line of defence: unexpected errors logged with stack trace and shown as a toast;
   `Guard`/`.Forget(context)` for work nobody awaits.
 - `Input/UiAction`/`UiActionMap`: keys and buttons as the actions `MainViewModel.Handle` routes.
+- `Input/HeldPress`: whether the press being handled repeats a held button or key; where a step wraps round
+  (`ListFocus.Cycle`, `ValueCycle.Step`, `HitWindow.Turn` with `held`), a repeat stops at the end (#476).
+  `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.
 - `Services/InputLatency`: each key or button press timed to the frame that shows it, one `Bild:` line in arcadia.log
   (#229).
 
 ## Mouse mode
 
-`Services/MouseModeHost` (wiring, overlay, automation), `Services/ForegroundGame` (also what is in front after a game
-ended, #94), `Services/GameWindow` ("Zurück ins Spiel"), `Services/ForegroundWindow` (its bounds and caret),
-`Services/ForegroundGuard` (Arcadia's window in front of or behind others), `Services/ForegroundOwner` (Steam's window,
-by the programs of the launcher that owns Steam Input, or a library game in front, asked on every poll),
-`Services/SystemProcessTable` (the PC's processes for `ProcessGames`),
-`Views/MouseModeKeyboardWindow` with `Views/MouseModeKeyboardLegend` (the keyboard outside Arcadia, #110),
-`Views/MouseModeOverlay` (own non-activating window, clicks pass outside its region) with `Controls/ScreenEdgeFill`.
+The App's part of the mouse mode: [app-mouse-mode.md](app-mouse-mode.md).

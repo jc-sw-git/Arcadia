@@ -15,7 +15,7 @@ Decisions that hold across areas; the files beside this one hold the decisions p
 - **Every controller alike.** All common pads behave the same with or without Steam running and whatever Steam Input
   is set to; a setting that works for one controller only is not built. The Steam Controller works in every game of
   every launcher without a global Arcadia toggle: Arcadia picks the path per game, the player keeps the per-game mode
-  "Arcadia" / "Steam-Eingabe" ([controls.md](controls.md)). Direction for later: hide every real pad and emulate
+  "Arcadia" / "Steam-Eingabe" ([controllers-in-games.md](controllers-in-games.md)). Direction for later: hide every real pad and emulate
   every controller for every game.
 - **Pan** is the product name of the controller guardian ("Pan, der Wächter von Arcadia"). UI texts are written as if
   Pan already covered all controllers; the info panel says it covers only the Steam Controller so far

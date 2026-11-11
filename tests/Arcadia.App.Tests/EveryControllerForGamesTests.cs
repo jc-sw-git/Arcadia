@@ -405,6 +405,25 @@ public sealed class EveryControllerForGamesTests
         await pad.WaitForAsync(state => state.Buttons == (Back | Start));
     }
 
+    /// <summary>#476: ◀ held on the settings while A opens "Controller zuordnen" doesn't step a layout in the dialog.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T476-10")]
+    public async Task A_held_D_pad_doesnt_reach_a_settings_dialog_opened_meanwhile()
+    {
+        using var arcadia = await StartInBackgroundAsync(pads: [DualSense, GameCube]);
+        var controller = OpenControllerSettings(arcadia);
+        FocusDownTo(arcadia, controller, PanRows.LayoutsKey);
+
+        arcadia.HoldPad(TimeSpan.FromMilliseconds(50), PadButtons.DPadLeft, letGo: false)
+            .HoldPad(TimeSpan.FromMilliseconds(50), PadButtons.DPadLeft | PadButtons.A, letGo: false);
+        var layouts = Assert.IsType<ControllerLayoutsViewModel>(controller.Dialog);
+        var shown = Shown(layouts);
+
+        arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadLeft);
+        Assert.Same(layouts, controller.Dialog);
+        Assert.Equal(shown, Shown(layouts));
+    }
+
     private static readonly PadDevice GameCube = KnownPads.GameCube with { Path = "hid-gamecube" };
 
     /// <summary>The settings' focus moved down to the row with this key, as the player does with the D-pad.</summary>

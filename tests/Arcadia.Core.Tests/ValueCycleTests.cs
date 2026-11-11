@@ -29,4 +29,15 @@ public class ValueCycleTests
         Assert.Equal(3, ValueCycle.Step(3, 1, 3, 3));
         Assert.Equal(4, ValueCycle.Step(4, -1, 5, 3));
     }
+
+    /// <summary>#476: a held ◀ or ▶ stops at the end; the next fresh press wraps.</summary>
+    [Fact]
+    [Trait("TestCase", "T476-9")]
+    public void Held_it_stops_at_the_end()
+    {
+        Assert.Equal(9, ValueCycle.Step(8, 1, 1, 9, held: true));
+        Assert.Equal(9, ValueCycle.Step(9, 1, 1, 9, held: true));
+        Assert.Equal(1, ValueCycle.Step(1, -1, 1, 9, held: true));
+        Assert.Equal(1, ValueCycle.Step(9, 1, 1, 9));
+    }
 }

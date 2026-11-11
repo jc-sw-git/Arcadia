@@ -34,6 +34,7 @@ its file.
 | [470](470-debugger-stops-at-restore-controllers.md) | #470 | Debugger stops Arcadia at "Controller wiederherstellen" while a virtual Xbox pad is plugged in | T470-1, T470-2 |
 | [471](471-restore-ends-emulation-despite-declined-prompt.md) | #471 | "Controller wiederherstellen" ends the emulation even when the Windows prompt is declined | T471-1 to T471-4 |
 | [024](024-design-polish-font-covers-page-sizes.md) | #24 | Design polish: Figtree font, 2:3 covers, page sizes that fill the grid | T24-1 to T24-16 |
+| [476](476-wrap-lists-and-repeat-held-buttons.md) | #476 | Wrap round at the ends of every list and repeat LT/RT and LB/RB while held | T476-8 to T476-13 (part 1) |
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
 
 ## Release candidate tests (restart or installation)
@@ -59,6 +60,7 @@ Charter: –. Time box: –. Findings: –.
 | T166-1 to -11, -14, -17 | `StatusModalTests`, variants in `StatusModalOrderTests` |
 | T166-12, -13, -15 (in part) | `Window/StatusModalViewTests`; T166-13 also `ControllerSupportTests` |
 | T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
+| T476-8 to -12 | `HeldButtonsTests`, `Window/HeldKeysTests`; variants in `GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests` |
 | T465-1 to -9, -11 to -13 | `LibraryFilterTests`, variants in `GameFilterTests` (Core) |
 | T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
 | T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |

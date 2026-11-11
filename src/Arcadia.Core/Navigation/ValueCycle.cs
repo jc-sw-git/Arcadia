@@ -7,7 +7,8 @@ namespace Arcadia.Core.Navigation;
 public static class ValueCycle
 {
     /// <summary>The value <paramref name="delta"/> steps away from <paramref name="value"/> within min … max, wrapping.</summary>
-    public static int Step(int value, int delta, int min, int max)
+    /// <param name="held">A held ◀ or ▶ repeating (#476): it stops at the end, only a fresh press wraps.</param>
+    public static int Step(int value, int delta, int min, int max, bool held = false)
     {
         var count = max - min + 1;
         if (count <= 0)
@@ -15,6 +16,6 @@ public static class ValueCycle
             return value;
         }
 
-        return min + ((((value - min + delta) % count) + count) % count);
+        return min + ListFocus.Cycle(value - min, delta, count, held);
     }
 }

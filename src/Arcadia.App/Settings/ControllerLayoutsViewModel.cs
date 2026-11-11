@@ -243,7 +243,7 @@ public sealed partial class ControllerLayoutsViewModel : ViewModelBase
         }
 
         var choices = ControllerLayouts.Choices(model.DefaultKind);
-        Show(row, choices[ListFocus.Cycle(Math.Max(0, IndexOf(choices, row.Layout)), delta, choices.Count)]);
+        Show(row, choices[ListFocus.Cycle(Math.Max(0, IndexOf(choices, row.Layout)), delta, choices.Count, HeldPress.IsRepeat)]);
     }
 
     private static int IndexOf(IReadOnlyList<ControllerLayout> choices, ControllerLayout layout)

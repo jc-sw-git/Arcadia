@@ -29,7 +29,9 @@ public sealed class ArtworkViewTests : IDisposable
     public async Task Only_what_is_drawn_is_decoded_and_at_the_size_it_is_drawn()
     {
         var games = Enumerable.Range(1, 1000).Select(i => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {i:D4}", DateTimeOffset.UnixEpoch)).ToArray();
-        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games)];
+        // Switched on once the test counts the decodes, so the start's own run brings no images before that.
+        var source = new SwitchedArtwork(new DemoArtwork(_images));
+        IReadOnlyList<LauncherSpec> launchers = [LauncherSpec.With(KnownLaunchers.Gog, games) with { Artwork = source }];
         using var window = await ArcadiaWindow.ShowAsync(launchers);
         var arcadia = window.Arcadia;
         arcadia.Main.ArtworkLoader.Loaded += (file, size) =>
@@ -40,7 +42,9 @@ public sealed class ArtworkViewTests : IDisposable
             }
         };
 
-        arcadia.Artwork.Update([new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), new DemoArtwork(_images))]);
+        // The launcher's own source too: a rescan meanwhile (the window's activation) takes the run's place with it.
+        source.IsOn = true;
+        arcadia.Artwork.Update([new LibraryArtwork(new LauncherLibrary(KnownLaunchers.Gog, games), source)]);
         await arcadia.Artwork.WhenIdleAsync();
         var firstPage = arcadia.PageGames.Select(tile => tile.Game.Key).ToHashSet();
         var shown = await DecodedAsync(window, expected: 25);
@@ -103,5 +107,14 @@ public sealed class ArtworkViewTests : IDisposable
             _decoded.Clear();
             return since;
         }
+    }
+
+    private sealed class SwitchedArtwork(ILauncherArtwork inner) : ILauncherArtwork, IArtworkLookup
+    {
+        public volatile bool IsOn;
+
+        public IArtworkLookup Look() => IsOn ? inner.Look() : this;
+
+        public IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind) => [];
     }
 }

@@ -926,7 +926,7 @@
   <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Wird geprüft …</value></data>
   <data name="DataSourcesKeyEnter" xml:space="preserve"><value>Eingeben</value></data>
   <data name="DataSourcesKeyInfo" xml:space="preserve"><value>Mit dem Schlüssel lädt Arcadia Cover und Hintergründe von SteamGridDB, in der Reihenfolge, die du unter „Reihenfolge für Artwork“ festlegst. Der Schlüssel ist kostenlos. Melde dich auf steamgriddb.com an und kopiere ihn unter Einstellungen › API.</value></data>
-  <data name="DataSourcesKeyHowTo" xml:space="preserve"><value>[A] öffnet die Bildschirmtastatur. Hast du den Schlüssel schon kopiert, geht es mit „Einfügen“ schneller. Übernimmst du ein leeres Feld, löscht Arcadia den Schlüssel.</value></data>
+  <data name="DataSourcesKeyHowTo" xml:space="preserve"><value>[A] öffnet die Bildschirmtastatur. Hast du den Schlüssel schon kopiert, geht es mit „Einfügen“ schneller. Ein leeres Feld lässt den Schlüssel, wie er ist.</value></data>
   <data name="DataSourcesNextStepsHeading" xml:space="preserve"><value>SO GEHT ES WEITER</value></data>
   <data name="DataSourcesKeyRejectedInfo" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er wieder gilt, nimmt Arcadia nur die Bilder der Launcher und sonst die Platzhalter. Erzeuge auf der Schlüssel-Seite einen neuen Schlüssel und füge ihn hier ein.</value></data>
   <data name="DataSourcesSendsHeading" xml:space="preserve"><value>WAS ARCADIA SENDET</value></data>
@@ -937,6 +937,12 @@
   <data name="DataSourcesKeyPasted" xml:space="preserve"><value>Schlüssel eingefügt und geprüft: verbunden.</value></data>
   <data name="DataSourcesKeyRejectedToast" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er gilt, nimmt Arcadia nur die Bilder der Launcher.</value></data>
   <data name="DataSourcesKeyKeptNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Der Schlüssel ist gespeichert, Arcadia prüft ihn bei der nächsten Suche.</value></data>
+  <data name="DataSourcesKeyDelete" xml:space="preserve"><value>Schlüssel löschen</value></data>
+  <data name="DataSourcesKeyDeleteSubtitle" xml:space="preserve"><value>Arcadia fragt SteamGridDB danach nicht mehr</value></data>
+  <data name="DataSourcesKeyDeleteAction" xml:space="preserve"><value>Löschen</value></data>
+  <data name="DataSourcesKeyDeleteInfo" xml:space="preserve"><value>Löscht den Schlüssel von diesem Gerät. Bilder, die schon da sind, bleiben.</value></data>
+  <data name="DataSourcesKeyNotDeleted" xml:space="preserve"><value>Der Schlüssel gilt nicht mehr, ließ sich aber nicht von der Festplatte löschen. Nach einem Neustart ist er wieder da.</value></data>
+  <data name="DataSourcesKeyNotStored" xml:space="preserve"><value>Schlüssel geprüft: verbunden. Er ließ sich nicht speichern und gilt nur, bis Arcadia schließt.</value></data>
   <data name="DataSourcesKeyDeleted" xml:space="preserve"><value>Schlüssel gelöscht. Arcadia fragt SteamGridDB nicht mehr.</value></data>
   <data name="DataSourcesPaste" xml:space="preserve"><value>Aus der Zwischenablage einfügen</value></data>
   <data name="DataSourcesPasteSubtitle" xml:space="preserve"><value>Für einen Schlüssel, den du kopiert hast</value></data>

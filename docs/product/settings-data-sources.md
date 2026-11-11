@@ -6,8 +6,9 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
 ## SteamGridDB key (#489)
 
 - Group "STEAMGRIDDB": row "Schlüssel" (A "Eingeben"/"Bearbeiten": the on-screen keyboard, the field starts empty;
-  an empty field taken deletes the key), indented below it "Aus der Zwischenablage einfügen", "Schlüssel-Seite öffnen"
-  and "Verbindung testen". The row shows only the key's last four characters ("Verbunden · endet auf …3f9a").
+  an empty field taken changes nothing), indented below it "Aus der Zwischenablage einfügen", "Schlüssel-Seite öffnen",
+  "Verbindung testen" and "Schlüssel löschen" (greyed out without a key). The row shows only the key's last four
+  characters ("Verbunden · endet auf …3f9a").
 - A key is 32 letters and digits; spaces and line breaks around it are trimmed, anything else is refused before any
   request. A key typed or pasted is saved and checked at once (one request); "Verbindung testen" checks again,
   10 s at most. No answer or no network keeps the key without a warning.
@@ -28,10 +29,11 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   ("Verschieben ⇅") moves it one place up, the first one down; the focus stays on it. Saved in `settings.json`.
 - "Zuschneiden erlaubt" (group "ARTWORK"): Wenig · bis 5 %, Normal · bis 15 % (default), Viel · bis 30 %. Each image
   is checked against it in the order; the first that fits wins, none fitting: the first source with any image, cropped.
-- SteamGridDB is asked only for a game and kind whose current image doesn't fit, so a key arriving later also replaces
-  fallback images (e.g. a 16 : 9 background), never an image set by hand. It is asked by the launcher's id (Steam
-  AppID, Epic's id); games without one wait for the search by name (#13). Of its images the best-rated one that
-  fits (static only, no NSFW or humour) is downloaded; only one per game and kind.
+- SteamGridDB is asked only for a game and kind whose current image doesn't fit, so a key arriving later also
+  replaces fallback images (e.g. a 16 : 9 background), never an image set by hand; an image it gave holds SteamGridDB's
+  place in the order at later scans. It is asked by the launcher's id (Steam's AppID); games without one wait for the
+  search by name (#13). Of its images the best-rated one that fits (static only, no NSFW or humour) is downloaded;
+  only one per game and kind.
 - After every scan a background run fills what is missing; "Fehlende Cover und Hintergründe" counts the games still
   without ("N Spiele ohne Cover, M ohne Hintergrund"), shows "Suche läuft · n von N Spielen" with a progress bar, and A
   ("Jetzt suchen") starts it at once, asking SteamGridDB again for games it answered before. Only a run the player

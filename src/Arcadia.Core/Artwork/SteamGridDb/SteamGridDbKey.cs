@@ -94,7 +94,7 @@ public sealed class SteamGridDbKey(SteamGridDbKeyStore store, SteamGridDbClient 
         lock (_lock)
         {
             EnsureLoaded();
-            store.Save(normalized);
+            IsStored = store.Save(normalized);
             _key = normalized;
             _state = SteamGridDbKeyState.Unchecked;
             _checkedAt = null;
@@ -105,13 +105,21 @@ public sealed class SteamGridDbKey(SteamGridDbKeyStore store, SteamGridDbClient 
         return await CheckAsync(normalized, cancel);
     }
 
+    /// <summary>
+    /// Whether the last key set was written as the store keeps it (encrypted on disk, or in memory where that is all it
+    /// does); false when the file couldn't be written, so the key lasts only until Arcadia closes.
+    /// </summary>
+    public bool IsStored { get; private set; } = true;
+
     /// <summary>Deletes the key: no request goes from now on.</summary>
-    public void Clear()
+    /// <returns>False when the stored key couldn't be deleted: it is gone until Arcadia closes, but back after a restart.</returns>
+    public bool Clear()
     {
+        bool deleted;
         lock (_lock)
         {
             EnsureLoaded();
-            store.Save(null);
+            deleted = store.Save(null);
             _key = null;
             _state = SteamGridDbKeyState.None;
             _checkedAt = null;
@@ -119,6 +127,7 @@ public sealed class SteamGridDbKey(SteamGridDbKeyStore store, SteamGridDbClient 
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
+        return deleted;
     }
 
     /// <summary>"Verbindung testen": asks SteamGridDB once; null without a key (nothing is sent).</summary>

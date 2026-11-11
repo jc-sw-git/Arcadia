@@ -180,6 +180,20 @@ public sealed class SteamGridDbKeyTests : IDisposable
         data => ProtectedData.Unprotect(data, null, DataProtectionScope.CurrentUser));
 
     [Fact]
+    [Trait("TestCase", "T489-8")]
+    public async Task A_key_that_cant_be_written_still_works_and_says_it_isnt_stored()
+    {
+        var store = new SteamGridDbKeyStore(_folder, _ => throw new CryptographicException("no profile"), data => data);
+        var key = KeyOver(store);
+
+        Assert.Equal(SteamGridDbOutcome.Found, await key.SetAsync(FakeSteamGridDb.Key));
+
+        Assert.False(key.IsStored);
+        Assert.True(key.IsUsable);
+        Assert.False(File.Exists(Path.Combine(_folder, SteamGridDbKeyStore.FileName)));
+    }
+
+    [Fact]
     [Trait("TestCase", "T489-9")]
     public async Task Without_encryption_the_key_lasts_until_arcadia_closes_and_nothing_is_written()
     {

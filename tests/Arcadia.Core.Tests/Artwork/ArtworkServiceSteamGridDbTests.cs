@@ -402,6 +402,30 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     }
 
     /// <summary>A launcher whose games have a Steam store id.</summary>
+    [Theory]
+    [Trait("TestCase", "T489-15")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SteamGridDbs_image_stays_at_the_next_scan_when_the_launcher_offers_a_file(bool steamGridDbFirst)
+    {
+        // A launcher cover that cuts 10 %: with SteamGridDB first or with "Wenig", SteamGridDB's is the one to show.
+        var file = Path.Combine(_root, "cover.png");
+        File.WriteAllBytes(file, TestImages.Png(667, 900));
+        _source.Cover = [new("steam-cache", File: file)];
+        _sgdb.Cover("steam", Id, GridCover, 600, 900);
+        _images.Serve(GridCover, TestImages.Png(600, 900));
+        _settings = steamGridDbFirst
+            ? _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] }
+            : _settings with { Crop = CropAllowance.Little };
+        await WithKeyAsync();
+
+        await ScanAsync();
+        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached()!.Cover!.Origin);
+        await ScanAsync();
+        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached()!.Cover!.Origin);
+        Assert.Single(_sgdb.Asked(), path => path.StartsWith("grids/", StringComparison.Ordinal));
+    }
+
     private sealed class StoreSource : ILauncherArtwork, IArtworkLookup
     {
         public IReadOnlyList<ArtworkCandidate> Cover { get; set; } = [];

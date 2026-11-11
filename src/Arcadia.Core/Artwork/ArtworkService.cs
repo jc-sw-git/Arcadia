@@ -470,6 +470,13 @@ public sealed class ArtworkService : IDisposable
         Pick? fallback = null;
         foreach (var source in run.Order)
         {
+            if (source == ArtworkSourceKind.SteamGridDb && cached?.Origin == SteamGridDbOrigin
+                && cachedSize is { } fromSteamGridDb && ArtworkFormat.Fits(fromSteamGridDb, kind, run.Tolerance))
+            {
+                // SteamGridDB isn't asked again for an image it gave, so its place in the order is held by the cached one.
+                return new Pick.Keep();
+            }
+
             var (candidates, from) = source == ArtworkSourceKind.SteamGridDb
                 ? (await SteamGridDbCandidatesAsync(game, kind, lookup, cachedSize, run, cancel), ArtworkSource.SteamGridDb)
                 : (lookup.For(game, kind), ArtworkSource.Launcher);

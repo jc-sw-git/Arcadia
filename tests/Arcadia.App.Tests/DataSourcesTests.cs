@@ -98,6 +98,7 @@ public sealed class DataSourcesTests
                 ("steamgriddb-paste", AppTexts.DataSourcesSteamGridDbGroup, 1),
                 ("steamgriddb-page", AppTexts.DataSourcesSteamGridDbGroup, 1),
                 ("steamgriddb-test", AppTexts.DataSourcesSteamGridDbGroup, 1),
+                ("steamgriddb-delete", AppTexts.DataSourcesSteamGridDbGroup, 1),
                 (ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher), AppTexts.DataSourcesOrderGroup, 0),
                 (ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb), AppTexts.DataSourcesOrderGroup, 0),
                 (ArtworkSourceRows.MissingKey, AppTexts.DataSourcesArtworkGroup, 0),
@@ -162,18 +163,28 @@ public sealed class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-3")]
-    public async Task An_empty_field_taken_deletes_the_key_and_no_request_follows()
+    public async Task An_empty_field_keeps_the_key_and_Schluessel_loeschen_deletes_it_without_a_request()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
         OpenDataSources(arcadia);
+        var delete = Row(arcadia, "steamgriddb-delete");
+        Assert.Equal((true, false), (delete.IsDimmed, delete.CanActivate));
         arcadia.SteamGridDb.ValidKey = WrongKey;
         await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
         Assert.True(arcadia.Main.Status.HasSteamGridDbWarning);
         var asked = arcadia.SteamGridDb.Count;
 
+        // "Bearbeiten" and the empty field taken: nothing changes, nothing is sent.
         arcadia.Press(UiAction.Accept);
         arcadia.Press(UiAction.Settings);
+        Assert.Null(arcadia.Main.Settings!.Selected.Editor);
+        Assert.Equal(AppTexts.DataSourcesKeyRejected, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        Assert.True(File.Exists(Path.Combine(arcadia.Folder, "data", SteamGridDbKeyStore.FileName)));
+        Assert.Equal(asked, arcadia.SteamGridDb.Count);
+
+        arcadia.FocusRow("steamgriddb-delete");
+        arcadia.Press(UiAction.Accept);
 
         Assert.Equal(AppTexts.DataSourcesKeyDeleted, arcadia.Main.Toast.Text);
         Assert.Equal(AppTexts.DataSourcesKeyNone, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
@@ -334,7 +345,7 @@ public sealed class DataSourcesTests
 
         using var restarted = await arcadia.RestartAsync();
         OpenDataSources(restarted);
-        Assert.Equal(steamGridDb, restarted.Main.Settings!.Selected.Rows[4].Key);
+        Assert.Equal(steamGridDb, restarted.Main.Settings!.Selected.Rows[5].Key);
 
         restarted.FocusRow(steamGridDb);
         restarted.Press(UiAction.Accept);

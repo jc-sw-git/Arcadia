@@ -27,6 +27,7 @@ public sealed class SteamGridDbKeyRows
     private readonly ActionRowViewModel _paste;
     private readonly ActionRowViewModel _page;
     private readonly ActionRowViewModel _test;
+    private readonly ActionRowViewModel _delete;
     private bool _checking;
     private bool _testing;
 
@@ -68,10 +69,17 @@ public sealed class SteamGridDbKeyRows
             ActionText = AppTexts.DataSourcesTestAction,
             Info = [new InfoText(AppTexts.DataSourcesTestInfo), new InfoText(AppTexts.DataSourcesTestInfoTimeout)],
         };
+        _delete = new ActionRowViewModel("steamgriddb-delete", AppTexts.DataSourcesKeyDelete, Delete)
+        {
+            Group = Group,
+            Indent = 1,
+            ActionText = AppTexts.DataSourcesKeyDeleteAction,
+            Info = [new InfoText(AppTexts.DataSourcesKeyDeleteInfo)],
+        };
         Refresh();
     }
 
-    public IReadOnlyList<SettingsRowViewModel> Rows => [_keyRow, _paste, _page, _test];
+    public IReadOnlyList<SettingsRowViewModel> Rows => [_keyRow, _paste, _page, _test, _delete];
 
     /// <summary>The key or what SteamGridDB said about it changed; UI thread.</summary>
     public void Refresh()
@@ -101,6 +109,9 @@ public sealed class SteamGridDbKeyRows
         _keyRow.Refresh();
 
         var hasKey = state != SteamGridDbKeyState.None;
+        _delete.IsDimmed = !hasKey;
+        _delete.IsEnabled = hasKey && !_checking;
+        _delete.Subtitle = hasKey ? AppTexts.DataSourcesKeyDeleteSubtitle : AppTexts.DataSourcesTestNeedsKey;
         _test.IsDimmed = !hasKey;
         _test.IsEnabled = hasKey && !_testing && !_checking;
         _test.IsWorking = _testing;
@@ -115,7 +126,10 @@ public sealed class SteamGridDbKeyRows
         _paste.IsEnabled = !_checking;
     }
 
-    /// <summary>A on "Schlüssel": the on-screen keyboard over an empty field; an empty field taken deletes the key.</summary>
+    /// <summary>
+    /// A on "Schlüssel": the on-screen keyboard over an empty field; an empty field taken changes nothing, so the key is
+    /// never lost by opening the field and confirming ("Schlüssel löschen" deletes it).
+    /// </summary>
     private void Edit()
     {
         if (_keyRow.Editor is not null || _checking)
@@ -129,11 +143,7 @@ public sealed class SteamGridDbKeyRows
             text => text.Length == 0 || SteamGridDbKey.Normalize(text) is not null ? null : AppTexts.DataSourcesKeyProblem,
             text =>
             {
-                if (text.Length == 0)
-                {
-                    Delete();
-                }
-                else
+                if (text.Length > 0)
                 {
                     TakeAsync(text, pasted: false).Forget(AppTexts.ErrorContextSteamGridDb);
                 }
@@ -167,9 +177,17 @@ public sealed class SteamGridDbKeyRows
             return;
         }
 
-        _key.Clear();
-        AppLog.Write("SteamGridDB: Schlüssel gelöscht");
-        _host.Toast(HealthSeverity.Info, AppTexts.DataSourcesKeyDeleted);
+        if (_key.Clear())
+        {
+            AppLog.Write("SteamGridDB: Schlüssel gelöscht");
+            _host.Toast(HealthSeverity.Info, AppTexts.DataSourcesKeyDeleted);
+        }
+        else
+        {
+            AppLog.Write("SteamGridDB: Schlüssel gelöscht, die Datei ließ sich nicht löschen");
+            _host.Toast(HealthSeverity.Warning, AppTexts.DataSourcesKeyNotDeleted);
+        }
+
         Refresh();
     }
 
@@ -213,6 +231,10 @@ public sealed class SteamGridDbKeyRows
                 break;
             case SteamGridDbOutcome.NoConnection:
                 _host.Toast(HealthSeverity.Warning, AppTexts.DataSourcesKeyKeptNoConnection);
+                break;
+            case SteamGridDbOutcome.Found or SteamGridDbOutcome.NotFound when !_key.IsStored:
+                _host.Toast(HealthSeverity.Warning, AppTexts.DataSourcesKeyNotStored);
+                _artwork.SearchAgain(byPlayer: false);
                 break;
             default:
                 _host.Toast(HealthSeverity.Info, pasted ? AppTexts.DataSourcesKeyPasted : AppTexts.DataSourcesKeySaved);

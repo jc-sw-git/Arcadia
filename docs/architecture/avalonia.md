@@ -23,3 +23,5 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   pair. A character neither font has is drawn as a theme icon (⧉ `PadIconView`, ≡ `PadIconOptions`, ↹ `KeyIconTab`);
   `EmbeddedFontTests` fails on any other in the App's strings and views. A Fluent `Button` centres itself vertically:
   set `VerticalAlignment` when it must fill a cell.
+- A `ScrollBar` sets its own `IsVisible` whenever it has something to scroll, overriding a binding: show or hide it
+  through a panel around it.

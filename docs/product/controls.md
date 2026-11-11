@@ -19,6 +19,8 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   at the end, and only a fresh press goes round; a switch flips once per press. A hold acts only where it was
   pressed: once the page, a dialog or the page's layout changes (B closes a page, the keyboard slides in or out, a
   dialog opens), it does nothing more until let go. Pan hiding or showing a controller releases what is held (#367).
+- A stick direction or a trigger presses past half way and lets go only below 0.3 (stick) or a quarter (trigger), so
+  one held near half way that wobbles gives no fresh press and doesn't go round at a list's end (#476).
 - Every common controller works the same, with Steam running or not and with Steam-Eingabe on or off for it (#72):
   Xbox, PlayStation, Nintendo and pads modelled on them, read through SDL3. Buttons count by position: the bottom face
   button is A on every controller (Cross, Nintendo's B), the right one B. Guide/PS/Home, Capture and the touchpad click

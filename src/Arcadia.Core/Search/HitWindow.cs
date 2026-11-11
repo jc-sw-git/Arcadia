@@ -1,12 +1,13 @@
+using Arcadia.Core.Navigation;
+
 namespace Arcadia.Core.Search;
 
 /// <summary>
 /// The hits on screen: <see cref="Size"/> of them from <see cref="Start"/>, laid out in rows of
-/// <see cref="RowLength"/>. Single steps move through the hits and stop at the ends; LT/RT turn
-/// a whole window. A single row wraps round like the detail page's carousel, so after the last
-/// window comes the first; a grid stops at its ends like the library's pages and the mouse wheel
-/// (owner, 2026-10-19). In a grid the window starts on a row, so the columns stay where they are
-/// while it scrolls.
+/// <see cref="RowLength"/>. Steps move through the hits and LT/RT turn a whole window; both go round
+/// at the ends like the detail page's carousel, a held one stops there (#476). The mouse wheel and
+/// the scroll bar stop at the ends. In a grid the window starts on a row, so the columns stay where
+/// they are while it scrolls.
 /// </summary>
 /// <param name="Start">The first hit shown.</param>
 /// <param name="Size">Hits shown at once; a multiple of <paramref name="RowLength"/>.</param>
@@ -47,15 +48,14 @@ public readonly record struct HitWindow(int Start, int Size, int RowLength, int 
     }
 
     /// <summary>
-    /// The next (<paramref name="direction"/> 1) or previous (-1) window; a single row wraps at the
-    /// ends, a grid stays there. <paramref name="focus"/> keeps its place in the window where the
-    /// new one has a hit there.
+    /// The next (<paramref name="direction"/> 1) or previous (-1) window, round from the last to the
+    /// first and back. <paramref name="focus"/> keeps its place in the window where the new one has
+    /// a hit there.
     /// </summary>
     /// <param name="held">A held LT/RT repeating (#476): it stops at the end, only a fresh press wraps.</param>
     public (HitWindow Window, int Focus) Turn(int direction, int focus, bool held = false)
     {
-        var wraps = Size == RowLength && !held;
-        if (!CanTurn || (!wraps && Start == (direction > 0 ? LastStart : 0)))
+        if (!CanTurn || (held && Start == (direction > 0 ? LastStart : 0)))
         {
             return (this, focus);
         }
@@ -69,24 +69,18 @@ public readonly record struct HitWindow(int Start, int Size, int RowLength, int 
 
     /// <summary>
     /// The focus after a step left/right (<paramref name="columns"/>) or up/down (<paramref name="rows"/>),
-    /// and the window moved just far enough to show it. Steps stop at the first and last hit; up
-    /// and down only move where there is a row.
+    /// and the window moved just far enough to show it. All hits are one page of <see cref="GridFocus"/>:
+    /// a step past the first or last hit goes round, up in the first row to the last and down in the
+    /// last row to the first; a held step stops there.
     /// </summary>
-    public (HitWindow Window, int Focus) Move(int focus, int columns, int rows)
+    public (HitWindow Window, int Focus) Move(int focus, int columns, int rows, bool held = false)
     {
         if (Count == 0)
         {
             return (this, 0);
         }
 
-        var target = Math.Clamp(focus + columns, 0, Count - 1);
-        if (rows != 0)
-        {
-            var row = (focus / RowLength) + rows;
-            var lastRow = (Count - 1) / RowLength;
-            target = row < 0 || row > lastRow ? focus : Math.Min(focus + (rows * RowLength), Count - 1);
-        }
-
+        var target = GridFocus.Step(focus, Count, Count, RowLength, columns, rows, held);
         return (Showing(target), target);
     }
 

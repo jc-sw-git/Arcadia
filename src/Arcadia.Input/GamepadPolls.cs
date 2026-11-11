@@ -18,6 +18,16 @@ public sealed class GamepadPolls
     /// <summary>About half way; far outside any stick's dead zone, so a resting stick never navigates.</summary>
     private const double StickThreshold = 16000 / 32767.0;
 
+    /// <summary>
+    /// A held stick direction or trigger lets go only below this, well under where it pressed: one held near the press
+    /// point and wobbling across it is no new press, which would wrap round at a list's end (#476). Still outside the
+    /// sticks' dead zone, so a stick let go does let go.
+    /// </summary>
+    private const double StickReleaseThreshold = 0.3;
+
+    /// <summary>The triggers press past half way (<see cref="SdlPadMapping"/>) and let go below a quarter.</summary>
+    private const double TriggerReleaseThreshold = 0.25;
+
     private static readonly GamepadButton[] Moving =
     [
         GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight,
@@ -67,7 +77,7 @@ public sealed class GamepadPolls
     /// <param name="nowMs">A clock in milliseconds; only differences count.</param>
     public void Update(IReadOnlyList<GamepadReading> readings, long nowMs)
     {
-        var current = Down(readings);
+        var current = Down(readings, _previous);
         _releasedWhileHeld.IntersectWith(current);
         current.ExceptWith(_releasedWhileHeld);
         foreach (var button in current)
@@ -120,8 +130,13 @@ public sealed class GamepadPolls
     }
 
     /// <summary>The buttons held on any of the controllers, the sticks as directions.</summary>
-    public static HashSet<GamepadButton> Down(IReadOnlyList<GamepadReading> readings)
+    /// <param name="held">
+    /// What was down in the poll before: a stick direction or trigger among them stays down until it drops below its
+    /// release threshold.
+    /// </param>
+    public static HashSet<GamepadButton> Down(IReadOnlyList<GamepadReading> readings, IReadOnlySet<GamepadButton>? held = null)
     {
+        held ??= new HashSet<GamepadButton>();
         var down = new HashSet<GamepadButton>();
         foreach (var reading in readings)
         {
@@ -133,33 +148,44 @@ public sealed class GamepadPolls
                 }
             }
 
-            AddDirections(reading.LeftStick, down, GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight);
+            AddHeldTrigger(reading.Triggers.Left, GamepadButton.LeftTrigger, held, down);
+            AddHeldTrigger(reading.Triggers.Right, GamepadButton.RightTrigger, held, down);
+
+            AddDirections(reading.LeftStick, held, down, GamepadButton.DPadUp, GamepadButton.DPadDown, GamepadButton.DPadLeft, GamepadButton.DPadRight);
 
             // The right stick moves a second focus, e.g. through the hits beside the on-screen keyboard.
-            AddDirections(reading.RightStick, down, GamepadButton.RightStickUp, GamepadButton.RightStickDown, GamepadButton.RightStickLeft, GamepadButton.RightStickRight);
+            AddDirections(reading.RightStick, held, down, GamepadButton.RightStickUp, GamepadButton.RightStickDown, GamepadButton.RightStickLeft, GamepadButton.RightStickRight);
         }
 
         return down;
     }
 
-    private static void AddDirections(StickPosition stick, HashSet<GamepadButton> down, GamepadButton up, GamepadButton downward, GamepadButton left, GamepadButton right)
+    private static void AddHeldTrigger(double position, GamepadButton trigger, IReadOnlySet<GamepadButton> held, HashSet<GamepadButton> down)
     {
-        if (stick.Y > StickThreshold)
+        if (held.Contains(trigger) && position >= TriggerReleaseThreshold)
         {
-            down.Add(up);
+            down.Add(trigger);
         }
-        else if (stick.Y < -StickThreshold)
+    }
+
+    private static void AddDirections(StickPosition stick, IReadOnlySet<GamepadButton> held, HashSet<GamepadButton> down, GamepadButton up, GamepadButton downward, GamepadButton left, GamepadButton right)
+    {
+        AddAxis(stick.Y, up, downward, held, down);
+        AddAxis(stick.X, right, left, held, down);
+    }
+
+    /// <summary>One axis of a stick: <paramref name="positive"/> or <paramref name="negative"/>, or neither.</summary>
+    private static void AddAxis(double value, GamepadButton positive, GamepadButton negative, IReadOnlySet<GamepadButton> held, HashSet<GamepadButton> down)
+    {
+        if (value > Threshold(positive))
         {
-            down.Add(downward);
+            down.Add(positive);
+        }
+        else if (value < -Threshold(negative))
+        {
+            down.Add(negative);
         }
 
-        if (stick.X > StickThreshold)
-        {
-            down.Add(right);
-        }
-        else if (stick.X < -StickThreshold)
-        {
-            down.Add(left);
-        }
+        double Threshold(GamepadButton direction) => held.Contains(direction) ? StickReleaseThreshold : StickThreshold;
     }
 }

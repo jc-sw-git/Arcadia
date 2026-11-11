@@ -60,7 +60,8 @@
       wählen“, der Kopf zeigt „8–14 von 105“. Der rechte Stick bewegt den Fokus einzeln (die Reihe gleitet mit),
       LT/RT gleiten eine ganze Reihe weiter und vom Ende wieder zum Anfang (und umgekehrt). Eingefahren scrollt
       das Raster senkrecht mit verblassten Reihen oben und unten, LT/RT und Bild ↑/↓ blättern um zwei Reihen und
-      bleiben am Anfang und Ende stehen (kein Sprung ans andere Ende, wie Mausrad und Bibliothek); Mausrad und
+      ~~bleiben am Anfang und Ende stehen (kein Sprung ans andere Ende, wie Mausrad und Bibliothek)~~ gehen am Ende
+      rund wie die Reihe (#476, T476-1; nur das Mausrad bleibt stehen); Mausrad und
       Klick auf einen angeschnittenen Treffer scrollen ebenso. Eine Scrollleiste zeigt, wo man steht: unter der
       Reihe waagrecht, neben dem Raster senkrecht; Ziehen oder ein Klick auf die Leiste scrollt. · E2E: ja
 - [x] **T12-17** Viele Launcher (mit der Maus sichtbar): Passen die Chips nicht neben „Sortiert nach …“, fallen

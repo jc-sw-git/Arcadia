@@ -17,9 +17,12 @@ Search (#12).
 
 - B closes the layout menu first, then puts the keyboard away, then closes the search; B never erases.
 - D-pad/left stick type, the right stick picks a hit. LT/RT (or Page Up/Down, the wheel) turn the hits a window at a
-  time, as LT/RT turn pages and the detail page; the row wraps round like the detail page, the grid stops at its ends
-  like the library and the wheel. A scroll bar shows where the shown hits are: across below the row, down beside the
-  grid.
+  time, as LT/RT turn pages and the detail page, and go round from the last window to the first and back (#476); the
+  wheel and the scroll bar stop at the ends. A scroll bar shows where the shown hits are: across below the row, down
+  beside the grid. The grid's LT/RT buttons show whenever there are more hits than fit.
+- The focus goes round too: left on the first hit goes to the last, right on the last to the first. In the grid (more
+  than one row) up in the first row goes to the last row, same column (the last hit if that row is shorter there),
+  down in the last row to the first row; in the row up/down do nothing.
 - X erases (held: repeats), Y space, LB shift and RB AltGr (each: tap on/off, held only while held; one at a time).
 - L3 "Filter und Sortierung": launchers (any number) and the library's sort orders plus relevance, the default; not
   saved. The library's filter (#44) doesn't apply to the search. R3 layout menu (all five, the last chosen saved globally).

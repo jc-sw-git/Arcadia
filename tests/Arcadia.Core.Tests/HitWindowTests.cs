@@ -53,14 +53,26 @@ public class HitWindowTests
     }
 
     [Fact]
-    public void A_grid_stops_at_its_ends_instead_of_wrapping()
+    [Trait("TestCase", "T476-1")]
+    public void A_grid_goes_round_from_its_last_window_to_its_first_and_back()
     {
         var first = HitWindow.Of(30, rows: 2, rowLength: 7);
         var last = first with { Start = first.LastStart };
 
-        Assert.Equal((first, 3), first.Turn(-1, 3));
-        Assert.Equal((last, 25), last.Turn(1, 25));
+        Assert.Equal((last, 24), first.Turn(-1, 3));
+        Assert.Equal((first, 4), last.Turn(1, 25));
         Assert.Equal(7, last.Turn(-1, 25).Window.Start);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-9")]
+    public void A_held_turn_stops_at_the_ends_of_a_grid()
+    {
+        var first = HitWindow.Of(30, rows: 2, rowLength: 7);
+        var last = first with { Start = first.LastStart };
+
+        Assert.Equal((first, 3), first.Turn(-1, 3, held: true));
+        Assert.Equal((last, 25), last.Turn(1, 25, held: true));
     }
 
     [Fact]
@@ -75,31 +87,60 @@ public class HitWindowTests
     }
 
     [Fact]
-    public void Steps_stop_at_the_first_and_last_hit_and_drag_a_single_row_along_by_one()
+    [Trait("TestCase", "T476-2")]
+    public void Steps_go_round_past_the_first_and_last_hit_and_drag_a_single_row_along_by_one()
     {
         var window = HitWindow.Of(10, rows: 1, rowLength: 7);
 
-        Assert.Equal((window, 0), window.Move(0, -1, 0));
+        var (round, roundFocus) = window.Move(0, -1, 0);
+        Assert.Equal((3, 9), (round.Start, roundFocus));
 
         var (moved, focus) = window.Move(6, 1, 0);
         Assert.Equal((1, 7), (moved.Start, focus));
 
         var (end, endFocus) = (moved with { Start = 3 }).Move(9, 1, 0);
-        Assert.Equal((3, 9), (end.Start, endFocus));
+        Assert.Equal((0, 0), (end.Start, endFocus));
     }
 
     [Fact]
-    public void Up_and_down_in_a_grid_move_by_a_row_and_only_where_there_is_one()
+    [Trait("TestCase", "T476-9")]
+    public void Held_steps_stop_at_the_first_and_last_hit()
+    {
+        var window = HitWindow.Of(10, rows: 1, rowLength: 7);
+
+        Assert.Equal((window, 0), window.Move(0, -1, 0, held: true));
+        var end = window with { Start = 3 };
+        Assert.Equal((end, 9), end.Move(9, 1, 0, held: true));
+    }
+
+    [Fact]
+    public void Up_and_down_in_a_grid_move_by_a_row()
     {
         var window = HitWindow.Of(17, rows: 2, rowLength: 7);
 
         Assert.Equal(10, window.Move(3, 0, 1).Focus);
-        Assert.Equal(3, window.Move(3, 0, -1).Focus);
 
         // Row three exists with three hits: down from column five lands on the last hit, a row further on.
         var (moved, focus) = window.Move(12, 0, 1);
         Assert.Equal((16, 7), (focus, moved.Start));
-        Assert.Equal(16, moved.Move(16, 0, 1).Focus);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T476-3")]
+    public void Up_in_the_first_row_goes_to_the_last_and_down_in_the_last_to_the_first()
+    {
+        var window = HitWindow.Of(17, rows: 2, rowLength: 7);
+
+        // The last row has three hits: column three is empty there, so up lands on the last hit.
+        var (up, upFocus) = window.Move(3, 0, -1);
+        Assert.Equal((16, 7), (upFocus, up.Start));
+        Assert.Equal(15, window.Move(1, 0, -1).Focus);
+
+        var (down, downFocus) = up.Move(16, 0, 1);
+        Assert.Equal((2, 0), (downFocus, down.Start));
+
+        Assert.Equal(16, up.Move(16, 0, 1, held: true).Focus);
+        Assert.Equal(3, window.Move(3, 0, -1, held: true).Focus);
     }
 
     [Fact]

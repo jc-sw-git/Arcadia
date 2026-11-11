@@ -12,34 +12,46 @@ namespace Arcadia.App.Tests;
 /// <summary>The library with the controller alone: focus, tabs, pages and "Ansicht".</summary>
 public sealed class LibraryTests
 {
+    /// <summary>GOG has 31 games: 24 on page 1 (three rows of 8), 7 on page 2 (one row).</summary>
     [AvaloniaFact]
     [Trait("TestCase", "G-6")]
-    public async Task The_D_pad_moves_the_focus_through_the_grid_and_stops_at_its_edges()
+    [Trait("TestCase", "T476-4")]
+    public async Task The_D_pad_moves_the_focus_through_the_grid_onto_the_next_page_and_round()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
-        var main = arcadia.Main;
+        const int columns = Arcadia.App.ViewModels.LibraryViewModel.GridColumns;
 
-        arcadia.Press(UiAction.Left).Press(UiAction.Up);
-        Assert.Equal(0, FocusedIndex(arcadia));
-
+        // Left on the first game: the last one, on the last page; right there goes round to the first.
+        arcadia.Press(UiAction.Left);
+        Assert.Equal(("2", 6), (CurrentPage(arcadia), FocusedIndex(arcadia)));
         arcadia.Press(UiAction.Right);
-        Assert.Equal(1, FocusedIndex(arcadia));
+        Assert.Equal(("1", 0), (CurrentPage(arcadia), FocusedIndex(arcadia)));
 
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(1 + Arcadia.App.ViewModels.LibraryViewModel.GridColumns, FocusedIndex(arcadia));
-
+        arcadia.Press(UiAction.Right).Press(UiAction.Down);
+        Assert.Equal(1 + columns, FocusedIndex(arcadia));
         arcadia.Press(UiAction.Up);
         Assert.Equal(1, FocusedIndex(arcadia));
 
-        // Down stops at the page's last row (24 per page: 3 full rows of 8).
-        arcadia.Press(UiAction.Down, times: 5);
-        Assert.Equal(1 + (2 * Arcadia.App.ViewModels.LibraryViewModel.GridColumns), FocusedIndex(arcadia));
+        // Down in the page's bottom row: the next page's top row, same column; from the last page round to the first.
+        arcadia.Press(UiAction.Down, times: 3);
+        Assert.Equal(("2", 1), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+        arcadia.Press(UiAction.Down);
+        Assert.Equal(("1", 1), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+
+        // Up in the first page's top row: the last page's bottom row.
+        arcadia.Press(UiAction.Up);
+        Assert.Equal(("2", 1), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+        arcadia.Press(UiAction.Right).Press(UiAction.Left).Press(UiAction.Left);
+        Assert.Equal(("2", 0), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+        arcadia.Press(UiAction.Left);
+        Assert.Equal(("1", 23), (CurrentPage(arcadia), FocusedIndex(arcadia)));
         Assert.Single(arcadia.PageGames, tile => tile.IsFocused);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "G-6")]
-    public async Task The_D_pad_held_repeats_the_move_after_a_moment_and_stops_at_the_edge_of_the_page()
+    [Trait("TestCase", "T476-9")]
+    public async Task The_D_pad_held_repeats_the_move_crosses_onto_the_next_page_and_stops_at_the_end()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
 
@@ -49,12 +61,15 @@ public sealed class LibraryTests
 
         // Held a second: it goes on by itself, several steps further.
         arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadRight);
-        Assert.InRange(FocusedIndex(arcadia), 5, 24);
+        Assert.InRange(FocusedIndex(arcadia), 5, 23);
 
-        // Held long, down: row by row to the page's last row (24 per page: 3 full rows of 8), no further.
+        // Held long, down: row by row onto page 2 (one row of 7), the last row of all, and there it stops.
         var column = FocusedIndex(arcadia) % Arcadia.App.ViewModels.LibraryViewModel.GridColumns;
         arcadia.HoldPad(TimeSpan.FromSeconds(3), PadButtons.DPadDown);
-        Assert.Equal(column + (2 * Arcadia.App.ViewModels.LibraryViewModel.GridColumns), FocusedIndex(arcadia));
+        Assert.Equal(("2", Math.Min(column, 6)), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+
+        // A fresh press goes round to the first page.
+        arcadia.HoldPad(TimeSpan.FromMilliseconds(100), PadButtons.DPadDown);
         Assert.Equal("1", CurrentPage(arcadia));
     }
 
@@ -133,7 +148,8 @@ public sealed class LibraryTests
 
     [AvaloniaFact]
     [Trait("TestCase", "G-8")]
-    public async Task LT_and_RT_turn_the_pages_and_the_page_bar_shows_the_current_page()
+    [Trait("TestCase", "T476-4")]
+    public async Task LT_and_RT_turn_the_pages_round_and_the_page_bar_shows_the_current_page()
     {
         // GOG has 31 games: 24 on page 1, 7 on page 2.
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -146,12 +162,14 @@ public sealed class LibraryTests
         Assert.Equal("2", CurrentPage(arcadia));
         Assert.Equal(0, FocusedIndex(arcadia));
 
-        // Past the last page nothing happens.
+        // Past the last page round to the first, and back.
         arcadia.Press(UiAction.NextPage);
-        Assert.Equal("2", CurrentPage(arcadia));
+        Assert.Equal(24, arcadia.PageGames.Count);
+        Assert.Equal("1", CurrentPage(arcadia));
 
         arcadia.Press(UiAction.PreviousPage);
-        Assert.Equal(24, arcadia.PageGames.Count);
+        Assert.Equal("2", CurrentPage(arcadia));
+        arcadia.Press(UiAction.PreviousPage);
         Assert.Equal("1", CurrentPage(arcadia));
     }
 

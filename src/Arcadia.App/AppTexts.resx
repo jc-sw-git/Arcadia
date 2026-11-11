@@ -122,7 +122,7 @@
   <data name="LayoutsText" xml:space="preserve"><value>Lege fest, welches Controller-Layout deine verbundenen Controller erhalten. Das Layout gilt pro Modell, nicht pro Controller: Alle DualSense Controller bekommen also dasselbe Layout.</value></data>
   <data name="LayoutsHint" xml:space="preserve"><value>Erst „Übernehmen“ wendet die Änderungen an. Läuft gerade ein Spiel, verbindet sich der Controller dort einmal neu.</value></data>
   <data name="Apply" xml:space="preserve"><value>Übernehmen</value></data>
-  <data name="LayoutsLockNote" xml:space="preserve"><value>Der Arcadia-Modus für den Steam Controller ist bisher auf das Xbox 360 Layout begrenzt. Ein Update wird das ändern.</value></data>
+  <data name="LayoutsLockNote" xml:space="preserve"><value>Der Arcadia-Modus für den Steam Controller ist bisher auf das Layout des Xbox Controllers begrenzt. Ein Update wird das ändern.</value></data>
   <data name="LayoutsSteamControllerTitle" xml:space="preserve"><value>Steam Controller (Modus „Arcadia“)</value></data>
   <data name="ControllerCategory" xml:space="preserve"><value>Controller</value></data>
   <data name="ControllerSteamSettingsTitle" xml:space="preserve"><value>Controller-Einstellungen für Steam</value></data>
@@ -369,7 +369,7 @@
   <data name="PanLayoutsSubtitle" xml:space="preserve"><value>Ändere das Layout deiner angeschlossenen Controller</value></data>
   <data name="Installing" xml:space="preserve"><value>Wird installiert …</value></data>
   <data name="DriversInstall" xml:space="preserve"><value>Treiber installieren</value></data>
-  <data name="PanLayoutsInfo" xml:space="preserve"><value>Pan erlaubt es, deinen angeschlossenen Controllern ein anderes Layout zuzuweisen. Controller wie der DualSense, Xbox Controller oder Nintendo Switch 2 Pro Controller werden von Pan nativ unterstützt, also 1:1 übersetzt, und haben von Haus aus ihr korrektes Layout. Controller, die Pan nicht nativ übersetzen kann (zum Beispiel der GameCube Controller oder Controller anderer Hersteller), werden als Xbox 360 Controller behandelt.</value></data>
+  <data name="PanLayoutsInfo" xml:space="preserve"><value>Pan erlaubt es, deinen angeschlossenen Controllern ein anderes Layout zuzuweisen. Controller wie der DualSense, Xbox Controller oder Nintendo Switch 2 Pro Controller werden von Pan nativ unterstützt, also 1:1 übersetzt, und haben von Haus aus ihr korrektes Layout. Controller, die Pan nicht nativ übersetzen kann (zum Beispiel der GameCube Controller oder Controller anderer Hersteller), werden als Xbox Controller behandelt.</value></data>
   <data name="PanLayoutsInfoWhen" xml:space="preserve"><value>Das Layout zu ändern kann sinnvoll sein, wenn du Controller in Spielen verwenden möchtest, die sie nicht unterstützen, oder wenn dein Controller eines anderen Herstellers wie ein DualSense ein Touchpad oder Gyro hat.</value></data>
   <data name="PanLayoutsInfoNotApplied" xml:space="preserve"><value>Mit „Nicht übernehmen“ ignoriert Pan dieses Controller-Modell. Seine Eingaben kommen dann direkt im Spiel an, als wäre Pan ausgeschaltet.</value></data>
   <data name="PanLayoutNotApplied" xml:space="preserve"><value>Nicht übernommen</value></data>

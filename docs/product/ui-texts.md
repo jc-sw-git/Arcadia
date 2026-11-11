@@ -22,7 +22,7 @@ Where texts live and how to add one (resource files, placeholders): `docs/archit
 | neu einlesen | reading a launcher's games again | aktualisieren (for a rescan) |
 | aktualisieren, Update | a new version (Arcadia, Pan, drivers, games, firmware) | — |
 | PC neu starten, Neustart des PCs, PC-Neustart | restarting the machine | Windows neu starten, Windows-Neustart, Computer, neustarten |
-| Steam Controller, Xbox Controller | product names, no hyphen alone; coupled in compounds (Steam-Controller-Modus) | Steam-Controller |
+| Steam Controller, Xbox Controller | product names, no hyphen alone; coupled in compounds (Steam-Controller-Modus); the Xbox layout is "Xbox Controller", whatever model the virtual pad is | Steam-Controller; Xbox 360 (only where that model itself is meant) |
 | zum Beispiel, eventuell | — | z. B., ggf., any other abbreviation (units like Std., Min., GB, % stay) |
 | Abfrage nach Administratorrechten | the system's prompt for admin rights | Windows-Abfrage |
 | kept loan words | Launcher, Tab, Artwork, Soundtrack, Firmware, Log, Update | — |

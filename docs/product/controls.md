@@ -16,7 +16,9 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every
   150 ms; keys repeat as Windows repeats them. On the on-screen keyboard LB/RB are shift and AltGr and don't repeat.
   A hold stops at the end once: where a step past the end goes round to the other end, a held button or key stops
-  at the end, and only a fresh press goes round; a switch flips once per press. A hold acts only where it was
+  at the end, and only a fresh press goes round; a switch flips once per press. Two exceptions: the detail page's
+  carousel shows no first or last game, so held LT/RT turn it round without a stop; in the library a held stick or
+  D-pad also stops at the page's edge, so it never turns the page unnoticed (`library.md`). A hold acts only where it was
   pressed: once the page, a dialog or the page's layout changes (B closes a page, the keyboard slides in or out, a
   dialog opens), it does nothing more until let go. Pan hiding or showing a controller releases what is held (#367).
 - A stick direction or a trigger presses past half way and lets go only below 0.3 (stick) or a quarter (trigger), so

@@ -50,8 +50,8 @@ public sealed class LibraryTests
 
     [AvaloniaFact]
     [Trait("TestCase", "G-6")]
-    [Trait("TestCase", "T476-9")]
-    public async Task The_D_pad_held_repeats_the_move_crosses_onto_the_next_page_and_stops_at_the_end()
+    [Trait("TestCase", "T476-17")]
+    public async Task The_D_pad_held_repeats_the_move_and_stops_at_the_pages_edge_until_a_fresh_press()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
 
@@ -63,14 +63,20 @@ public sealed class LibraryTests
         arcadia.HoldPad(TimeSpan.FromSeconds(1), PadButtons.DPadRight);
         Assert.InRange(FocusedIndex(arcadia), 5, 23);
 
-        // Held long, down: row by row onto page 2 (one row of 7), the last row of all, and there it stops.
+        // Held long, down: row by row to the page's bottom row, and there it stops; the page stays.
         var column = FocusedIndex(arcadia) % Arcadia.App.ViewModels.LibraryViewModel.GridColumns;
         arcadia.HoldPad(TimeSpan.FromSeconds(3), PadButtons.DPadDown);
-        Assert.Equal(("2", Math.Min(column, 6)), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+        Assert.Equal(("1", column + (2 * Arcadia.App.ViewModels.LibraryViewModel.GridColumns)), (CurrentPage(arcadia), FocusedIndex(arcadia)));
 
-        // A fresh press goes round to the first page.
+        // A fresh press goes on to page 2 (one row of 7), held right it stops at that page's last game.
         arcadia.HoldPad(TimeSpan.FromMilliseconds(100), PadButtons.DPadDown);
-        Assert.Equal("1", CurrentPage(arcadia));
+        Assert.Equal(("2", Math.Min(column, 6)), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+        arcadia.HoldPad(TimeSpan.FromSeconds(2), PadButtons.DPadRight);
+        Assert.Equal(("2", 6), (CurrentPage(arcadia), FocusedIndex(arcadia)));
+
+        // From the last page, a fresh press goes round to the first.
+        arcadia.HoldPad(TimeSpan.FromMilliseconds(100), PadButtons.DPadRight);
+        Assert.Equal(("1", 0), (CurrentPage(arcadia), FocusedIndex(arcadia)));
     }
 
     [AvaloniaFact]

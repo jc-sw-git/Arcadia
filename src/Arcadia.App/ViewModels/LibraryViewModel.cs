@@ -473,7 +473,8 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
 
     /// <summary>
     /// A step of the focus through all games of the tab: past a page's edge onto the neighbouring page, past the last
-    /// game round to the first (#476).
+    /// game round to the first (#476). A held stick or D-pad stops at the page's edge, so it never turns the page
+    /// unnoticed; a fresh press goes on.
     /// </summary>
     private void MoveFocus(int columnStep, int rowStep)
     {
@@ -491,7 +492,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         {
             Focus(PageGames[target - pageStart]);
         }
-        else
+        else if (!HeldPress.IsRepeat)
         {
             _requestedPage = target / pageSize;
             Refresh(focusIndex: target % pageSize);

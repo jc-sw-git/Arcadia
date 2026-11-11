@@ -6,7 +6,8 @@
   becomes 24 at the start and is saved so.
 - The focus moves through all games of the tab, not only the page (#476): right on a page's last game goes to the
   next page's first, down in its bottom row to the next page's top row, same column (its last game if that row is
-  shorter), left and up the same way back; from the last page round to the first and back. LT/RT (Q/E, Page Up/Down,
+  shorter), left and up the same way back; from the last page round to the first and back. A held stick or D-pad
+  stops at the page's edge; only a fresh press crosses onto the next page. LT/RT (Q/E, Page Up/Down,
   the buttons below the grid) turn the page and go round the same way; a page number goes straight to its page.
 - Covers are 2 : 3 wherever one is shown: library tile 146 × 219 (its height follows the column's width), search hit
   190 × 285, detail page 210 × 315.

@@ -18,4 +18,5 @@ History:
 | T476-8 to T476-12 | 2026-11-11 | Claude | PR (part 1), Linux container, unit and acceptance tests (`GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests`, `HeldButtonsTests`, `HeldKeysTests`); each acceptance test red once with the feature broken | ✅ | – |
 | T476-8, -9, -10, -12 | 2026-11-11 | QE | PR #479, Linux container: acceptance tests for the library, the search row, the launcher pages, a launcher's switch, the keyboard sliding in and Pan letting go; each red once | ✅ | – |
 | T476-10 | 2026-11-11 | QE | PR #479, code review | ❌ a dialog of a settings category (prompt, "Controller zuordnen", question) doesn't stop a hold | fixed in this PR (Review, finding 1) |
+| T476-10 | 2026-11-11 | Claude | PR #479, Linux container, `EveryControllerForGamesTests.A_held_D_pad_doesnt_reach_a_settings_dialog_opened_meanwhile` (red before the fix) | ✅ | – |
 | T476-8, -9 | 2026-11-11 | QE | PR #479, real app under Xvfb, `--demo`, held E, Shift+E, Page Down (no gamepad) | ✅ library stops on the last page, tabs on the last tab, 34 to 84 repeats each | – |

@@ -41,8 +41,8 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     [ObservableProperty]
     public partial SettingsCategoryViewModel Selected { get; private set; } = null!;
 
-    /// <summary>A text being written takes the buttons for its keyboard.</summary>
-    object? IPage.Layout => Selected?.Editor;
+    /// <summary>A category's dialog or a text being written takes the buttons for itself.</summary>
+    object? IPage.Layout => (Selected?.Dialog, Selected?.Editor);
 
     /// <summary>The focused row of the shown category; the footer and the info panel follow it.</summary>
     [ObservableProperty]

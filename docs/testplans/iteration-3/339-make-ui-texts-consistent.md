@@ -1,6 +1,6 @@
 # #339 Make UI texts consistent
 
-**Status:** Automated: T339-1 to -6, T339-12 to -15, T339-19 · QE: T339-7 to -11, T339-16, T339-17 · Open for the owner: T339-18
+**Status:** Automated: T339-1 to -6, T339-12 to -15, T339-19 · QE: T339-7 to -11, T339-16, T339-17 · Open for the owner: none (T339-18 passed)
 
 "Resource files" means every `*Texts.resx` under `src/` (App, ControllerSupport, Core, Input, each launcher folder).
 
@@ -21,7 +21,7 @@
 - [x] **T339-15** Subtitles fit: at 1920×1080, every row subtitle in every settings category and on the launcher page takes one line, not wrapped and not cut off · E2E: yes (window test, measured line count)
 - [x] **T339-16** Screenshots at 1920×1080 with `--demo` of each page whose subtitle got longer (the PR lists them): one line each, looked at · E2E: no (real rendering, Linux, `arcadia-verify`)
 - [x] **T339-17** `docs/product/ui-texts.md` holds the glossary, the rules and the note that the designs' texts are examples; every UI text quoted in `docs/product/` is quoted as it now stands in a resource file; every doc stays within 10 KB · E2E: no (QE review, grep, `Doc sizes` check)
-- [ ] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the Windows prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
+- [x] **T339-18** **Owner:** on your PC with Pan, a Steam Controller and the real drivers: open Settings › Controller with the gamepad, read every row and info text and open the driver installation (stop at the question before it, or go on if you want to): the texts read as approved in the Doc, the terms are the same everywhere, and the admin question says what really happens next (the Windows prompt for admin rights) · E2E: no (real drivers and admin rights, judgement of the wording)
 - [x] **T339-19** No German UI text is left in the code: the check of #480 also finds the forms it missed (a badge such as "Pausiert", a relative date such as "Vor {days} Tagen", a heading in capitals such as "GRENZEN", an exception message the player sees in a toast, the install dialog or a reason on the controller page), and every text it finds now comes from a resource file; a German exception message that only reaches the log carries `// not a UI text` · E2E: no (unit test `UiTextsStayInResourcesTests`)
 
 Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App); T339-19 `UiTextsStayInResourcesTests` (Core).
@@ -41,3 +41,4 @@ History:
 | T339-7 to -11, -17 | 2026-11-11 | Claude (QE) | `3d21916`, Linux; the 113 reworded values compared by script with every cell of the approved Doc, each difference against the glossary; the old → new list against the diff; a grep per word over every resource file; the 87 + 21 moved texts against the code they replaced; the workflow condition; `Doc sizes` | ❌ on `b77af76`: a docs quote still said "Xbox 360 Controller", the list named a wrong old layout name, T339-14 asserted nothing for "Controller-Wächter (Pan)" and nothing for "virtuelle", two exception texts the player reads were literals in code; ✅ on `3d21916` | fixed in this PR |
 | T339-16 | 2026-11-11 | Claude (QE) | `3d21916`, Linux, Xvfb 1920×1080, `--demo`: library, launcher list, launcher page, Controller with its info panel scrolled to the firmware note, Über Arcadia | ✅ every subtitle on one line, firmware heading bold above its note | – |
 | Owner, exploratory | 2026-11-11 | owner | his PC | ❌ the firmware note stood inside the Steam Controller's box | fixed in this PR: the note stands right below the box (`PanEmulationTests`, red without the fix, then ✅) |
+| T339-18 | 2026-11-11 | owner | his PC with Pan, a Steam Controller and the real drivers | ✅ after the firmware note was moved below the Steam Controller's box | – |

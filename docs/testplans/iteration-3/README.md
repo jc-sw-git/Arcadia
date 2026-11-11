@@ -38,6 +38,7 @@ its file.
 | [477](477-search-opens-slowly.md) | #477 | Opening the search from the library takes half a second or more | T477-1 to T477-10 |
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 | [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
+| [499](499-detail-page-new-layout.md) | #499 | Detail page: new layout with areas, carousel into depth and info box | T499-1 to T499-31 (owner: T499-30, T499-31) |
 
 ## Release candidate tests (restart or installation)
 

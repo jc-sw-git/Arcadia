@@ -97,6 +97,8 @@
     <!-- Detail page (#499): the panel with rail and rows lies semi-transparent on the game's artwork; the scrims keep the
          text on the artwork readable over a bright and a dark image. -->
     <SolidColorBrush x:Key="DetailSurface" Color="#F2121820" />
+    <!-- What lists in a modal on DetailSurface fade into at their edges (#506: "Warten auf deine Auswahl"). -->
+    <Color x:Key="ModalSurfaceColor">#121820</Color>
     <Color x:Key="DetailInfoBoxColor">#0F141A</Color>
     <SolidColorBrush x:Key="DetailChip" Color="#1FF2F5F8" />
     <SolidColorBrush x:Key="DetailAction" Color="#1AF2F5F8" />
@@ -3252,16 +3254,58 @@
     <Setter Property="LineHeight" Value="26" />
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-    <Setter Property="Margin" Value="0,0,0,28" />
+    <Setter Property="Margin" Value="0,0,0,20" />
+  </Style>
+  <!-- #506: what Arcadia seeks for the game, above its hits. -->
+  <Style Selector="TextBlock.waitingSought">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+  <!-- The games list and the hit grid scroll like the settings rows: a thin bar where they don't fit. -->
+  <Style Selector="ScrollViewer.waitingScroller">
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+  </Style>
+  <!-- "Eigener Suchbegriff": the field of the text rows, as wide as the row, with the focus ring when focused. -->
+  <Style Selector="Button.waitingTermButton">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Border.waitingTerm">
+    <Setter Property="Width" Value="NaN" />
+  </Style>
+  <Style Selector="Border.waitingTerm.focused">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.waitingReset.off">
+    <Setter Property="Opacity" Value="0.4" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="TextBlock.waitingStatus">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <!-- A hit without a year is shorter; its tile stays at the top of the row with the others. -->
   <Style Selector="Button.waitingHit">
     <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0,0,22,18" />
   </Style>
-  <!-- Small enough that eight hits (two rows) and the note fit the modal. -->
+  <!-- Five covers a row (WaitingHitsViewModel.CoverColumns), as wide as the pane allows, so names have room. -->
   <Style Selector="Button.waitingHit Border.artworkFrame">
-    <Setter Property="Width" Value="128" />
-    <Setter Property="Height" Value="192" />
+    <Setter Property="Width" Value="166" />
+    <Setter Property="Height" Value="249" />
+  </Style>
+  <!-- Three backgrounds a row (HeroColumns) when only the background is sought. -->
+  <Style Selector="ItemsControl.hero Button.waitingHit Border.artworkFrame">
+    <Setter Property="Width" Value="280" />
+    <Setter Property="Height" Value="90" />
+  </Style>
+  <Style Selector="ItemsControl.hero TextBlock.waitingHitName">
+    <Setter Property="MaxWidth" Value="280" />
   </Style>
   <Style Selector="TextBlock.waitingHitPlaceholder">
     <Setter Property="FontSize" Value="17" />
@@ -3277,9 +3321,15 @@
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="Margin" Value="0,8,0,0" />
-    <Setter Property="MaxWidth" Value="128" />
+    <Setter Property="MaxWidth" Value="166" />
     <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <!-- Namesakes often differ only at the end of their names: the focused hit shows its name in full. -->
+  <Style Selector="Button.waitingHit.focused TextBlock.waitingHitName">
+    <Setter Property="MaxLines" Value="0" />
   </Style>
   <Style Selector="TextBlock.waitingHitYear">
     <Setter Property="FontSize" Value="15" />

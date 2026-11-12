@@ -152,14 +152,14 @@ public sealed class SteamGridDbKey(SteamGridDbKeyStore store, SteamGridDbClient 
         UsableKey() is { } key ? Learned(key, await client.ImagesOfGameAsync(key, gameId, kind, cancel)) : SteamGridDbAnswer.Of(SteamGridDbOutcome.KeyRejected);
 
     /// <summary>The games SteamGridDB finds by the name (#491); <see cref="SteamGridDbOutcome.KeyRejected"/> without a usable key, with no request.</summary>
-    public async Task<SteamGridDbSearch> SearchAsync(string name, CancellationToken cancel)
+    public async Task<SteamGridDbSearch> SearchAsync(string name, CancellationToken cancel, int maxHits = SteamGridDbClient.MaxHits)
     {
         if (UsableKey() is not { } key)
         {
             return new SteamGridDbSearch(SteamGridDbOutcome.KeyRejected, []);
         }
 
-        var search = await client.SearchAsync(key, name, cancel);
+        var search = await client.SearchAsync(key, name, cancel, maxHits);
         Learn(key, search.Outcome, checkedNow: false);
         return search;
     }

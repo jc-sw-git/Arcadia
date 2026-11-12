@@ -486,6 +486,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _repeats.Release(action);
         PanDialogs.Release(action);
         _actions.Release(action);
+        WaitingList?.Release(action);
         foreach (var page in OpenPages())
         {
             page.Release(action);
@@ -498,6 +499,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _repeats.Clear();
         PanDialogs.CancelHold();
         _actions.CancelHold();
+        WaitingList?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
             page.CancelHeldButtons();
@@ -1076,6 +1078,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
 
         _livePages = [];
+
+        // Closing with the waiting list open cancels its checks and own search instead of leaving them running.
+        WaitingList = null;
         AppErrors.Occurred -= OnAppError;
         PanDialogs.Dispose();
         ControllerMode.Dispose();

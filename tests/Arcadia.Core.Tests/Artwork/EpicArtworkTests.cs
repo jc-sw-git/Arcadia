@@ -110,6 +110,19 @@ public sealed class EpicArtworkTests : IDisposable
         await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
     }
 
+    private async Task ReloadAsync()
+    {
+        Assert.True(_service.ReloadAll(overwriteSetByHand: false));
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    /// <summary>"Jetzt suchen": a scan downloads only for new games (#506), a search for every game missing an image.</summary>
+    private async Task SearchAsync()
+    {
+        Assert.True(_service.SearchAgain(byPlayer: true));
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
     /// <summary>The lines the Epic source writes through <see cref="Trace"/>, which the App sends to arcadia.log.</summary>
     private static List<string> Traced(Action action)
     {
@@ -387,7 +400,7 @@ public sealed class EpicArtworkTests : IDisposable
     [Trait("TestCase", "T488-9")]
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task A_failed_download_leaves_the_placeholder_and_the_next_scan_asks_again(HttpStatusCode status)
+    public async Task A_failed_download_leaves_the_placeholder_and_the_next_search_asks_again(HttpStatusCode status)
     {
         WriteCatalog(Entry("aa01", Images(("DieselGameBoxTall", TallUrl), ("DieselGameBox", WideUrl))));
         _server.Fail(TallUrl, status);
@@ -399,13 +412,15 @@ public sealed class EpicArtworkTests : IDisposable
 
         _server.Serve(TallUrl, TestImages.Jpeg(1200, 1600));
         await ScanAsync(GameOf("aa01"));
+        Assert.Null(_service.Of("epic:aa01"));
+        await SearchAsync();
 
         Assert.NotNull(_service.Of("epic:aa01")!.Cover);
     }
 
     [Fact]
     [Trait("TestCase", "T488-9")]
-    public async Task Without_network_or_with_a_download_that_hangs_the_next_scan_brings_the_image()
+    public async Task Without_network_or_with_a_download_that_hangs_the_next_search_brings_the_image()
     {
         WriteCatalog(Entry("aa01", Images(("DieselGameBoxTall", TallUrl))));
         _server.Offline = true;
@@ -414,7 +429,7 @@ public sealed class EpicArtworkTests : IDisposable
 
         _server.Offline = false;
         _server.Hang(TallUrl);
-        _service.Update([new LibraryArtwork(new LauncherLibrary(Epic, [GameOf("aa01")]), new EpicArtwork(CatalogPath))]);
+        Assert.True(_service.SearchAgain(byPlayer: true));
         await _server.Hanging.Task.WaitAsync(TimeSpan.FromSeconds(10));
         _time.Advance(ArtworkService.DownloadTimeout);
         await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
@@ -423,6 +438,8 @@ public sealed class EpicArtworkTests : IDisposable
 
         _server.Serve(TallUrl, TestImages.Jpeg(1200, 1600));
         await ScanAsync(GameOf("aa01"));
+        Assert.Null(_service.Of("epic:aa01"));
+        await SearchAsync();
         Assert.NotNull(_service.Of("epic:aa01")!.Cover);
     }
 
@@ -467,7 +484,7 @@ public sealed class EpicArtworkTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T488-11")]
-    public async Task New_art_in_the_catalog_is_downloaded_at_the_next_scan_and_one_set_by_hand_stays()
+    public async Task New_art_in_the_catalog_is_downloaded_at_the_next_search_not_scan_and_one_set_by_hand_stays()
     {
         const string newTall = "https://cdn1.epicgames.com/offer/ns1/new-tall_1200x1600.jpg";
         const string newWide = "https://cdn1.epicgames.com/offer/ns1/new-wide_2560x1440.jpg";
@@ -480,6 +497,9 @@ public sealed class EpicArtworkTests : IDisposable
 
         WriteCatalog(Entry("aa01", Images(("DieselGameBoxTall", newTall), ("DieselGameBox", newWide))));
         await ScanAsync(GameOf("aa01"));
+        Assert.Equal(new ImageSize(1200, 1600), _service.Of("epic:aa01")!.Cover!.Size);
+        Assert.Equal(2, RequestCount);
+        await ReloadAsync();
 
         Assert.Equal(new ImageSize(900, 1200), _service.Of("epic:aa01")!.Cover!.Size);
         Assert.Equal(new ImageSize(1920, 1080), _service.Of("epic:aa01")!.Hero!.Size);
@@ -492,6 +512,7 @@ public sealed class EpicArtworkTests : IDisposable
         Restart();
         WriteCatalog(Entry("aa01", Images(("DieselGameBoxTall", TallUrl), ("DieselGameBox", WideUrl))));
         await ScanAsync(GameOf("aa01"));
+        await ReloadAsync();
 
         Assert.Equal(new ImageSize(900, 1200), _service.Of("epic:aa01")!.Cover!.Size);
         Assert.Equal(new ImageSize(2560, 1440), _service.Of("epic:aa01")!.Hero!.Size);

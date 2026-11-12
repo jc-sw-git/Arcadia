@@ -103,7 +103,7 @@ public sealed class EpicArtworkTests
         Assert.Equal(2, files.ImageServer.Requests.Count);
     }
 
-    /// <summary>T488-13 and T488-9 as the player meets them: started without network, the images come with the next rescan.</summary>
+    /// <summary>T488-13 and T488-9 as the player meets them: started without network, the images come with the next search (#506).</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T488-13")]
     public async Task The_placeholder_shows_until_the_download_arrives_and_the_focus_stays()
@@ -124,6 +124,11 @@ public sealed class EpicArtworkTests
 
         files.ImageServer.Offline = false;
         await arcadia.Main.Session.RescanAsync(null);
+        await ArtworkSettledAsync(arcadia);
+
+        // A rescan goes online for no known game (#506): the next "Jetzt suchen" brings the images.
+        Assert.All(arcadia.PageGames, tile => Assert.Null(tile.Cover));
+        Assert.True(arcadia.Artwork.SearchAgain(byPlayer: true));
         await ArtworkSettledAsync(arcadia);
 
         Assert.Same(focused, arcadia.Main.Library.FocusedGame);

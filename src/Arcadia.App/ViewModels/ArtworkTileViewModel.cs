@@ -1,4 +1,6 @@
+using Arcadia.App.Settings;
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -74,21 +76,69 @@ public sealed partial class ArtworkTileViewModel : ViewModelBase
 /// </summary>
 public sealed partial class ArtworkNoticeViewModel(Action openDataSources) : ViewModelBase
 {
+    /// <summary>Why the modal offers fewer images: no key, a rejected key or a source switched off (#506).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title), nameof(Text))]
-    public partial bool IsKeyInvalid { get; private set; }
+    public partial ArtworkNoticeReason Reason { get; private set; }
 
-    public string Title => IsKeyInvalid ? AppTexts.ArtworkBadKeyTitle : AppTexts.ArtworkNoKeyTitle;
+    public string Title => Reason switch
+    {
+        ArtworkNoticeReason.BadKey => AppTexts.ArtworkBadKeyTitle,
+        ArtworkNoticeReason.SteamGridDbOff => AppTexts.ArtworkSteamGridDbOffTitle,
+        ArtworkNoticeReason.LauncherImagesOff => AppTexts.ArtworkLauncherImagesOffTitle,
+        ArtworkNoticeReason.BothOff => AppTexts.ArtworkSourcesOffTitle,
+        _ => AppTexts.ArtworkNoKeyTitle,
+    };
 
-    public string Text => IsKeyInvalid ? AppTexts.ArtworkBadKeyText : AppTexts.ArtworkNoKeyText;
+    public string Text => Reason switch
+    {
+        ArtworkNoticeReason.BadKey => AppTexts.ArtworkBadKeyText,
+        ArtworkNoticeReason.SteamGridDbOff => AppTexts.ArtworkSteamGridDbOffText,
+        ArtworkNoticeReason.LauncherImagesOff => AppTexts.ArtworkLauncherImagesOffText,
+        ArtworkNoticeReason.BothOff => AppTexts.ArtworkSourcesOffText,
+        _ => AppTexts.ArtworkNoKeyText,
+    };
+
+    /// <summary>The row of "Datenquellen" the button leads to: the first source switched off, else the key.</summary>
+    public string RowKey => Reason switch
+    {
+        ArtworkNoticeReason.SteamGridDbOff => ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb),
+        ArtworkNoticeReason.LauncherImagesOff or ArtworkNoticeReason.BothOff => ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher),
+        _ => SteamGridDbKeyRows.KeyRowKey,
+    };
+
+    /// <summary>A notice shows: the key isn't usable or a source is switched off.</summary>
+    public bool IsShown { get; private set; }
 
     public static string ButtonText => AppTexts.ArtworkToDataSources;
 
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
-    public void Show(SuggestionKeyState state) => IsKeyInvalid = state == SuggestionKeyState.Invalid;
+    /// <summary>A source switched off says so before the key does: switching it on comes first.</summary>
+    public void Show(SuggestionKeyState state, IReadOnlyList<ArtworkSourceKind> off)
+    {
+        var launcherOff = off.Contains(ArtworkSourceKind.Launcher);
+        var steamGridDbOff = off.Contains(ArtworkSourceKind.SteamGridDb);
+        Reason = (launcherOff, steamGridDbOff) switch
+        {
+            (true, true) => ArtworkNoticeReason.BothOff,
+            (true, false) => ArtworkNoticeReason.LauncherImagesOff,
+            (false, true) => ArtworkNoticeReason.SteamGridDbOff,
+            _ => state == SuggestionKeyState.Invalid ? ArtworkNoticeReason.BadKey : ArtworkNoticeReason.NoKey,
+        };
+        IsShown = launcherOff || steamGridDbOff || state != SuggestionKeyState.Valid;
+    }
 
     [RelayCommand]
     private void OpenDataSources() => openDataSources();
+}
+
+public enum ArtworkNoticeReason
+{
+    NoKey,
+    BadKey,
+    SteamGridDbOff,
+    LauncherImagesOff,
+    BothOff,
 }

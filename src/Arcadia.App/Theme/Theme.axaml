@@ -907,7 +907,7 @@
   </Style>
   <!-- "Original-Titel: …" under an own title (#496), shown with R3; one line like the info line. -->
   <Style Selector="TextBlock.detailOriginalTitle">
-    <Setter Property="Margin" Value="0,6,0,0" />
+    <Setter Property="Margin" Value="0,8,0,0" />
     <Setter Property="FontSize" Value="21" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="MaxWidth" Value="1040" />

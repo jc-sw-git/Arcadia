@@ -951,14 +951,9 @@
         </ContentControl.DataTemplates>
       </ContentControl>
 
-      <!-- "Titel ändern" (#496): a game's own title with the on-screen keyboard, over the detail page. -->
-      <ContentControl Grid.RowSpan="4" Content="{Binding ChangeTitle}" IsVisible="{Binding IsChangeTitleOpen}">
-        <ContentControl.DataTemplates>
-          <DataTemplate x:DataType="vm:ChangeTitleViewModel">
-            <views:ChangeTitleView />
-          </DataTemplate>
-        </ContentControl.DataTemplates>
-      </ContentControl>
+      <!-- "Titel ändern" (#496): a game's own title with the on-screen keyboard, over the detail page. Built once and kept,
+           like the search: building the dialog and its keyboard at the opening cost a few hundred ms. -->
+      <views:ChangeTitleView Grid.RowSpan="4" DataContext="{Binding ChangeTitle}" />
 
       <!-- "Übersicht anpassen" (#500): a game's quick selection, over the detail page. -->
       <ContentControl Grid.RowSpan="4" Content="{Binding CustomizeOverview}" IsVisible="{Binding IsCustomizeOverviewOpen}">

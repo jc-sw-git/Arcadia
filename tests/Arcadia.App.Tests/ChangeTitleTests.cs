@@ -210,6 +210,55 @@ public sealed class ChangeTitleTests
         Assert.Equal("{ kaputt", File.ReadAllText(restarted.UserData.FilePath));
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T496-8")]
+    public async Task From_the_game_menu_the_focus_follows_the_renamed_and_the_reset_game_across_pages()
+    {
+        // "Spiel 01" … "Spiel 30": with 24 per page, renaming the first to "Zz" moves it to page 2.
+        Game[] games = [.. Enumerable.Range(1, 30).Select(n => TestGames.Installed(KnownLaunchers.Gog, $"Spiel {n:00}", InstalledAt))];
+        using var arcadia = await ArcadiaDriver.StartAsync(Library(games));
+        Assert.Equal("Spiel 01", arcadia.FocusedGame?.Title);
+
+        ChooseFromMenu(arcadia, AppTexts.ActionChangeTitleMore);
+        arcadia.Press(UiAction.Search, times: "Spiel 01".Length);
+        arcadia.Main.ChangeTitle!.Editor.Type("Zz");
+        arcadia.Press(UiAction.Settings);
+
+        Assert.Equal("2", arcadia.CurrentPage);
+        Assert.Equal("Zz", arcadia.FocusedGame?.Title);
+
+        ChooseFromMenu(arcadia, AppTexts.ActionResetTitle);
+
+        Assert.Equal("1", arcadia.CurrentPage);
+        Assert.Equal("Spiel 01", arcadia.FocusedGame?.Title);
+    }
+
+    [AvaloniaFact]
+    public async Task A_providers_batch_that_changes_no_shown_title_leaves_the_library_as_it_is()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(Library(Games));
+        var rebuilt = 0;
+        arcadia.Main.Session.LibrariesChanged += (_, _) => rebuilt++;
+
+        arcadia.Main.Session.Titles.AutomaticTitlesChanged([Games[0].Key, Games[2].Key, "gog:not-in-the-library"]);
+
+        Assert.Equal(0, rebuilt);
+    }
+
+    /// <summary>In the library: the focused game's menu (≡ held, here Options), then the action labelled <paramref name="label"/>.</summary>
+    private static void ChooseFromMenu(ArcadiaDriver arcadia, string label)
+    {
+        arcadia.Press(UiAction.Options);
+        var menu = arcadia.Main.GameMenu!;
+        for (var turns = 0; !menu.Actions.Single(action => action.Label == label).IsFocused; turns++)
+        {
+            Assert.True(turns < 10, $"{label} can't be focused in the menu.");
+            arcadia.Press(UiAction.Down);
+        }
+
+        arcadia.Press(UiAction.Accept);
+    }
+
     /// <summary>From the library: the game's detail page, "Titel ändern", the new title, ≡, and back to the library.</summary>
     private static void Rename(ArcadiaDriver arcadia, string from, string to)
     {

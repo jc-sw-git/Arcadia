@@ -78,6 +78,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private IReadOnlyList<LauncherLibrary> _shownByLauncher = [];
     private Dictionary<string, Game> _launcherGames = new(StringComparer.Ordinal);
 
+    // The title each game shows now, to tell whether a change of titles changes what shows (#496).
+    private Dictionary<string, string> _shownTitles = new(StringComparer.Ordinal);
+
     /// <summary>The titles the games show: own, automatic, the launcher's (#496).</summary>
     public GameTitles Titles { get; }
 
@@ -459,6 +462,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private void ShowTitles()
     {
         Libraries = _shownByLauncher.Select(l => l with { Games = [.. l.Games.Select(Titles.Shown)] }).ToList();
+        _shownTitles = Libraries.SelectMany(l => l.Games).DistinctBy(g => g.Key).ToDictionary(g => g.Key, g => g.Title, StringComparer.Ordinal);
         _running.SetLibrary(Libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -476,13 +480,19 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
     }
 
+    // Rebuilds the libraries only when a game in them shows another title now: a provider's batch (#494) mostly names
+    // games whose title stays, and a rebuild re-sorts every tab on the UI thread.
     private void ShowChangedTitles(IReadOnlyCollection<string> keys)
     {
-        if (!_shutdown.IsCancellationRequested && keys.Any(_launcherGames.ContainsKey))
+        if (!_shutdown.IsCancellationRequested && keys.Any(ShowsAnotherTitle))
         {
             ShowTitles();
         }
     }
+
+    private bool ShowsAnotherTitle(string gameKey) =>
+        _launcherGames.TryGetValue(gameKey, out var launcherGame)
+        && !string.Equals(Titles.Shown(launcherGame).Title, _shownTitles.GetValueOrDefault(gameKey), StringComparison.Ordinal);
 
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {

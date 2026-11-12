@@ -21,6 +21,8 @@ public partial class MainViewModel
     {
         metadata.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            // A corrected title (#494) shows in the library, the search and the sorting; the session rebuilds only on a change.
+            Session.Titles.AutomaticTitlesChanged(keys);
             Detail?.ShowMetadata(keys);
             MetadataChanged?.Invoke(this, keys);
         });

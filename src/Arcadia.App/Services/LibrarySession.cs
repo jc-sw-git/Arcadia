@@ -39,12 +39,15 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     /// <param name="artwork">Brings the games' covers and backgrounds into the cache after each read (#487); null: placeholders only.</param>
     /// <param name="metadata">Brings the games' metadata into the cache after each read (#493); null: none.</param>
+    /// <param name="titles">The titles the games show (#496); null: the launchers'.</param>
     public LibrarySession(
         LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time, ArtworkService? artwork = null,
-        MetadataService? metadata = null)
+        MetadataService? metadata = null, GameTitles? titles = null)
     {
         _artwork = artwork;
         _metadata = metadata;
+        Titles = titles ?? new GameTitles();
+        Titles.Changed += OnTitlesChanged;
         _library = library;
         _refresher = new LibraryRefresher(library, time);
         _installs = installs;
@@ -70,6 +73,22 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     // What the scanners delivered, every type (#141): a switch on a launcher's page then needs no rescan.
     private IReadOnlyList<LauncherLibrary> _scanned = [];
+
+    // The entries the tabs show with the launchers' titles (#496): providers match by them, and an own title is laid over them anew.
+    private IReadOnlyList<LauncherLibrary> _shownByLauncher = [];
+    private Dictionary<string, Game> _launcherGames = new(StringComparer.Ordinal);
+
+    // The title each game shows now, to tell whether a change of titles changes what shows (#496).
+    private Dictionary<string, string> _shownTitles = new(StringComparer.Ordinal);
+
+    /// <summary>The titles the games show: own, automatic, the launcher's (#496).</summary>
+    public GameTitles Titles { get; }
+
+    /// <summary>The game of this key as its launcher delivered it, with the launcher's title; null if it left the library.</summary>
+    public Game? LauncherGameOf(string gameKey) => _launcherGames.GetValueOrDefault(gameKey);
+
+    /// <summary>The title the game would show without an own one (#496), for "Original-Titel" and the search.</summary>
+    public string? AutomaticTitleOf(string gameKey) => LauncherGameOf(gameKey) is { } game ? Titles.AutomaticTitleOf(game) : null;
 
     /// <summary>
     /// The libraries read last, one per active launcher in the user's order, with the entries their tabs show: software,
@@ -327,6 +346,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             _shutdown.Cancel();
         }
 
+        Titles.Changed -= OnTitlesChanged;
         foreach (var (account, changed, failed) in _accounts)
         {
             account.LibraryChanged -= changed;
@@ -435,8 +455,44 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     {
         var launchers = _library.Launchers;
         _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
-        _metadata?.Update(Libraries.Select(l => new LibraryMetadata(l, launchers.Registered(l.Launcher.Id)?.Metadata)).ToList());
+        _metadata?.Update(_shownByLauncher.Select(l => new LibraryMetadata(l, launchers.Registered(l.Launcher.Id)?.Metadata)).ToList());
     }
+
+    /// <summary><see cref="Libraries"/> with the shown titles over the launchers' (#496), and the trackers on them.</summary>
+    private void ShowTitles()
+    {
+        Libraries = _shownByLauncher.Select(l => l with { Games = [.. l.Games.Select(Titles.Shown)] }).ToList();
+        _shownTitles = Libraries.SelectMany(l => l.Games).DistinctBy(g => g.Key).ToDictionary(g => g.Key, g => g.Title, StringComparer.Ordinal);
+        _running.SetLibrary(Libraries.SelectMany(l => l.Games));
+        LibrariesChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>A title was changed, reset or put back (#496): the library shows it at once, without a scan; nothing is fetched again.</summary>
+    private void OnTitlesChanged(object? sender, IReadOnlyCollection<string> keys)
+    {
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            ShowChangedTitles(keys);
+        }
+        else
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowChangedTitles(keys));
+        }
+    }
+
+    // Rebuilds the libraries only when a game in them shows another title now: a provider's batch (#494) mostly names
+    // games whose title stays, and a rebuild re-sorts every tab on the UI thread.
+    private void ShowChangedTitles(IReadOnlyCollection<string> keys)
+    {
+        if (!_shutdown.IsCancellationRequested && keys.Any(ShowsAnotherTitle))
+        {
+            ShowTitles();
+        }
+    }
+
+    private bool ShowsAnotherTitle(string gameKey) =>
+        _launcherGames.TryGetValue(gameKey, out var launcherGame)
+        && !string.Equals(Titles.Shown(launcherGame).Title, _shownTitles.GetValueOrDefault(gameKey), StringComparison.Ordinal);
 
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
@@ -453,11 +509,10 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             .ToList();
         _scanned = libraries;
         var launchers = _library.Launchers;
-        Libraries = libraries.Select(l => l with { Games = launchers.ShownEntries(l.Launcher.Id, l.Games) }).ToList();
-        libraries = Libraries;
-        GameFolders = GameFolders.Of(libraries.SelectMany(l => l.Games));
-        _running.SetLibrary(libraries.SelectMany(l => l.Games));
-        LibrariesChanged?.Invoke(this, EventArgs.Empty);
+        _shownByLauncher = libraries.Select(l => l with { Games = launchers.ShownEntries(l.Launcher.Id, l.Games) }).ToList();
+        _launcherGames = _shownByLauncher.SelectMany(l => l.Games).DistinctBy(g => g.Key).ToDictionary(g => g.Key, StringComparer.Ordinal);
+        GameFolders = GameFolders.Of(_shownByLauncher.SelectMany(l => l.Games));
+        ShowTitles();
 
         UpdateGameData();
         if (newlyFailed.Count > 0)

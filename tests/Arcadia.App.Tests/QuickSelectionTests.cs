@@ -328,14 +328,16 @@ public sealed class QuickSelectionTests
 
         Assert.Equal(AppTexts.QuickSelectionDialogSubtitle(page.Tile.Title), dialog.Subtitle);
         Assert.Equal([AppTexts.DetailAreaController.ToUpperInvariant(), AppTexts.DetailAreaManage.ToUpperInvariant()], dialog.Groups.Select(group => group.Caption));
-        Assert.Equal([AppTexts.DetailControllerModeTitle, AppTexts.DetailMouseModeTitle, AppTexts.ActionChangeArtwork, AppTexts.ActionUninstallMore],
+        Assert.Equal(
+            [AppTexts.DetailControllerModeTitle, AppTexts.DetailMouseModeTitle, AppTexts.ActionChangeArtwork, AppTexts.ActionChangeTitle, AppTexts.ActionResetTitle, AppTexts.ActionUninstallMore],
             dialog.Entries.Select(entry => entry.Title));
-        Assert.All(dialog.Entries, entry => Assert.True(entry.IsTicked));
+        // The title entries (#496) came after the defaults were set, so they aren't ticked.
+        Assert.Equal([true, true, true, false, false, true], dialog.Entries.Select(entry => entry.IsTicked));
         Assert.Equal("4 von 5", dialog.CountText);
         Assert.True(dialog.IsOffered);
         Assert.True(dialog.Entries[0].IsFocused);
 
-        arcadia.Press(UiAction.Down, times: 4);
+        arcadia.Press(UiAction.Down, times: dialog.Entries.Count);
         Assert.True(dialog.IsApplyFocused);
         Assert.Equal(AppTexts.QuickSelectionApplyToAll, dialog.AcceptText);
         arcadia.Press(UiAction.Down);
@@ -432,9 +434,14 @@ public sealed class QuickSelectionTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var dialog = OpenCustomize(arcadia);
-        for (var entry = 0; entry < 4; entry++)
+        foreach (var entry in dialog.Entries)
         {
-            arcadia.Press(UiAction.Accept).Press(UiAction.Down);
+            if (entry.IsTicked)
+            {
+                arcadia.Press(UiAction.Accept);
+            }
+
+            arcadia.Press(UiAction.Down);
         }
 
         Assert.Equal("0 von 5", dialog.CountText);
@@ -474,7 +481,7 @@ public sealed class QuickSelectionTests
         Assert.Same(dialog, arcadia.Main.CustomizeOverview);
 
         // Also while it asks.
-        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: dialog.Entries.Count - 1).Press(UiAction.Accept);
         Assert.True(dialog.IsAsking);
         arcadia.Press(UiAction.NextPage).Press(UiAction.NextTab);
         Assert.Equal(game, arcadia.Detail!.Current.Tile.Game.Key);
@@ -525,7 +532,8 @@ public sealed class QuickSelectionTests
         var dialog = OpenCustomize(arcadia);
 
         // Only "Artwork ändern" stays ticked, then for all games.
-        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Down, times: 2).Press(UiAction.Accept);
+        // Past the title entries (#496), which aren't ticked.
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Down, times: 4).Press(UiAction.Accept);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
         Assert.True(dialog.IsApplied);
         Assert.True(dialog.IsApplyFocused);

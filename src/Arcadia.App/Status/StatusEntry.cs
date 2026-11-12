@@ -28,6 +28,9 @@ public enum StatusTarget
 
     /// <summary>IGDB turned the access down (#494): "Client-ID" in "Datenquellen"; no fix of its own.</summary>
     IgdbAccess,
+
+    /// <summary>The file of own titles is unreadable (#496): "Eigene Titel" in "Datenquellen", which says why and what to do.</summary>
+    UserData,
 }
 
 /// <summary>

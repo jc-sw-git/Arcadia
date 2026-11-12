@@ -163,6 +163,10 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             case UiAction.ViewOptions:
                 OpenViewOptions();
                 break;
+            case UiAction.KeyboardLayout:
+                // R3: "Original-Titel" of a renamed game (#496).
+                Current.ToggleOriginalTitle();
+                break;
             case UiAction.SecondaryUp or UiAction.SecondaryDown when InfoOverflows:
                 // RS (Shift+W/S) scrolls the info box (#506); the focus stays where it is.
                 InfoScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);

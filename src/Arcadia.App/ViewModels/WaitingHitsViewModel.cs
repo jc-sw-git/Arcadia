@@ -58,8 +58,10 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     private bool _disposed;
 
     /// <param name="take">A or a click on a hit: the list takes it.</param>
-    public WaitingHitsViewModel(ArtworkService artwork, WaitingGame waiting, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
+    /// <param name="title">The title the game shows, its own one included (#496); the search term starts from the launcher's.</param>
+    public WaitingHitsViewModel(ArtworkService artwork, WaitingGame waiting, string title, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
     {
+        Title = title;
         _artwork = artwork;
         _keyboard = keyboard;
         _take = take;
@@ -89,7 +91,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     public WaitingGame Waiting { get; }
 
-    public string Title => Waiting.Game.Title;
+    public string Title { get; }
 
     public ObservableCollection<WaitingHitViewModel> Hits { get; } = [];
 

@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
+             x:Class="Arcadia.App.Views.ChangeTitleView"
+             x:DataType="vm:ChangeTitleViewModel">
+
+  <!-- "Titel ändern" (#496): the shown title in a field, above the settings' on-screen keyboard. -->
+  <Panel>
+    <Panel IsVisible="{Binding Editor, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
+      <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              Command="{Binding CloseCommand}" />
+      <Border Classes="prompt changeTitleDialog" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Panel>
+          <Button Classes="plain dialogClose" Margin="0,-20,-24,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
+                  IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+          <StackPanel Spacing="18">
+            <TextBlock Text="{x:Static vm:ChangeTitleViewModel.Heading}" FontSize="34" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <Border Name="TitleField" Classes="textField editing changeTitleField" Classes.problem="{Binding Editor?.HasProblem, TargetNullValue=False}">
+                <StackPanel Orientation="Horizontal" ClipToBounds="True">
+                  <TextBlock Classes="fieldText" Text="{Binding Editor?.TextBeforeCaret, TargetNullValue=''}" />
+                  <Border Classes="caret fieldCaret" />
+                  <TextBlock Classes="fieldText" Text="{Binding Editor?.TextAfterCaret, TargetNullValue=''}" />
+                </StackPanel>
+              </Border>
+              <Button Grid.Column="1" Classes="plain artworkNoticeButton" Content="{x:Static app:AppTexts.ChangeTitleTake}" Command="{Binding TakeCommand}" />
+            </Grid>
+            <TextBlock Classes="rowProblem" Text="{Binding Editor?.Problem, TargetNullValue=''}" IsVisible="{Binding Editor?.HasProblem, TargetNullValue=False}" />
+            <TextBlock Classes="changeTitleNote" Text="{Binding Note}" />
+          </StackPanel>
+        </Panel>
+      </Border>
+    </Panel>
+
+    <!-- The settings' shared keyboard, always the same one. MainWindow keeps this view and the drawer stays in the
+         layout while shut (as the search's), so its keys are built and measured at the start, not at each opening. -->
+    <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding Editor, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}" VerticalAlignment="Bottom">
+      <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
+        <views:OnScreenKeyboardView DataContext="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SettingsKeyboard.Keyboard}" HorizontalAlignment="Center" />
+      </Border>
+    </ctl:RevealPanel>
+  </Panel>
+</UserControl>

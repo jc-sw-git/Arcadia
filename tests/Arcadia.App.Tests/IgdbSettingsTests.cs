@@ -285,6 +285,25 @@ public sealed class IgdbSettingsTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T494-25")]
+    public async Task Igdbs_title_for_a_doubtful_launcher_title_shows_in_the_library_the_sorting_and_the_search()
+    {
+        using var arcadia = await StartAsync(GameOf("k1", "K?ln"), GameOf("k2", "Kiel"), GameOf("k3", "Kassel"));
+        await RunToIdleAsync(arcadia);
+        Assert.Equal(["K?ln", "Kassel", "Kiel"], arcadia.PageGames.Select(game => game.Title));
+        OpenDataSources(arcadia);
+        await GrantAsync(arcadia);
+        await RunToIdleAsync(arcadia);
+        arcadia.Press(UiAction.Back);
+
+        Assert.Equal(["Kassel", "Kiel", "Köln"], arcadia.PageGames.Select(game => game.Title));
+        arcadia.Press(UiAction.Search);
+        arcadia.Search!.Type("köln");
+        arcadia.Wait(TimeSpan.FromSeconds(1));
+        Assert.Equal(["Köln"], arcadia.Search.Hits.Select(game => game.Title));
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T494-7")]
     public async Task The_access_is_there_again_after_a_restart()
     {

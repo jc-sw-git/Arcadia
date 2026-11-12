@@ -27,12 +27,17 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     private readonly MetadataRows? _metadataRows;
     private readonly IgdbAccessRows? _igdbRows;
     private readonly MetadataSourceRows? _metadataSourceRows;
+    private readonly InfoRowViewModel? _userDataRow;
+
+    /// <summary>The row "Eigene Titel" (#496), there only while user-data.json was unreadable at the start; the status entry opens it.</summary>
+    public const string UserDataRowKey = "user-data";
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
     /// <param name="metadata">The games' metadata (#493); null: the group "METADATEN" is left out.</param>
     public DataSourcesSettingsViewModel(
-        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null)
+        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null,
+        bool userDataUnreadable = false)
         : base(AppTexts.DataSourcesTitle, "M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0 M4 6v6a8 3 0 0 0 16 0v-6 M4 12v6a8 3 0 0 0 16 0v-6")
     {
         _key = key;
@@ -46,6 +51,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _metadataRows = metadata is null ? null : new MetadataRows(metadata, question => Dialog = question);
         _igdbRows = metadata?.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
         _metadataSourceRows = metadata is null ? null : new MetadataSourceRows(metadata, changes, Show);
+        _userDataRow = userDataUnreadable ? UserDataRow() : null;
         if (metadata is not null)
         {
             metadata.ProgressChanged += OnChanged;
@@ -154,6 +160,15 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         }
     });
 
+    // The file is read only at the start, so the row never changes while Arcadia runs.
+    private static InfoRowViewModel UserDataRow() => new(UserDataRowKey, AppTexts.DataSourcesUserData)
+    {
+        Group = AppTexts.DataSourcesUserDataGroup,
+        Subtitle = AppTexts.DataSourcesUserDataUnreadable,
+        Severity = HealthSeverity.Warning,
+        Info = [new InfoText(AppTexts.DataSourcesUserDataInfo)],
+    };
+
     private void Show()
     {
         _keyRows.Refresh();
@@ -164,8 +179,11 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _igdbRows?.Refresh();
         _metadataSourceRows?.Refresh();
         IsReordering = _sourceRows.IsReordering || _metadataSourceRows?.IsReordering == true;
-        Marker = _key.State == SteamGridDbKeyState.Rejected || _metadata?.Igdb?.State == Core.Metadata.Igdb.IgdbAccessState.Rejected ? HealthSeverity.Warning : null;
+        Marker = _key.State == SteamGridDbKeyState.Rejected || _metadata?.Igdb?.State == Core.Metadata.Igdb.IgdbAccessState.Rejected || _userDataRow is not null
+            ? HealthSeverity.Warning
+            : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
-            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _igdbRows?.Rows ?? [], .. _metadataSourceRows?.Rows ?? [], .. _metadataRows?.Rows ?? []]);
+            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _igdbRows?.Rows ?? [], .. _metadataSourceRows?.Rows ?? [], .. _metadataRows?.Rows ?? [],
+            .. _userDataRow is null ? Array.Empty<SettingsRowViewModel>() : [_userDataRow]]);
     }
 }

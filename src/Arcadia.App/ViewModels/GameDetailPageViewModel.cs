@@ -62,6 +62,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         OpenArea = Areas[0];
         GameInfo = metadata ?? DetailMetadata.None;
         Area(DetailAreaViewModel.InfosKey).ValueLine = GameInfo.RailLine;
+        OriginalTitle = host.OriginalTitleOf(game);
 
         tile.PropertyChanged += OnTilePropertyChanged;
         RebuildActions();
@@ -79,6 +80,27 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     /// another way of reading it changes only here and in the view.
     /// </summary>
     public event Action<int>? ReadScrollRequested;
+
+    /// <summary>The automatic title while the game has an own one (#496); null without one, then R3 does nothing here.</summary>
+    public string? OriginalTitle { get; }
+
+    public bool HasOriginalTitle => OriginalTitle is not null;
+
+    /// <summary>"Original-Titel: …" under the title.</summary>
+    public string OriginalTitleLine => OriginalTitle is { } original ? AppTexts.DetailOriginalTitle(original) : string.Empty;
+
+    /// <summary>R3 shows and hides the line; a page shown anew (another game, the page left) starts without it.</summary>
+    [ObservableProperty]
+    public partial bool ShowsOriginalTitle { get; private set; }
+
+    /// <summary>R3 (G): shows or hides "Original-Titel: …" while the game has an own title, wherever the focus is.</summary>
+    public void ToggleOriginalTitle()
+    {
+        if (HasOriginalTitle)
+        {
+            ShowsOriginalTitle = !ShowsOriginalTitle;
+        }
+    }
 
     /// <summary>The background in the game's hue until artwork is there (#13), with its rings.</summary>
     public IBrush Backdrop { get; }

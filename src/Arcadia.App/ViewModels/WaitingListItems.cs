@@ -7,16 +7,17 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>One game on the waiting list, left: its initial, name and launcher.</summary>
-public sealed partial class WaitingGameViewModel(WaitingGame waiting, Action<WaitingGameViewModel> pick) : ViewModelBase
+/// <param name="title">The title it shows, its own one included (#496); SteamGridDB is searched by the launcher's.</param>
+public sealed partial class WaitingGameViewModel(WaitingGame waiting, string title, Action<WaitingGameViewModel> pick) : ViewModelBase
 {
     /// <summary>The game as the service has it now; its hits change when some are dropped for having no image (#506). Nothing shown depends on the hits.</summary>
     public WaitingGame Waiting { get; set; } = waiting;
 
     public string Key => Waiting.Game.Key;
 
-    public string Title => Waiting.Game.Title;
+    public string Title { get; } = title;
 
-    public string Monogram => Formatting.Monogram(Waiting.Game.Title);
+    public string Monogram => Formatting.Monogram(Title);
 
     public string LauncherName => Waiting.LauncherName;
 

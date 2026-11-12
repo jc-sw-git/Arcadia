@@ -21,13 +21,14 @@ public partial class MainViewModel
         {
             WaitingList = new WaitingListViewModel(
                 _artwork,
+                game => Session.Titles.Shown(game).Title,
                 new WaitingKeyboard(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack),
                 CloseWaitingList);
         }
     }
 
-    /// <summary>The text being written with the on-screen keyboard: the waiting list's own term or a text of the settings.</summary>
-    public TextEditorViewModel? OpenTextEditor => WaitingList?.Hits?.Editor ?? Settings?.Selected.Editor;
+    /// <summary>The text being written with the on-screen keyboard: a game's own title (#496), the waiting list's own term or a text of the settings.</summary>
+    public TextEditorViewModel? OpenTextEditor => ChangeTitle?.Editor ?? WaitingList?.Hits?.Editor ?? Settings?.Selected.Editor;
 
     /// <summary>B or the ✕: the settings again, the focus on the row the list was opened from.</summary>
     private void CloseWaitingList(WaitingListViewModel list)

@@ -14,6 +14,7 @@ using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Arcadia.Core.Metadata;
+using Arcadia.Core.UserData;
 using Arcadia.Core.Tests.Artwork;
 using Arcadia.Core.Tests.Metadata;
 using Arcadia.Launchers;
@@ -146,12 +147,15 @@ internal sealed class ArcadiaDriver : IDisposable
                 new IgdbClient(new HttpClient(Igdb, disposeHandler: false), time) { Log = AppLog.Write },
                 time),
         };
+        // Own titles (#496) in the test's folder, kept across a restart.
+        UserData = new UserDataStore(Path.Combine(folder, "user"));
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
             Artwork = Artwork,
             Metadata = Metadata,
+            UserData = UserData,
             Open = Open,
             Logs = Logs,
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
@@ -200,6 +204,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>The games' metadata (#493) over <see cref="MetadataStore"/>.</summary>
     public MetadataService Metadata { get; }
+
+    /// <summary>Own titles (#496), in <c>user/user-data.json</c> of the test's folder.</summary>
+    public UserDataStore UserData { get; }
 
     /// <summary>Every launcher's store page (#493): records each request and answers what the test serves.</summary>
     public FakeStoreServer MetadataStore { get; }

@@ -42,6 +42,8 @@ hit like ≡, the arrows move the field's caret (up: to the start, down: to the 
   add one.
 - No hits and nothing typed show an empty state the theme draws (`ContentControl.searchEmpty`). ™ ® © count for nothing
   in the search.
+- A game with an own title (#496) is found by it and by its automatic title; the hit shows the own one, sorting by
+  name uses it.
 
 ## Detail page from the search
 

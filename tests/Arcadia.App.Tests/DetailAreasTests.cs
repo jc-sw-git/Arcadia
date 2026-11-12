@@ -180,15 +180,19 @@ public sealed class DetailAreasTests
         var page = arcadia.Detail!.Current;
 
         Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode], page.Area(DetailAreaViewModel.ControllerKey).Rows.Select(row => row.Kind));
-        Assert.Equal([GameActionKind.Artwork, GameActionKind.Uninstall], page.Area(DetailAreaViewModel.ManageKey).Rows.Select(row => row.Kind));
-        Assert.All(page.Areas.SelectMany(area => area.Rows), row => Assert.True(row.IsGreyed && row.HasNote, $"{row.Title} nicht ausgegraut mit Grund"));
+        Assert.Equal([GameActionKind.Artwork, GameActionKind.ChangeTitle, GameActionKind.ResetTitle, GameActionKind.Uninstall],
+            page.Area(DetailAreaViewModel.ManageKey).Rows.Select(row => row.Kind));
+        // A title can be set before the installation (#496); everything else waits for it.
+        Assert.All(page.Areas.SelectMany(area => area.Rows).Where(row => row.Kind != GameActionKind.ChangeTitle),
+            row => Assert.True(row.IsGreyed && row.HasNote, $"{row.Title} nicht ausgegraut mit Grund"));
+        Assert.False(page.Row(GameActionKind.ChangeTitle).IsGreyed);
 
         // Greyed rows take the focus.
         var artwork = arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Artwork);
         Assert.Equal(AppTexts.DetailSetAfterInstall, artwork.Note);
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.ChangeArtwork);
-        arcadia.Press(UiAction.Down);
+        arcadia.Press(UiAction.Up);
         Assert.Equal(AppTexts.NotInstalled, page.FocusedRow!.Note);
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Confirmation);
@@ -239,8 +243,8 @@ public sealed class DetailAreasTests
         arcadia.Press(UiAction.Back).Press(UiAction.NextPage);
         Assert.Equal((DetailZone.Rail, DetailAreaViewModel.ManageKey), (arcadia.Detail!.Current.Zone, arcadia.Detail.Current.OpenArea.Key));
 
-        // LB/RB: another launcher's first game, the same area and focus.
-        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.NextTab);
+        // LB/RB: another launcher's first game, the same area and focus (▲ goes round to the last row, "Deinstallieren …").
+        arcadia.Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.NextTab);
         page = arcadia.Detail!.Current;
         Assert.Equal(KnownLaunchers.Epic.Id, page.Tile.Game.LauncherId);
         Assert.Equal(DetailAreaViewModel.ManageKey, page.OpenArea.Key);
@@ -313,7 +317,7 @@ public sealed class DetailAreasTests
         arcadia.FocusDetailRowFromRail(DetailAreaViewModel.ControllerKey);
         Assert.Equal((false, true, AppTexts.DetailAreas), (page.ShowsAreasHint, page.ShowsChangeHint, page.BackHint));
 
-        arcadia.Press(UiAction.Back).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Down);
+        arcadia.Press(UiAction.Back).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Up);
         Assert.Equal(GameActionKind.Uninstall, page.FocusedRow?.Kind);
         Assert.Equal((AppTexts.ActionUninstallMore, false), (page.AcceptHint, page.ShowsChangeHint));
     }

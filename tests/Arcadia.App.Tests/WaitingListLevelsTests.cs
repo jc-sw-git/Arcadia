@@ -189,7 +189,7 @@ public sealed class WaitingListLevelsTests
         Assert.Equal([501, 502], list.Hits!.Hits.Select(h => h.Hit.Id));
         Assert.Equal((false, false), (list.Hits.IsChecking, list.Hits.HasMessage));
         Assert.Equal(["grids/game/501", "grids/game/502", "grids/game/504"], arcadia.SteamGridDb.Asked().Where(a => a.StartsWith("grids/", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
-        Assert.Equal(AppTexts.WaitingHitCount(2), list.Games[0].HitsText);
+        Assert.Equal([501, 502], list.Games[0].Waiting.Hits.Select(h => h.Id));
     }
 
     [AvaloniaFact]

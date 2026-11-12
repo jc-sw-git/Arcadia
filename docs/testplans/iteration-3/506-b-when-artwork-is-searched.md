@@ -3,7 +3,7 @@
 Part B of #506 (scenarios 6–14 and their failure cases). Part A (detail page, info box) and part C (waiting list)
 have their own files; part B uses the IDs T506-40 to T506-79.
 
-**Status:** Automated: T506-40 to -72 · QE: acceptance tests T506-40, -41, -50, -54, -60, -70, app run under Xvfb · Open for the owner: T506-73, T506-74, T506-75, T506-76, T506-77, T506-78, T506-79
+**Status:** Automated: T506-40 to -72 · QE: acceptance tests T506-40, -41, -50, -54, -60, -70, app run under Xvfb · Open for the owner: none (T506-73 to T506-79 passed)
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that counts every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. "A run" is one pass
@@ -127,22 +127,22 @@ follow them.
 
 **For the owner (own PC, real SteamGridDB, own library)**
 
-- [ ] **T506-73** **Owner:** with a key, bring Arcadia to the front a few times, start and end a game, install and
+- [x] **T506-73** **Owner:** with a key, bring Arcadia to the front a few times, start and end a game, install and
   uninstall a small game: no search (no "Suche läuft" in "Datenquellen", `arcadia.log` has no run line for these).
   The newly installed game, if it wasn't in the library before (e.g. a free game added to the account), gets its
   images on its own. · E2E: no (real launchers and SteamGridDB)
-- [ ] **T506-74** **Owner:** "Schlüssel löschen", then enter the real key: toast "Schlüssel gespeichert. Fehlende Bilder
+- [x] **T506-74** **Owner:** "Schlüssel löschen", then enter the real key: toast "Schlüssel gespeichert. Fehlende Bilder
   werden gesucht.", a run over the missing games; "Suche abbrechen" midway: what was found stays; "Jetzt suchen"
   goes on with the rest. · E2E: no (real SteamGridDB)
-- [ ] **T506-75** **Owner:** first start of this version on the own library: nothing is searched (log, "Datenquellen"
+- [x] **T506-75** **Owner:** first start of this version on the own library: nothing is searched (log, "Datenquellen"
   row). · E2E: no (own library and stored state)
-- [ ] **T506-76** **Owner:** switch SteamGridDB off and on, then the launcher images off and on: the library changes at
+- [x] **T506-76** **Owner:** switch SteamGridDB off and on, then the launcher images off and on: the library changes at
   once, back without waiting; images set by hand stay. · E2E: no (real images, how it looks)
-- [ ] **T506-77** **Owner:** reorder the sources with the Steam Controller (L3, ▲ ▼, L3, once with B) and once with the
+- [x] **T506-77** **Owner:** reorder the sources with the Steam Controller (L3, ▲ ▼, L3, once with B) and once with the
   mouse; the images follow. · E2E: no (real Steam Controller)
-- [ ] **T506-78** **Owner:** change "Zuschneiden erlaubt" on the own library: images already there change at once,
+- [x] **T506-78** **Owner:** change "Zuschneiden erlaubt" on the own library: images already there change at once,
   no search starts. · E2E: no (real images)
-- [ ] **T506-79** **Owner:** close Arcadia during "Jetzt suchen", start it again: found images there, no search runs on
+- [x] **T506-79** **Owner:** close Arcadia during "Jetzt suchen", start it again: found images there, no search runs on
   its own. · E2E: no (real shutdown on Windows)
 
 **Touches:** T489-14 (reorder by A, replaced by T506-64/-65), T489-17 (nothing changes at once, replaced by
@@ -183,3 +183,4 @@ History:
 | T506-40, -41, -70 | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, Linux cloud container; real Steam and Epic integrations on recreated folders, made-up ids, fake SteamGridDB and image server (Steam's server answers 404) | ✅ `ArtworkSearchTriggerAcceptanceTests`; red once: `GoesOnlineFor` always true (-40, -41), `KnownGames.HoldsArtwork` always false (-70) | – |
 | T506-50, -54, -60 | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, Linux cloud container, fake SteamGridDB and image server | ✅ `DataSourcesTests.Acceptance506.cs`; red once: `SettingsChanged` starting no run (-50, -60), `CancelSearch` not cancelling (-54) | – |
 | Own app run | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, `--demo` under Xvfb, keys for the controller | "Datenquellen": sources, a source lifted and moved (C, S), hints and info box | info box of a source row cut at the bottom (finding) |
+| T506-73 to T506-79 | 2026-11-12 | owner | main, owner's PC (Windows) with his library | ✅ | – |

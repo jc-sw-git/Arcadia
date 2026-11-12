@@ -171,6 +171,9 @@ public sealed class ArtworkImage : Control
 
     private void Take(ArtworkFile file, int width, Bitmap? bitmap)
     {
+        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
+        try { // [DEBUG-stall]
+
         if (_loadingFile == file && _loadingWidth == width)
         {
             _loadingFile = null;
@@ -192,6 +195,8 @@ public sealed class ArtworkImage : Control
         (_bitmap, _bitmapFile, _bitmapWidth) = (bitmap, file, width);
         IsShowing = true;
         InvalidateVisual();
+    
+        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"Take {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 
     private void Drop()

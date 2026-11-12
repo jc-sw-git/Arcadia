@@ -70,6 +70,9 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
 
     private void Show()
     {
+        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
+        try { // [DEBUG-stall]
+
         _keyRows.Refresh();
         _sourceRows.Refresh();
         _reloadRows.Refresh();
@@ -77,5 +80,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
             _nameRows.SeveralHitsRow, _nameRows.WaitingRow]);
+    
+        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"SettingsShow {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 }

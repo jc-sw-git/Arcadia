@@ -476,7 +476,7 @@ public sealed partial class ArtworkService : IDisposable
     /// the runtime would keep for a long while; with 5,000 games that cost 50 MB of the 400 MB budget (#487, measured). One
     /// collection right after such a run gives it back.
     /// </summary>
-    private static void ReleaseGarbage() => GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+    private static void ReleaseGarbage() { System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", "RELEASEGARBAGE\n" + Environment.StackTrace + "\n"); GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true); } // [DEBUG-stall]
 
     private const int ManyImages = 100;
 

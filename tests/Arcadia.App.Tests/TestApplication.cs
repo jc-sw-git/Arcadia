@@ -23,7 +23,7 @@ public static class TestApplication
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<StyledApplication>()
             .UseSkia()
-            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = Environment.GetEnvironmentVariable("ARC_NODRAW") == "1" }) // [DEBUG-stall]
             // Arcadia's embedded fonts, as Program does: the same text widths on Windows, macOS and Linux.
             .WithArcadiaFonts();
 

@@ -403,6 +403,9 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     /// <summary>The hits known to have an image of the tile kind, at once, without a request.</summary>
     private void ShowKnownHits(NameMatch match)
     {
+        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
+        try { // [DEBUG-stall]
+
         Hits.Clear();
         foreach (var hit in match.Hits.Where(h => match.Checked.Contains(h.Id)))
         {
@@ -411,6 +414,8 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(Intro));
         OnPropertyChanged(nameof(HasIntro));
+    
+        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"ShowKnown {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 
     private WaitingHitViewModel NewHit(SteamGridDbHit hit)
@@ -584,6 +589,9 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     private void Insert(SteamGridDbHit hit, Dictionary<int, int> order)
     {
+        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
+        try { // [DEBUG-stall]
+
         var at = Hits.Count(h => order.GetValueOrDefault(h.Hit.Id, int.MaxValue) < order[hit.Id]);
         var wasEmpty = Hits.Count == 0;
         Hits.Insert(at, NewHit(hit));
@@ -601,10 +609,15 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
 
         FocusHit(_focus);
+    
+        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"Insert {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 
     private void Done(string? message)
     {
+        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
+        try { // [DEBUG-stall]
+
         IsChecking = false;
         Message = message;
         OnPropertyChanged(nameof(Intro));
@@ -613,6 +626,8 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         {
             Zone = WaitingHitsFocus.Term;
         }
+    
+        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"Done {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 
     /// <summary>A tile's image off the UI thread; a game shown meanwhile cancels it.</summary>
@@ -631,7 +646,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
             var image = await Task.Run(() => _artwork.HitImageAsync(Waiting.Game, tile.Hit, kind, cancel), cancel);
             if (!cancel.IsCancellationRequested)
             {
-                tile.Image = image;
+                var dbgW = System.Diagnostics.Stopwatch.StartNew(); tile.Image = image; if (dbgW.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"SetImage {dbgW.Elapsed.TotalMilliseconds:0.0}\n"); // [DEBUG-stall]
             }
         }
         catch (OperationCanceledException) when (cancel.IsCancellationRequested)

@@ -30,6 +30,8 @@ public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = nu
 
     public ILauncherArtwork? Artwork { get; } = new EpicArtwork(folders?.CatalogPath);
 
+    public ILauncherMetadata? Metadata { get; } = new EpicMetadata(folders?.CatalogPath);
+
     public IReadOnlyCollection<string> ProgramNames { get; } = ["EpicGamesLauncher.exe", "EpicWebHelper.exe"];
 
     /// <summary>Epic's library tiles that are no games (owner, 2026-10-22): one switch, off at first; they count as tools.</summary>

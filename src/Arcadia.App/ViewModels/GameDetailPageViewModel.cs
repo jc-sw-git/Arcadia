@@ -28,10 +28,11 @@ public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button
 
 /// <summary>
 /// The shown game of the detail page (#499): title and the button row "Spielen", "Zu Favoriten", "In … öffnen" with a quiet
-/// note beside it, and the rail of areas ("Übersicht", "Controller", "Verwalten") with the open area's content and the info
-/// box. ▼ leads from the buttons into the rail, A into the area's rows, B back; ◀ ▶ change a value at once, A starts an
+/// note beside it, and the rail of areas ("Übersicht", "Infos", "Controller", "Verwalten") with the open area's content and
+/// the info box. ▼ leads from the buttons into the rail, A into the area's rows, B back; ◀ ▶ change a value at once, A starts an
 /// action, as on the settings page. "Übersicht" holds the game's quick selection (#500): up to five rows of the other
-/// areas that act as their rows do, and below them "Übersicht anpassen".
+/// areas that act as their rows do, and below them "Übersicht anpassen". "Infos" has no rows: A leads into its text,
+/// which ▲ ▼ scroll (#493).
 /// </summary>
 public sealed partial class GameDetailPageViewModel : ViewModelBase
 {
@@ -40,7 +41,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     private int _area;
     private int _row;
 
-    public GameDetailPageViewModel(GameTileViewModel tile, IGameActionHost host, DetailFocus focus)
+    public GameDetailPageViewModel(GameTileViewModel tile, IGameActionHost host, DetailFocus focus, DetailMetadata? metadata = null)
     {
         Tile = tile;
         _host = host;
@@ -53,11 +54,14 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         Areas =
         [
             new(DetailAreaViewModel.OverviewKey, AppTexts.DetailAreaOverview, DetailAreas.OverviewIcon, OpenByPointer),
+            new(DetailAreaViewModel.InfosKey, AppTexts.DetailAreaInfos, DetailAreas.InfosIcon, OpenByPointer),
             new(DetailAreaViewModel.ControllerKey, AppTexts.DetailAreaController, DetailAreas.ControllerIcon, OpenByPointer),
             new(DetailAreaViewModel.ManageKey, AppTexts.DetailAreaManage, DetailAreas.ManageIcon, OpenByPointer),
         ];
         Areas[0].ValueLine = DetailAreas.OverviewLine(tile);
         OpenArea = Areas[0];
+        GameInfo = metadata ?? DetailMetadata.None;
+        Area(DetailAreaViewModel.InfosKey).ValueLine = GameInfo.RailLine;
 
         tile.PropertyChanged += OnTilePropertyChanged;
         RebuildActions();
@@ -65,6 +69,16 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     }
 
     public GameTileViewModel Tile { get; }
+
+    /// <summary>The game's metadata (#493): the info line, the short description and tags, and the content of "Infos".</summary>
+    [ObservableProperty]
+    public partial DetailMetadata GameInfo { get; private set; }
+
+    /// <summary>
+    /// ▲ ▼ while the focus is in "Infos" (#493, A2): the view scrolls its text, -1 up, 1 down. Kept to this one event, so
+    /// another way of reading it changes only here and in the view.
+    /// </summary>
+    public event Action<int>? ReadScrollRequested;
 
     /// <summary>The background in the game's hue until artwork is there (#13), with its rings.</summary>
     public IBrush Backdrop { get; }
@@ -197,10 +211,13 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             case (DetailZone.Rail, UiAction.Up or UiAction.Down):
                 ShowArea(ListFocus.Cycle(_area, action == UiAction.Up ? -1 : 1, Areas.Count, HeldPress.IsRepeat));
                 break;
-            case (DetailZone.Rail, UiAction.Accept) when OpenArea.HasRows || OpenArea.IsOverview:
+            case (DetailZone.Rail, UiAction.Accept) when CanEnter(OpenArea):
                 // "Übersicht" always has "Übersicht anpassen", also with an empty quick selection (#500).
                 _row = 0;
                 SetZone(DetailZone.Rows);
+                break;
+            case (DetailZone.Rows, UiAction.Up or UiAction.Down) when OpenArea.IsInfos:
+                ReadScrollRequested?.Invoke(action == UiAction.Up ? -1 : 1);
                 break;
             case (DetailZone.Rows, UiAction.Up or UiAction.Down):
                 _row = ListFocus.Cycle(_row, action == UiAction.Up ? -1 : 1, FocusableRowCount, HeldPress.IsRepeat);
@@ -285,10 +302,21 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         _host.CustomizeOverview(Tile, QuickChoices);
     }
 
+    /// <summary>The game's metadata arrived or changed while the page is shown (#493): it shows at once, the focus stays.</summary>
+    public void ShowMetadata(DetailMetadata metadata)
+    {
+        GameInfo = metadata;
+        Area(DetailAreaViewModel.InfosKey).ValueLine = metadata.RailLine;
+        ShowFocus();
+    }
+
     /// <summary>Stops following the game's cover; the page was replaced by the next game's.</summary>
     public void Detach() => Tile.PropertyChanged -= OnTilePropertyChanged;
 
     private DetailAreaViewModel Area(string key) => Areas.First(area => area.Key == key);
+
+    /// <summary>A leads from the rail into the area: to its rows, or to reading "Infos" when there is something to read.</summary>
+    private bool CanEnter(DetailAreaViewModel area) => area.HasRows || area.IsOverview || (area.IsInfos && !GameInfo.IsEmpty);
 
     private void Restore(DetailFocus focus)
     {
@@ -296,7 +324,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         _area = Math.Max(0, Areas.ToList().FindIndex(area => area.Key == focus.AreaKey));
         OpenArea = Areas[_area];
         _row = OpenArea.IsOverview ? QuickRow(focus.Row, focus.OnCustomize) : Math.Clamp(focus.Row, 0, Math.Max(0, OpenArea.Rows.Count - 1));
-        SetZone(focus.Zone == DetailZone.Rows && !OpenArea.HasRows && !OpenArea.IsOverview ? DetailZone.Rail : focus.Zone);
+        SetZone(focus.Zone == DetailZone.Rows && !CanEnter(OpenArea) ? DetailZone.Rail : focus.Zone);
     }
 
     /// <summary>Focuses the button of <paramref name="kind"/>, else the first one that can be pressed; none if none can.</summary>
@@ -381,7 +409,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         AcceptHint = Zone switch
         {
             DetailZone.Buttons => FocusedButton?.ButtonLabel,
-            DetailZone.Rail => OpenArea.HasRows || OpenArea.IsOverview ? AppTexts.Select : null,
+            DetailZone.Rail => CanEnter(OpenArea) ? AppTexts.Select : null,
             _ when IsOnCustomize => AppTexts.DetailCustomizeOverview,
             _ => row is { IsAction: true, IsGreyed: false } ? row.Title : null,
         };

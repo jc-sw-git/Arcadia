@@ -30,7 +30,7 @@ public sealed class DetailAreasTests
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
         AssertStart(page);
-        Assert.Equal([AppTexts.DetailAreaOverview, AppTexts.DetailAreaController, AppTexts.DetailAreaManage], page.Areas.Select(area => area.Name));
+        Assert.Equal([AppTexts.DetailAreaOverview, AppTexts.DetailAreaInfos, AppTexts.DetailAreaController, AppTexts.DetailAreaManage], page.Areas.Select(area => area.Name));
         Assert.All(page.Areas, area => Assert.False(string.IsNullOrEmpty(area.ValueLine), $"{area.Name} ohne Wertzeile"));
 
         arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Uninstall);
@@ -61,6 +61,8 @@ public sealed class DetailAreasTests
         arcadia.Press(UiAction.Down);
         Assert.Same(page.Areas[2], page.OpenArea);
         arcadia.Press(UiAction.Down);
+        Assert.Same(page.Areas[3], page.OpenArea);
+        arcadia.Press(UiAction.Down);
         Assert.Same(page.Areas[0], page.OpenArea);
 
         // ◀ ▶ do nothing in the rail.
@@ -84,7 +86,7 @@ public sealed class DetailAreasTests
         var shown = arcadia.Detail!.Current.Tile.Game.Key;
         var page = arcadia.Detail.Current;
 
-        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: 4).Press(UiAction.Accept);
         Assert.Equal(DetailZone.Rows, page.Zone);
         Assert.Same(page.OpenArea.Rows[0], page.FocusedRow);
         arcadia.Press(UiAction.Back);
@@ -177,8 +179,8 @@ public sealed class DetailAreasTests
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
 
-        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode], page.Areas[1].Rows.Select(row => row.Kind));
-        Assert.Equal([GameActionKind.Artwork, GameActionKind.Uninstall], page.Areas[2].Rows.Select(row => row.Kind));
+        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode], page.Area(DetailAreaViewModel.ControllerKey).Rows.Select(row => row.Kind));
+        Assert.Equal([GameActionKind.Artwork, GameActionKind.Uninstall], page.Area(DetailAreaViewModel.ManageKey).Rows.Select(row => row.Kind));
         Assert.All(page.Areas.SelectMany(area => area.Rows), row => Assert.True(row.IsGreyed && row.HasNote, $"{row.Title} nicht ausgegraut mit Grund"));
 
         // Greyed rows take the focus.

@@ -1,0 +1,125 @@
+using Arcadia.App.Services;
+using Arcadia.Core.Metadata;
+using Arcadia.Launchers.Abstractions;
+
+namespace Arcadia.App.ViewModels;
+
+/// <summary>One line of "Infos" (#493): its caption, the value or an age rating badge, and the provider it came from.</summary>
+public sealed record DetailFact(string Caption, string Value, string Source, bool IsBadge = false);
+
+/// <summary>
+/// What the detail page shows of a game's metadata (#493): the info line under the title, the short description and the
+/// tags in "Übersicht", and in "Infos" the full description and every field with its source. A field nobody delivered is
+/// left out; without any, the info line, the description and the tags are missing and "Infos" says there is nothing yet.
+/// </summary>
+public sealed class DetailMetadata
+{
+    /// <summary>How many tags "Übersicht" names before "+n"; one line of the artboard holds about three.</summary>
+    public const int OverviewTagCount = 3;
+
+    public DetailMetadata(MergedMetadata data)
+    {
+        IsEmpty = data.IsEmpty;
+        var genres = data.Genres?.Value.Select(GenreNames.Of).ToList();
+        var year = data.ReleaseDate?.Value.Year.ToString(Formatting.Culture);
+        Badge = data.AgeRatings.Count > 0 ? BadgeOf(data.AgeRatings[0].Value) : null;
+        InfoLine = Joined(AppTexts.DetailInfoSeparator, genres is null ? null : List(genres), data.Developers is { } developers ? List(developers.Value) : null, year);
+        RailLine = IsEmpty ? AppTexts.DetailInfosNone : Joined(AppTexts.DetailInfoSeparator, genres?[0], year, Badge) ?? Joined(AppTexts.DetailInfoSeparator, data.Developers?.Value[0]) ?? string.Empty;
+
+        // Without a short description "Übersicht" shows the start of the full one, cut after its lines.
+        ShortDescription = data.ShortDescription?.Value ?? data.Description?.Value;
+        Description = data.Description?.Value ?? data.ShortDescription?.Value;
+        DescriptionSource = (data.Description ?? data.ShortDescription)?.Source;
+
+        Tags = data.Tags?.Value ?? [];
+        TagsSource = data.Tags?.Source;
+        OverviewTags = [.. Tags.Take(OverviewTagCount)];
+        MoreTags = Tags.Count > OverviewTagCount ? AppTexts.DetailMoreTags(count: Formatting.Count(Tags.Count - OverviewTagCount)) : null;
+
+        var facts = new List<DetailFact>();
+        Add(facts, AppTexts.DetailGenresCaption, data.Genres, _ => List(genres!));
+        Add(facts, AppTexts.DetailDevelopersCaption, data.Developers, List);
+        Add(facts, AppTexts.DetailPublishersCaption, data.Publishers, List);
+        Add(facts, AppTexts.DetailReleasedCaption, data.ReleaseDate, date => date.ToString("dd.MM.yyyy", Formatting.Culture));
+        for (var r = 0; r < data.AgeRatings.Count; r++)
+        {
+            // The caption stands once, beside the first rating; each rating names its own source.
+            var rating = data.AgeRatings[r];
+            var source = rating.Value.ByStore ? AppTexts.DetailSourceByStore(source: rating.Source) : rating.Source;
+            facts.Add(new(r == 0 ? AppTexts.DetailAgeRatingCaption : string.Empty, BadgeOf(rating.Value), source, IsBadge: true));
+        }
+
+        Facts = facts;
+    }
+
+    public static DetailMetadata None { get; } = new(MergedMetadata.None);
+
+    /// <summary>No provider delivered anything (yet): a demo or plugin game, or a game the store hasn't answered for.</summary>
+    public bool IsEmpty { get; }
+
+    /// <summary>"Action, Abenteuer · Nordkai Studio · 2021"; null without genres, developer and year.</summary>
+    public string? InfoLine { get; }
+
+    /// <summary>The first age rating, e.g. "USK 16": USK before PEGI before ESRB.</summary>
+    public string? Badge { get; }
+
+    public bool HasBadge => Badge is not null;
+
+    public bool HasInfoText => InfoLine is not null;
+
+    public bool HasInfoLine => InfoLine is not null || Badge is not null;
+
+    /// <summary>The line below "Infos" in the rail: first genre · year · age rating, as in the artboard.</summary>
+    public string RailLine { get; }
+
+    public string? ShortDescription { get; }
+
+    public bool HasShortDescription => ShortDescription is not null;
+
+    public string? Description { get; }
+
+    public bool HasDescription => Description is not null;
+
+    /// <summary>The provider of the description, e.g. "Steam"; shown only in "Infos".</summary>
+    public string? DescriptionSource { get; }
+
+    /// <summary>Every tag in the provider's order.</summary>
+    public IReadOnlyList<string> Tags { get; }
+
+    public bool HasTags => Tags.Count > 0;
+
+    public string? TagsSource { get; }
+
+    /// <summary>The first tags, shown in "Übersicht"; <see cref="MoreTags"/> counts the rest.</summary>
+    public IReadOnlyList<string> OverviewTags { get; }
+
+    /// <summary>"+6"; null when all tags show.</summary>
+    public string? MoreTags { get; }
+
+    public bool HasMoreTags => MoreTags is not null;
+
+    /// <summary>Genres, developer, publisher, release date and every age rating, each with its source.</summary>
+    public IReadOnlyList<DetailFact> Facts { get; }
+
+    public bool HasFacts => Facts.Count > 0;
+
+    public static string BadgeOf(AgeRating rating) =>
+        AppTexts.DetailAgeRating(board: rating.Board.ToString().ToUpperInvariant(), rating: rating.Rating);
+
+    private static void Add<T>(List<DetailFact> facts, string caption, Sourced<T>? field, Func<T, string> text)
+    {
+        if (field is not null)
+        {
+            facts.Add(new(caption, text(field.Value), field.Source));
+        }
+    }
+
+    private static string List(IEnumerable<string> names) => string.Join(AppTexts.DetailListSeparator, names);
+
+    /// <summary>The parts that are there, joined; null when none is, so no stray "·" is left.</summary>
+    private static string? Joined(string separator, params string?[] parts)
+    {
+        var present = parts.Where(part => !string.IsNullOrWhiteSpace(part)).ToList();
+        return present.Count == 0 ? null : string.Join(separator, present);
+    }
+}

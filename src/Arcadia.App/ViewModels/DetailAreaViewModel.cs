@@ -11,6 +11,7 @@ namespace Arcadia.App.ViewModels;
 public sealed partial class DetailAreaViewModel : ViewModelBase
 {
     public const string OverviewKey = "overview";
+    public const string InfosKey = "infos";
     public const string ControllerKey = "controller";
     public const string ManageKey = "manage";
 
@@ -32,6 +33,9 @@ public sealed partial class DetailAreaViewModel : ViewModelBase
     public Geometry Icon { get; }
 
     public bool IsOverview => Key == OverviewKey;
+
+    /// <summary>"Infos" (#493): the full description and every field of the metadata; read, not set, so it has no rows.</summary>
+    public bool IsInfos => Key == InfosKey;
 
     /// <summary>The line below the name, e.g. "Modus „Arcadia“"; it follows the area's values.</summary>
     [ObservableProperty]

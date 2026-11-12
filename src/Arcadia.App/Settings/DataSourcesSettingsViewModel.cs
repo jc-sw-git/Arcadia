@@ -2,6 +2,7 @@ using Arcadia.App.Input;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Settings;
 using Avalonia.Threading;
 
@@ -10,8 +11,7 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// The category "Datenquellen" (#489): where covers and backgrounds come from. Groups "STEAMGRIDDB" (the key,
 /// <see cref="SteamGridDbKeyRows"/>), "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" (<see cref="ArtworkSourceRows"/>,
-/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>); #43 adds
-/// the metadata providers. A key SteamGridDB turned down is a warning beside the category's name.
+/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>) and "METADATEN" (<see cref="MetadataRows"/>, #493). A key SteamGridDB turned down is a warning beside the category's name.
 /// </summary>
 public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, IDraggableRows
 {
@@ -21,10 +21,14 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     private readonly ArtworkSourceRows _sourceRows;
     private readonly ArtworkReloadRows _reloadRows;
     private readonly ArtworkNameRows _nameRows;
+    private readonly MetadataService? _metadata;
+    private readonly MetadataRows? _metadataRows;
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
-    public DataSourcesSettingsViewModel(SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists)
+    /// <param name="metadata">The games' metadata (#493); null: the group "METADATEN" is left out.</param>
+    public DataSourcesSettingsViewModel(
+        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null)
         : base(AppTexts.DataSourcesTitle, "M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0 M4 6v6a8 3 0 0 0 16 0v-6 M4 12v6a8 3 0 0 0 16 0v-6")
     {
         _key = key;
@@ -34,6 +38,13 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
         _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
         _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList);
+        _metadata = metadata;
+        _metadataRows = metadata is null ? null : new MetadataRows(metadata, question => Dialog = question);
+        if (metadata is not null)
+        {
+            metadata.ProgressChanged += OnChanged;
+        }
+
         _key.Changed += OnChanged;
         _artwork.SearchChanged += OnChanged;
         _artwork.WaitingChanged += OnChanged;
@@ -61,7 +72,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
 
     public void Drop() => _sourceRows.Drop();
 
-    /// <summary>"Alle Artworks neu laden?": [A] reloads, [B] closes it.</summary>
+    /// <summary>"Alle Artworks neu laden?" or "Alle Metadaten neu laden?": [A] reloads, [B] closes it.</summary>
     public override void HandleDialog(UiAction action)
     {
         if (Dialog is SettingsQuestionViewModel question)
@@ -89,6 +100,10 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _key.Changed -= OnChanged;
         _artwork.SearchChanged -= OnChanged;
         _artwork.WaitingChanged -= OnChanged;
+        if (_metadata is not null)
+        {
+            _metadata.ProgressChanged -= OnChanged;
+        }
     }
 
     /// <summary>From the run's thread or the key's: the rows follow on the UI thread while the category is shown.</summary>
@@ -106,9 +121,10 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _sourceRows.Refresh();
         _reloadRows.Refresh();
         _nameRows.Refresh();
+        _metadataRows?.Refresh();
         IsReordering = _sourceRows.IsReordering;
         Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
-            _nameRows.SeveralHitsRow, _nameRows.WaitingRow]);
+            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _metadataRows?.Rows ?? []]);
     }
 }

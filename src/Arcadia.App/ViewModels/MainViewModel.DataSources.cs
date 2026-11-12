@@ -29,7 +29,7 @@ public partial class MainViewModel : IDataSourcesHost
 
     /// <summary>"Datenquellen" exists only with artwork and SteamGridDB wired (the App does both).</summary>
     private DataSourcesSettingsViewModel? CreateDataSources(SettingsChanges changes) =>
-        _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(key, artwork, this, changes, _time, KeepsSteamGridDbKey) : null;
+        _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(key, artwork, this, changes, _time, KeepsSteamGridDbKey, _metadata) : null;
 
     /// <summary>
     /// Opens "Datenquellen" on the key, e.g. from the status modal or "Artwork ändern" without a key (#490), or on another

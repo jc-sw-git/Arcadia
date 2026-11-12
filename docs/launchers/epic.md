@@ -53,6 +53,12 @@ re-sends once if no process appears from the install directory within 30 s. If t
   most 100 characters; anything else is no id). That SteamGridDB files Epic games by AppName is an assumption, not
   yet checked against the real service (T491-28); a game it doesn't know by it is searched by its name.
 
+## Metadata (`EpicMetadata`, #43, #493)
+
+- Of 331 catalog games every one names its `developer`; that is all Arcadia takes (matched like the images). The
+  `description` is often only the title, otherwise German with every umlaut a `?` (66 of 331); there is no release
+  date (only `dateAdded`, when it entered the catalog). Epic's online store isn't asked.
+
 ## Installs (`EpicInstallMonitor`, verified with real installs)
 
 - Queue order from `Data\DownloadManager\DownloadState_<account>.json` (incl. paused, `[]` when idle); per-app events

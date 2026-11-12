@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Artwork;
@@ -82,10 +83,7 @@ public sealed class ArtworkCache(string root)
     /// </summary>
     private const string SuggestionsFolder = ".suggestions";
 
-    private const string TemporarySuffix = ".tmp";
-
-    /// <summary>A folder name longer than this is a hash instead; the metadata keeps the key.</summary>
-    private const int MaxFolderName = 100;
+    private const string TemporarySuffix = CacheFiles.TemporarySuffix;
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -97,29 +95,8 @@ public sealed class ArtworkCache(string root)
 
     public string Root { get; } = Path.GetFullPath(root);
 
-    /// <summary>
-    /// The game's folder: the launcher id and the native id with every character other than a-z, 0-9 and '-' written as
-    /// <c>~</c> and its UTF-8 bytes in hex, so no key holds a separator, a dot, a drive or a name two keys share (also on
-    /// a file system that ignores case).
-    /// </summary>
-    public string FolderOf(string gameKey)
-    {
-        var name = new StringBuilder(gameKey.Length + 8);
-        foreach (var b in Encoding.UTF8.GetBytes(gameKey))
-        {
-            if (b is (>= (byte)'a' and <= (byte)'z') or (>= (byte)'0' and <= (byte)'9') or (byte)'-')
-            {
-                name.Append((char)b);
-            }
-            else
-            {
-                name.Append('~').Append(b.ToString("x2", CultureInfo.InvariantCulture));
-            }
-        }
-
-        var folder = name.Length <= MaxFolderName ? name.ToString() : "~" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(gameKey)))[..32];
-        return Path.Combine(Root, folder);
-    }
+    /// <summary>The game's folder, named by <see cref="CacheFiles.NameOf"/>.</summary>
+    public string FolderOf(string gameKey) => Path.Combine(Root, CacheFiles.NameOf(gameKey));
 
     public string PathOf(string gameKey, CachedImage image) => Path.Combine(FolderOf(gameKey), image.File);
 
@@ -386,25 +363,9 @@ public sealed class ArtworkCache(string root)
         _ => null,
     };
 
-    private static void WriteThroughTemporary(string path, ReadOnlySpan<byte> content)
-    {
-        var temporary = path + "." + Guid.NewGuid().ToString("N")[..8] + TemporarySuffix;
-        using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
-        {
-            file.Write(content);
-            file.Flush();
-        }
+    private static void WriteThroughTemporary(string path, ReadOnlySpan<byte> content) => CacheFiles.WriteThroughTemporary(path, content);
 
-        File.Move(temporary, path, overwrite: true);
-    }
-
-    private static void RemoveTemporaryFiles(string folder)
-    {
-        foreach (var leftover in Directory.EnumerateFiles(folder, "*" + TemporarySuffix))
-        {
-            File.Delete(leftover);
-        }
-    }
+    private static void RemoveTemporaryFiles(string folder) => CacheFiles.RemoveTemporaryFiles(folder);
 
     private sealed class StoredArtwork
     {

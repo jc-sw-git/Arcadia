@@ -18,8 +18,11 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
   play sessions), `EpicLastPlayedStore` (keeps "last played" after Epic's logs rotated it out), `EpicLauncherClient`,
   `EpicInstallMonitor`, `EpicRunningGames`.
 - `EpicArtwork`: the `keyImages` of Epic's catalog cache, only on Epic's image hosts (#488, `docs/launchers/epic.md`).
+- `EpicMetadata`: only the developer from the catalog cache (#493).
 
 **Steam** (`Steam/`)
+- `SteamMetadata` (#493, `docs/launchers/steam/metadata.md`): `SteamAppMetadata` (genres, companies, date, tags from
+  `appinfo.vdf`), `SteamAppDetails` (the store page: address and answer), `SteamGenres`, `SteamTags` (embedded German tag list).
 - `SteamArtwork`: the account's own images, Steam's library cache, Steam's image server (#487,
   `docs/launchers/steam/artwork.md`).
 - `SteamScanner`, `SteamInstallation`, `SteamInstallMonitor`, `SteamRunningGames`, `SteamProgram` (Steam the

@@ -11,7 +11,9 @@ using Arcadia.ControllerSupport.Copy;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Tests.Artwork;
+using Arcadia.Core.Tests.Metadata;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Steam.Account;
 using Arcadia.Launchers.Abstractions;
@@ -74,7 +76,7 @@ internal sealed class ArcadiaDriver : IDisposable
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
         Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null,
-        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null)
+        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null)
     {
         SteamGridDb = steamGridDb ?? new FakeSteamGridDb();
         External = external ?? new ExternalAppsFake();
@@ -127,11 +129,19 @@ internal sealed class ArcadiaDriver : IDisposable
                 new SteamGridDbClient(new HttpClient(SteamGridDb, disposeHandler: false), time) { Log = AppLog.Write },
                 time),
         };
+        // The metadata cache in the test's folder; every store page is the test's fake store, which answers nothing unless
+        // the test serves a game (#493). Kept across a restart.
+        MetadataStore = metadataStore ?? new FakeStoreServer(time);
+        Metadata = new MetadataService(new MetadataCache(Path.Combine(folder, "metadata")), new HttpClient(MetadataStore, disposeHandler: false), time)
+        {
+            Log = AppLog.Write,
+        };
         _app = ArcadiaComposition.Build(new ArcadiaParts(
             Settings, _http, time, firstRun, integrations, controllerPlatform, steam?.Viiper, steam?.Sisr.Installation(),
             new NoProcesses(), Updates, Path.Combine(folder, "logos"), FolderCheck, webPages)
         {
             Artwork = Artwork,
+            Metadata = Metadata,
             Open = Open,
             Logs = Logs,
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
@@ -177,6 +187,12 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>The games' covers and backgrounds (#487), cached in <see cref="Folder"/>.</summary>
     public ArtworkService Artwork { get; }
+
+    /// <summary>The games' metadata (#493) over <see cref="MetadataStore"/>.</summary>
+    public MetadataService Metadata { get; }
+
+    /// <summary>Every launcher's store page (#493): records each request and answers what the test serves.</summary>
+    public FakeStoreServer MetadataStore { get; }
 
     /// <summary>SteamGridDB's API (#489); it records every request.</summary>
     public FakeSteamGridDb SteamGridDb { get; }
@@ -362,7 +378,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
         IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default,
-        HttpMessageHandler? imageServer = null)
+        HttpMessageHandler? imageServer = null, Action<FakeStoreServer>? stores = null)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -373,6 +389,9 @@ internal sealed class ArcadiaDriver : IDisposable
         });
         var time = new FakeTimeProvider(Now);
         var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments, imageServer: imageServer);
+
+        // The store pages answer from the first scan on (#493).
+        stores?.Invoke(driver.MetadataStore);
         await driver.LoadAsync();
         return driver;
     }
@@ -402,7 +421,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened,
-            steamGridDb: SteamGridDb, external: External);
+            steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -683,6 +702,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Main.Dispose();
         Artwork.Dispose();
         Artwork.WhenIdleAsync().Wait(WaitLimit);
+        Metadata.WhenIdleAsync().Wait(WaitLimit);
         SteamAccount?.Dispose();
         _controllers.Dispose();
         _http.Dispose();
@@ -747,11 +767,12 @@ internal readonly record struct StartArguments(bool Demo = false, bool FirstRun 
 /// <paramref name="Options"/>: the launcher's switches for software, tools and soundtracks (#141).
 /// <paramref name="Running"/>: the ids of the games the launcher reports as running.
 /// <paramref name="Artwork"/>: the launcher's covers and backgrounds (#487).
+/// <paramref name="Metadata"/>: the launcher's metadata (#493).
 /// </summary>
 internal sealed record LauncherSpec(
     LauncherInfo Launcher, int Games, bool IsInstalled = true, IReadOnlyList<Game>? Library = null, bool IsDemo = false,
     IReadOnlyList<LibraryTypeOption>? Options = null, IReadOnlyList<string>? Running = null, TestFolderChoice? FolderChoice = null,
-    ILauncherArtwork? Artwork = null)
+    ILauncherArtwork? Artwork = null, ILauncherMetadata? Metadata = null)
 {
     public static LauncherSpec With(LauncherInfo launcher, params Game[] library) => new(launcher, library.Length, Library: library);
 

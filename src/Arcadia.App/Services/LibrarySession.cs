@@ -1,4 +1,5 @@
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
@@ -29,6 +30,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private readonly RunningGamesTracker _running;
     private readonly TimeProvider _time;
     private readonly ArtworkService? _artwork;
+    private readonly MetadataService? _metadata;
     private readonly CancellationTokenSource _shutdown = new();
 
     // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
@@ -36,9 +38,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
 
     /// <param name="artwork">Brings the games' covers and backgrounds into the cache after each read (#487); null: placeholders only.</param>
-    public LibrarySession(LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time, ArtworkService? artwork = null)
+    /// <param name="metadata">Brings the games' metadata into the cache after each read (#493); null: none.</param>
+    public LibrarySession(
+        LibraryService library, InstallTracker installs, RunningGamesTracker running, LaunchedGames launchedGames, TimeProvider time, ArtworkService? artwork = null,
+        MetadataService? metadata = null)
     {
         _artwork = artwork;
+        _metadata = metadata;
         _library = library;
         _refresher = new LibraryRefresher(library, time);
         _installs = installs;
@@ -247,8 +253,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
         else if (_refresher.Scans != scans)
         {
-            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
-            UpdateArtwork();
+            // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
+            // store answers that failed before (#493).
+            UpdateGameData();
         }
 
         // "Zuletzt eingelesen" changed even if nothing else did.
@@ -364,8 +371,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
         else if (_refresher.Scans != scans)
         {
-            // An unchanged library can still have new images: an own cover set in Steam, or a download that failed offline.
-            UpdateArtwork();
+            // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
+            // store answers that failed before (#493).
+            UpdateGameData();
         }
 
         LaunchersRead?.Invoke(this, EventArgs.Empty);
@@ -419,11 +427,15 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         await RefreshLibraryAsync(force: true);
     }
 
-    /// <summary>Every type the scanners delivered, so a switched-off type keeps its images for when it is switched on again.</summary>
-    private void UpdateArtwork()
+    /// <summary>
+    /// Images for every type the scanners delivered, so a switched-off type keeps its images for when it is switched on
+    /// again; metadata only for the entries shown, so no store is asked for what the player switched off.
+    /// </summary>
+    private void UpdateGameData()
     {
         var launchers = _library.Launchers;
         _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
+        _metadata?.Update(Libraries.Select(l => new LibraryMetadata(l, launchers.Registered(l.Launcher.Id)?.Metadata)).ToList());
     }
 
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
@@ -447,7 +459,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         _running.SetLibrary(libraries.SelectMany(l => l.Games));
         LibrariesChanged?.Invoke(this, EventArgs.Empty);
 
-        UpdateArtwork();
+        UpdateGameData();
         if (newlyFailed.Count > 0)
         {
             Noticed?.Invoke(this, new LibraryNotice.ScanFailed(newlyFailed));

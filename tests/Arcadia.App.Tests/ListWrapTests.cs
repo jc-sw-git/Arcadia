@@ -95,14 +95,14 @@ public sealed class ListWrapTests
         Assert.Equal(DetailZone.Rail, page.Zone);
         arcadia.Press(UiAction.Down, times: page.Areas.Count);
         Assert.Same(page.Areas[0], page.OpenArea);
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Accept);
         var rows = page.OpenArea.Rows;
         Assert.Same(rows[0], page.FocusedRow);
         arcadia.Press(UiAction.Up);
         Assert.Same(rows[^1], page.FocusedRow);
         arcadia.Press(UiAction.Down);
         Assert.Same(rows[0], page.FocusedRow);
-        arcadia.Press(UiAction.Back).Press(UiAction.Up);
+        arcadia.Press(UiAction.Back).Press(UiAction.Up, times: 2);
         Assert.Equal(DetailZone.Rail, page.Zone);
         arcadia.Press(UiAction.Up);
         Assert.Equal(GameActionKind.Play, page.FocusedKind);

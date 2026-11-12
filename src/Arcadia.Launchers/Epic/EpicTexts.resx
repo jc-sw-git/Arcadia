@@ -10,4 +10,6 @@
   <data name="EpicUnrealEngine" xml:space="preserve"><value>Unreal Engine, alle Versionen als ein Eintrag</value></data>
   <data name="EpicUnrealEditorForFortnite" xml:space="preserve"><value>Unreal Editor für Fortnite</value></data>
   <data name="EpicMoreAddOns" xml:space="preserve"><value>weitere startbare Add-ons</value></data>
+  <data name="EpicMetadataSummary" xml:space="preserve"><value>Nur der Entwickler</value></data>
+  <data name="EpicMetadataAbout" xml:space="preserve"><value>Epics Katalog auf diesem PC nennt verlässlich nur den Entwickler. Seine Beschreibungen sind oft nur der Titel oder ohne Umlaute, ein Erscheinungsdatum hat er nicht. Arcadia fragt dafür nirgends nach.</value></data>
 </root>

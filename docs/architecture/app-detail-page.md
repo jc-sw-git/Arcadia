@@ -14,3 +14,8 @@ The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-p
   "Für alle Spiele übernehmen"), drawn by `Views/CustomizeOverviewView`. Main hosts it
   (`MainViewModel.CustomizeOverview`, `ICustomizeOverviewHost`), stores each tick at once and rebuilds the page behind.
 - While any dialog is open (`MainViewModel.IsDialogOpen`) the page behind draws no focus ring.
+- Metadata (#493): `DetailMetadata` turns Core's `MergedMetadata` (`MainViewModel.MetadataOf`) into the info line,
+  "Übersicht"'s description and tags and the facts of "Infos" (`DetailAreaViewModel.InfosKey`, no rows).
+  `MainViewModel` hands `MetadataService.Changed` to `GameDetailViewModel.ShowMetadata`. ▲ ▼ in "Infos" raise
+  `GameDetailPageViewModel.ReadScrollRequested`, forwarded as `InfoScrollRequested`; the view scrolls `InfosScroller`
+  there, the info box elsewhere.

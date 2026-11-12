@@ -26,6 +26,7 @@ public sealed class SteamIntegration : ILauncherIntegration
         Program = new SteamProgram(_locate);
         RunningGames = new SteamRunningGames(time, consoleLog: new SteamConsoleLog(() => _locate()?.ConsoleLogPath));
         Artwork = new SteamArtwork(_locate);
+        Metadata = new SteamMetadata(_locate);
 
         // A switch of the account in Steam shows at once, not only with the next rescan (owner, 2026-10-27).
         account?.FollowClient(() => _locate()?.ActiveUserId);
@@ -59,6 +60,8 @@ public sealed class SteamIntegration : ILauncherIntegration
     public IRunningGamesMonitor? RunningGames { get; }
 
     public ILauncherArtwork? Artwork { get; }
+
+    public ILauncherMetadata? Metadata { get; }
 
     public IReadOnlyCollection<string> ProgramNames { get; } = ["steam.exe", "steamwebhelper.exe"];
 

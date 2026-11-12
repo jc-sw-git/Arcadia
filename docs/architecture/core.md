@@ -19,6 +19,9 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `LibraryTypeOption`: a launcher's switch for software, tools or soundtracks.
 - `ILauncherArtwork`: a launcher's own covers and backgrounds per game (`ArtworkCandidate`: a file or an `https`
   address), best first (#487); `IArtworkLookup.StoreIdOf` the game's id at a store SteamGridDB knows (`ArtworkStoreId`, #489).
+- `ILauncherMetadata`: a launcher as a metadata provider (#493): the fields it delivers, `Look` (its local files),
+  optionally `Store` (`IMetadataStore`: an `https` page per game, its `RequestLimit`, `Parse`). `GameMetadata` (one
+  provider's raw data), `Genre` (the fixed list), `AgeRating`.
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
   in Arcadia's data folder.
@@ -87,6 +90,15 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   files as `own-cover|own-hero.*`, the image of a source switched off renamed to `off-cover|off-hero.*` (one per kind)
   and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never
   leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
+
+**Metadata** (`Metadata/`, #43, #493)
+- `MetadataService`: `Open` reads the cache; after each scan one background run reads the launchers' local data, then
+  asks each store for the games without its answer, one at a time within its limit, 10 s each, waiting on 429; no
+  network stops the run, a timeout or 5xx skips the game until the next scan. `ReloadAll`, `Progress`, `Of(key)`.
+- `MetadataCache`: `metadata/<launcher>/<game>.json` (local and store data per provider, unmerged), temporary file and
+  rename, damaged files deleted. `MetadataCheck` checks every value (also from the cache), `PlainText` turns HTML
+  into text, `TextLanguage` the language rule, `MergedMetadata.Of` merges providers per field with their source.
+- `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.
 
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per

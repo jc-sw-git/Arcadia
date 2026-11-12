@@ -10,10 +10,13 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
   page, test, delete; the first usable key searches), `ArtworkSourceRows` (the sources as `ArtworkSourceRowViewModel`
   switches with L3 lifting, missing images with progress and cancel, "Zuschneiden erlaubt"; every change calls
   `ArtworkService.SettingsChanged`, #506) and
-  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); it reaches the
+  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch) and `MetadataRows` (#493: a
+  row per launcher with metadata, "Fehlende Metadaten", "Alle Metadaten neu laden"); it reaches the
   window through `IDataSourcesHost` (`MainViewModel.DataSources.cs`: toasts, keyboard, `IClipboardText` and
   `IWebBrowser` from `Services/ExternalApps`); the window drags a source as a launcher, through `IDraggableRows`. `StatusBarViewModel.WatchSteamGridDb` shows a rejected key in the chip.
-- `LibrarySession` hands every read library to the service; `MainViewModel` gives each new tile its `GameArtwork` (with
+- `LibrarySession` hands every read library to the artwork service and the shown entries to `MetadataService` (#493;
+  `Services/MetadataFolder`: its own client without cookies or redirects; `MainViewModel.Metadata.cs`: its errors,
+  the reload's warning, `MetadataOf`, `MetadataChanged`); `MainViewModel` gives each new tile its `GameArtwork` (with
   the install and run state, `ShowStates`) and, on `Changed`, the shown tiles theirs. `GameTileViewModel.Cover`/`Hero`.
 - `Controls/ArtworkImage`: draws one image cropped centred with rounded corners. It loads only when it is drawn (a hidden
   slot decodes nothing), at the size it has on the screen (layout size × the `Viewbox`'s scale × the screen's scaling),

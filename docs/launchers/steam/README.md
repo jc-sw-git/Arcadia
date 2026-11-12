@@ -9,6 +9,7 @@ you touch:
 | Online account, sign-in, owned games (#83) | `account.md` |
 | Running games, play stats (#95) | `running-games.md` |
 | Covers and backgrounds: own images, library cache, image server (#487) | `artwork.md` |
+| Metadata: `appinfo.vdf` fields, tag names, the store page `appdetails` and its limit (#493) | `metadata.md` |
 
 ## Shortcuts
 

@@ -11,6 +11,7 @@ using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Core.Search;
@@ -39,6 +40,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private readonly GameActions _actions;
     private readonly RepeatGate _repeats = new();
     private readonly ArtworkService? _artwork;
+    private readonly MetadataService? _metadata;
 
     private Func<ViewOptionsViewModel?>? _createViewOptions;
 
@@ -66,9 +68,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         FirstRunSetup firstRun,
         TimeProvider time,
         InstallFolderCheck installFolders,
-        ArtworkService? artwork = null)
+        ArtworkService? artwork = null,
+        MetadataService? metadata = null)
     {
         _artwork = artwork;
+        _metadata = metadata;
         ArtworkLoader = new ArtworkLoader(artwork);
         _logos = logos;
         _controllerSupport = controllerSupport;
@@ -81,13 +85,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
-        Session = new LibrarySession(library, installs, running, launchedGames, time, artwork);
+        Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata);
         if (artwork is not null)
         {
             artwork.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateArtwork(keys));
             artwork.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextArtwork));
             WatchSteamGridDb(artwork);
             artwork.Open();
+        }
+
+        if (metadata is not null)
+        {
+            WatchMetadata(metadata);
         }
 
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
@@ -664,7 +673,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Search is { } search)
         {
             var hit = Carousel.Find(search.Hits, key, 0);
-            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus, MetadataOf);
             return;
         }
 
@@ -676,7 +685,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus);
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, MetadataOf);
     }
 
     /// <summary>
@@ -1102,6 +1111,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         SearchKeyboard.Dispose();
         SettingsKeyboard.Dispose();
         Session.Dispose();
+
+        // Arcadia closes: a store request in flight is dropped, not waited for (#493).
+        _metadata?.Dispose();
         GC.SuppressFinalize(this);
     }
 

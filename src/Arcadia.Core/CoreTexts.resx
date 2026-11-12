@@ -19,4 +19,24 @@
   <data name="LogoSvgReferences" xml:space="preserve"><value>Das SVG lädt andere Dateien oder Seiten; Arcadia nimmt nur Bilder ohne Verweise nach außen.</value></data>
   <data name="LogoSvgScripts" xml:space="preserve"><value>Das SVG enthält Skripte oder Webinhalte; Arcadia nimmt nur reine Bilder.</value></data>
   <data name="LogoSvgEmbedsImages" xml:space="preserve"><value>Das SVG bettet andere Bilder ein; Arcadia nimmt nur reine Vektorgrafik.</value></data>
+  <data name="GenreAction" xml:space="preserve"><value>Action</value></data>
+  <data name="GenreAdventure" xml:space="preserve"><value>Abenteuer</value></data>
+  <data name="GenreRolePlaying" xml:space="preserve"><value>Rollenspiel</value></data>
+  <data name="GenreStrategy" xml:space="preserve"><value>Strategie</value></data>
+  <data name="GenreSimulation" xml:space="preserve"><value>Simulation</value></data>
+  <data name="GenreRacing" xml:space="preserve"><value>Rennspiel</value></data>
+  <data name="GenreSports" xml:space="preserve"><value>Sport</value></data>
+  <data name="GenreShooter" xml:space="preserve"><value>Shooter</value></data>
+  <data name="GenrePuzzle" xml:space="preserve"><value>Puzzle</value></data>
+  <data name="GenrePlatformer" xml:space="preserve"><value>Plattformer</value></data>
+  <data name="GenreFighting" xml:space="preserve"><value>Kampfspiel</value></data>
+  <data name="GenreCasual" xml:space="preserve"><value>Gelegenheitsspiel</value></data>
+  <data name="GenreIndie" xml:space="preserve"><value>Indie</value></data>
+  <data name="GenreMassivelyMultiplayer" xml:space="preserve"><value>MMO</value></data>
+  <data name="GenreArcade" xml:space="preserve"><value>Arcade</value></data>
+  <data name="GenreMusic" xml:space="preserve"><value>Musik</value></data>
+  <data name="GenrePointAndClick" xml:space="preserve"><value>Point &amp; Click</value></data>
+  <data name="GenreVisualNovel" xml:space="preserve"><value>Visual Novel</value></data>
+  <data name="GenreCardAndBoard" xml:space="preserve"><value>Karten- und Brettspiel</value></data>
+  <data name="GenreTactics" xml:space="preserve"><value>Taktik</value></data>
 </root>

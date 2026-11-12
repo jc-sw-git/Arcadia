@@ -117,6 +117,7 @@ public partial class App : Application
                 webPages)
             {
                 Artwork = ArtworkFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
+                Metadata = MetadataFolder.CreateService(time),
             });
             var launchers = app.Launchers;
             var controllerSupport = app.ControllerSupport;

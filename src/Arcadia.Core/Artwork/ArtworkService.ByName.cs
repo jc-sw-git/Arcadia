@@ -16,6 +16,7 @@ public sealed record WaitingGame(Game Game, string LauncherName, IReadOnlyList<S
 /// </summary>
 public sealed partial class ArtworkService
 {
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Game, int Hit), ArtworkFile> _hitCovers = new();
     private NameMatchStore? _names;
 
     private NameMatchStore Names => _names ??= new NameMatchStore(Path.Combine(_cache.Root, NameMatchStore.FileName)) { Log = Log };
@@ -76,7 +77,10 @@ public sealed partial class ArtworkService
     /// <summary>
     /// "Ersten nehmen" chosen while games wait: each takes its first hit at once, and a run brings their images.
     /// </summary>
-    /// <returns>How many games took their first hit.</returns>
+    /// <returns>
+    /// How many games of the libraries took their first hit, as the row counted them; games waiting outside the libraries
+    /// (D7) take theirs too, uncounted.
+    /// </returns>
     public int TakeFirstForAllWaiting()
     {
         var waiting = Names.All.Where(e => e.Value.State == NameMatchState.Waiting).ToList();
@@ -85,6 +89,7 @@ public sealed partial class ArtworkService
             return 0;
         }
 
+        var shown = Waiting.Count;
         Names.Set(waiting.Select(e => KeyValuePair.Create(e.Key, NameMatch.Chosen(e.Value.Hits[0].Id))));
         Log($"Artwork: {waiting.Count} wartende Spiele nehmen den ersten Treffer");
         WaitingChanged?.Invoke(this, EventArgs.Empty);
@@ -99,7 +104,7 @@ public sealed partial class ArtworkService
             Update(libraries);
         }
 
-        return waiting.Count;
+        return shown;
     }
 
     /// <summary>
@@ -112,6 +117,24 @@ public sealed partial class ArtworkService
         {
             return null;
         }
+
+        // Once per hit and session: going back to a game asks SteamGridDB again for nothing, and writes no new file.
+        if (_hitCovers.TryGetValue((game.Key, hit.Id), out var known) && File.Exists(known.Path))
+        {
+            return known;
+        }
+
+        var cover = await DownloadHitCoverAsync(game, hit, steamGridDb, cancel);
+        if (cover is not null)
+        {
+            _hitCovers[(game.Key, hit.Id)] = cover;
+        }
+
+        return cover;
+    }
+
+    private async Task<ArtworkFile?> DownloadHitCoverAsync(Game game, SteamGridDbHit hit, SteamGridDbKey steamGridDb, CancellationToken cancel)
+    {
 
         var run = NewRunState();
         var answer = await steamGridDb.ImagesOfGameAsync(hit.Id, ArtworkKind.Cover, cancel);

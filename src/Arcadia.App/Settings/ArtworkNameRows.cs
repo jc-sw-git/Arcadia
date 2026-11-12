@@ -16,6 +16,8 @@ public sealed class ArtworkNameRows
 
     public const string WaitingKey = "artwork-waiting";
 
+    private const int ShownWaitingGames = 8;
+
     private readonly ArtworkService _artwork;
     private readonly SettingsChanges _changes;
     private readonly ChoiceRowViewModel _severalHits;
@@ -93,7 +95,21 @@ public sealed class ArtworkNameRows
                 new InfoText(AppTexts.DataSourcesWaitingInfo),
                 new InfoFacts(
                     waiting.Count == 1 ? AppTexts.WaitingGamesOne : AppTexts.WaitingGames(waiting.Count),
-                    [.. waiting.Select(w => new InfoFact(w.Game.Title, AppTexts.WaitingHits(launcher: w.LauncherName, count: w.Hits.Count)))]),
+                    WaitingFacts(waiting)),
             ];
+    }
+
+    /// <summary>The first games waiting, the rest in one line: a long list would not fit the panel and costs a frame per change.</summary>
+    private static IReadOnlyList<InfoFact> WaitingFacts(IReadOnlyList<WaitingGame> waiting)
+    {
+        var facts = waiting.Take(ShownWaitingGames)
+            .Select(w => new InfoFact(w.Game.Title, AppTexts.WaitingHits(launcher: w.LauncherName, count: w.Hits.Count)))
+            .ToList();
+        if (waiting.Count > ShownWaitingGames)
+        {
+            facts.Add(new InfoFact(AppTexts.DataSourcesWaitingMore(waiting.Count - ShownWaitingGames), string.Empty, IsMuted: true));
+        }
+
+        return facts;
     }
 }

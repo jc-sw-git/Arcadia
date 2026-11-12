@@ -954,8 +954,8 @@
   <data name="DataSourcesNextStepsHeading" xml:space="preserve"><value>SO GEHT ES WEITER</value></data>
   <data name="DataSourcesKeyRejectedInfo" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er wieder gilt, nimmt Arcadia nur die Bilder der Launcher und sonst die Platzhalter. Erzeuge auf der Schlüssel-Seite einen neuen Schlüssel und füge ihn hier ein.</value></data>
   <data name="DataSourcesSendsHeading" xml:space="preserve"><value>WAS ARCADIA SENDET</value></data>
-  <data name="DataSourcesSendsInfo" xml:space="preserve"><value>Die ID des Spiels beim Launcher, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Der Schlüssel liegt verschlüsselt auf diesem Gerät, nie im Klartext.</value></data>
-  <data name="DataSourcesSendsInfoInMemory" xml:space="preserve"><value>Die ID des Spiels beim Launcher, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Auf diesem System bleibt der Schlüssel nur, bis Arcadia schließt, und wird nirgends gespeichert.</value></data>
+  <data name="DataSourcesSendsInfo" xml:space="preserve"><value>Die ID des Spiels beim Launcher, oder seinen Namen, wenn SteamGridDB die ID nicht kennt, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Der Schlüssel liegt verschlüsselt auf diesem Gerät, nie im Klartext.</value></data>
+  <data name="DataSourcesSendsInfoInMemory" xml:space="preserve"><value>Die ID des Spiels beim Launcher, oder seinen Namen, wenn SteamGridDB die ID nicht kennt, dazu deinen Schlüssel. Sonst nichts. Ohne Schlüssel stellt Arcadia keine einzige Anfrage. Auf diesem System bleibt der Schlüssel nur, bis Arcadia schließt, und wird nirgends gespeichert.</value></data>
   <data name="DataSourcesKeyProblem" xml:space="preserve"><value>Ein Schlüssel hat 32 Buchstaben und Ziffern</value></data>
   <data name="DataSourcesKeySaved" xml:space="preserve"><value>Schlüssel gespeichert und geprüft: verbunden.</value></data>
   <data name="DataSourcesKeyPasted" xml:space="preserve"><value>Schlüssel eingefügt und geprüft: verbunden.</value></data>
@@ -1046,6 +1046,7 @@
   <data name="DataSourcesTookFirstHitOne" xml:space="preserve"><value>1 Spiel: Arcadia hat den ersten Treffer genommen.</value></data>
   <data name="DataSourcesWaiting" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
   <data name="DataSourcesWaitingSubtitle" xml:space="preserve"><value>Bis dahin zeigen sie das Launcher-Bild oder den Platzhalter</value></data>
+  <data name="DataSourcesWaitingMore" xml:space="preserve"><value>und {count} weitere</value></data>
   <data name="DataSourcesWaitingNone" xml:space="preserve"><value>Kein Spiel wartet</value></data>
   <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Nur bei „Selbst auswählen“</value></data>
   <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Auswählen</value></data>

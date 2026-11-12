@@ -278,4 +278,23 @@ public sealed class WaitingListTests
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.Settings);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T491-21")]
+    public async Task Y_and_a_change_of_the_libraries_keep_the_rows_of_the_other_games()
+    {
+        using var arcadia = await StartAsync();
+        var list = OpenList(arcadia);
+        var crown = list.Games[1];
+        var ember = list.Games[2];
+
+        arcadia.Press(UiAction.Status);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal([crown, ember], list.Games);
+        Assert.True(crown.IsCurrent);
+        arcadia.Artwork.Update([new LibraryArtwork(new Arcadia.Core.Library.LauncherLibrary(Other, [.. Games]), null)]);
+        await SettledAsync(arcadia);
+        Assert.Equal([crown, ember], list.Games);
+    }
 }

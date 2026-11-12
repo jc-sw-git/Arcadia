@@ -3258,25 +3258,26 @@
   <Style Selector="Button.waitingHit">
     <Setter Property="VerticalAlignment" Value="Top" />
   </Style>
+  <!-- Small enough that eight hits (two rows) and the note fit the modal. -->
   <Style Selector="Button.waitingHit Border.artworkFrame">
-    <Setter Property="Width" Value="208" />
-    <Setter Property="Height" Value="312" />
+    <Setter Property="Width" Value="128" />
+    <Setter Property="Height" Value="192" />
   </Style>
   <Style Selector="TextBlock.waitingHitPlaceholder">
-    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="ExtraBold" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="TextAlignment" Value="Center" />
-    <Setter Property="Margin" Value="14" />
+    <Setter Property="Margin" Value="12" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <Style Selector="TextBlock.waitingHitName">
-    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="Margin" Value="0,8,0,0" />
-    <Setter Property="MaxWidth" Value="208" />
+    <Setter Property="MaxWidth" Value="128" />
     <Setter Property="HorizontalAlignment" Value="Left" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
@@ -3285,7 +3286,7 @@
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="Border.waitingNote">
-    <Setter Property="Margin" Value="0,30,0,0" />
+    <Setter Property="Margin" Value="0,24,0,0" />
     <Setter Property="Padding" Value="20,16" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />

@@ -31,9 +31,10 @@ public partial class WaitingListView : UserControl
 
     private void OnFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
     {
-        if (_viewModel?.CurrentGame is { } current && GameList.ContainerFromItem(current) is { } container)
+        if (_viewModel?.CurrentGame is { } current && _viewModel.Games.IndexOf(current) is var index and >= 0)
         {
-            container.BringIntoView();
+            // By index: with the virtualised list the current game may have no row yet.
+            GameList.ScrollIntoView(index);
         }
     }, DispatcherPriority.Loaded);
 }

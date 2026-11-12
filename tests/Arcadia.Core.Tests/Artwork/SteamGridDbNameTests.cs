@@ -96,7 +96,10 @@ public sealed class SteamGridDbNameTests : IDisposable
     [Trait("TestCase", "T491-6")]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task An_empty_or_too_long_name_sends_nothing(string name)
+    [InlineData(".")]
+    [InlineData("..")]
+    [InlineData(" ... ")]
+    public async Task An_empty_or_too_long_name_or_one_of_dots_only_sends_nothing(string name)
     {
         Assert.Equal(SteamGridDbOutcome.NotFound, (await _client.SearchAsync(FakeSteamGridDb.Key, name, default)).Outcome);
         Assert.Equal(SteamGridDbOutcome.NotFound, (await _client.SearchAsync(FakeSteamGridDb.Key, new string('x', 201), default)).Outcome);

@@ -61,9 +61,12 @@ public sealed partial class WaitingHitViewModel(SteamGridDbHit hit, Action<Waiti
 /// round at the ends; A takes the focused hit and moves on to the next game, Y skips the game, B closes. The list follows
 /// the service: games found by a later search come at the end, a game that left the library goes.
 /// </summary>
-/// <remarks>UI thread only. Hit covers load in the background for the game shown, a few at a time.</remarks>
+/// <remarks>UI thread only. Hit covers load in the background for the game the focus rests on, all of its hits at once.</remarks>
 public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 {
+    /// <summary>How long the focus rests on a game before its covers load.</summary>
+    private static readonly TimeSpan CoverDelay = TimeSpan.FromMilliseconds(150);
+
     private readonly ArtworkService _artwork;
     private readonly Action<WaitingListViewModel> _close;
     private CancellationTokenSource? _coverLoad;
@@ -186,27 +189,48 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             }
         });
 
-    /// <summary>The games as the service has them now; the current one stays, or the one after it when it left.</summary>
+    /// <summary>
+    /// The games as the service has them now; the current one stays, or the one after it when it left. Only what changed
+    /// is removed, moved or added, so a press on a long list doesn't rebuild it (and the view keeps its rows).
+    /// </summary>
     private void Refresh()
     {
         var waiting = _artwork.Waiting;
         var currentKey = CurrentGame?.Key;
         var currentIndex = CurrentGame is null ? 0 : Games.IndexOf(CurrentGame);
-        var known = Games.ToDictionary(g => g.Key, StringComparer.Ordinal);
-        Games.Clear();
-        foreach (var game in waiting)
+        var wanted = waiting.ToDictionary(w => w.Game.Key, StringComparer.Ordinal);
+        for (var i = Games.Count - 1; i >= 0; i--)
         {
-            Games.Add(known.TryGetValue(game.Game.Key, out var same) && ReferenceEquals(same.Waiting.Hits, game.Hits) ? same : new WaitingGameViewModel(game, ShowGame));
+            // Gone, or found again with other hits: it leaves, a new one takes its place below.
+            if (!wanted.TryGetValue(Games[i].Key, out var now) || !ReferenceEquals(now.Hits, Games[i].Waiting.Hits))
+            {
+                Games.RemoveAt(i);
+            }
+        }
+
+        var known = Games.ToDictionary(g => g.Key, StringComparer.Ordinal);
+        for (var i = 0; i < waiting.Count; i++)
+        {
+            var key = waiting[i].Game.Key;
+            if (i < Games.Count && Games[i].Key == key)
+            {
+                continue;
+            }
+
+            if (known.TryGetValue(key, out var same))
+            {
+                Games.Move(Games.IndexOf(same), i);
+            }
+            else
+            {
+                Games.Insert(i, new WaitingGameViewModel(waiting[i], ShowGame));
+            }
         }
 
         var next = Games.FirstOrDefault(g => g.Key == currentKey) ?? (Games.Count == 0 ? null : Games[Math.Min(currentIndex, Games.Count - 1)]);
-        if (next is null || next.Key != currentKey)
+        if (next != CurrentGame)
         {
             ShowGame(next);
-        }
-        else
-        {
-            MarkCurrent(next);
         }
 
         OnPropertyChanged(nameof(Position));
@@ -242,11 +266,8 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     private void MarkCurrent(WaitingGameViewModel? game)
     {
-        foreach (var each in Games)
-        {
-            each.IsCurrent = each == game;
-        }
-
+        CurrentGame?.IsCurrent = false;
+        game?.IsCurrent = true;
         CurrentGame = game;
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
@@ -260,11 +281,15 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>The covers of the game shown, off the UI thread; a game shown meanwhile cancels the rest.</summary>
+    /// <summary>
+    /// The covers of the game shown, off the UI thread, once the focus rests on it: moving through many games with the
+    /// D-pad asks SteamGridDB only for the one it stops at. A game shown meanwhile cancels the rest.
+    /// </summary>
     private async Task LoadCoversAsync(WaitingGameViewModel game, IReadOnlyList<WaitingHitViewModel> hits, CancellationToken cancel)
     {
         try
         {
+            await Task.Delay(CoverDelay, cancel);
             await Task.WhenAll(hits.Select(async hit =>
             {
                 var cover = await Task.Run(() => _artwork.HitCoverAsync(game.Waiting.Game, hit.Hit, cancel), cancel);

@@ -311,6 +311,25 @@ public sealed class ArtworkServiceByNameTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T491-12")]
+    public async Task Ersten_nehmen_counts_only_the_games_the_row_counted_and_a_game_outside_the_libraries_takes_its_first_too()
+    {
+        await WithKeyAsync();
+        ThreeEchoes();
+        var gone = GameOf("gone");
+        await ScanAsync(Echo, gone);
+        await ScanAsync(Echo);
+        Assert.Single(_service.Waiting);
+
+        Assert.Equal(1, _service.TakeFirstForAllWaiting());
+        await _service.WhenIdleAsync();
+        await ScanAsync(Echo, gone);
+
+        Assert.Empty(_service.Waiting);
+        Assert.Equal(Cover501, Cached("other:gone")!.Cover!.Stamp);
+    }
+
+    [Fact]
     [Trait("TestCase", "T491-15")]
     public async Task A_chosen_hit_gives_the_game_its_automatic_images_at_once()
     {
@@ -474,6 +493,11 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         Assert.Null(none);
         Assert.All(_images.Requests, r => Assert.Null(r.Headers.Authorization));
         Assert.Contains(_images.Requests, r => r.RequestUri!.AbsoluteUri == Cover502);
+
+        // Shown again: the same file, no new request.
+        var (asked, downloaded) = (_sgdb.Requests.Count, _images.Requests.Count);
+        Assert.Equal(cover, await _service.HitCoverAsync(Echo, hits[1]));
+        Assert.Equal((asked, downloaded), (_sgdb.Requests.Count, _images.Requests.Count));
     }
 
     [Fact]

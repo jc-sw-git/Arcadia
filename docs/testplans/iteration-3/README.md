@@ -91,4 +91,4 @@ Charter: –. Time box: –. Findings: –.
 | T489-1, -2, -12, -13, -16, -19, T490-21, -22, -27, -29 | `DataSourcesTests` (#490's cases in `DataSourcesTests.ArtworkChanges`); T489-1 (layout) and -24 in `Window/DataSourcesViewTests`; the variants in `SteamGridDbKeyTests`, `SteamGridDbClientTests`, `ArtworkServiceSteamGridDbTests` (Core) |
 | T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |
-| T491-9, -12, -14 to -18, -21, -26 | `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; T491-1, -3, -10, -11, -15, -16, -22 and the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
+| T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |

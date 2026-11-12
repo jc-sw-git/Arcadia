@@ -56,6 +56,8 @@ public sealed class SteamGridDbClientTests
     [InlineData("gog", "1")]
     [InlineData("../grids", "1")]
     [InlineData("steam", "")]
+    [InlineData("steam", ".")]
+    [InlineData("epic", "..")]
     public async Task An_unknown_store_or_an_empty_id_sends_nothing(string store, string id)
     {
         var answer = await _client.ImagesAsync(FakeSteamGridDb.Key, new ArtworkStoreId(store, id), ArtworkKind.Cover, default);

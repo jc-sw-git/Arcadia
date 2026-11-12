@@ -110,7 +110,7 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
     /// so nothing from a launcher's files can reach another path of the API.
     /// </summary>
     internal static Uri? AddressOf(ArtworkStoreId game, ArtworkKind kind) =>
-        game.Store is not (ArtworkStoreId.Steam or ArtworkStoreId.Epic) || game.Id.Length is 0 or > 200
+        game.Store is not (ArtworkStoreId.Steam or ArtworkStoreId.Epic) || game.Id.Length is 0 or > 200 || IsDotSegment(game.Id)
             ? null
             : ImagesAddress(game.Store, Uri.EscapeDataString(game.Id), kind);
 
@@ -122,8 +122,11 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
     internal static Uri? SearchAddressOf(string name)
     {
         var term = name.Trim();
-        return term.Length is 0 or > MaxNameLength ? null : new Uri(Api, "search/autocomplete/" + Uri.EscapeDataString(term));
+        return term.Length is 0 or > MaxNameLength || IsDotSegment(term) ? null : new Uri(Api, "search/autocomplete/" + Uri.EscapeDataString(term));
     }
+
+    /// <summary>Only dots: escaping leaves them, and an address resolves "." and ".." to another path of the API.</summary>
+    private static bool IsDotSegment(string segment) => segment.Trim('.').Length == 0;
 
     /// <summary>A game's name longer than this isn't searched: no real title is, and the address stays short.</summary>
     public const int MaxNameLength = 200;

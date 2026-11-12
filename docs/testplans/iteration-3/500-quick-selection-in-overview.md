@@ -14,80 +14,80 @@ cases `ArcadiaWindow`. Replaces T499-7 (A on "Übersicht" did nothing) and the "
 
 Quick selection in "Übersicht"
 
-- [ ] **T500-1** Open a game whose selection was never changed: "Übersicht" shows on the left under "Schnellauswahl"
+- [x] **T500-1** Open a game whose selection was never changed: "Übersicht" shows on the left under "Schnellauswahl"
       the four default entries in the order of the areas, each with its value (◀ value ▶ on value entries), set apart
       below them "Übersicht anpassen", and on the right the game's facts. · E2E: yes
-- [ ] **T500-2** Focus on "Übersicht" in the rail, A: the focus is on the first entry; ▲ ▼ walk the entries and
+- [x] **T500-2** Focus on "Übersicht" in the rail, A: the focus is on the first entry; ▲ ▼ walk the entries and
       "Übersicht anpassen" and go round at the ends (a held ▲ ▼ stops at the end, T476-9); the facts never take the
       focus; ◀ ▶ on "Übersicht anpassen" do nothing; B returns to "Übersicht" in the rail. · E2E: yes
-- [ ] **T500-3** Focus on the entry "Steam-Controller-Modus": ▶ changes the value at once to the next, ◀ to the previous,
+- [x] **T500-3** Focus on the entry "Steam-Controller-Modus": ▶ changes the value at once to the next, ◀ to the previous,
       going round at the ends; the entry, the rail's line for "Controller" and the row in "Controller" show the new value
       and it holds for this game after leaving the page and after a restart of Arcadia, as T499-8. The same for
       "Individueller Mausmodus". A held ◀ ▶ stops at the end of the range. · E2E: yes
-- [ ] **T500-4** A on the entry "Artwork ändern" opens the artwork dialog; after B the focus is on that entry and
+- [x] **T500-4** A on the entry "Artwork ändern" opens the artwork dialog; after B the focus is on that entry and
       "Übersicht" is open. A on "Deinstallieren …" asks the same question as its row; "Abbrechen" or B returns to the
       entry, confirming hands over to the launcher as today. · E2E: yes
-- [ ] **T500-5** A greyed entry (scenario 19): a game that isn't installed shows "Deinstallieren …" and the controller
+- [x] **T500-5** A greyed entry (scenario 19): a game that isn't installed shows "Deinstallieren …" and the controller
       entries greyed, still in the quick selection, with the same reason as their rows (T499-15), shown below the entries
       while the focus is on it and in its tooltip; without a Steam Controller "Steam-Controller-Modus" is greyed. A greyed
       entry takes the focus as its row does (T499-14), ◀ ▶ and A do nothing. · E2E: yes
-- [ ] **T500-6** State changes while "Übersicht" is open with the focus on an entry: an installation finishes, the game
+- [x] **T500-6** State changes while "Übersicht" is open with the focus on an entry: an installation finishes, the game
       starts or ends, a Steam Controller connects or disconnects: the entries grey or become active in place, values
       follow, the focus stays on its entry. · E2E: yes
-- [ ] **T500-7** Button hints follow the focus: on a value entry ◀ ▶ "Ändern", on an action entry and on "Übersicht
+- [x] **T500-7** Button hints follow the focus: on a value entry ◀ ▶ "Ändern", on an action entry and on "Übersicht
       anpassen" A names it, B "Bereiche" (as in an area's rows, T499-10); none for a greyed entry's ◀ ▶ or A. · E2E: yes
-- [ ] **T500-8** Carousel with the focus on the second entry, RT: the next game shows its own quick selection,
+- [x] **T500-8** Carousel with the focus on the second entry, RT: the next game shows its own quick selection,
       "Übersicht" stays open and the focus stays on the second entry; on a game with fewer entries it goes to the last
       entry, on a game with an empty selection to "Übersicht anpassen". LT the other way round; held RT keeps the
       entries of the first game until release (T499-19). · E2E: yes
-- [ ] **T500-9** LB/RB, L3, X/B and Y keep "Übersicht" open and the focus on its entry, as T499-12; opening the page
+- [x] **T500-9** LB/RB, L3, X/B and Y keep "Übersicht" open and the focus on its entry, as T499-12; opening the page
       anew starts on "Spielen" with "Übersicht" open. · E2E: yes
-- [ ] **T500-10** The library's context menu offers no "Übersicht anpassen" and otherwise the same actions as before
+- [x] **T500-10** The library's context menu offers no "Übersicht anpassen" and otherwise the same actions as before
       (decision in #500). · E2E: yes
 
 Dialog "Übersicht anpassen"
 
-- [ ] **T500-11** A on "Übersicht anpassen": the dialog opens with the game's title in its subline, every entry of the
+- [x] **T500-11** A on "Übersicht anpassen": the dialog opens with the game's title in its subline, every entry of the
       other areas grouped by area ("Controller", "Verwalten"), the ticked ones ticked, the counter "n von 5", below the
       list the note that every game has its own selection and the button "Für alle Spiele übernehmen". The focus is on
       the first entry. · E2E: yes
-- [ ] **T500-12** In the dialog ▲ ▼ walk all entries across the groups and "Für alle Spiele übernehmen" (reached with ▼
+- [x] **T500-12** In the dialog ▲ ▼ walk all entries across the groups and "Für alle Spiele übernehmen" (reached with ▼
       after the last entry) and go round at the ends; a held ▲ ▼ stops at the end. B closes the dialog and the focus is
       on "Übersicht anpassen". · E2E: yes
-- [ ] **T500-13** A on an entry ticks or unticks it; the counter changes at once and the page behind shows the change at
+- [x] **T500-13** A on an entry ticks or unticks it; the counter changes at once and the page behind shows the change at
       once, entries in the order of the areas whatever the order of ticking. Other games keep their selection.
       After B, leaving the page and a restart of Arcadia the game shows what was ticked. · E2E: yes
-- [ ] **T500-14** Limit of 5 (test entries): with 5 ticked the counter says "5 von 5", every unticked entry is greyed, the
+- [x] **T500-14** Limit of 5 (test entries): with 5 ticked the counter says "5 von 5", every unticked entry is greyed, the
       note "5 von 5 gewählt. Wähle zuerst einen Eintrag ab, um einen anderen aufzunehmen." shows, and ▲ ▼ pass over the
       greyed entries; unticking one makes the others active again and hides the note. A sixth can't be stored by any
       path. · E2E: yes
-- [ ] **T500-15** Empty selection: untick every entry: the counter says "0 von 5", after B the left half shows only
+- [x] **T500-15** Empty selection: untick every entry: the counter says "0 von 5", after B the left half shows only
       "Übersicht anpassen"; A in the rail puts the focus on it; it holds after a restart. · E2E: yes
-- [ ] **T500-16** A game state changes while the dialog is open (installation finishes, controller connects): the page
+- [x] **T500-16** A game state changes while the dialog is open (installation finishes, controller connects): the page
       behind updates in place, the dialog and its focus stay. LT/RT and LB/RB do nothing while the dialog or the question
       is open, the page behind keeps its game. · E2E: yes
 
 For all games
 
-- [ ] **T500-17** A on "Für alle Spiele übernehmen" asks "Schnellauswahl aller Spiele ersetzen?" with the note that other
+- [x] **T500-17** A on "Für alle Spiele übernehmen" asks "Schnellauswahl aller Spiele ersetzen?" with the note that other
       games' own selections are lost, buttons "Abbrechen" and "Ersetzen". "Abbrechen" or B: back in the dialog on the
       button, nothing changed for any game. · E2E: yes
-- [ ] **T500-18** "Ersetzen": every game shows this selection, including games that had their own and games of other
+- [x] **T500-18** "Ersetzen": every game shows this selection, including games that had their own and games of other
       launcher tabs; "Für alle Spiele übernommen." confirms it; the dialog stays open. · E2E: yes
-- [ ] **T500-19** After "Ersetzen" a game added later (rescan finds a new Steam or Epic game, fixture) shows the selection
+- [x] **T500-19** After "Ersetzen" a game added later (rescan finds a new Steam or Epic game, fixture) shows the selection
       for all games, also after a restart. · E2E: yes
-- [ ] **T500-20** After "Ersetzen" change one game's selection: only that game differs; the others keep the selection for
+- [x] **T500-20** After "Ersetzen" change one game's selection: only that game differs; the others keep the selection for
       all games, also after a restart. · E2E: yes
 
 Storage and failure cases
 
-- [ ] **T500-21** A new default entry (test: the default list gains a test entry between two starts): a game never changed
+- [x] **T500-21** A new default entry (test: the default list gains a test entry between two starts): a game never changed
       shows it when nothing was applied to all games; a game with its own selection and, after "Ersetzen", every game keep
       theirs without it. · E2E: yes
-- [ ] **T500-22** `settings.json` with an unreadable quick selection (wrong type, broken value): every game shows the
+- [x] **T500-22** `settings.json` with an unreadable quick selection (wrong type, broken value): every game shows the
       defaults, no toast or message, `arcadia.log` holds one warning; the rest of the settings still load. A stored
       unknown entry id is dropped silently, the known ones stay. · E2E: yes
-- [ ] **T500-23** Storing "Ersetzen" fails or Arcadia ends in the middle of it (fault injected at the write): after the
+- [x] **T500-23** Storing "Ersetzen" fails or Arcadia ends in the middle of it (fault injected at the write): after the
       next start either the old selections or the new one for all games hold, never a mix, and `settings.json` is
       readable. The per-game selections are removed in the same save that stores the one for all games. · E2E: yes
 - [ ] **T500-24** Mouse: a click on an entry focuses it, the arrows beside a value change it, a click on "Übersicht
@@ -133,3 +133,6 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T500-1 to -23 | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container; demo and made-up GOG, Steam and Epic libraries, fake Steam Controller | ✅ `QuickSelectionTests`, `QuickSelectionSettingsTests`; `DetailAreasTests`, `DetailPageStateTests` adapted (A in the rail on "Übersicht", overview rows not counted twice) | – |
+| All new tests in `QuickSelectionTests`, `QuickSelectionSettingsTests` | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container, deliberately broken builds | ✅ each red once: no entries shown (T500-1 to -9, -13, -16, -21), "Übersicht anpassen" not reachable by ▲ ▼ (T500-2, -11, -12, -15, -17), A in the rail ignored on an empty selection (T500-15), the dialog getting no keys (T500-11 to -13, -16, -17), unticked entries never greyed or not passed over at 5 (T500-14), "Ersetzen" storing nothing (T500-18 to -20), the focus on "Übersicht anpassen" lost on a turn (T500-8), the entry not following its row's value (T500-3), the context menu gaining the entry (T500-10), no defaults (T500-1, -21), per-game selections ignored (T500-13, -20, -21), the converter failing the file (T500-22), a `null` selection not repaired (T500-22) | – |
+| T500-1, -2, -5, -7, -11, -12, -17 (look) | 2026-11-12 | Claude | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ screenshots: entries with values and the greyed entries' reason, rings whole on the first and last entry, "Übersicht anpassen", the first and last checkbox row and "Abbrechen"; one ring at a time, none behind the dialog | software rendering only; mouse (T500-24) and the full look checklist left to the QE run |

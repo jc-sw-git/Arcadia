@@ -14,8 +14,9 @@ The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-p
   "Für alle Spiele übernehmen"), drawn by `Views/CustomizeOverviewView`. Main hosts it
   (`MainViewModel.CustomizeOverview`, `ICustomizeOverviewHost`), stores each tick at once and rebuilds the page behind.
 - Own titles (#496): `ChangeTitleViewModel` ("Titel ändern", a `TextEditorViewModel` on the settings' keyboard, drawn by
-  `Views/ChangeTitleView`), hosted by `MainViewModel.Titles.cs`, which also follows `user-data.json` (status message,
-  failed write).
+  `Views/ChangeTitleView`, which `MainWindow` keeps like the search so it opens without being built), hosted by
+  `MainViewModel.Titles.cs`, which also follows `user-data.json` (status message, failed write) and keeps the library's
+  focus on a game renamed from its menu.
   `GameDetailPageViewModel.OriginalTitle`/`ShowsOriginalTitle`: R3 in `GameDetailViewModel`.
 - While any dialog is open (`MainViewModel.IsDialogOpen`) the page behind draws no focus ring.
 - Metadata (#493): `DetailMetadata` turns Core's `MergedMetadata` (`MainViewModel.MetadataOf`) into the info line,

@@ -18,7 +18,7 @@ what the player set by hand and is never thrown away.
   `Search`/`SearchChanged`: the missing counts and the progress of a run that searches (#506).
 - `SteamGridDb/`: `SteamGridDbClient` (API v2, the key only in the `Authorization` header, 10 s, waits on 429, checks
   every answer), `SteamGridDbKey` (the key's shape, state None/Unchecked/Valid/Rejected, nothing sent without a
-  usable key), `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only) and
+  usable key), `SteamGridDbKeyStore` (the key in a `SecretFile`) and
   `SteamGridDbSuggestions` (the client as `IArtworkSuggestions` for "Artwork ändern").
 - `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's
   as a scan would choose it, then `IArtworkSuggestions`' up to 20, waiting in `artwork/.suggestions/`), `UseAsync`,
@@ -32,14 +32,31 @@ what the player set by hand and is never thrown away.
   and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never
   leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
 
-**Metadata** (`Metadata/`, #43, #493)
+**Metadata** (`Metadata/`, #43, #493, #494): description, genres, developers, release date, age ratings and tags. The
+rows in "Datenquellen": `app-artwork.md`; the product rules: `docs/product/settings-data-sources/metadata.md`.
 - `MetadataService`: `Open` reads the cache; after each scan one background run reads the launchers' local data, then
   asks each store for the games without its answer, one at a time within its limit, 10 s each, waiting on 429; no
-  network stops the run, a timeout or 5xx skips the game until the next scan. `ReloadAll`, `Progress`, `Of(key)`.
-- `MetadataCache`: `metadata/<launcher>/<game>.json` (local and store data per provider, unmerged), temporary file and
-  rename, damaged files deleted. `MetadataCheck` checks every value (also from the cache), `PlainText` turns HTML
-  into text, `TextLanguage` the language rule, `MergedMetadata.Of` merges providers per field with their source.
+  network stops the run, a timeout or 5xx skips the game until the next scan. Then IGDB (`MetadataService.Igdb.cs`):
+  every game without its answer, a Steam game by its AppID (`ILauncherMetadata.StoreIdOf`), every other one by its
+  launcher title; a rejected access, no network or a broken answer leave IGDB out for the run. `ReloadAll`,
+  `FetchMissing` (first usable access), `Progress` (stores and IGDB), `Of(key)`, `TitleOf(key)` (the title replacing a
+  doubtful launcher title), `SettingsChanged` (merges every game again from the cache, no request).
+- Merge: the providers switched on in the order of `MetadataSettings` (`Settings/`), per field
+  (`MergedMetadata.Of`, with each field's source); a launcher title with `?` is replaced by IGDB's regardless of the
+  order (`MergedMetadata.Title`, `LauncherTitle`).
+- `MetadataCache`: `metadata/<launcher>/<game>.json` (local, store and IGDB data per provider, unmerged), temporary
+  file and rename, damaged files deleted. `MetadataCheck` checks every value (also from the cache), `PlainText` turns
+  HTML into text, `TextLanguage` the language rule.
+- `Igdb/`: `IgdbAccess` (client id and secret, state None/Unchecked/Valid/Rejected, the token in memory, renewed once
+  on 401/403; nothing sent without a usable access), `IgdbAccessStore` (both values in a `SecretFile`), `IgdbClient`
+  (Twitch's token by POST, IGDB's API v4 with client id and token in headers, 4 requests a second for all callers, 10 s,
+  waits on 429), `IgdbQuery` (the only place queries are built: AppID digits, IGDB id, a search term of letters,
+  digits and a few marks), `IgdbAnswer` (genres by name onto the list, age ratings by organization and category,
+  themes and keywords as tags, companies, first release date; `IgdbImages` the cover's https address),
+  `IgdbMatching` (main games only, name equality with `?` as one character, several hits).
 - `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.
+- `SecretFile` (`Settings/`): a player's secret (SteamGridDB key, IGDB access) encrypted through injected
+  protect/unprotect, else memory only.
 
 **Own data** (`UserData/`, #43, #496)
 - `UserDataStore`: what the player set per game key (`GameUserData`: own title; own tags come with #495) in
@@ -47,6 +64,6 @@ what the player set by hand and is never thrown away.
   written in the background through a temporary file and a rename; a failed write puts the stored data back and raises
   `WriteFailed`. A file unreadable at the start (`IsUnreadable`) is copied to `user-data.json.broken`, never written,
   and nothing changes until Arcadia starts again.
-- `GameTitles` (`Library/`): the shown title, own above the automatic one (a provider's correction, #494, else the
+- `GameTitles` (`Library/`): the shown title, own above the automatic one (`MetadataService.TitleOf`, #494, else the
   launcher's); `Shown` lays it over a launcher's game, `OwnTitleFrom` (trimmed; empty or the automatic title is none),
   `Change`, `Reset`, `Changed`. `LibrarySession` shows the libraries with it; providers and artwork keep the launcher's title.

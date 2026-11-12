@@ -58,7 +58,7 @@ public sealed class SteamGridDbKeyRows
             ActionText = AppTexts.DataSourcesPasteAction,
             Info = [new InfoText(AppTexts.DataSourcesPasteInfo), new InfoText(AppTexts.DataSourcesPasteInfoNoKey)],
         };
-        _page = new ActionRowViewModel("steamgriddb-page", AppTexts.DataSourcesKeyPage, () => host.OpenKeyPageAsync().Forget(AppTexts.ErrorContextSteamGridDb))
+        _page = new ActionRowViewModel("steamgriddb-page", AppTexts.DataSourcesKeyPage, () => host.OpenPageAsync(SteamGridDbClient.KeyPage, AppTexts.DataSourcesKeyPageOpening, AppTexts.DataSourcesKeyPageFailed).Forget(AppTexts.ErrorContextSteamGridDb))
         {
             Group = Group,
             Indent = 1,

@@ -961,10 +961,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 break;
             case StatusTarget.UserData:
                 ShowSettings(typeof(DataSourcesSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, DataSourcesSettingsViewModel.UserDataRowKey);
                 break;
             case StatusTarget.SteamGridDbKey:
                 ShowSettings(typeof(DataSourcesSettingsViewModel));
                 FocusRowOrTop(Settings?.Selected, SteamGridDbKeyRows.KeyRowKey);
+                break;
+            case StatusTarget.IgdbAccess:
+                ShowSettings(typeof(DataSourcesSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, IgdbAccessRows.ClientIdRowKey);
                 break;
             case StatusTarget.ControllerIssue:
                 var controller = ((IControllerModeHost)this).OpenControllerSettings();
@@ -1108,12 +1113,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    private static readonly TimeSpan UserDataWriteLimit = TimeSpan.FromSeconds(2);
+
     /// <summary>
     /// Arcadia is closing: every page still open is disposed, the library's delayed rescans and the header's clock stop, and
     /// Main lets go of the static error event and the services, which outlive it in the tests.
     /// </summary>
-    private static readonly TimeSpan UserDataWriteLimit = TimeSpan.FromSeconds(2);
-
     public void Dispose()
     {
         foreach (var page in _livePages.OfType<IDisposable>())

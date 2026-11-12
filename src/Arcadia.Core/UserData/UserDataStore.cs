@@ -127,8 +127,9 @@ public sealed class UserDataStore
     }
 
     /// <summary>
-    /// Changes the game's data at once and writes the file in the background; the caller never waits for the disk. False
-    /// while the file is unreadable: then nothing changes.
+    /// Changes the game's data at once and writes the file in the background; the caller never waits for the disk. A title
+    /// too long or holding control characters is refused and the one before stays. False while the file is unreadable:
+    /// then nothing changes.
     /// </summary>
     public bool Change(string gameKey, Func<GameUserData, GameUserData> change)
     {
@@ -140,7 +141,7 @@ public sealed class UserDataStore
             }
 
             var before = _games.GetValueOrDefault(gameKey) ?? GameUserData.None;
-            var after = Checked(change(before));
+            var after = Refused(change(before), before);
             if (after == before)
             {
                 return true;
@@ -201,6 +202,10 @@ public sealed class UserDataStore
     }
 
     private static GameUserData Checked(GameUserData data) => data with { Title = CheckedTitle(data.Title) };
+
+    /// <summary>A change as it is kept: an empty title clears the own one, a title that can't be kept leaves it as it was.</summary>
+    private static GameUserData Refused(GameUserData changed, GameUserData before) =>
+        changed with { Title = string.IsNullOrWhiteSpace(changed.Title) ? null : CheckedTitle(changed.Title) ?? before.Title };
 
     /// <summary>A title as it is kept: without spaces around it; empty, too long or holding control characters is none.</summary>
     private static string? CheckedTitle(string? title) =>

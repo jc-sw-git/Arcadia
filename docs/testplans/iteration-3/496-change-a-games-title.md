@@ -104,6 +104,10 @@ Automated tests:
 | T496-7 (waiting list), -8 (across pages), -12 (LB/RB) | `Arcadia.App.Tests/ChangeTitleAcrossTheAppTests` (quality engineer; red once each: the waiting list given the launcher's title, the line kept across pages, own titles left out of `GameTitles.Shown`) |
 | T496-4, -6 (automatic title changing later), -9 | `Arcadia.Core.Tests/UserData/GameTitlesTests` |
 | T496-14 (per key, temporary file, crash), -15 (failed write) | `Arcadia.Core.Tests/UserData/UserDataStoreTests` |
+| T496-8 (the game's menu, across pages) | `Arcadia.App.Tests/ChangeTitleTests.From_the_game_menu_the_focus_follows_the_renamed_and_the_reset_game_across_pages` (red once: the focus left on the old slot) |
+| T496-15 ("Zu den Einstellungen" opens "Eigene Titel") | `Arcadia.App.Tests/ChangeTitleTests.An_unreadable_file_is_a_status_message_and_greys_both_rows_with_the_reason` |
+| A provider's batch without a new shown title (seam with #494) | `Arcadia.App.Tests/ChangeTitleTests.A_providers_batch_that_changes_no_shown_title_leaves_the_library_as_it_is` (red once: every batch rebuilt the libraries) |
+| T494-25 (IGDB's title in library, sorting, search) | `Arcadia.App.Tests/IgdbSettingsTests.Igdbs_title_for_a_doubtful_launcher_title_shows_in_the_library_the_sorting_and_the_search` (red once: `GameTitles` without `MetadataService.TitleOf`) |
 
 "Alle Metadaten neu laden" (T496-6) touches only the metadata cache, not `user-data.json`.
 
@@ -115,3 +119,5 @@ History:
 | App look: Verwalten rows, dialog, changed title, R3 line, footer hint | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed after widening the field (it was 250 px) | field style moved after the general field styles |
 | QE review: all tests, `ChangeTitleAcrossTheAppTests` red once each | 2026-11-12 | quality engineer | Release, Linux cloud container | passed | — |
 | QE run T496-13, -16 (keys), -17, T496-15 status message | 2026-11-12 | quality engineer | Release, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | failed | two-line own title with the R3 line hides the button row behind the areas; "Titel ändern" opens in 380–560 ms (search with keyboard 20–90 ms); status line cut, "Zu den Einstellungen" lands on the SteamGridDB key; reset 40 ms, R3 ≤ 1 ms |
+| Fixes of the QE's first pass: "Titel ändern" press to frame (`Bild: Accept`), 1,000 demo games | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | first opening 15.5 ms, later 6–8 ms (before: 525–688 ms); "Artwork ändern" 81 ms | view kept by `MainWindow`, its keyboard drawer in the layout from the start |
+| Fixes of the QE's first pass: two-line own title with the R3 line | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed: the line takes the info line's place, the button row stays above the areas | — |

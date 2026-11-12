@@ -26,7 +26,10 @@ public enum StatusTarget
     /// <summary>SteamGridDB turned the key down (#489): "Schlüssel" in "Datenquellen"; no fix of its own.</summary>
     SteamGridDbKey,
 
-    /// <summary>The file of own titles is unreadable (#496): "Datenquellen", where own data is managed; the player repairs the file.</summary>
+    /// <summary>IGDB turned the access down (#494): "Client-ID" in "Datenquellen"; no fix of its own.</summary>
+    IgdbAccess,
+
+    /// <summary>The file of own titles is unreadable (#496): "Eigene Titel" in "Datenquellen", which says why and what to do.</summary>
     UserData,
 }
 

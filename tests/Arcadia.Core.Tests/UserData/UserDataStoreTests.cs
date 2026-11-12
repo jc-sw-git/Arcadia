@@ -79,16 +79,19 @@ public sealed class UserDataStoreTests : IAsyncDisposable
     }
 
     [Fact]
-    public void Empty_or_too_long_titles_are_none()
+    public void An_empty_title_clears_the_own_one_and_one_too_long_or_with_control_characters_is_refused()
     {
         var store = Open();
+        store.Change(Key, data => data with { Title = "Aal" });
 
-        store.Change(Key, data => data with { Title = "   " });
-        Assert.Null(store.Of(Key).Title);
         store.Change(Key, data => data with { Title = new string('x', UserDataStore.MaxTitleLength + 1) });
-        Assert.Null(store.Of(Key).Title);
+        Assert.Equal("Aal", store.Of(Key).Title);
+        store.Change(Key, data => data with { Title = "Aal\u0007" });
+        Assert.Equal("Aal", store.Of(Key).Title);
         store.Change(Key, data => data with { Title = new string('x', UserDataStore.MaxTitleLength) });
         Assert.Equal(UserDataStore.MaxTitleLength, store.Of(Key).Title!.Length);
+        store.Change(Key, data => data with { Title = "   " });
+        Assert.Null(store.Of(Key).Title);
     }
 
     [Fact]

@@ -16,6 +16,15 @@ public sealed record MergedMetadata
 {
     public static MergedMetadata None { get; } = new();
 
+    /// <summary>
+    /// The title that replaces a doubtful launcher title (#494): a provider's (IGDB's), regardless of the order; null when the
+    /// launcher's title stands.
+    /// </summary>
+    public Sourced<string>? Title { get; init; }
+
+    /// <summary>The doubtful launcher title <see cref="Title"/> replaces, listed only among the sources in "Infos".</summary>
+    public Sourced<string>? LauncherTitle { get; init; }
+
     public Sourced<string>? Description { get; init; }
 
     public Sourced<string>? ShortDescription { get; init; }
@@ -34,7 +43,7 @@ public sealed record MergedMetadata
     public IReadOnlyList<Sourced<AgeRating>> AgeRatings { get; init; } = [];
 
     public bool IsEmpty =>
-        Description is null && ShortDescription is null && Genres is null && Developers is null && Publishers is null
+        Title is null && Description is null && ShortDescription is null && Genres is null && Developers is null && Publishers is null
         && ReleaseDate is null && Tags is null && AgeRatings.Count == 0;
 
     /// <summary>

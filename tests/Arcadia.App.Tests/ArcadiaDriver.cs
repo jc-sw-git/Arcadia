@@ -1,6 +1,8 @@
 using System.Globalization;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
+using Arcadia.Core.Metadata.Igdb;
+using Arcadia.Core.Tests.Metadata.Igdb;
 using Arcadia.App.Input;
 using Arcadia.App.Search;
 using Arcadia.Input;
@@ -77,7 +79,7 @@ internal sealed class ArcadiaDriver : IDisposable
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
         Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null,
-        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null)
+        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null, FakeIgdb? igdb = null)
     {
         SteamGridDb = steamGridDb ?? new FakeSteamGridDb();
         External = external ?? new ExternalAppsFake();
@@ -133,9 +135,17 @@ internal sealed class ArcadiaDriver : IDisposable
         // The metadata cache in the test's folder; every store page is the test's fake store, which answers nothing unless
         // the test serves a game (#493). Kept across a restart.
         MetadataStore = metadataStore ?? new FakeStoreServer(time);
+        // Twitch and IGDB are the test's fake (#494), kept across a restart; the access is kept unencrypted in the test's folder.
+        Igdb = igdb ?? new FakeIgdb(time);
         Metadata = new MetadataService(new MetadataCache(Path.Combine(folder, "metadata")), new HttpClient(MetadataStore, disposeHandler: false), time)
         {
             Log = AppLog.Write,
+            Settings = () => Settings.Current.Metadata,
+            SeveralHits = () => Settings.Current.Artwork.WithValidValues().SeveralHits,
+            Igdb = new IgdbAccess(
+                new IgdbAccessStore(Path.Combine(folder, "data"), data => data, data => data),
+                new IgdbClient(new HttpClient(Igdb, disposeHandler: false), time) { Log = AppLog.Write },
+                time),
         };
         // Own titles (#496) in the test's folder, kept across a restart.
         UserData = new UserDataStore(Path.Combine(folder, "user"));
@@ -200,6 +210,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Every launcher's store page (#493): records each request and answers what the test serves.</summary>
     public FakeStoreServer MetadataStore { get; }
+
+    /// <summary>Twitch's token service and IGDB (#494); they record every request.</summary>
+    public FakeIgdb Igdb { get; }
 
     /// <summary>SteamGridDB's API (#489); it records every request.</summary>
     public FakeSteamGridDb SteamGridDb { get; }
@@ -428,7 +441,7 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened,
-            steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore);
+            steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore, igdb: Igdb);
         await restarted.LoadAsync();
         return restarted;
     }

@@ -1,5 +1,7 @@
 using Arcadia.App.Input;
+using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
+using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.UserData;
 using Arcadia.Launchers;
@@ -199,6 +201,13 @@ public sealed class ChangeTitleTests
         var entry = Assert.Single(restarted.Main.Status.Entries, e => e.Id == "user-data");
         Assert.Equal("Eigene Titel nicht lesbar", entry.Title);
         Assert.True(File.Exists(restarted.UserData.FilePath + UserDataStore.CopySuffix));
+
+        // "Zu den Einstellungen" opens the row that says why and what to do.
+        restarted.Press(UiAction.Status).Press(UiAction.Accept);
+        Assert.Equal(DataSourcesSettingsViewModel.UserDataRowKey, restarted.Main.Settings!.FocusedRow?.Key);
+        Assert.Equal(AppTexts.DataSourcesUserDataUnreadable, restarted.Main.Settings.FocusedRow!.Subtitle);
+        Assert.Equal(HealthSeverity.Warning, restarted.Main.Settings.Selected.Marker);
+        restarted.Press(UiAction.Back);
 
         restarted.Hold(UiAction.Accept, PastHoldTime);
         var change = restarted.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.ChangeTitle);

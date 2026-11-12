@@ -22,6 +22,10 @@ public sealed class SteamMetadata(Func<SteamInstallation?> locate) : ILauncherMe
 
     public IMetadataStore? Store { get; } = new SteamAppDetails();
 
+    /// <summary>The AppID, by which IGDB knows Steam's games (#494); Steam's own shortcuts have none.</summary>
+    public ArtworkStoreId? StoreIdOf(Game game) =>
+        SteamAppDetails.AppIdOf(game) is { } appId ? new ArtworkStoreId(ArtworkStoreId.Steam, appId.ToString(CultureInfo.InvariantCulture)) : null;
+
     public IMetadataLookup Look(IReadOnlyCollection<Game> games)
     {
         var appIds = games.Select(SteamAppDetails.AppIdOf).OfType<uint>().ToHashSet();

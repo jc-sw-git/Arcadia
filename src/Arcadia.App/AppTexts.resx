@@ -616,6 +616,7 @@
   <data name="DetailAgeRating" xml:space="preserve"><value>{board} {rating}</value></data>
   <data name="DetailSourceByStore" xml:space="preserve"><value>laut {source}</value></data>
   <data name="DetailDescriptionCaption" xml:space="preserve"><value>BESCHREIBUNG</value></data>
+  <data name="DetailTitleCaption" xml:space="preserve"><value>TITEL</value></data>
   <data name="DetailGenresCaption" xml:space="preserve"><value>GENRES</value></data>
   <data name="DetailDevelopersCaption" xml:space="preserve"><value>ENTWICKLER</value></data>
   <data name="DetailPublishersCaption" xml:space="preserve"><value>PUBLISHER</value></data>
@@ -673,7 +674,11 @@
   <data name="ChangeTitleTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
   <data name="ChangeTitleTake" xml:space="preserve"><value>Übernehmen</value></data>
   <data name="UserDataStatus" xml:space="preserve"><value>Eigene Titel nicht lesbar</value></data>
-  <data name="UserDataStatusShort" xml:space="preserve"><value>user-data.json ist beschädigt, eine Kopie liegt daneben; bis zur Reparatur gelten die automatischen Titel</value></data>
+  <data name="UserDataStatusShort" xml:space="preserve"><value>Automatische Titel gelten, bis user-data.json lesbar ist</value></data>
+  <data name="DataSourcesUserDataGroup" xml:space="preserve"><value>EIGENE DATEN</value></data>
+  <data name="DataSourcesUserData" xml:space="preserve"><value>Eigene Titel</value></data>
+  <data name="DataSourcesUserDataUnreadable" xml:space="preserve"><value>user-data.json nicht lesbar</value></data>
+  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen automatischen Titel, und Titel lassen sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
   <data name="ErrorContextUserData" xml:space="preserve"><value>Eigene Titel speichern</value></data>
   <data name="DetailUninstallSubtitle" xml:space="preserve"><value>Übergibt an {launcher}</value></data>
   <data name="DetailUninstallInfo" xml:space="preserve"><value>Fragt vorher nach und lässt dann {launcher} das Spiel deinstallieren. Es bleibt in deiner Bibliothek und lässt sich jederzeit wieder installieren.</value></data>
@@ -1232,4 +1237,65 @@
   <data name="DataSourcesMetadataReloadAsk" xml:space="preserve"><value>Alle Metadaten neu laden?</value></data>
   <data name="DataSourcesMetadataReloadAskText" xml:space="preserve"><value>Arcadia lädt die Metadaten aller {count} Spiele neu. Bis die neuen da sind, bleiben die alten zu sehen; eigene Titel und Tags bleiben, wie sie sind.</value></data>
   <data name="DataSourcesMetadataReloadNoConnection" xml:space="preserve"><value>Metadaten nicht neu geladen: keine Verbindung zum Shop. Die bisherigen bleiben.</value></data>
+  <data name="DataSourcesIgdbGroup" xml:space="preserve"><value>IGDB</value></data>
+  <data name="DataSourcesIgdb" xml:space="preserve"><value>IGDB</value></data>
+  <data name="ErrorContextIgdb" xml:space="preserve"><value>IGDB</value></data>
+  <data name="DataSourcesIgdbClientId" xml:space="preserve"><value>Client-ID</value></data>
+  <data name="DataSourcesIgdbSecret" xml:space="preserve"><value>Client-Secret</value></data>
+  <data name="DataSourcesIgdbNone" xml:space="preserve"><value>Kein Zugang hinterlegt</value></data>
+  <data name="DataSourcesIgdbSecretMissing" xml:space="preserve"><value>Endet auf …{ending} · Client-Secret fehlt</value></data>
+  <data name="DataSourcesIgdbRejected" xml:space="preserve"><value>Zugang ungültig · IGDB wird übersprungen</value></data>
+  <data name="DataSourcesIgdbSecretEnding" xml:space="preserve"><value>Endet auf …{ending}</value></data>
+  <data name="DataSourcesIgdbSecretNone" xml:space="preserve"><value>Kein Client-Secret hinterlegt</value></data>
+  <data name="DataSourcesIgdbInfo" xml:space="preserve"><value>Mit einem Zugang lädt Arcadia Beschreibung, Genres, Erscheinungsdatum und Altersfreigaben von IGDB und korrigiert Titel mit kaputten Umlauten. IGDB erlaubt 4 Anfragen pro Sekunde; mehr stellt Arcadia nie. Der Zugang ist kostenlos und besteht aus Client-ID und Client-Secret einer Anwendung bei Twitch.</value></data>
+  <data name="DataSourcesIgdbHowTo" xml:space="preserve"><value>[A] öffnet die Bildschirmtastatur. Hast du den Wert schon kopiert, geht es mit „Einfügen“ schneller. Ein leeres Feld lässt den Wert, wie er ist. Sind beide Werte da, prüft Arcadia den Zugang sofort.</value></data>
+  <data name="DataSourcesIgdbSecretInfo" xml:space="preserve"><value>Das Client-Secret zeigt Twitch einmal, wenn du es für deine Anwendung erzeugst. Arcadia zeigt davon nur die letzten vier Zeichen.</value></data>
+  <data name="DataSourcesIgdbRejectedInfo" xml:space="preserve"><value>Twitch oder IGDB lehnen den Zugang ab. Bis er wieder gilt, nimmt Arcadia nur die Daten der Launcher. Erzeuge in der Entwicklerkonsole von Twitch ein neues Client-Secret und füge es hier ein.</value></data>
+  <data name="DataSourcesIgdbSendsInfo" xml:space="preserve"><value>Die ID des Spiels bei Steam oder seinen Namen, dazu deinen Zugang. Sonst nichts. Ohne Zugang stellt Arcadia keine einzige Anfrage. Client-ID und Client-Secret liegen verschlüsselt auf diesem Gerät, nie im Klartext.</value></data>
+  <data name="DataSourcesIgdbSendsInfoInMemory" xml:space="preserve"><value>Die ID des Spiels bei Steam oder seinen Namen, dazu deinen Zugang. Sonst nichts. Ohne Zugang stellt Arcadia keine einzige Anfrage. Auf diesem System bleibt der Zugang nur, bis Arcadia schließt, und wird nirgends gespeichert.</value></data>
+  <data name="DataSourcesIgdbValueProblem" xml:space="preserve"><value>Client-ID und Client-Secret haben 20 bis 64 Buchstaben und Ziffern</value></data>
+  <data name="DataSourcesIgdbPasteClientIdSubtitle" xml:space="preserve"><value>Für eine Client-ID, die du kopiert hast</value></data>
+  <data name="DataSourcesIgdbPasteSecretSubtitle" xml:space="preserve"><value>Für ein Client-Secret, das du kopiert hast</value></data>
+  <data name="DataSourcesIgdbPasteInfo" xml:space="preserve"><value>Fügt den Wert aus der Zwischenablage ein. Sind beide Werte da, prüft Arcadia den Zugang sofort.</value></data>
+  <data name="DataSourcesIgdbPasteInfoNoValue" xml:space="preserve"><value>Steht dort kein Wert aus 20 bis 64 Buchstaben und Ziffern, bleibt der bisherige, und eine Meldung sagt dir das.</value></data>
+  <data name="DataSourcesIgdbPasteNoClientId" xml:space="preserve"><value>In der Zwischenablage steht keine Client-ID. Die bisherige bleibt.</value></data>
+  <data name="DataSourcesIgdbPasteNoSecret" xml:space="preserve"><value>In der Zwischenablage steht kein Client-Secret. Das bisherige bleibt.</value></data>
+  <data name="DataSourcesIgdbClientIdSavedNeedsSecret" xml:space="preserve"><value>Client-ID gespeichert. Jetzt fehlt noch das Client-Secret.</value></data>
+  <data name="DataSourcesIgdbSecretSavedNeedsClientId" xml:space="preserve"><value>Client-Secret gespeichert. Jetzt fehlt noch die Client-ID.</value></data>
+  <data name="DataSourcesIgdbSaved" xml:space="preserve"><value>Zugang gespeichert und geprüft: verbunden.</value></data>
+  <data name="DataSourcesIgdbSavedLoading" xml:space="preserve"><value>Zugang gespeichert. Fehlende Metadaten werden geladen.</value></data>
+  <data name="DataSourcesIgdbNotStored" xml:space="preserve"><value>Zugang geprüft: verbunden. Er ließ sich nicht speichern und gilt nur, bis Arcadia schließt.</value></data>
+  <data name="DataSourcesIgdbRejectedToast" xml:space="preserve"><value>Twitch lehnt den Zugang ab. Bis er gilt, nimmt Arcadia nur die Daten der Launcher.</value></data>
+  <data name="DataSourcesIgdbKeptNoConnection" xml:space="preserve"><value>Keine Verbindung zu Twitch. Der Zugang ist gespeichert, Arcadia prüft ihn beim nächsten Laden.</value></data>
+  <data name="DataSourcesIgdbConsole" xml:space="preserve"><value>Zugang anlegen</value></data>
+  <data name="DataSourcesIgdbConsoleSubtitle" xml:space="preserve"><value>Öffnet die Entwicklerkonsole von Twitch im Browser</value></data>
+  <data name="DataSourcesIgdbConsoleInfo" xml:space="preserve"><value>Öffnet dev.twitch.tv/console/apps im Standardbrowser. Dort meldest du dich an, legst eine Anwendung an und kopierst Client-ID und Client-Secret.</value></data>
+  <data name="DataSourcesIgdbConsoleOpening" xml:space="preserve"><value>Die Entwicklerkonsole von Twitch wird im Browser geöffnet …</value></data>
+  <data name="DataSourcesIgdbConsoleFailed" xml:space="preserve"><value>Die Entwicklerkonsole von Twitch ließ sich nicht im Browser öffnen.</value></data>
+  <data name="DataSourcesIgdbNeedsAccess" xml:space="preserve"><value>Erst mit Client-ID und Client-Secret möglich</value></data>
+  <data name="DataSourcesIgdbTestNotYet" xml:space="preserve"><value>Fragt Twitch, ob der Zugang gilt</value></data>
+  <data name="DataSourcesIgdbTestOk" xml:space="preserve"><value>Geprüft um {time:HH:mm} · Verbunden</value></data>
+  <data name="DataSourcesIgdbTestRejected" xml:space="preserve"><value>Geprüft um {time:HH:mm} · Twitch lehnt den Zugang ab</value></data>
+  <data name="DataSourcesIgdbTestInfo" xml:space="preserve"><value>Fragt Twitch einmal, ob der Zugang gilt.</value></data>
+  <data name="DataSourcesIgdbTestInfoTimeout" xml:space="preserve"><value>Kommt innerhalb von 10 Sekunden keine Antwort, steht hier „Keine Verbindung“. Der Zugang bleibt dann, wie er ist.</value></data>
+  <data name="DataSourcesIgdbTestOkToast" xml:space="preserve"><value>Die Verbindung zu IGDB ist in Ordnung.</value></data>
+  <data name="DataSourcesIgdbTestNoConnectionToast" xml:space="preserve"><value>Keine Verbindung zu Twitch. Der Zugang bleibt, wie er ist.</value></data>
+  <data name="DataSourcesIgdbDelete" xml:space="preserve"><value>Zugang löschen</value></data>
+  <data name="DataSourcesIgdbDeleteSubtitle" xml:space="preserve"><value>Arcadia fragt IGDB danach nicht mehr</value></data>
+  <data name="DataSourcesIgdbDeleteInfo" xml:space="preserve"><value>Löscht Client-ID und Client-Secret von diesem Gerät. Metadaten, die schon da sind, bleiben.</value></data>
+  <data name="DataSourcesIgdbDeleted" xml:space="preserve"><value>Zugang gelöscht. Arcadia fragt IGDB nicht mehr.</value></data>
+  <data name="DataSourcesIgdbNotDeleted" xml:space="preserve"><value>Der Zugang gilt nicht mehr, ließ sich aber nicht von der Festplatte löschen. Nach einem Neustart ist er wieder da.</value></data>
+  <data name="DataSourcesIgdbStatus" xml:space="preserve"><value>IGDB-Zugang ungültig</value></data>
+  <data name="DataSourcesIgdbStatusShort" xml:space="preserve"><value>IGDB wird übersprungen, bis ein gültiger Zugang da ist</value></data>
+  <data name="DataSourcesMetadataOrderGroup" xml:space="preserve"><value>REIHENFOLGE FÜR METADATEN</value></data>
+  <data name="DataSourcesLauncherData" xml:space="preserve"><value>Launcher-Daten</value></data>
+  <data name="DataSourcesLauncherDataSubtitle" xml:space="preserve"><value>Was die Launcher und ihre Shops liefern, ohne Zugang</value></data>
+  <data name="DataSourcesLauncherDataInfo" xml:space="preserve"><value>Die Daten der Launcher selbst: bei Steam alles aus seinen Dateien und seinem Shop, bei Epic Games nur der Entwickler.</value></data>
+  <data name="DataSourcesIgdbSourceSubtitle" xml:space="preserve"><value>Füllt die Lücken: Beschreibung, Genres, Erscheinungsjahr, Altersfreigabe</value></data>
+  <data name="DataSourcesIgdbSkipped" xml:space="preserve"><value>Wird übersprungen, solange kein gültiger Zugang da ist</value></data>
+  <data name="DataSourcesIgdbSourceInfo" xml:space="preserve"><value>Eine große Spieledatenbank. Ihre Beschreibungen sind englisch; eine deutsche Beschreibung eines anderen Anbieters geht immer vor. Einen Titel mit kaputten Umlauten ersetzt IGDB unabhängig von der Reihenfolge.</value></data>
+  <data name="DataSourcesMetadataOrderInfo" xml:space="preserve"><value>Für jedes Feld nimmt Arcadia die oberste Quelle, die es hat. Fehlt es dort, kommt es von der nächsten.</value></data>
+  <data name="DataSourcesMetadataOrderWhen" xml:space="preserve"><value>Sofort, ohne neue Anfrage: Arcadia setzt die Felder aus den schon geladenen Daten neu zusammen.</value></data>
+  <data name="DataSourcesMetadataSourceOffInfo" xml:space="preserve"><value>Arcadia fragt die Quelle nicht und blendet ihre Felder und korrigierten Titel aus, bis du sie einschaltest. Geladenes bleibt gespeichert.</value></data>
+  <data name="DataSourcesMetadataSourceOffSubtitle" xml:space="preserve"><value>Aus · wird nicht gefragt, ihre Felder sind ausgeblendet</value></data>
 </root>

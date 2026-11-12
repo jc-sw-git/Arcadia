@@ -21,7 +21,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   address), best first (#487); `IArtworkLookup.StoreIdOf` the game's id at a store SteamGridDB knows (`ArtworkStoreId`, #489).
 - `ILauncherMetadata`: a launcher as a metadata provider (#493): the fields it delivers, `Look` (its local files),
   optionally `Store` (`IMetadataStore`: an `https` page per game, its `RequestLimit`, `Parse`). `GameMetadata` (one
-  provider's raw data), `Genre` (the fixed list), `AgeRating`.
+  provider's raw data), `Genre` (the fixed list), `AgeRating`; `StoreIdOf` the game's id at a store IGDB knows (#494).
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
   in Arcadia's data folder.

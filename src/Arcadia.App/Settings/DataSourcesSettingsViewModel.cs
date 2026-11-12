@@ -11,7 +11,9 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// The category "Datenquellen" (#489): where covers and backgrounds come from. Groups "STEAMGRIDDB" (the key,
 /// <see cref="SteamGridDbKeyRows"/>), "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" (<see cref="ArtworkSourceRows"/>,
-/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>) and "METADATEN" (<see cref="MetadataRows"/>, #493). A key SteamGridDB turned down is a warning beside the category's name.
+/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>), "IGDB" (the access, <see cref="IgdbAccessRows"/>, #494),
+/// "REIHENFOLGE FÜR METADATEN" (<see cref="MetadataSourceRows"/>) and "METADATEN" (<see cref="MetadataRows"/>, #493). A key
+/// SteamGridDB or an access IGDB turned down is a warning beside the category's name.
 /// </summary>
 public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, IDraggableRows
 {
@@ -23,12 +25,19 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     private readonly ArtworkNameRows _nameRows;
     private readonly MetadataService? _metadata;
     private readonly MetadataRows? _metadataRows;
+    private readonly IgdbAccessRows? _igdbRows;
+    private readonly MetadataSourceRows? _metadataSourceRows;
+    private readonly InfoRowViewModel? _userDataRow;
+
+    /// <summary>The row "Eigene Titel" (#496), there only while user-data.json was unreadable at the start; the status entry opens it.</summary>
+    public const string UserDataRowKey = "user-data";
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
     /// <param name="metadata">The games' metadata (#493); null: the group "METADATEN" is left out.</param>
     public DataSourcesSettingsViewModel(
-        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null)
+        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null,
+        bool userDataUnreadable = false)
         : base(AppTexts.DataSourcesTitle, "M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0 M4 6v6a8 3 0 0 0 16 0v-6 M4 12v6a8 3 0 0 0 16 0v-6")
     {
         _key = key;
@@ -40,9 +49,16 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList);
         _metadata = metadata;
         _metadataRows = metadata is null ? null : new MetadataRows(metadata, question => Dialog = question);
+        _igdbRows = metadata?.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
+        _metadataSourceRows = metadata is null ? null : new MetadataSourceRows(metadata, changes, Show);
+        _userDataRow = userDataUnreadable ? UserDataRow() : null;
         if (metadata is not null)
         {
             metadata.ProgressChanged += OnChanged;
+            if (metadata.Igdb is { } access)
+            {
+                access.Changed += OnChanged;
+            }
         }
 
         _key.Changed += OnChanged;
@@ -53,24 +69,48 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     }
 
     /// <summary>L3 lifts a source of "Reihenfolge für Artwork" (#506); while one is lifted, ▲ ▼ move it and B puts it back.</summary>
-    public override bool Handle(UiAction action) => _sourceRows.Handle(action, FocusedRow);
+    public override bool Handle(UiAction action) =>
+        (_metadataSourceRows?.IsReordering != true && _sourceRows.Handle(action, FocusedRow))
+        || (!_sourceRows.IsReordering && _metadataSourceRows?.Handle(action, FocusedRow) == true);
 
-    public bool CanDrag(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel;
+    public bool CanDrag(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel or MetadataSourceRowViewModel;
 
-    public bool IsInDragList(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel;
+    /// <summary>The rows the dragged one moves among: the other sources of its own order.</summary>
+    public bool IsInDragList(SettingsRowViewModel row) =>
+        _metadataSourceRows?.IsReordering == true ? row is MetadataSourceRowViewModel : row is ArtworkSourceRowViewModel;
 
     public void BeginDrag(SettingsRowViewModel row)
     {
-        if (row is ArtworkSourceRowViewModel source)
+        switch (row)
         {
-            Focus(source);
-            _sourceRows.Lift(source);
+            case ArtworkSourceRowViewModel source:
+                Focus(source);
+                _sourceRows.Lift(source);
+                break;
+            case MetadataSourceRowViewModel metadataSource when _metadataSourceRows is not null:
+                Focus(metadataSource);
+                _metadataSourceRows.Lift(metadataSource);
+                break;
         }
     }
 
-    public void DragTo(int rowsAbove) => _sourceRows.DragTo(rowsAbove);
+    public void DragTo(int rowsAbove)
+    {
+        if (_metadataSourceRows?.IsReordering == true)
+        {
+            _metadataSourceRows.DragTo(rowsAbove);
+        }
+        else
+        {
+            _sourceRows.DragTo(rowsAbove);
+        }
+    }
 
-    public void Drop() => _sourceRows.Drop();
+    public void Drop()
+    {
+        _sourceRows.Drop();
+        _metadataSourceRows?.Drop();
+    }
 
     /// <summary>"Alle Artworks neu laden?" or "Alle Metadaten neu laden?": [A] reloads, [B] closes it.</summary>
     public override void HandleDialog(UiAction action)
@@ -89,9 +129,10 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     {
         Editor?.Drop();
         _sourceRows.PutBack();
+        _metadataSourceRows?.PutBack();
     }
 
-    private void ShowL3Action() => L3ActionText = FocusedRow is ArtworkSourceRowViewModel ? AppTexts.Move : null;
+    private void ShowL3Action() => L3ActionText = FocusedRow is ArtworkSourceRowViewModel or MetadataSourceRowViewModel ? AppTexts.Move : null;
 
     public override void Dispose()
     {
@@ -103,6 +144,10 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         if (_metadata is not null)
         {
             _metadata.ProgressChanged -= OnChanged;
+            if (_metadata.Igdb is { } access)
+            {
+                access.Changed -= OnChanged;
+            }
         }
     }
 
@@ -115,6 +160,15 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         }
     });
 
+    // The file is read only at the start, so the row never changes while Arcadia runs.
+    private static InfoRowViewModel UserDataRow() => new(UserDataRowKey, AppTexts.DataSourcesUserData)
+    {
+        Group = AppTexts.DataSourcesUserDataGroup,
+        Subtitle = AppTexts.DataSourcesUserDataUnreadable,
+        Severity = HealthSeverity.Warning,
+        Info = [new InfoText(AppTexts.DataSourcesUserDataInfo)],
+    };
+
     private void Show()
     {
         _keyRows.Refresh();
@@ -122,9 +176,14 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _reloadRows.Refresh();
         _nameRows.Refresh();
         _metadataRows?.Refresh();
-        IsReordering = _sourceRows.IsReordering;
-        Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
+        _igdbRows?.Refresh();
+        _metadataSourceRows?.Refresh();
+        IsReordering = _sourceRows.IsReordering || _metadataSourceRows?.IsReordering == true;
+        Marker = _key.State == SteamGridDbKeyState.Rejected || _metadata?.Igdb?.State == Core.Metadata.Igdb.IgdbAccessState.Rejected || _userDataRow is not null
+            ? HealthSeverity.Warning
+            : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
-            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _metadataRows?.Rows ?? []]);
+            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _igdbRows?.Rows ?? [], .. _metadataSourceRows?.Rows ?? [], .. _metadataRows?.Rows ?? [],
+            .. _userDataRow is null ? Array.Empty<SettingsRowViewModel>() : [_userDataRow]]);
     }
 }

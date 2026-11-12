@@ -8,7 +8,8 @@ using Arcadia.Core.Artwork.SteamGridDb;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>
-/// Main's part of "Datenquellen" (#489): the category's host (toasts, keyboard, clipboard, the key page) and the warning
+/// Main's part of "Datenquellen" (#489): the category's host (toasts, keyboard, clipboard, the key page, Twitch's console
+/// for IGDB #494) and the warning
 /// when a search the player started fails as a whole.
 /// </summary>
 public partial class MainViewModel : IDataSourcesHost
@@ -29,7 +30,9 @@ public partial class MainViewModel : IDataSourcesHost
 
     /// <summary>"Datenquellen" exists only with artwork and SteamGridDB wired (the App does both).</summary>
     private DataSourcesSettingsViewModel? CreateDataSources(SettingsChanges changes) =>
-        _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(key, artwork, this, changes, _time, KeepsSteamGridDbKey, _metadata) : null;
+        _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(
+            key, artwork, this, changes, _time, KeepsSteamGridDbKey, _metadata, Session.Titles.UserData?.IsUnreadable == true)
+        : null;
 
     /// <summary>
     /// Opens "Datenquellen" on the key, e.g. from the status modal or "Artwork ändern" without a key (#490), or on another
@@ -101,19 +104,19 @@ public partial class MainViewModel : IDataSourcesHost
         }
     }
 
-    async Task IDataSourcesHost.OpenKeyPageAsync()
+    async Task IDataSourcesHost.OpenPageAsync(Uri page, string opening, string failed)
     {
         var byController = Input.UsesController;
-        Toast.Show(HealthSeverity.Info, AppTexts.DataSourcesKeyPageOpening);
+        Toast.Show(HealthSeverity.Info, opening);
         try
         {
             // Off the UI thread: the shell may take a moment to start the browser.
-            await Task.Run(() => Browser.Open(SteamGridDbClient.KeyPage)).WaitAsync(BrowserOpenTimeout, _time);
+            await Task.Run(() => Browser.Open(page)).WaitAsync(BrowserOpenTimeout, _time);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException)
         {
-            AppLog.Write($"SteamGridDB-Seite nicht geöffnet: {ex.GetType().Name}: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, AppTexts.DataSourcesKeyPageFailed);
+            AppLog.Write($"Seite {page.Host} nicht geöffnet: {ex.GetType().Name}: {ex.Message}");
+            Toast.Show(HealthSeverity.Error, failed);
             return;
         }
 

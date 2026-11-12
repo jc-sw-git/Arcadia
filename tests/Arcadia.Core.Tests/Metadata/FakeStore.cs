@@ -23,6 +23,11 @@ internal sealed class FakeMetadataSource : ILauncherMetadata
 
     public IMetadataStore? Store { get; init; } = new FakeStorePage();
 
+    /// <summary>The games' store ids for IGDB (#494); none by default.</summary>
+    public Func<Game, ArtworkStoreId?> StoreIds { get; init; } = _ => null;
+
+    public ArtworkStoreId? StoreIdOf(Game game) => StoreIds(game);
+
     public IMetadataLookup Look(IReadOnlyCollection<Game> games)
     {
         Looks++;

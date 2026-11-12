@@ -163,15 +163,15 @@ internal sealed class ArcadiaComposition
             IsInstalling = key => installTracker.StateOf(key) is not null,
         };
 
-        // Own titles are read before the first scan, so the library shows them from the start (#496). The automatic title
-        // a provider corrects (#494) plugs into GameTitles here.
+        // Own titles are read before the first scan, so the library shows them from the start (#496); below them the title
+        // a provider corrects (#494).
         if (parts.UserData is { } userData)
         {
             userData.Log = AppLog.Write;
             userData.Open();
         }
 
-        var titles = new GameTitles(parts.UserData);
+        var titles = new GameTitles(parts.UserData, parts.Metadata is { } metadata ? metadata.TitleOf : null);
 
         var main = new MainViewModel(
             new LibraryService(launchers, time) { Log = AppLog.Write },

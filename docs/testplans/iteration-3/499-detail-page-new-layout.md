@@ -135,6 +135,12 @@ For the owner
 Decided with the implementation (as proposed): A on "Übersicht" does nothing (T499-7); LB/RB, X/B, L3 and Y keep the
 open area and the focus, only opening the page anew starts on "Spielen" (T499-12).
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T499-1 to -8, -10 to -26 | `DetailAreasTests`, `DetailPageStateTests`, `DetailPageTests` (T499-3), `Window/DetailPageViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

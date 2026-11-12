@@ -1,8 +1,10 @@
 # Test plans
 
 One test plan per feature iteration, as a folder (`iteration-1/`, `iteration-2/`, …): one file per
-issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`, a copy of [TEMPLATE.md](TEMPLATE.md)) and a `README.md` as the
-overview with the list of files, the acceptance review, the exploratory test and the acceptance tests.
+issue (`<issue, three digits>-<title>.md`, e.g. `015-settings-page.md`, a copy of [TEMPLATE.md](TEMPLATE.md)) and a `README.md` with the
+acceptance review, the release candidate tests and the exploratory test. The folder is the index:
+`tools/dev/testplan-index.sh <n>` prints it. A PR touches only its own issue's file (and the README only for release
+candidate tests), so parallel PRs don't conflict over the test plan.
 It is the only source for all manual tests of that iteration: what is to be tested, who tested what
 and when, what went wrong and what came of it. Whoever tests or extends an issue reads only its file,
 not the whole folder.
@@ -15,7 +17,6 @@ not the whole folder.
   variants as unit tests. Issues on drivers or installation get manual cases for a fresh install and for a
   driver arriving while Arcadia runs.
 - **Every PR that closes an issue extends the test plan** with a file holding that issue's test cases
-  and a line in the overview
   (Definition of Done in `CLAUDE.md`; the CI check `Testplan` checks it). If an issue needs no
   new manual tests (e.g. a refactoring of features already covered automatically or by
   existing test cases), it still gets a section with one line saying why,
@@ -56,7 +57,7 @@ not the whole folder.
   and what view models and window show. Steam and Epic read recreated files with made-up IDs there
   (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`); nothing opens a real launcher. Every test carries
   the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
-  the iteration's overview lists them under "Acceptance tests".
+  the issue's file lists them under "Automated tests" (test cases → test classes).
 - **Red once:** every new acceptance test failed once before the PR because the feature was broken
   on purpose. The PR names, per test, the change that made it red (commit or file).
   The quality engineer reads that note and repeats the red run only if: the note is missing or vague; the test

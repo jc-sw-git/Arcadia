@@ -46,6 +46,12 @@ Open question (owner): the search after a key arrives also replaces automatic im
 fitting), never images set by hand; implemented so in the PR, `docs/product/settings-data-sources/`. T489-17 and
 T489-19 test it that way.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T489-1, -2, -12, -13, -16, -19, T490-21, -22, -27, -29 | `DataSourcesTests` (#490's cases in `DataSourcesTests.ArtworkChanges`); T489-1 (layout) and -24 in `Window/DataSourcesViewTests`; the variants in `SteamGridDbKeyTests`, `SteamGridDbClientTests`, `ArtworkServiceSteamGridDbTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

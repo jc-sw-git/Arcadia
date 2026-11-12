@@ -6,7 +6,7 @@ test cases from the quality engineer before implementation: these are its scenar
 criteria one to one, for the quality engineer to check in the review. Acceptance tests use `ArcadiaDriver` (fake
 Steam, Pan and releases, fake time).
 
-**Status:** Automated: T166-1 to T166-7, T166-9 to T166-14, T166-17, the failing download of T166-8 · QE: T166-15 · Owner: T166-16 done; T166-8's real update is an RC test
+**Status:** Automated: T166-1 to T166-7, T166-9 to T166-14, T166-17, the failing download of T166-8 · QE: T166-15 · Open for the owner: none (T166-16 done; T166-8's real update is an RC test)
 
 **Opening**
 
@@ -56,6 +56,13 @@ Steam, Pan and releases, fake time).
       · E2E: no (looking at the real window; QE's own run)
 - [x] **T166-16** **Owner:** A game or the mouse mode comes to the front while the modal is open: back in Arcadia it is open as it
       was. · E2E: no (Arcadia really going to the background on Windows)
+
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T166-1 to -11, -14, -17 | `StatusModalTests`, variants in `StatusModalOrderTests` |
+| T166-12, -13, -15 (in part) | `Window/StatusModalViewTests`; T166-13 also `ControllerSupportTests` |
 
 History:
 

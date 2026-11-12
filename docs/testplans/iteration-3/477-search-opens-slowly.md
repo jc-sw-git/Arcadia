@@ -13,6 +13,12 @@
 - [x] **T477-9** The mouse mode's keyboard window builds its keys before it is shown, and its first opening shows those same controls · E2E: yes
 - [x] **T477-10** **Owner:** controller, Arcadia started, mouse mode on (Back + Start), a few seconds later Steam's sign-in page or another text field, Y: the keyboard comes without a visible pause the first time; `arcadia.log` has `Tastatur des Mausmodus in … ms vorbereitet` after `Mausmodus an` · E2E: no (Windows mouse mode, real window in front)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T477-1, -2, -5, -6, -9 | `SearchSpeedTests`; T477-6 in `Window/LauncherPageViewTests`, T477-9 in `Window/OnScreenKeyboardViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

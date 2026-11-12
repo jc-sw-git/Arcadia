@@ -55,6 +55,13 @@ answers otherwise. Levels: unit, VM (acceptance test through `ArcadiaDriver`), w
 - [ ] **T382-33** **Owner:** usbip-win2 missing (removed, Windows restarted): "Installieren" on its row → the controller works right away, Pan runs (green), the row recommends the restart (S6 text), Pan not paused. · E2E: no (real usbip-win2 install; precondition needs a Windows restart) · RC
 - [ ] **T382-34** **Owner:** the story end to end: uninstall the previous Arcadia together with its drivers, don't restart Windows, install the release candidate. Settings: Pan paused, one restart row; restart from the row; then one "Treiber installieren". In total at most one Windows restart, one Windows prompt for the drivers, Steam closed once, no hint advising a second restart, the puck reconnects at most twice. · E2E: no (installation and Windows restart) · RC
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T382-7, -9, -10 | `EmulationSetupTests` (restart row); variants T382-2, -8, -11, -29 in `ControllerSupportRestartTests` (Core), T382-3, -4 in `UnchangedPanTests` (Pan) |
+| T382-1, -5, -6, -8, -12 to -17, -20, -21, -26 to -28 | `WindowsRestartTests`; T382-18, -19, -22, -23, -25 in `Window/WindowsRestartViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

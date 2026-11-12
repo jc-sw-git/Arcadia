@@ -1,5 +1,7 @@
 # #288 Steam: update shown that Steam dropped seconds later
 
+**Status:** Automated: T288-1 to T288-8 · QE: acceptance run of T288-1 to -5, -7; T288-9 measured · Open for the owner: none
+
 Cases from the specification in the issue, test levels checked by the quality engineer. Steam's manifests:
 `<library>\steamapps\appmanifest_<appid>.acf` (`StateFlags`, `buildid`, `TargetBuildID`, `BytesToDownload`,
 `BytesDownloaded`); what Steam does: `<Steam>\logs\content_log.txt`.
@@ -23,6 +25,14 @@ Cases from the specification in the issue, test levels checked by the quality en
 - [x] **T288-8** A manifest without `TargetBuildID`: the flag alone decides, as before. · E2E: no (unit: `SteamScannerTests`)
 - [x] **T288-9** 1,000 Steam games: a monitor poll stays cheap (mtime cache). · E2E: no (measured: 45 ms per poll without
       the cache, 8 ms with it, Release, Linux cloud container)
+
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T288-1, T288-3, T288-4 | `SteamUpdateTests.While_Arcadia_is_open_a_Steam_update_appears_and_goes_without_a_rescan_or_a_toast_and_a_brief_flag_with_nothing_new_never_shows` |
+| T288-2, T288-7 | `SteamUpdateTests.At_the_start_a_real_Steam_update_shows_on_the_cover_and_the_detail_page_and_a_flag_with_nothing_new_doesnt` |
+| T288-5 | `SteamUpdateTests.On_the_detail_page_the_update_note_appears_and_goes_while_page_and_focus_stay` |
 
 History:
 

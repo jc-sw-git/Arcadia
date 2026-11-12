@@ -56,6 +56,12 @@ reaches the real one. "Shown everywhere" means library tile, preview, detail pag
 Notes on the automated cases: launchers without images of their own (a demo launcher, a plugin) now get SteamGridDB's
 images by name when a key is set; the tests use such a launcher. The choices are kept in `artwork/name-matches.json`.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

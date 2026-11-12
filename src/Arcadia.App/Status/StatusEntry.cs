@@ -25,6 +25,9 @@ public enum StatusTarget
 
     /// <summary>SteamGridDB turned the key down (#489): "Schlüssel" in "Datenquellen"; no fix of its own.</summary>
     SteamGridDbKey,
+
+    /// <summary>The file of own titles is unreadable (#496): "Datenquellen", where own data is managed; the player repairs the file.</summary>
+    UserData,
 }
 
 /// <summary>

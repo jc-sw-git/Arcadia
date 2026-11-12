@@ -118,6 +118,7 @@ public partial class App : Application
             {
                 Artwork = ArtworkFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
                 Metadata = MetadataFolder.CreateService(time),
+                UserData = new Core.UserData.UserDataStore(Core.Diagnostics.LogLocation.DataFolder),
             });
             var launchers = app.Launchers;
             var controllerSupport = app.ControllerSupport;

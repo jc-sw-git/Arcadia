@@ -139,6 +139,8 @@
       </StackPanel>
       <TextBlock Name="Title" Margin="0,10,0,0" Text="{Binding Tile.Title}" FontSize="66" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2"
                  TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
+      <!-- "Original-Titel: …" (#496): R3 shows it under an own title; one line, cut with "…". -->
+      <TextBlock Name="OriginalTitle" Classes="detailOriginalTitle" Text="{Binding OriginalTitleLine}" IsVisible="{Binding ShowsOriginalTitle}" />
       <!-- The info line (#493): genres · developer · year in one line, cut with "…", and the first age rating. -->
       <StackPanel Name="InfoLine" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0" IsVisible="{Binding GameInfo.HasInfoLine}">
         <TextBlock Text="{Binding GameInfo.InfoLine, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"

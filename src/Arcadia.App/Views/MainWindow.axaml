@@ -95,6 +95,9 @@
               <Panel Width="32" Height="32" IsVisible="{Binding Status.HasSteamGridDbWarning}" ToolTip.Tip="{x:Static app:AppTexts.DataSourcesKeyStatus}">
                 <Path Classes="statusIcon" />
               </Panel>
+              <Panel Width="32" Height="32" IsVisible="{Binding Status.HasUserDataWarning}" ToolTip.Tip="{x:Static app:AppTexts.UserDataStatus}">
+                <Path Classes="statusIcon" />
+              </Panel>
               <Panel Width="32" Height="32" IsVisible="{Binding Status.HasArcadiaUpdate}" ToolTip.Tip="{Binding Status.ArcadiaUpdateText}">
                 <Path Classes="updateIcon" />
                 <!-- The dot marks it as Arcadia's own update. -->
@@ -482,6 +485,7 @@
           <ctl:KeyHint Pad="▼" Keys="S" Text="{x:Static app:AppTexts.DetailAreas}" IsVisible="{Binding Detail?.Current.ShowsAreasHint, TargetNullValue=False}" />
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
           <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding Detail?.InfoOverflows, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="R3" Keys="G" Text="{x:Static app:AppTexts.DetailOriginalTitleHint}" IsVisible="{Binding Detail?.Current.HasOriginalTitle, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
@@ -943,6 +947,15 @@
         <ContentControl.DataTemplates>
           <DataTemplate x:DataType="vm:ChangeArtworkViewModel">
             <views:ChangeArtworkView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
+      <!-- "Titel ändern" (#496): a game's own title with the on-screen keyboard, over the detail page. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding ChangeTitle}" IsVisible="{Binding IsChangeTitleOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:ChangeTitleViewModel">
+            <views:ChangeTitleView />
           </DataTemplate>
         </ContentControl.DataTemplates>
       </ContentControl>

@@ -26,16 +26,18 @@ public sealed class GameSearch
 
     private readonly CultureInfo _culture;
 
-    // By name, as the library sorts; games with the same name keep the order they came in.
-    private readonly IReadOnlyList<(Game Game, string Folded)> _byName;
+    // By name, as the library sorts; games with the same name keep the order they came in. Also the title a game is
+    // known by besides the shown one (the automatic title of a renamed game, #496), null without one.
+    private readonly IReadOnlyList<(Game Game, string Folded, string? OtherFolded)> _byName;
 
     /// <param name="games">The games to search, launchers in tab order.</param>
     /// <param name="culture">Sorts the titles.</param>
-    public GameSearch(IEnumerable<Game> games, CultureInfo culture)
+    /// <param name="otherTitle">A second title a game is found by, e.g. its automatic title while it has an own one (#496); null: none.</param>
+    public GameSearch(IEnumerable<Game> games, CultureInfo culture, Func<Game, string?>? otherTitle = null)
     {
         _culture = culture;
         _byName = games
-            .Select(game => (Game: game, Folded: Fold(game.Title)))
+            .Select(game => (Game: game, Folded: Fold(game.Title), OtherFolded: otherTitle?.Invoke(game) is { } other ? Fold(other) : null))
             .OrderBy(entry => entry.Game.Title, GameSorter.TitleComparer(culture))
             .ToList();
     }
@@ -59,9 +61,9 @@ public sealed class GameSearch
         // By name the hits are already in order; otherwise they go into their rank, each in name order.
         var byName = order is { Field: SortField.Name };
         var ranks = new[] { new List<Game>(), new List<Game>(), new List<Game>() };
-        foreach (var (game, title) in _byName)
+        foreach (var (game, title, other) in _byName)
         {
-            if ((launcherIds is null || launcherIds.Contains(game.LauncherId)) && Rank(title, folded) is { } rank)
+            if ((launcherIds is null || launcherIds.Contains(game.LauncherId)) && BestRank(title, other, folded) is { } rank)
             {
                 ranks[byName ? 0 : rank].Add(game);
             }
@@ -111,6 +113,14 @@ public sealed class GameSearch
 
         return folded.ToString();
     }
+
+    /// <summary>The better rank of the shown title and the other one.</summary>
+    private static int? BestRank(string title, string? other, string term) =>
+        (Rank(title, term), other is null ? null : Rank(other, term)) switch
+        {
+            ({ } shown, { } second) => Math.Min(shown, second),
+            (var shown, var second) => shown ?? second,
+        };
 
     /// <summary>0: the title starts with the term, 1: a word does, 2: it's inside a word, null: no match.</summary>
     private static int? Rank(string title, string term)

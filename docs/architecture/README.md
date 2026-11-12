@@ -6,7 +6,7 @@ code goes, then only the file of the project you touch.
 | Project | Content | File |
 |---|---|---|
 | `src/Arcadia.Launchers.Abstractions` | What a launcher is made of; the future plugin interface | [core.md](core.md) |
-| `src/Arcadia.Core` | Platform-free: launchers, library, running games, search, keyboard layouts, settings | [core.md](core.md) |
+| `src/Arcadia.Core` | Platform-free: launchers, library, running games, search, keyboard layouts, settings; artwork, metadata, own data | [core.md](core.md), [core-game-data.md](core-game-data.md) |
 | `src/Arcadia.Launchers` | The built-in launchers (Steam, Epic, demo), game start; uses only the contract and `Arcadia.Platform` | [launchers.md](launchers.md) |
 | `src/Arcadia.Platform` | `ProcessWatch`: the PC's processes (by name or folder, `PathOf(pid)`, the foreground process, waits) | this table |
 | `src/Arcadia.Input` | Every controller via SDL3, buttons to actions, the mouse mode | [input.md](input.md) |

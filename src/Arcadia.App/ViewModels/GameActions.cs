@@ -51,6 +51,18 @@ public interface IGameActionsOwner
     /// <summary>"Übersicht anpassen" (#500): the dialog over the detail page.</summary>
     void CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices);
 
+    /// <summary>"Titel ändern" (#496): the on-screen keyboard over the page.</summary>
+    void ChangeTitle(GameTileViewModel tile);
+
+    /// <summary>"Titel zurücksetzen" (#496).</summary>
+    void ResetTitle(GameTileViewModel tile);
+
+    /// <summary>The automatic title while the game has an own one (#496), else null.</summary>
+    string? OriginalTitleOf(Game game);
+
+    /// <summary>Why own titles can't be changed now (#496); null while they can.</summary>
+    string? TitleBlockedReason { get; }
+
     /// <summary>A game is starting or its start failed: every shown cover takes its run state again.</summary>
     void RunStatesChanged();
 }
@@ -482,4 +494,13 @@ public sealed class GameActions : IGameActionHost
     IReadOnlyList<string> IGameActionHost.QuickSelectionOf(Game game) => _settings.Current.QuickSelection.Of(game.Key, DetailAreas.QuickDefaults);
 
     void IGameActionHost.CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices) => _owner.CustomizeOverview(tile, choices);
+
+    void IGameActionHost.ChangeTitle(GameTileViewModel tile) => _owner.ChangeTitle(tile);
+
+    void IGameActionHost.ResetTitle(GameTileViewModel tile) => _owner.ResetTitle(tile);
+
+    /// <summary>The automatic title while the game has an own one (#496), else null; the search finds a game by it too.</summary>
+    public string? OriginalTitleOf(Game game) => _owner.OriginalTitleOf(game);
+
+    string? IGameActionHost.TitleBlockedReason => _owner.TitleBlockedReason;
 }

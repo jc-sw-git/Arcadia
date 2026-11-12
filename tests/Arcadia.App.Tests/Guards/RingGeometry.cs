@@ -80,7 +80,8 @@ internal static class RingGeometry
         Assert.True(looked >= atLeast, $"{state}: nur {looked} Schaltflächen mit Fokusrahmen geprüft");
     }
 
-    private static bool IsShown(Window window, Button button) =>
+    /// <summary>Visible and on screen: not hidden, faded out or slid out of the window (the search keyboard put away).</summary>
+    internal static bool IsShown(Window window, Button button) =>
         button.IsEffectivelyVisible
         && button.GetSelfAndVisualAncestors().OfType<Visual>().All(visual => visual.Opacity > 0)
         && button.TransformToVisual(window) is { } transform

@@ -31,64 +31,39 @@ public sealed class FocusRingTests
         AssertRing(arcadia, "letztes Cover der Seite", "FocusRingLifted");
     }
 
+    /// <summary>
+    /// Wherever the focus goes on any page, dialog or settings category of <see cref="GuardPages"/> (e.g. every choice of
+    /// "Ansicht", every item of the game menu, every settings row), its ring shows whole. A row not available here (Steam
+    /// Controller support off Windows) is drawn dimmed, its ring with it, and is left out.
+    /// </summary>
     [AvaloniaFact]
+    [Trait("TestCase", "T180-3")]
     [Trait("TestCase", "G-32")]
-    public async Task The_ring_shows_whole_on_every_choice_of_the_view_options()
+    public async Task The_ring_shows_whole_wherever_the_focus_goes_on_every_page_dialog_and_settings_category()
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        var main = arcadia.Arcadia.Main;
-        arcadia.Press(UiAction.ViewOptions);
-
-        // Through the sort choices, then down to the page sizes and along them.
-        var seen = new HashSet<Button>();
-        foreach (var move in new[] { UiAction.Right, UiAction.Right, UiAction.Down, UiAction.Right, UiAction.Down, UiAction.Down, UiAction.Left, UiAction.Left })
+        var rings = 0;
+        await GuardWalk.EveryAsync(_ => true, (arcadia, page, state) =>
         {
-            var focused = Focused(arcadia);
-            seen.Add(focused);
-            arcadia.AssertRingAround(focused, $"Ansicht: {Describe(focused)}");
-            arcadia.Press(move);
-        }
-
-        Assert.Contains(seen, button => button.Classes.Contains("segment"));
-        Assert.Contains(seen, button => button.Classes.Contains("size"));
-        Assert.True(main.IsViewOptionsOpen);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "G-32")]
-    public async Task The_ring_shows_whole_on_the_settings_rows_and_their_buttons()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        arcadia.Press(UiAction.Settings);
-
-        // Every category, down its rows to the last one.
-        var seen = 0;
-        for (var category = 0; category < 4; category++)
-        {
-            Button? last = null;
-            for (var row = 0; row < 12; row++)
+            if (page.FocusedControl(arcadia) is not { } focused || (page.RingFinding is { } known && state.EndsWith(known.State, StringComparison.Ordinal)))
             {
-                var focused = Focused(arcadia);
-                if (focused == last)
-                {
-                    break;
-                }
-
-                // A row not available here (Steam Controller support off Windows) is drawn dimmed, its ring with it.
-                if (focused.IsEffectivelyEnabled && focused.GetSelfAndVisualAncestors().OfType<Visual>().All(visual => visual.Opacity >= 1))
-                {
-                    arcadia.AssertRingAround(focused, $"Einstellungen {category}: {Describe(focused)}");
-                    seen++;
-                }
-
-                last = focused;
-                arcadia.Press(UiAction.Down);
+                return;
             }
 
-            arcadia.Press(UiAction.NextTab);
-        }
+            var where = $"{state}: {Describe(focused)}";
+            if (GuardPage.RingOf(arcadia, focused) is var (ringed, ring))
+            {
+                arcadia.AssertRingAround(ringed, where, ring);
+            }
+            else
+            {
+                // Without a ring the focus is the button filled in the strong text colour, drawn whole as a tab's pill.
+                arcadia.AssertDrawnWhole(focused, where, "TextStrong");
+            }
 
-        Assert.True(seen >= 8, $"Nur {seen} Zeilen geprüft");
+            rings++;
+        });
+
+        Assert.True(rings >= 50, $"Nur {rings} Fokusrahmen geprüft");
     }
 
     [AvaloniaFact]
@@ -111,24 +86,7 @@ public sealed class FocusRingTests
     [AvaloniaFact]
     [Trait("TestCase", "T180-3")]
     [Trait("TestCase", "G-32")]
-    public async Task The_ring_shows_whole_on_every_item_of_the_game_menu()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        arcadia.Press(UiAction.Right, times: 7).Press(UiAction.Options);
-        var menu = arcadia.Arcadia.Main.GameMenu!;
-
-        for (var item = 0; item < menu.Actions.Count; item++)
-        {
-            var focused = Focused(arcadia, "menuItem");
-            arcadia.AssertRingAround(focused, $"Spielmenü: {Describe(focused)}", "FocusRingInset");
-            arcadia.Press(UiAction.Down);
-        }
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T180-3")]
-    [Trait("TestCase", "G-32")]
-    public async Task The_ring_shows_whole_on_the_tall_Enter_and_the_layout_menu_of_the_search_keyboard()
+    public async Task The_ring_shows_whole_on_the_tall_Enter_of_the_search_keyboard()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
         arcadia.Press(UiAction.Search).WaitForTransitions();
@@ -137,19 +95,8 @@ public sealed class FocusRingTests
         var enter = keyboard.Keys.Single(key => key.Key.Kind == BoardKeyKind.Enter);
         arcadia.Arcadia.GoTo(enter);
         arcadia.Settle();
-        using (var frame = arcadia.Capture())
-        {
-            AssertTallEnterRing(frame, arcadia.Window, "Suche");
-        }
-
-        arcadia.Press(UiAction.KeyboardLayout);
-        Assert.True(keyboard.LayoutMenu.IsOpen);
-        for (var item = 0; item < keyboard.LayoutMenu.Items.Count; item++)
-        {
-            var focused = Focused(arcadia, "layoutItem");
-            arcadia.AssertRingAround(focused, $"Suche, Layoutmenü: {Describe(focused)}", "FocusRingInset");
-            arcadia.Press(UiAction.Down);
-        }
+        using var frame = arcadia.Capture();
+        AssertTallEnterRing(frame, arcadia.Window, "Suche");
     }
 
     [AvaloniaFact]
@@ -214,8 +161,6 @@ public sealed class FocusRingTests
         .SelectMany(control => control.GetSelfAndVisualDescendants().OfType<Button>())
         .First(button => button.Classes.Contains("tab") && button.GetVisualAncestors().OfType<ScrollViewer>().Any(scroller => scroller.Name == "TabScroller"));
 
-    private static Button Focused(ArcadiaWindow arcadia, string kind) => Focused(arcadia.Window, kind);
-
     private static Button Focused(Avalonia.Controls.Window window, string kind) => Assert.Single(
         window.GetVisualDescendants().OfType<Button>(),
         button => button.IsEffectivelyVisible && button.Classes.Contains("focused") && button.Classes.Contains(kind));
@@ -223,10 +168,6 @@ public sealed class FocusRingTests
     private static void AssertRing(ArcadiaWindow arcadia, string where, string ring) =>
         arcadia.AssertRingAround(arcadia.Tile(arcadia.Arcadia.FocusedGame!), where, ring);
 
-    private static Button Focused(ArcadiaWindow arcadia) => Assert.Single(
-        arcadia.Window.GetVisualDescendants().OfType<Button>(),
-        button => button.IsEffectivelyVisible && button.Classes.Contains("focused") && !button.Classes.Contains("tile"));
-
-    private static string Describe(Button button) =>
+    private static string Describe(Control button) =>
         string.Join(' ', button.GetVisualDescendants().OfType<TextBlock>().Where(text => text.IsEffectivelyVisible).Select(text => text.Text).Take(2));
 }

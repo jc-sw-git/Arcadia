@@ -32,18 +32,24 @@ public sealed class SettingsRowsFadeTests
         return arcadia.Settle();
     }
 
+    /// <summary>
+    /// On every settings category of <see cref="GuardPages"/> and the launcher page, row by row: a fade shows only towards
+    /// where more rows follow (none where the rows fit), and the focused row and its heading stay clear of it.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T237-1")]
-    public async Task A_category_whose_rows_fit_has_no_fade()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        arcadia.Press(UiAction.Settings);
-        var rows = arcadia.Arcadia.Main.Settings!.Selected.Rows;
-
-        AssertFades(arcadia, top: false, bottom: false);
-        arcadia.Press(UiAction.Down, times: rows.Count);
-        AssertFades(arcadia, top: false, bottom: false);
-    }
+    [Trait("TestCase", "T237-2")]
+    public Task Every_category_fades_only_where_more_rows_follow_and_keeps_the_focused_row_clear() =>
+        GuardWalk.EveryAsync(page => page.IsSettingsPage, (arcadia, _, state) =>
+        {
+            arcadia.WaitForTransitions();
+            var scroller = arcadia.Named<ScrollViewer>("SettingsRowsScroller");
+            var above = scroller.Offset.Y > 1;
+            var below = scroller.Offset.Y + scroller.Viewport.Height < scroller.Extent.Height - 1;
+            var fade = RowsFade(arcadia);
+            Assert.True((above, below) == (fade.ShowsStart, fade.ShowsEnd), $"{state}: Ausblendung oben/unten {(fade.ShowsStart, fade.ShowsEnd)}, weitere Zeilen {(above, below)}");
+            AssertFocusClear(arcadia, state);
+        });
 
     [AvaloniaFact]
     [Trait("TestCase", "T237-2")]

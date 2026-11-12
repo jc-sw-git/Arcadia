@@ -102,6 +102,17 @@ public sealed class CoverAndIconTests
         Assert.Empty(TextsWithSymbolsDrawnAsIcons(arcadia.Window));
     }
 
+    /// <summary>T24-11: no page, dialog or settings category of <see cref="GuardPages"/> holds ⧉ ≡ ↹ as a character in a text.</summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T24-11")]
+    public Task No_page_dialog_or_settings_category_shows_a_symbol_drawn_as_an_icon_as_a_character() =>
+        GuardWalk.EveryAsync(_ => true, (arcadia, _, state) =>
+        {
+            InputHints.Symbols = ButtonSymbols.Xbox;
+            var texts = TextsWithSymbolsDrawnAsIcons(arcadia.Settle().Window);
+            Assert.True(texts.Count == 0, $"{state}: {string.Join(", ", texts)}");
+        }, walks: _ => false);
+
     /// <summary>T24-13: on the on-screen keyboard, Tab shows KeyIconTab beside its name, the dock key ⧉ and Enter ≡ as icons.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T24-13")]

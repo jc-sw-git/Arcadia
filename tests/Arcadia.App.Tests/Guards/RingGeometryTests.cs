@@ -8,29 +8,15 @@ namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// No focus ring runs into a clipping parent, on any page state with focusable buttons (#180, G-32): each visible
-/// button counts as focused at once, see <see cref="RingGeometry"/>.
+/// button counts as focused at once, see <see cref="RingGeometry"/>. The pages are those of <see cref="GuardPages"/>.
 /// </summary>
 public sealed class RingGeometryTests
 {
     [AvaloniaFact]
     [Trait("TestCase", "T180-2")]
     [Trait("TestCase", "G-32")]
-    public async Task No_ring_is_cut_off_in_the_library_its_view_options_and_the_game_menu()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        AssertNoRingCutOff(arcadia, "Bibliothek", atLeast: 8);
-
-        arcadia.Press(UiAction.ViewOptions);
-        AssertNoRingCutOff(arcadia, "Ansicht");
-        arcadia.Press(UiAction.Back);
-
-        arcadia.Press(UiAction.NextPage);
-        AssertNoRingCutOff(arcadia, "Bibliothek, zweite Seite", atLeast: 4);
-
-        arcadia.Press(UiAction.Options);
-        Assert.True(arcadia.Arcadia.Main.IsGameMenuOpen);
-        AssertNoRingCutOff(arcadia, "Spielmenü");
-    }
+    public Task No_ring_is_cut_off_on_any_page_dialog_or_settings_category_in_any_state_of_its_focus() =>
+        GuardWalk.EveryAsync(_ => true, (arcadia, page, state) => AssertNoRingCutOff(arcadia, state, page.RingsAtLeast));
 
     [AvaloniaFact]
     [Trait("TestCase", "T465-14")]
@@ -56,53 +42,6 @@ public sealed class RingGeometryTests
         AssertNoRingCutOff(arcadia, "Filter, rechter Rand der Typen");
         arcadia.Press(UiAction.Down);
         AssertNoRingCutOff(arcadia, "Filter, letzter Typ");
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T180-2")]
-    public async Task No_ring_is_cut_off_on_the_detail_page_and_in_the_search()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        // Holding A opens the detail page.
-        arcadia.Arcadia.PressDown(UiAction.Accept).Wait(TimeSpan.FromSeconds(1.1)).LetGo(UiAction.Accept);
-        Assert.True(arcadia.Arcadia.Main.IsDetailOpen, "Detailseite offen");
-        AssertNoRingCutOff(arcadia, "Detailseite");
-        arcadia.Press(UiAction.Back);
-
-        arcadia.Press(UiAction.Search);
-        AssertNoRingCutOff(arcadia, "Suche, leer", atLeast: 30);
-        arcadia.Type("a");
-        AssertNoRingCutOff(arcadia, "Suche mit Treffern", atLeast: 30);
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T180-2")]
-    public async Task No_ring_is_cut_off_on_any_settings_category_at_its_top_and_its_end()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        arcadia.Press(UiAction.Settings);
-        for (var category = 0; category < 4; category++)
-        {
-            AssertNoRingCutOff(arcadia, $"Einstellungen {category}, oben");
-            arcadia.Press(UiAction.Down, times: 15);
-            AssertNoRingCutOff(arcadia, $"Einstellungen {category}, unten");
-            arcadia.Press(UiAction.NextTab);
-        }
-    }
-
-    [AvaloniaFact]
-    [Trait("TestCase", "T180-2")]
-    public async Task No_ring_is_cut_off_on_a_launcher_page_and_the_first_start()
-    {
-        using (var arcadia = await ArcadiaWindow.ShowAsync())
-        {
-            arcadia.Press(UiAction.Settings).Press(UiAction.Accept);
-            Assert.NotNull(arcadia.LauncherCategory().PageLauncherId);
-            AssertNoRingCutOff(arcadia, "Launcher-Seite");
-        }
-
-        using var firstStart = await ArcadiaWindow.ShowAsync(settings: new AppSettings());
-        AssertNoRingCutOff(firstStart, "Ersteinrichtung");
     }
 
     [AvaloniaFact]

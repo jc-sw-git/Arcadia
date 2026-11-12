@@ -13,7 +13,11 @@ internal static class AppInfoFile
     public const uint V28 = 0x07564428;
     public const uint V29 = 0x07564429;
 
-    public static byte[] Build(uint version, IEnumerable<(uint AppId, string Name, string Type)> apps)
+    /// <param name="onlyOnPlatforms">
+    /// Apps Steam shows only on their own platforms (<c>VisibleOnlyOnAvailablePlatforms</c> 1), with their <c>oslist</c>.
+    /// </param>
+    public static byte[] Build(
+        uint version, IEnumerable<(uint AppId, string Name, string Type)> apps, IReadOnlyDictionary<uint, string>? onlyOnPlatforms = null)
     {
         var strings = new List<string>();
         using var file = new MemoryStream();
@@ -28,7 +32,7 @@ internal static class AppInfoFile
 
         foreach (var (appId, name, type) in apps)
         {
-            var vdf = Vdf(appId, name, type, version == V29 ? strings : null);
+            var vdf = Vdf(appId, name, type, onlyOnPlatforms?.GetValueOrDefault(appId), version == V29 ? strings : null);
             var header = version == V27 ? 40 : 60;
             writer.Write(appId);
             writer.Write((uint)(header + vdf.Length));
@@ -55,7 +59,7 @@ internal static class AppInfoFile
         return file.ToArray();
     }
 
-    private static byte[] Vdf(uint appId, string name, string type, List<string>? strings)
+    private static byte[] Vdf(uint appId, string name, string type, string? onlyOnPlatforms, List<string>? strings)
     {
         using var stream = new MemoryStream();
 
@@ -102,6 +106,14 @@ internal static class AppInfoFile
         Key("common");
         Text("name", name);
         Text("type", type);
+        if (onlyOnPlatforms is not null)
+        {
+            Text("oslist", onlyOnPlatforms);
+            stream.WriteByte(0x02);
+            Key("VisibleOnlyOnAvailablePlatforms");
+            stream.Write([1, 0, 0, 0]);
+        }
+
         stream.WriteByte(0x08);
         stream.WriteByte(0x08);
         stream.WriteByte(0x08);

@@ -30,6 +30,44 @@ public sealed class SteamAppInfoTests : IDisposable
         Assert.Equal(new Dictionary<uint, string> { [220] = "Game", [431960] = "Application", [250820] = "Tool", [1145350] = "Music" }, types);
     }
 
+    [Theory]
+    [InlineData(AppInfoFile.V27)]
+    [InlineData(AppInfoFile.V29)]
+    public void Reads_the_platforms_of_an_app_Steam_shows_only_there(uint version)
+    {
+        File.WriteAllBytes(_path, AppInfoFile.Build(
+            version,
+            [(12230, "Mac Port", "game"), (12100, "Windows Game", "game"), (220, "Everywhere", "Game"), (330, "No List", "game")],
+            new Dictionary<uint, string> { [12230] = "macos", [12100] = "windows, linux", [330] = "" }));
+
+        var apps = SteamAppInfo.ReadApps(_path, new HashSet<uint> { 12230, 12100, 220, 330 });
+
+        Assert.Equal(["macos"], apps[12230].OnlyOnPlatforms);
+        Assert.Equal(["windows", "linux"], apps[12100].OnlyOnPlatforms);
+        Assert.Null(apps[220].OnlyOnPlatforms);
+        // The flag without platforms names none; the app stays rather than vanishing on every platform.
+        Assert.Null(apps[330].OnlyOnPlatforms);
+    }
+
+    [Theory]
+    [InlineData("macos", "windows", true)]
+    [InlineData("macos", "linux", true)]
+    [InlineData("macos", "macos", false)]
+    [InlineData("windows", "windows", false)]
+    [InlineData("Windows", "windows", false)]
+    [InlineData("windows", "linux", false)] // Proton
+    [InlineData("linux", "windows", true)]
+    public void An_app_is_hidden_on_a_platform_its_list_does_not_name(string oslist, string platform, bool hidden)
+    {
+        var app = new SteamAppEntry("game", "Some Game")
+        {
+            OnlyOnPlatforms = oslist.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+        };
+
+        Assert.Equal(hidden, app.IsHiddenOn(platform));
+        Assert.False(new SteamAppEntry("game", "Some Game").IsHiddenOn(platform));
+    }
+
     [Fact]
     public void Rejects_an_unknown_version()
     {

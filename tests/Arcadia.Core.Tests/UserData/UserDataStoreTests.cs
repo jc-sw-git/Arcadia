@@ -7,20 +7,31 @@ namespace Arcadia.Core.Tests.UserData;
 /// #496: the file of own titles, kept per game key with the own tags (#495): written in the background through a
 /// temporary file, never overwritten when unreadable, put back when a write fails (T496-14, T496-15).
 /// </summary>
-public sealed class UserDataStoreTests : IDisposable
+public sealed class UserDataStoreTests : IAsyncDisposable
 {
     private const string Key = "steam:4711";
 
     private readonly string _folder = Directory.CreateTempSubdirectory("arcadia-user-data-").FullName;
     private readonly List<string> _log = [];
+    private readonly List<UserDataStore> _stores = [];
 
-    public void Dispose() => Directory.Delete(_folder, recursive: true);
+    // A change writes in the background; Windows can't delete the folder while that write holds its temporary file.
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var store in _stores)
+        {
+            await store.WhenWrittenAsync();
+        }
+
+        Directory.Delete(_folder, recursive: true);
+    }
 
     private string FilePath => Path.Combine(_folder, UserDataStore.FileName);
 
     private UserDataStore Open()
     {
         var store = new UserDataStore(_folder) { Log = _log.Add };
+        _stores.Add(store);
         store.Open();
         return store;
     }

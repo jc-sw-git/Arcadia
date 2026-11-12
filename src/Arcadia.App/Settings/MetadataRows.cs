@@ -20,9 +20,6 @@ public sealed class MetadataRows
     private readonly ActionRowViewModel _reload;
     private readonly Dictionary<string, InfoRowViewModel> _providers = new(StringComparer.Ordinal);
 
-    // "Neu laden" was confirmed and its run hasn't shown yet: the button stays greyed out meanwhile.
-    private bool _reloadAsked;
-
     /// <param name="ask">Shows the question over the page (the category's dialog), or null to close it.</param>
     public MetadataRows(MetadataService metadata, Action<SettingsQuestionViewModel?> ask)
     {
@@ -50,16 +47,11 @@ public sealed class MetadataRows
     public void Refresh()
     {
         var progress = _metadata.Progress;
-        if (progress.Reload)
-        {
-            _reloadAsked = false;
-        }
-
         _missing.Subtitle = MissingText(progress);
         _missing.IsDimmed = progress is { Missing: 0, Total: > 0 };
         _missing.Progress = progress is { Running: true, Total: > 0 } ? 100.0 * (progress.Total - progress.Missing) / progress.Total : null;
 
-        var reloading = progress.Reload || _reloadAsked;
+        var reloading = progress.Reload;
         _reload.IsEnabled = !reloading && _metadata.GameCount > 0;
         _reload.IsDimmed = !_reload.IsEnabled;
         _reload.IsWorking = reloading;
@@ -99,7 +91,7 @@ public sealed class MetadataRows
     /// <summary>A on "Alle Metadaten neu laden": the question first; [A] starts the run, [B] or "Abbrechen" sends nothing.</summary>
     private void Ask()
     {
-        if (_metadata.Progress.Reload || _reloadAsked)
+        if (_metadata.Progress.Reload)
         {
             return;
         }
@@ -111,7 +103,7 @@ public sealed class MetadataRows
             () =>
             {
                 _ask(null);
-                _reloadAsked = _metadata.ReloadAll();
+                _metadata.ReloadAll();
                 Refresh();
             },
             () => _ask(null)));

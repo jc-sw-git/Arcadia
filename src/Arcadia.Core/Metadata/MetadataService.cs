@@ -42,6 +42,14 @@ public sealed class MetadataService : IDisposable
     private Pending? _pending;
     private IReadOnlyList<LibraryMetadata>? _lastLibraries;
     private Task _runner = Task.CompletedTask;
+
+    // Under _gate: a runner takes pending work. Not _runner.IsCompleted: a runner past its last look at _pending is not
+    // completed yet, and work queued then would wait for the next scan.
+    private bool _running;
+
+    // Under _gate: "Alle Metadaten neu laden" was confirmed and its run has not ended; Progress reports it from the
+    // confirmation on, also while another run still goes or the reload fails at once.
+    private bool _reloadAsked;
     private MetadataProgress _progress = MetadataProgress.NotYet;
 
     public MetadataService(MetadataCache cache, HttpClient http, TimeProvider time)
@@ -71,7 +79,7 @@ public sealed class MetadataService : IDisposable
         {
             lock (_gate)
             {
-                return _progress;
+                return _reloadAsked ? _progress with { Reload = true } : _progress;
             }
         }
     }
@@ -117,10 +125,12 @@ public sealed class MetadataService : IDisposable
         lock (_gate)
         {
             libraries = _lastLibraries;
-            if (libraries is null || _progress.Reload || _pending is { Reload: true })
+            if (libraries is null || _progress.Reload || _reloadAsked)
             {
                 return false;
             }
+
+            _reloadAsked = true;
         }
 
         Log("Metadaten: alle neu laden");
@@ -149,8 +159,9 @@ public sealed class MetadataService : IDisposable
                 _lastLibraries = run.Libraries;
             }
 
-            if (_runner.IsCompleted)
+            if (!_running)
             {
+                _running = true;
                 _runner = Task.Run(RunAsync);
             }
         }
@@ -191,15 +202,25 @@ public sealed class MetadataService : IDisposable
         }
         finally
         {
-            SetProgress(running: false, reload: false, remaining: null);
             lock (_gate)
             {
+                // In the same lock as the decision below, so a run starting now isn't reported as ended, and a
+                // confirmed reload ends with it.
+                _progress = _progress with { Running = false, Reload = false, Remaining = null };
+
                 // A run queued while this one ended still needs a runner.
                 if (_pending is not null && !_shutdown.IsCancellationRequested)
                 {
                     _runner = Task.Run(RunAsync);
                 }
+                else
+                {
+                    _running = false;
+                    _reloadAsked = false;
+                }
             }
+
+            ProgressChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

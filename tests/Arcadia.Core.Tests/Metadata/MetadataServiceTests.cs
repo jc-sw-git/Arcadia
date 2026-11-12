@@ -286,6 +286,30 @@ public sealed class MetadataServiceTests : IDisposable
         Assert.Empty(shown.AgeRatings);
     }
 
+    [Theory]
+    [Trait("TestCase", "T493-19")]
+    [InlineData("Drücke &lt;E&gt; zum Bauen, wenn 3 &lt; 5 Spieler da sind.", "Drücke <E> zum Bauen, wenn 3 < 5 Spieler da sind.")]
+    [InlineData("Drücke &amp;lt;E&amp;gt; zum Bauen, wenn 3 &amp;lt; 5 Spieler da sind.", "Drücke &lt;E&gt; zum Bauen, wenn 3 &lt; 5 Spieler da sind.")]
+    [InlineData("Tom &amp; Jerry &amp;amp; Co. • „Zitat“ – <b>fett</b>", "Tom & Jerry &amp; Co. • „Zitat“ – fett")]
+    public async Task A_text_read_back_from_the_cache_shows_as_it_did_before_the_restart(string answer, string shown)
+    {
+        // The store's HTML is read once; the cache must not let its decoded "<" or "&" be read as markup a second time.
+        _source.Local["1"] = new GameMetadata { Developers = ["Kraut &amp; Rüben"], Tags = ["3 &lt; 5"] };
+        _server.Serve("1", answer);
+        Scan("1");
+        await RunToIdleAsync();
+        var before = _service.Of(Key("1"));
+        Assert.Equal(shown, before.Description!.Value);
+
+        Restart();
+        await RunToIdleAsync();
+
+        var after = _service.Of(Key("1"));
+        Assert.Equal(shown, after.Description!.Value);
+        Assert.Equal(["Kraut & Rüben"], after.Developers!.Value);
+        Assert.Equal(["3 < 5"], after.Tags!.Value);
+    }
+
     [Fact]
     [Trait("TestCase", "T493-19")]
     public async Task A_damaged_cache_file_is_discarded_with_one_log_line_and_fetched_again()
@@ -432,9 +456,16 @@ public sealed class MetadataServiceTests : IDisposable
         await RunToIdleAsync();
         Assert.Equal(0, failures);
 
+        // From the confirmation on the reload counts as running, so a second press starts none; failing at once, it
+        // ends as running no more and can be pressed again.
         Assert.True(_service.ReloadAll());
+        Assert.True(_service.Progress.Reload);
+        Assert.False(_service.ReloadAll());
         await RunToIdleAsync();
         Assert.Equal(1, failures);
+        Assert.False(_service.Progress.Reload);
+        Assert.True(_service.ReloadAll());
+        await RunToIdleAsync();
     }
 
     [Fact]

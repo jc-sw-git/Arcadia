@@ -156,9 +156,24 @@ public sealed class MetadataCache(string root)
         {
             Game = cached.GameKey,
             Source = cached.Source,
-            Local = cached.Local,
-            Store = cached.Store,
+            Local = Escaped(cached.Local),
+            Store = Escaped(cached.Store),
             StoreAt = cached.StoreAt,
         };
+
+        /// <summary>
+        /// The checked texts written as HTML text, the way a store would: reading checks them as markup again, and a
+        /// "&lt;" or "&amp;amp;" in a description must come back as it was shown, not decoded a second time.
+        /// </summary>
+        private static GameMetadata? Escaped(GameMetadata? metadata) => metadata is null ? null : metadata with
+        {
+            Description = Escape(metadata.Description),
+            ShortDescription = Escape(metadata.ShortDescription),
+            Developers = [.. metadata.Developers.Select(name => Escape(name)!)],
+            Publishers = [.. metadata.Publishers.Select(name => Escape(name)!)],
+            Tags = [.. metadata.Tags.Select(tag => Escape(tag)!)],
+        };
+
+        private static string? Escape(string? text) => text is null ? null : System.Net.WebUtility.HtmlEncode(text);
     }
 }

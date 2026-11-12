@@ -39,6 +39,7 @@ its file.
 | [480](480-move-ui-texts-into-resource-files.md) | #480 | Move UI texts into resource files | T480-1 to T480-17 (none for the owner) |
 | [339](339-make-ui-texts-consistent.md) | #339 | Make UI texts consistent | T339-1 to T339-19 (owner: T339-18) |
 | [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
+| [499](499-detail-page-new-layout.md) | #499 | Detail page: new layout with areas, carousel into depth and info box | T499-1 to T499-31 (owner: T499-30, T499-31) |
 | [488](488-show-epics-covers-and-backgrounds.md) | #488 | Show Epic's covers and backgrounds from its catalog | T488-1 to T488-17 (owner: T488-16, -17) |
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 
@@ -79,6 +80,7 @@ Charter: –. Time box: –. Findings: –.
 | T480-8, -9 | `BrokenTextTests`, `PluralTextsTests`; the fallback T480-1 to -7, -10, -11 in `UiTextTests`, T480-15 in `UiTextsStayInResourcesTests` (Core) |
 | T339-1 to -3 | `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`, T339-12 `WindowsRestartTests`, T339-13 `SteamControllerXboxPadTests`, T339-14, -15 `Window/ConsistentTextsViewTests` |
 | T24-1 to -4, -6 to -13 | `PagingTests`, `SettingsServiceTests`, `LibraryTests`, `GridFadeTests`, `LibrarySpeedTests`, `Window/CoverAndIconTests`, `Window/EmbeddedFontTests` |
+| T499-1 to -8, -10 to -26 | `DetailAreasTests`, `DetailPageStateTests`, `DetailPageTests` (T499-3), `Window/DetailPageViewTests` |
 | T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
 | T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |

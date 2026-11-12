@@ -100,7 +100,7 @@ public sealed class LauncherControllerModeTests
         Assert.True(arcadia.ControllerSupport.UsesArcadiaPad(ownChoice.Key));
     }
 
-    /// <summary>T178-3: [A] on the detail page goes Standard → Arcadia → Steam-Eingabe → Standard; Standard names the default.</summary>
+    /// <summary>T178-3: [A] on the detail page's row goes Standard → Arcadia → Steam-Eingabe → Standard; Standard names the default.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T178-3")]
     public async Task The_detail_page_cycles_through_Standard_Arcadia_and_Steam_Eingabe()
@@ -108,8 +108,7 @@ public sealed class LauncherControllerModeTests
         using var arcadia = await StartWithSteamControllerAsync();
         arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
         var page = arcadia.Detail!.Current;
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(GameActionKind.ControllerMode, page.FocusedKind);
+        arcadia.FocusDetailRow(DetailAreaViewModel.ControllerKey, GameActionKind.ControllerMode);
 
         string[] shown = [ModeOf(page)];
         for (var press = 0; press < 3; press++)
@@ -120,7 +119,6 @@ public sealed class LauncherControllerModeTests
 
         Assert.Equal(["Standard (Steam-Eingabe)", ControllerModes.Arcadia, ControllerModes.Steam, "Standard (Steam-Eingabe)"], shown);
         Assert.Empty(arcadia.Settings.Current.ControllerSupportOverrides);
-        Assert.Equal("Wechselt zu „Arcadia“", page.GameSettingsRow.Single(action => action.Kind == GameActionKind.ControllerMode).Note);
 
         // Steam's default changed in the settings: back on the page, "Standard" names the new one.
         arcadia.Press(UiAction.Settings);
@@ -129,7 +127,6 @@ public sealed class LauncherControllerModeTests
         arcadia.Press(UiAction.Right);
         arcadia.Press(UiAction.Settings);
         Assert.Equal("Standard (Arcadia)", ModeOf(arcadia.Detail!.Current));
-        Assert.Equal("Wechselt zu „Arcadia“", arcadia.Detail.Current.GameSettingsRow.Single(action => action.Kind == GameActionKind.ControllerMode).Note);
     }
 
     /// <summary>T178-3: the preview's value (click) and the context menu (⧉) cycle like the detail page (QE review PR #319).</summary>
@@ -372,7 +369,7 @@ public sealed class LauncherControllerModeTests
     }
 
     private static string ModeOf(GameDetailPageViewModel page) =>
-        page.GameSettingsRow.Single(action => action.Kind == GameActionKind.ControllerMode).ButtonLabel;
+        page.Row(GameActionKind.ControllerMode).ValueText;
 
     /// <summary>The mode the library's preview shows for the game with this key, reached by LB/RB and ◀ ▶ as the user would.</summary>
     private static string ModeOfGame(ArcadiaDriver arcadia, string key)

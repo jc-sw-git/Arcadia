@@ -76,12 +76,11 @@ public sealed class ControllerSupportTests
         var page = arcadia.Detail!.Current;
         Assert.False(page.HasNotes);
 
-        // Down to the row of the game's settings: "Steam Controller", then "Individueller Mausmodus".
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(GameActionKind.ControllerMode, page.FocusedKind);
+        // Into the rows of "Controller": "Steam-Controller-Modus", then "Individueller Mausmodus".
+        arcadia.FocusDetailRow(DetailAreaViewModel.ControllerKey, GameActionKind.ControllerMode);
         Assert.False(page.HasNotes);
-        arcadia.Press(UiAction.Right);
-        Assert.Equal(GameActionKind.MouseMode, page.FocusedKind);
+        arcadia.Press(UiAction.Down);
+        Assert.Equal(GameActionKind.MouseMode, page.FocusedRow?.Kind);
         Assert.False(page.HasNotes);
     }
 

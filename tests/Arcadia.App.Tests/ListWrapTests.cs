@@ -76,12 +76,12 @@ public sealed class ListWrapTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T476-5")]
-    public async Task The_detail_pages_buttons_go_round_in_their_row_and_between_the_rows()
+    public async Task The_detail_pages_buttons_areas_and_rows_go_round()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
-        var top = page.TopRow.Where(action => action.IsEnabled).ToList();
+        var top = page.Buttons.Where(action => action.IsEnabled).ToList();
         Assert.True(top.Count > 1);
         Assert.Equal(top[0].Kind, page.FocusedKind);
 
@@ -90,11 +90,22 @@ public sealed class ListWrapTests
         arcadia.Press(UiAction.Right);
         Assert.Equal(top[0].Kind, page.FocusedKind);
 
-        // Up from the top row goes round to the bottom row, down back to the top.
-        arcadia.Press(UiAction.Up);
-        Assert.DoesNotContain(top, action => action.Kind == page.FocusedKind);
+        // The rail goes round from the last area to the first; ▲ on the first leads back up to the buttons.
         arcadia.Press(UiAction.Down);
-        Assert.Contains(top, action => action.Kind == page.FocusedKind);
+        Assert.Equal(DetailZone.Rail, page.Zone);
+        arcadia.Press(UiAction.Down, times: page.Areas.Count);
+        Assert.Same(page.Areas[0], page.OpenArea);
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        var rows = page.OpenArea.Rows;
+        Assert.Same(rows[0], page.FocusedRow);
+        arcadia.Press(UiAction.Up);
+        Assert.Same(rows[^1], page.FocusedRow);
+        arcadia.Press(UiAction.Down);
+        Assert.Same(rows[0], page.FocusedRow);
+        arcadia.Press(UiAction.Back).Press(UiAction.Up);
+        Assert.Equal(DetailZone.Rail, page.Zone);
+        arcadia.Press(UiAction.Up);
+        Assert.Equal(GameActionKind.Play, page.FocusedKind);
     }
 
     [AvaloniaFact]

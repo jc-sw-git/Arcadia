@@ -18,6 +18,9 @@ public interface IGameActionsOwner
     /// <summary>True when the Steam Controller mode matters: a Steam Controller is connected.</summary>
     bool ShowControllerMode { get; }
 
+    /// <summary>Why the mode doesn't show now (no Steam Controller, Pan off), for the detail page's greyed row (#499); null while it shows.</summary>
+    string? ControllerModeHiddenReason { get; }
+
     /// <summary>Pan's emulation is on but doesn't run (#242): a game can't get Arcadia's pad, so the mode is "Steam-Eingabe".</summary>
     bool ControllerModeBroken { get; }
 
@@ -39,7 +42,8 @@ public interface IGameActionsOwner
     /// <summary>Asks before something that can't be undone.</summary>
     void Confirm(ConfirmationViewModel confirmation);
 
-    void CycleGameMouseMode(Game game);
+    /// <summary>The game's "Individueller Mausmodus" one step on (1) or back (-1).</summary>
+    void StepGameMouseMode(Game game, int delta);
 
     /// <summary>"Artwork ändern" (#490): the modal over the page.</summary>
     void ChangeArtwork(GameTileViewModel tile);
@@ -419,8 +423,9 @@ public sealed class GameActions : IGameActionHost
     public string ControllerModeOf(Game game) =>
         _owner.ControllerModeBroken ? ControllerModes.Steam : ControllerModes.Of(_controllerSupport.ChoiceFor(game), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
 
-    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178); applies at the game's next start.</summary>
-    public void CycleControllerMode(Game game) => _controllerSupport.SetChoiceFor(game, ControllerModes.Next(_controllerSupport.ChoiceFor(game)));
+    /// <summary>Standard → Arcadia → Steam-Eingabe → Standard (#178), -1 the other way (#499); applies at the game's next start.</summary>
+    public void StepControllerMode(Game game, int delta) =>
+        _controllerSupport.SetChoiceFor(game, ThreeWayChoice.Step(_controllerSupport.ChoiceFor(game), delta, HeldPress.IsRepeat));
 
     string IGameActionHost.NextControllerModeOf(Game game) =>
         ControllerModes.Of(ControllerModes.Next(_controllerSupport.ChoiceFor(game)), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
@@ -438,7 +443,9 @@ public sealed class GameActions : IGameActionHost
     void IGameActionHost.OpenInLauncher(GameTileViewModel tile) =>
         HandOver(tile, tile.Game.OpenInLauncher, AppTexts.LauncherOpening(tile.LauncherName), AppTexts.DemoWouldOpenLauncher(tile.LauncherName));
 
-    void IGameActionHost.CycleControllerMode(GameTileViewModel tile) => CycleControllerMode(tile.Game);
+    void IGameActionHost.StepControllerMode(GameTileViewModel tile, int delta) => StepControllerMode(tile.Game, delta);
+
+    string? IGameActionHost.ControllerModeHiddenReason => _owner.ControllerModeHiddenReason;
 
     void IGameActionHost.Uninstall(GameTileViewModel tile)
     {
@@ -462,7 +469,7 @@ public sealed class GameActions : IGameActionHost
 
     bool IGameActionHost.DefaultGameMouseModeAllowed => _settings.Current.MouseMode.PerGameDefaultAllowed;
 
-    void IGameActionHost.CycleGameMouseMode(GameTileViewModel tile) => _owner.CycleGameMouseMode(tile.Game);
+    void IGameActionHost.StepGameMouseMode(GameTileViewModel tile, int delta) => _owner.StepGameMouseMode(tile.Game, delta);
 
     void IGameActionHost.ChangeArtwork(GameTileViewModel tile) => _owner.ChangeArtwork(tile);
 }

@@ -177,7 +177,7 @@ public sealed class EntryTypeTests
             arcadia.Hold(UiAction.Accept, PastHoldTime);
             var page = arcadia.Detail!.Current;
             Assert.Equal(title, page.Tile.Title);
-            Assert.Equal(action, page.TopRow[0].ButtonLabel);
+            Assert.Equal(action, page.Buttons[0].ButtonLabel);
             arcadia.Press(UiAction.Back);
         }
     }
@@ -206,7 +206,7 @@ public sealed class EntryTypeTests
             arcadia.Press(UiAction.Back);
 
             arcadia.Hold(UiAction.Accept, PastHoldTime);
-            Assert.Equal(action, arcadia.Detail!.Current.TopRow[0].ButtonLabel);
+            Assert.Equal(action, arcadia.Detail!.Current.Buttons[0].ButtonLabel);
             arcadia.Press(UiAction.Back);
         }
     }
@@ -258,7 +258,7 @@ public sealed class EntryTypeTests
         arcadia.FocusTile(soundtrack.Name);
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         var page = arcadia.Detail!.Current;
-        Assert.Equal("Abrocken", page.TopRow[0].ButtonLabel);
+        Assert.Equal("Abrocken", page.Buttons[0].ButtonLabel);
         Assert.Equal("Steam spielt den Soundtrack ab.", page.SoundtrackNote);
 
         arcadia.Press(UiAction.Accept);

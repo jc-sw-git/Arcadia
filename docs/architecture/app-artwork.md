@@ -10,8 +10,8 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 - `Controls/ArtworkImage`: draws one image cropped centred with rounded corners. It loads only when it is drawn (a hidden
   slot decodes nothing), at the size it has on the screen (layout size × the `Viewbox`'s scale × the screen's scaling),
   drops the image at once when its slot shows another game, and says `IsShowing`, which hides the placeholder's
-  monogram and title. Badges and the shade lie above it in the views; on the detail page `Border.heroScrim`
-  (`HeroScrim` in `Theme.axaml`) keeps the name readable.
+  monogram and title. Badges and the shade lie above it in the views; on the detail page the background fills the
+  screen under the scrims `DetailScrimSide`/`Top`/`Bottom` (`Theme.axaml`), which keep title and buttons readable.
 - `Services/ArtworkLoader`: decodes off the UI thread, a few at a time; an image it can't decode is logged and reported
   to the service as broken, which loads it again at the next scan. `Decoded` and `Loaded` let tests count.
 

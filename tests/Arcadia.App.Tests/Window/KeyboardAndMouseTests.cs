@@ -203,7 +203,8 @@ public sealed class KeyboardAndMouseTests
         Assert.True(main.IsDetailOpen);
         arcadia.MouseUp(cover);
         Assert.Single(arcadia.Arcadia.Starts.Keys);
-        arcadia.Click(arcadia.OneWithText("Bibliothek"));
+        arcadia.Click(arcadia.ButtonWithTip(AppTexts.BackTip));
+        Assert.False(main.IsDetailOpen);
 
         // LB/RB, LT/RT, page numbers, tabs, "Ansicht", search and settings.
         arcadia.Click(arcadia.ButtonWithTip("Nächster Launcher"));

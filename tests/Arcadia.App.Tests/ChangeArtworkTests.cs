@@ -80,8 +80,9 @@ public sealed class ChangeArtworkTests
         Assert.Null(arcadia.Main.ChangeArtwork);
         Assert.NotNull(arcadia.Detail);
 
-        // The game menu in the library leads to the same modal; B closes it again.
-        arcadia.Press(UiAction.Back).Press(UiAction.Options);
+        // The game menu in the library leads to the same modal; B closes it again. B from the row back to the rail, B
+        // to the library.
+        arcadia.Press(UiAction.Back, times: 2).Press(UiAction.Options);
         var menu = arcadia.Main.GameMenu!;
         while (menu.Actions.Single(a => a.IsFocused).Kind != GameActionKind.Artwork)
         {
@@ -226,7 +227,7 @@ public sealed class ChangeArtworkTests
 
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.ChangeArtwork);
-        Assert.Equal(GameActionKind.Artwork, arcadia.Detail!.Current.FocusedKind);
+        Assert.Equal(GameActionKind.Artwork, arcadia.Detail!.Current.FocusedRow?.Kind);
 
         using var restarted = await arcadia.RestartAsync();
         await SettledAsync(restarted);
@@ -300,7 +301,7 @@ public sealed class ChangeArtworkTests
         Assert.Equal(1000, Shown(arcadia, "Alpha").Hero!.Size.Height);
         var replaced = new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(alpha.Key)!;
         Assert.True(replaced is { Cover.SetByHand: false, Hero: { Source: ArtworkSource.Launcher, SetByHand: false } });
-        arcadia.Press(UiAction.Back);
+        arcadia.Press(UiAction.Back, times: 2);
         while (arcadia.FocusedGame?.Title != "Alpha")
         {
             arcadia.Press(UiAction.Right);
@@ -320,12 +321,7 @@ public sealed class ChangeArtworkTests
 
     private static async Task<ChangeArtworkViewModel> OpenFromDetailPageAsync(ArcadiaDriver arcadia)
     {
-        var page = arcadia.Detail!.Current;
-        for (var step = 0; step < 6 && page.FocusedKind != GameActionKind.Artwork; step++)
-        {
-            arcadia.Press(UiAction.Right);
-        }
-
+        arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Artwork);
         arcadia.Press(UiAction.Accept);
         var modal = arcadia.Main.ChangeArtwork ?? throw new InvalidOperationException("Das Modal ist nicht offen.");
         await SettledAsync(arcadia, modal);

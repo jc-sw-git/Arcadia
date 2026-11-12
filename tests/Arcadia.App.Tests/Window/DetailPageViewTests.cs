@@ -5,7 +5,6 @@ using Arcadia.Core.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Arcadia.Launchers;
 using Avalonia;
-using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -14,58 +13,59 @@ using Avalonia.VisualTree;
 
 namespace Arcadia.App.Tests;
 
-/// <summary>The detail page (#11, #127) as drawn: path, carousel, its buttons and the key figures.</summary>
+/// <summary>
+/// The detail page (#11, #127, #499) as drawn: the button row on the artwork, the stacks of the carousel, the panel with
+/// the rail of areas, the rows and the info box.
+/// </summary>
 public sealed class DetailPageViewTests
 {
     private static readonly LauncherInfo Gog = KnownLaunchers.Gog;
 
     [AvaloniaFact]
     [Trait("TestCase", "T11-1")]
-    public async Task Holding_A_or_Details_in_the_menu_opens_the_page_with_its_path_position_neighbours_and_footer()
+    [Trait("TestCase", "T499-1")]
+    public async Task Holding_A_or_Details_in_the_menu_opens_the_page_with_its_buttons_rail_stacks_and_footer()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var main = arcadia.Arcadia.Main;
         arcadia.Press(UiAction.Right, times: 2);
-        var third = arcadia.Arcadia.FocusedGame!.Title;
+        var games = arcadia.Arcadia.PageGames.Select(tile => tile.Title).ToList();
 
         OpenByHoldingA(arcadia);
-        AssertDetailOf(arcadia, third);
-        Assert.Equal(["B", AppTexts.Library, "/", "GOG Galaxy", "/", third], Crumbs(arcadia));
+        AssertDetailOf(arcadia, games[2]);
         Assert.Single(arcadia.WithText("3 von 31"));
-        Assert.Single(arcadia.WithText(AppTexts.SortNameAscending));
 
-        // The game in the middle, its neighbours cut off at the window's edges and dimmed.
-        var pages = Pages(arcadia);
-        var centre = arcadia.Bounds(pages.Single(page => page.DataContext is GameDetailPageViewModel { IsCentre: true }));
-        Assert.Equal(ArcadiaWindow.Width / 2.0, centre.Center.X, tolerance: 2);
-        var left = arcadia.Bounds(pages.Single(page => page.DataContext is GameDetailPageViewModel { Offset: -1 }));
-        var right = arcadia.Bounds(pages.Single(page => page.DataContext is GameDetailPageViewModel { Offset: 1 }));
-        Assert.True(left.Left < 0 && left.Right > 0, $"Vorheriges Spiel {left} links angeschnitten");
-        Assert.True(right.Left < ArcadiaWindow.Width && right.Right > ArcadiaWindow.Width, $"Nächstes Spiel {right} rechts angeschnitten");
-        Assert.All(pages.Where(page => page.DataContext is GameDetailPageViewModel { IsSide: true }), page => Assert.True(page.Opacity < 1, "Nachbar abgedunkelt"));
+        // The button row on the artwork, "Spielen" focused; the rail with its three areas, "Übersicht" open with the
+        // game's figures and no info box.
+        Assert.Equal(["Spielen", AppTexts.ActionToFavorites, "In GOG Galaxy öffnen"], DetailButtons(arcadia).Select(Label));
+        Assert.Equal("Spielen", Label(Focused(arcadia)));
+        Assert.Equal([AppTexts.DetailAreaOverview, AppTexts.DetailAreaController, AppTexts.DetailAreaManage], RailButtons(arcadia).Select(RailName));
+        Assert.Contains("open", RailButtons(arcadia)[0].Classes);
+        Assert.Equal(4, Visible<Border>(arcadia, "detailStat").Count);
+        Assert.False(Part<Border>(arcadia, "InfoBox").IsEffectivelyVisible, "„Übersicht“ hat keine Infobox.");
 
-        Assert.Equal(["D-Pad Aktion wählen", "A Auswählen", "L3 Ansicht", "LB RB Launcher", "LT RT Spiel", "B Zurück"], arcadia.FooterHints());
+        // The stacks name the games before and after; the front cover stands beside the title, left of it.
+        Assert.Equal([games[1], games[3]], Stacks(arcadia).Select(stack => StackTitle(stack)));
+        var front = arcadia.Bounds(Cover(arcadia, offset: 0));
+        Assert.True(front.Right < arcadia.Bounds(Part<TextBlock>(arcadia, "Title")).Left, "Das Cover steht links vom Titel.");
+
+        Assert.Equal(["L3", "A Spielen", "▼ Bereiche", "LT RT Spiel", "LB RB Launcher", "B Zurück"], arcadia.FooterHints());
 
         // ⧉ → "Details anzeigen" opens the same page.
         arcadia.Press(UiAction.Back).Press(UiAction.Options).Press(UiAction.Down).Press(UiAction.Accept);
-        AssertDetailOf(arcadia, third);
+        AssertDetailOf(arcadia, games[2]);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T11-2")]
-    public async Task LT_and_RT_slide_the_pages_and_clicks_wheel_and_keys_turn_the_carousel_too()
+    [Trait("TestCase", "T499-23")]
+    public async Task LT_and_RT_turn_the_carousel_and_clicks_on_the_stacks_wheel_and_keys_turn_it_too()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var main = arcadia.Arcadia.Main;
         var games = arcadia.Arcadia.PageGames.Select(tile => tile.Title).ToList();
         OpenByHoldingA(arcadia);
 
-        // LT/RT slide the track to its new place. Only that a slide is set up is checked: headless, the transform's
-        // transition doesn't run on the render clock, so its direction and smoothness stay with the manual test.
         arcadia.Press(UiAction.NextPage);
         AssertDetailOf(arcadia, games[1]);
-        Assert.Contains(Track(arcadia).Transitions ?? [], transition =>
-            transition is DoubleTransition { Duration.TotalMilliseconds: > 0 } slide && slide.Property == TranslateTransform.XProperty);
         arcadia.Press(UiAction.PreviousPage);
         AssertDetailOf(arcadia, games[0]);
 
@@ -79,14 +79,10 @@ public sealed class DetailPageViewTests
         arcadia.Press(UiAction.NextPage, times: 3);
         AssertDetailOf(arcadia, games[3]);
 
-        // A click on a neighbour, on RT and LT at the edges.
-        arcadia.Click(NeighbourButton(arcadia, offset: 1));
+        // A click on a stack.
+        arcadia.Click(Stacks(arcadia)[1]);
         AssertDetailOf(arcadia, games[4]);
-        arcadia.Click(CarouselButton(arcadia, next: true));
-        AssertDetailOf(arcadia, games[5]);
-        arcadia.Click(CarouselButton(arcadia, next: false));
-        AssertDetailOf(arcadia, games[4]);
-        arcadia.Click(NeighbourButton(arcadia, offset: -1));
+        arcadia.Click(Stacks(arcadia)[0]);
         AssertDetailOf(arcadia, games[3]);
 
         // The wheel, one notch one game, down the next; Page Up/Down and Shift+arrows.
@@ -106,69 +102,65 @@ public sealed class DetailPageViewTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T11-6")]
-    public async Task A_click_on_the_path_goes_back_to_the_library_on_the_page_of_the_game_shown_last_with_the_focus_on_it()
+    [Trait("TestCase", "T499-23")]
+    [Trait("TestCase", "T499-16")]
+    public async Task A_click_opens_an_area_the_mouse_over_a_row_focuses_it_and_the_arrows_change_its_value()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync();
-        var main = arcadia.Arcadia.Main;
         OpenByHoldingA(arcadia);
+        var page = arcadia.Arcadia.Detail!.Current;
 
-        // Before the first stands the last game, on page 2 of GOG's 31.
-        arcadia.Press(UiAction.PreviousPage);
-        var last = arcadia.Arcadia.Detail!.Current.Tile.Title;
-        arcadia.Click(arcadia.OneWithText("Bibliothek"));
+        arcadia.Click(RailButtons(arcadia)[2]);
+        Assert.Equal(DetailAreaViewModel.ManageKey, page.OpenArea.Key);
+        Assert.True(Part<Border>(arcadia, "InfoBox").IsEffectivelyVisible);
 
-        Assert.False(main.IsDetailOpen);
-        Assert.Equal(last, arcadia.Arcadia.FocusedGame?.Title);
-        Assert.Equal(7, arcadia.Arcadia.PageGames.Count);
-        Assert.Equal(arcadia.Arcadia.PageGames[^1], arcadia.Arcadia.FocusedGame);
-        Assert.True(arcadia.Tile(arcadia.Arcadia.FocusedGame!).Classes.Contains("focused"), "Die Kachel zeigt den Fokus.");
+        arcadia.Click(RailButtons(arcadia)[1]);
+        Assert.Equal(DetailAreaViewModel.ControllerKey, page.OpenArea.Key);
+        var rows = Rows(arcadia);
+        Assert.Equal([AppTexts.DetailControllerModeTitle, AppTexts.DetailMouseModeTitle], rows.Select(RowTitle));
+
+        // The mouse over the second row: focused, and the info box explains it.
+        arcadia.MouseMove(arcadia.CentreOf(rows[1]));
+        Assert.Equal(GameActionKind.MouseMode, page.FocusedRow?.Kind);
+        Assert.Single(arcadia.WithText(AppTexts.DetailMouseModeInfo));
+        arcadia.MouseMove(arcadia.CentreOf(rows[0]));
+        Assert.Equal(GameActionKind.ControllerMode, page.FocusedRow?.Kind);
+        Assert.Single(arcadia.WithText(AppTexts.DetailControllerModeInfo));
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T11-7")]
-    public async Task The_buttons_stand_in_rows_inside_the_card_the_D_pad_skips_disabled_ones_and_shows_the_hint_below()
+    [Trait("TestCase", "T499-23")]
+    [Trait("TestCase", "T499-8")]
+    public async Task The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
-        [
-            LauncherSpec.With(Gog, TestGames.Installed(Gog, "Alpha Strike", ArcadiaDriver.Now.AddDays(-3)) with
-            {
-                OpenInLauncher = new LaunchTarget.ProtocolUri("goggalaxy://openGameView/1"),
-            }),
-        ]);
+            [new(KnownLaunchers.Steam, 3), new(Gog, 3)], new Core.Settings.AppSettings { ActiveLaunchers = ["steam", "gog"], PanEnabled = true });
+        arcadia.Arcadia.Sdl.Plug(Arcadia.Tests.Sdl.KnownPads.SteamController);
+        arcadia.Arcadia.StartControllers();
+        await arcadia.Arcadia.TickSteamControllerAsync();
+        arcadia.Settle();
         OpenByHoldingA(arcadia);
-        var page = CentrePage(arcadia);
-        var buttons = DetailButtons(page);
+        arcadia.Click(RailButtons(arcadia)[1]);
+        var page = arcadia.Arcadia.Detail!.Current;
+        var mode = page.Row(GameActionKind.ControllerMode);
+        Assert.False(mode.IsGreyed);
+        var arrows = Rows(arcadia)[0].GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("rowArrow")).ToList();
+        Assert.Equal(2, arrows.Count);
 
-        Assert.Equal(["Spielen", AppTexts.ActionToFavorites, "In GOG Galaxy öffnen", AppTexts.ActionChangeArtwork, AppTexts.ActionUninstallMore], buttons.Select(Label));
-        Assert.Equal([true, false, true, true, true], buttons.Select(button => button.IsEffectivelyEnabled));
-        Assert.True(buttons[0].Classes.Contains("focused"), "„Spielen“ ist fokussiert.");
+        arcadia.Click(arrows[1]);
+        Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
+        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Arcadia), page.OpenArea.ValueLine);
+        Assert.Single(arcadia.WithText(AppTexts.DetailControllerLine(ControllerModes.Arcadia)), text => text.Classes.Contains("railValue"));
 
-        // The first four in one row, "Deinstallieren …" alone below them, red; all inside the card.
-        var rows = buttons.Select(button => arcadia.Bounds(button).Center.Y).ToList();
-        Assert.All(rows.Take(4), row => Assert.Equal(rows[0], row, tolerance: 4));
-        Assert.True(arcadia.Bounds(buttons[4]).Top > arcadia.Bounds(buttons[0]).Bottom, "„Deinstallieren …“ steht in einer eigenen Reihe darunter.");
-        Assert.Equal(ArcadiaWindow.ThemeResource<ISolidColorBrush>("Danger").Color, (buttons[4].Foreground as ISolidColorBrush)?.Color);
-        var card = arcadia.Bounds(Card(page));
-        Assert.All(buttons, button => Assert.True(card.Contains(arcadia.Bounds(button)), $"{Label(button)} ragt aus der Karte."));
-
-        // The D-pad skips the disabled buttons. Since the owner's change of 2026-10-21 only "Spielen" has a line below
-        // the rows; a disabled button says why in its tooltip.
-        arcadia.Press(UiAction.Right);
-        Assert.Equal("In GOG Galaxy öffnen", Label(Focused(arcadia)));
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(AppTexts.ActionUninstallMore, Label(Focused(arcadia)));
-        Assert.Equal(AppTexts.ActionNotYetAvailable, ToolTip.GetTip(buttons[1]));
-        Assert.Empty(arcadia.WithText("Nur in GOG Galaxy möglich – öffnet GOG Galaxy"));
-
-        // ⧉ opens no menu here.
-        arcadia.Press(UiAction.Options);
-        Assert.False(arcadia.Arcadia.Main.IsGameMenuOpen);
+        arcadia.Click(arrows[0]).Click(arrows[0]);
+        Assert.Equal(ControllerModes.Steam, mode.ValueText);
+        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Steam), page.OpenArea.ValueLine);
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T127-1")]
-    public async Task The_focus_ring_touches_no_neighbour_and_the_key_figures_show_whole_also_with_an_update_note()
+    [Trait("TestCase", "T499-2")]
+    [Trait("TestCase", "T499-3")]
+    public async Task The_buttons_stand_in_one_row_on_the_artwork_the_D_pad_skips_a_disabled_one_and_its_tooltip_says_why()
     {
         using var arcadia = await ArcadiaWindow.ShowAsync(
         [
@@ -176,53 +168,104 @@ public sealed class DetailPageViewTests
             {
                 UpdateAvailable = true,
                 OpenInLauncher = new LaunchTarget.ProtocolUri("goggalaxy://openGameView/1"),
+            }),
+        ]);
+        OpenByHoldingA(arcadia);
+        var buttons = DetailButtons(arcadia);
+
+        Assert.Equal(["Spielen", AppTexts.ActionToFavorites, "In GOG Galaxy öffnen"], buttons.Select(Label));
+        Assert.Equal([true, false, true], buttons.Select(button => button.IsEffectivelyEnabled));
+        var centres = buttons.Select(button => arcadia.Bounds(button).Center.Y).ToList();
+        Assert.All(centres, centre => Assert.Equal(centres[0], centre, tolerance: 4));
+        Assert.All(buttons, button => Assert.True(arcadia.Bounds(button).Bottom < arcadia.Bounds(Part<Border>(arcadia, "Panel")).Top, $"{Label(button)} reicht in das Panel."));
+
+        // The quiet note beside them: no surface; the focus never lands on it.
+        Assert.Single(arcadia.WithText(AppTexts.DetailUpdateAvailable));
+        Assert.Single(arcadia.WithText("GOG Galaxy installiert es eventuell vor dem Start."));
+        Assert.True(arcadia.Bounds(Part<StackPanel>(arcadia, "Note")).Left > arcadia.Bounds(buttons[^1]).Right, "Der Hinweis steht rechts neben den Knöpfen.");
+
+        arcadia.Press(UiAction.Right);
+        Assert.Equal("In GOG Galaxy öffnen", Label(Focused(arcadia)));
+        arcadia.Press(UiAction.Right);
+        Assert.Equal("Spielen", Label(Focused(arcadia)));
+        Assert.Equal(AppTexts.ActionNotYetAvailable, ToolTip.GetTip(buttons[1]));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T127-1")]
+    [Trait("TestCase", "T499-25")]
+    public async Task The_focus_ring_shows_whole_on_buttons_areas_and_rows_and_there_is_only_one()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync(
+        [
+            LauncherSpec.With(Gog, TestGames.Installed(Gog, "Alpha Strike", ArcadiaDriver.Now.AddDays(-3)) with
+            {
+                OpenInLauncher = new LaunchTarget.ProtocolUri("goggalaxy://openGameView/1"),
                 Uninstall = new LaunchTarget.ProtocolUri("goggalaxy://uninstall/1"),
             }),
         ]);
         OpenByHoldingA(arcadia);
-        var page = CentrePage(arcadia);
-        var buttons = DetailButtons(page).Where(button => button.IsEffectivelyEnabled).ToList();
-        var others = DetailButtons(page);
 
-        foreach (var move in new[] { UiAction.Right, UiAction.Down, UiAction.Up })
+        AssertOneRing(arcadia, Focused(arcadia), "„Spielen“", "FocusRingGap");
+        arcadia.Press(UiAction.Left);
+        AssertOneRing(arcadia, Focused(arcadia), "letzter Knopf", "FocusRingGap");
+
+        arcadia.Press(UiAction.Down);
+        AssertOneRing(arcadia, RailButtons(arcadia)[0], "„Übersicht“", "FocusRing");
+        arcadia.Press(UiAction.Down, times: 2);
+        AssertOneRing(arcadia, RailButtons(arcadia)[^1], "„Verwalten“", "FocusRing");
+
+        // The rows of "Controller", then of "Verwalten": the first, and ▲ round to the last.
+        arcadia.Press(UiAction.Up);
+        foreach (var area in new[] { AppTexts.DetailAreaController, AppTexts.DetailAreaManage })
         {
-            var focused = Focused(arcadia);
-            arcadia.AssertRingAround(focused, Label(focused), "FocusRingGap");
-            var ring = arcadia.Bounds(focused).Inflate(7 * arcadia.ScaleOf(focused));
-            Assert.All(others.Where(other => other != focused), other =>
-                Assert.False(ring.Intersects(arcadia.Bounds(other)), $"Fokusrahmen von {Label(focused)} berührt {Label(other)}"));
-            arcadia.Press(move);
+            arcadia.Press(UiAction.Accept);
+            AssertOneRing(arcadia, Rows(arcadia)[0], $"erste Zeile in „{area}“", "FocusRing");
+            arcadia.Press(UiAction.Up);
+            AssertOneRing(arcadia, Rows(arcadia)[^1], $"letzte Zeile in „{area}“", "FocusRing");
+            arcadia.Press(UiAction.Back).Press(UiAction.Down);
         }
+    }
 
-        Assert.Equal(4, buttons.Count);
-        Assert.Single(arcadia.WithText("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet."));
-        var card = arcadia.Bounds(Card(page));
-        var stats = page.GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("detailStat")).ToList();
-        Assert.Equal(4, stats.Count);
-        Assert.All(stats, stat => Assert.True(card.Contains(arcadia.Bounds(stat)), $"Kennzahl {arcadia.Bounds(stat)} nicht ganz in der Karte {card}"));
-        var note = arcadia.Bounds(arcadia.OneWithText("GOG Galaxy installiert das Update eventuell, bevor das Spiel startet."));
-        Assert.All(stats, stat => Assert.True(arcadia.Bounds(stat).Top >= note.Bottom, "Kennzahlen unter der Hinweiszeile"));
+    [AvaloniaFact]
+    [Trait("TestCase", "T499-17")]
+    public async Task The_rows_keep_their_width_whatever_the_info_box_shows()
+    {
+        using var arcadia = await ArcadiaWindow.ShowAsync();
+        OpenByHoldingA(arcadia);
+        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Accept);
+        var widths = new List<double> { arcadia.Bounds(Rows(arcadia)[0]).Width };
+        var box = arcadia.Bounds(Part<Border>(arcadia, "InfoBox"));
+        arcadia.Press(UiAction.Down);
+        widths.Add(arcadia.Bounds(Rows(arcadia)[0]).Width);
+        arcadia.Press(UiAction.Back).Press(UiAction.Up).Press(UiAction.Accept);
+        widths.Add(arcadia.Bounds(Rows(arcadia)[0]).Width);
+
+        Assert.All(widths, width => Assert.Equal(widths[0], width, tolerance: 0.5));
+        Assert.Equal(box.Width, arcadia.Bounds(Part<Border>(arcadia, "InfoBox")).Width, tolerance: 0.5);
+        Assert.True(arcadia.Bounds(Part<Border>(arcadia, "Panel")).Contains(arcadia.Bounds(Part<Border>(arcadia, "InfoBox"))), "Die Infobox ragt aus dem Panel.");
     }
 
     [AvaloniaTheory]
     [Trait("TestCase", "T127-10")]
-    [InlineData("Burning Kingdom")]
-    [InlineData("Burning Kingdom of the Gloomy Jagged Pyramids")]
-    public async Task A_title_with_descenders_shows_whole_also_on_two_lines(string title)
+    [Trait("TestCase", "T499-26")]
+    [InlineData("Burning Kingdom", false)]
+    [InlineData("Burning Kingdom of the Gloomy Jagged Pyramids and the Forty Seven Sunken Lighthouses of Yonder", true)]
+    public async Task A_long_title_takes_two_lines_then_ends_with_dots_and_pushes_the_buttons_not_into_the_panel(string title, bool trimmed)
     {
         using var arcadia = await ArcadiaWindow.ShowAsync([LauncherSpec.With(Gog, TestGames.Installed(Gog, title, ArcadiaDriver.Now.AddDays(-3)))]);
         OpenByHoldingA(arcadia);
-        var page = CentrePage(arcadia);
-        var heading = page.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Text == title && text.FontSize >= 60);
+        var heading = Part<TextBlock>(arcadia, "Title");
 
-        Assert.False(heading.TextLayout.TextLines.Any(line => line.HasCollapsed), "Titel gekürzt");
+        Assert.Equal(trimmed, heading.TextLayout.TextLines.Any(line => line.HasCollapsed));
         Assert.True(heading.TextLayout.TextLines.Count <= 2);
-
-        // Nothing of the title is cut off by the clipping hero above the buttons.
         var drawn = arcadia.Bounds(heading);
-        var hero = heading.GetVisualAncestors().OfType<Panel>().First(panel => panel.ClipToBounds);
-        Assert.True(arcadia.Bounds(hero).Contains(drawn), $"Titel {drawn} reicht aus dem Bild {arcadia.Bounds(hero)}");
         Assert.True(drawn.Height >= heading.TextLayout.Height - 0.5, "Titel kleiner gezeichnet, als sein Text braucht");
+        // A line lower than the font's own spacing cuts the descenders (g, y) off.
+        Assert.All(heading.TextLayout.TextLines, line => Assert.True(line.Height >= heading.FontSize * 1.15, $"Zeile {line.Height} hoch, Unterlängen abgeschnitten"));
+        var panel = arcadia.Bounds(Part<Border>(arcadia, "Panel"));
+        Assert.All(DetailButtons(arcadia), button => Assert.True(arcadia.Bounds(button).Bottom + (7 * arcadia.ScaleOf(button)) <= panel.Top,
+            $"{Label(button)} samt Fokusrahmen reicht in das Panel."));
     }
 
     private static void OpenByHoldingA(ArcadiaWindow arcadia)
@@ -235,54 +278,45 @@ public sealed class DetailPageViewTests
     private static void AssertDetailOf(ArcadiaWindow arcadia, string title)
     {
         Assert.Equal(title, arcadia.Arcadia.Detail?.Current.Tile.Title);
-        Assert.Contains(CentrePage(arcadia).GetVisualDescendants().OfType<TextBlock>(), text => text.Text == title && text.FontSize >= 60);
+        Assert.Equal(title, Part<TextBlock>(arcadia, "Title").Text);
     }
 
-    private static List<string?> Crumbs(ArcadiaWindow arcadia)
+    /// <summary>The ring around <paramref name="control"/> drawn whole, and no other control of the page shows one.</summary>
+    private static void AssertOneRing(ArcadiaWindow arcadia, Control control, string where, string ring)
     {
-        var crumb = arcadia.OneWithText("Bibliothek").GetVisualAncestors().OfType<Button>().First();
-        return crumb.GetVisualDescendants()
-            .Select(visual => visual switch
-            {
-                Border { Child: TextBlock glyph } border when border.Classes.Contains("glyph") => glyph.Text,
-                TextBlock { Parent: not Border } text when text.IsEffectivelyVisible => text.Text,
-                _ => null,
-            })
-            .Where(text => text is not null)
-            .ToList();
+        arcadia.AssertRingAround(control, where, ring);
+        var focused = DetailButtons(arcadia).Concat(RailButtons(arcadia)).Concat(Rows(arcadia)).Where(button => button.Classes.Contains("focused")).ToList();
+        Assert.Equal([control], focused);
     }
 
-    private static TranslateTransform Track(ArcadiaWindow arcadia) =>
-        (TranslateTransform)arcadia.Window.GetVisualDescendants().OfType<Panel>().Single(panel => panel.Name == "Track").RenderTransform!;
+    /// <summary>A named part of the page; the view has its own name scope, so the window's lookup doesn't find it.</summary>
+    private static T Part<T>(ArcadiaWindow arcadia, string name)
+        where T : Control => arcadia.Window.GetVisualDescendants().OfType<GameDetailView>().Single().GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
 
-    private static List<Control> Pages(ArcadiaWindow arcadia) => arcadia.Window.GetVisualDescendants()
-        .OfType<Panel>()
-        .Where(panel => panel.Classes.Contains("detailPage") && panel.IsEffectivelyVisible)
-        .Cast<Control>()
+    private static List<T> Visible<T>(ArcadiaWindow arcadia, string style)
+        where T : Control => arcadia.Window.GetVisualDescendants().OfType<T>()
+        .Where(control => control.Classes.Contains(style) && control.IsEffectivelyVisible)
         .ToList();
 
-    private static Control CentrePage(ArcadiaWindow arcadia) =>
-        Pages(arcadia).Single(page => page.DataContext is GameDetailPageViewModel { IsCentre: true });
+    private static List<Button> DetailButtons(ArcadiaWindow arcadia) => Visible<Button>(arcadia, "detailAction");
 
-    private static Border Card(Control page) => page.GetVisualChildren().OfType<Border>().First();
+    private static List<Button> RailButtons(ArcadiaWindow arcadia) => Visible<Button>(arcadia, "detailRail");
 
-    private static Button NeighbourButton(ArcadiaWindow arcadia, int offset) =>
-        Pages(arcadia).Single(page => page.DataContext is GameDetailPageViewModel side && side.Offset == offset)
-            .GetVisualChildren().OfType<Button>().Single();
+    private static List<Button> Rows(ArcadiaWindow arcadia) => Visible<Button>(arcadia, "detailRow");
 
-    /// <summary>RT at the right edge or LT at the left; after a click they name the keys E and Q.</summary>
-    private static Button CarouselButton(ArcadiaWindow arcadia, bool next) => arcadia.Window.GetVisualDescendants()
-        .OfType<Button>()
-        .Single(button => button.Classes.Contains("carouselNav") && button.IsEffectivelyVisible
-            && button.HorizontalAlignment == (next ? Avalonia.Layout.HorizontalAlignment.Right : Avalonia.Layout.HorizontalAlignment.Left));
+    /// <summary>The left stack, then the right one.</summary>
+    private static List<Button> Stacks(ArcadiaWindow arcadia) => [.. Visible<Button>(arcadia, "detailStack").OrderBy(stack => arcadia.Bounds(stack).Left)];
 
-    private static List<Button> DetailButtons(Control page) => page.GetVisualDescendants()
-        .OfType<Button>()
-        .Where(button => button.Classes.Contains("detailAction") && button.IsEffectivelyVisible)
-        .ToList();
+    private static Control Cover(ArcadiaWindow arcadia, int offset) => arcadia.Window.GetVisualDescendants().OfType<Controls.DepthSlot>()
+        .Single(slot => slot.DataContext is DetailCoverViewModel { Offset: var at } && at == offset);
 
-    private static Button Focused(ArcadiaWindow arcadia) => Assert.Single(DetailButtons(CentrePage(arcadia)), button => button.Classes.Contains("focused"));
+    private static Button Focused(ArcadiaWindow arcadia) => Assert.Single(DetailButtons(arcadia), button => button.Classes.Contains("focused"));
 
-    private static string Label(Button button) => button.GetVisualDescendants().OfType<TextBlock>()
-        .Last(text => text.IsEffectivelyVisible && text.Parent is StackPanel { Orientation: Avalonia.Layout.Orientation.Vertical }).Text ?? string.Empty;
+    private static string Label(Button button) => button.GetVisualDescendants().OfType<TextBlock>().Last(text => text.IsEffectivelyVisible).Text ?? string.Empty;
+
+    private static string RailName(Button button) => button.GetVisualDescendants().OfType<TextBlock>().First().Text ?? string.Empty;
+
+    private static string RowTitle(Button button) => button.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Classes.Contains("rowTitle")).Text ?? string.Empty;
+
+    private static string? StackTitle(Button stack) => stack.GetVisualDescendants().OfType<TextBlock>().First(text => text.FontSize >= 18).Text;
 }

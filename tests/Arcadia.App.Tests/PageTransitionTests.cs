@@ -443,5 +443,5 @@ public sealed class PageTransitionTests
     private static void Remove(List<Game> games, string title) => Assert.Equal(1, games.RemoveAll(game => game.Title == title));
 
     /// <summary>The title shown beside the middle: -1 left, 1 right.</summary>
-    private static string Side(GameDetailViewModel detail, int offset) => detail.Pages.Single(page => page.Offset == offset).Tile.Title;
+    private static string Side(GameDetailViewModel detail, int offset) => (offset < 0 ? detail.Previous : detail.Next)!.Title;
 }

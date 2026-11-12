@@ -59,12 +59,6 @@
     <!-- Backdrop behind dialogs, and the shade over covers of games that aren't installed. -->
     <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
-    <!-- Over a game's background on the detail page (#487): clear at the top, dark behind the name and the chips. -->
-    <LinearGradientBrush x:Key="HeroScrim" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#00121820" />
-      <GradientStop Offset="0.45" Color="#33121820" />
-      <GradientStop Offset="1" Color="#E6121820" />
-    </LinearGradientBrush>
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
 
     <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
@@ -98,11 +92,31 @@
       <GradientStop Offset="1" Color="#00000000" />
     </GradientStops>
 
-    <!-- Detail page. -->
-    <SolidColorBrush x:Key="DetailSurface" Color="#121820" />
+    <!-- Detail page (#499): the panel with rail and rows lies semi-transparent on the game's artwork; the scrims keep the
+         text on the artwork readable over a bright and a dark image. -->
+    <SolidColorBrush x:Key="DetailSurface" Color="#F2121820" />
+    <Color x:Key="DetailInfoBoxColor">#0F141A</Color>
     <SolidColorBrush x:Key="DetailChip" Color="#1FF2F5F8" />
     <SolidColorBrush x:Key="DetailAction" Color="#1AF2F5F8" />
     <SolidColorBrush x:Key="DetailActionHover" Color="#2EF2F5F8" />
+    <!-- The buttons beside "Spielen" stand on the artwork: darker, so they read over a bright image. -->
+    <SolidColorBrush x:Key="DetailActionOnArt" Color="#990B0F14" />
+    <SolidColorBrush x:Key="DetailActionOnArtHover" Color="#CC1E2630" />
+    <SolidColorBrush x:Key="DetailRailIconOpen" Color="#1F3A5C" />
+    <LinearGradientBrush x:Key="DetailScrimSide" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Offset="0" Color="#D10B0F14" />
+      <GradientStop Offset="0.45" Color="#800B0F14" />
+      <GradientStop Offset="1" Color="#260B0F14" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="DetailScrimTop" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#E60B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="DetailScrimBottom" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="#FF0B0F14" />
+      <GradientStop Offset="0.25" Color="#FF0B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </LinearGradientBrush>
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
@@ -421,11 +435,6 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
-  </Style>
-
-  <Style Selector="Border.heroScrim">
-    <Setter Property="Background" Value="{StaticResource HeroScrim}" />
-    <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
 
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->
@@ -841,65 +850,42 @@
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
-  <!-- Buttons on the detail page; the second row is smaller. -->
+  <!-- Buttons on the detail page (#499): "Spielen" and the buttons beside it on the artwork. -->
   <Style Selector="Button.detailAction">
-    <Setter Property="Height" Value="56" />
-    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="30" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.detailAction:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailActionHover}" />
-  </Style>
-  <Style Selector=".smallActions Button.detailAction">
-    <Setter Property="Height" Value="48" />
-    <Setter Property="CornerRadius" Value="24" />
-    <Setter Property="Padding" Value="18,0" />
-    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Background" Value="{StaticResource DetailActionOnArtHover}" />
   </Style>
   <Style Selector="Button.detailAction.primary">
-    <Setter Property="Height" Value="60" />
-    <Setter Property="CornerRadius" Value="30" />
-    <Setter Property="Padding" Value="18,0,32,0" />
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="32" />
+    <Setter Property="Padding" Value="18,0,34,0" />
     <Setter Property="Background" Value="{StaticResource Accent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="ExtraBold" />
   </Style>
   <Style Selector="Button.detailAction.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource AccentHover}" />
   </Style>
-  <Style Selector="Button.detailAction.danger">
-    <Setter Property="Foreground" Value="{StaticResource Danger}" />
-  </Style>
   <Style Selector="Button.detailAction:disabled">
-    <Setter Property="Background" Value="{StaticResource DetailAction}" />
-    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-  </Style>
-  <!-- The Steam Controller mode while Pan's emulation doesn't run (#242): greyed out like a disabled one, but focusable. -->
-  <Style Selector="Button.detailAction.broken">
+    <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
   <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
   </Style>
-  <Style Selector="Button.detailAction TextBlock.caption">
-    <Setter Property="FontSize" Value="12" />
-    <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="LetterSpacing" Value="1.2" />
-    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-  </Style>
   <Style Selector="Border.detailChip">
     <Setter Property="Background" Value="{StaticResource DetailChip}" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="8,6,14,6" />
-  </Style>
-  <Style Selector="Border.detailChip.update">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
-    <Setter Property="Padding" Value="10,6,14,6" />
   </Style>
   <Style Selector="Border.detailChip.running">
     <Setter Property="Background" Value="{StaticResource Running}" />
@@ -910,6 +896,119 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="24,20" />
   </Style>
+  <!-- The quiet note beside the buttons: text with an icon, no surface, no border, never focused. -->
+  <Style Selector="Path.detailNoteIcon">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2.2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- The rail of areas: each with its icon, name and value line; the open one lighter, the focused one ringed. -->
+  <Style Selector="Button.detailRail">
+    <Setter Property="MinHeight" Value="62" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.detailRail:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.detailRail.open">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.detailRail.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.railIcon">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Button.detailRail.open Border.railIcon">
+    <Setter Property="Background" Value="{StaticResource DetailRailIconOpen}" />
+  </Style>
+  <Style Selector="Border.railIcon Path">
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.detailRail.open Border.railIcon Path">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="TextBlock.railValue">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Button.detailRail.open TextBlock.railValue">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- An area's rows (pattern "Leiste" like the settings): a greyed row keeps the focus but reads as off. -->
+  <Style Selector="Button.detailRow">
+    <Setter Property="MinHeight" Value="72" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20,10" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.detailRow.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.detailRow.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="TextBlock.rowTitle">
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Button.detailRow.danger TextBlock.rowTitle">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="TextBlock.rowSubtitle">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.rowValue">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.rowArrow">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Padding" Value="6,4" />
+  </Style>
+  <Style Selector="Button.detailRow.greyed TextBlock.rowTitle">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.detailRow.greyed TextBlock.rowValue">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.detailRow.greyed TextBlock.rowSubtitle">
+    <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
+  </Style>
+  <Style Selector="Button.detailRow.greyed Button.rowArrow">
+    <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
+  </Style>
+  <Style Selector="Border.detailInfoBox">
+    <Setter Property="Width" Value="336" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+
   <!-- The edge fade's defaults (#237); each place sets only what differs. Click-through: clicks and the wheel reach the
        content under it. -->
   <Style Selector="ctl|EdgeFade">
@@ -920,20 +1019,7 @@
     <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
 
-  <!-- The detail carousel's neighbours are dimmed as a whole, so the fade at the window's edge needs no step. The dimming
-       changes while the carousel slides (as long as GameDetailView.SlideTime). -->
-  <Style Selector="Panel.detailPage">
-    <Setter Property="Transitions">
-      <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.34" Easing="CubicEaseOut" />
-      </Transitions>
-    </Setter>
-  </Style>
-  <Style Selector="Panel.detailPage.side">
-    <Setter Property="Opacity" Value="0.5" />
-  </Style>
-
-  <!-- LT/RT beside the detail carousel. -->
+  <!-- LT/RT beside the search's hits. -->
   <Style Selector="Button.carouselNav">
     <Setter Property="Height" Value="48" />
     <Setter Property="MinWidth" Value="64" />

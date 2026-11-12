@@ -66,12 +66,15 @@ public sealed class ArtworkViewTests : IDisposable
 
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         window.Settle().WaitForTransitions();
-        var detail = await DecodedAsync(window, expected: 2);
+        // The front cover filling its 180 × 270, the background filling the page (or at the image's own size, never more),
+        // the covers of the stacks as their turn into the depth draws them; nothing of the library's games behind it.
+        var detail = await DecodedAsync(window, expected: 8);
         var shownDetail = arcadia.Detail!.Current.Tile.Game.Key;
-        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Cover && Fills(d.Size, 210, 315) && d.File.GameKey == shownDetail);
-        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Hero && Fills(d.Size, 1152, 372) && d.File.GameKey == shownDetail);
-        // The carousel's pages beside it are ready for the next turn; nothing of the library's games behind it.
-        var carousel = arcadia.Detail.Pages.Select(page => page.Tile.Game.Key).ToHashSet();
+        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Cover && Fills(d.Size, 180, 270) && d.File.GameKey == shownDetail);
+        Assert.Contains(detail, d => d.File.Kind == ArtworkKind.Hero && d.File.GameKey == shownDetail
+            && (Fills(d.Size, 1920, 1080) || (d.Size.Width == d.File.Size.Width && d.Size.Height == d.File.Size.Height)));
+        Assert.DoesNotContain(detail, d => d.File.Kind == ArtworkKind.Hero && d.File.GameKey != shownDetail);
+        var carousel = arcadia.Detail.Covers.Select(cover => cover.Tile.Game.Key).ToHashSet();
         Assert.All(detail, d => Assert.Contains(d.File.GameKey, carousel));
 
         window.Press(UiAction.Back).Press(UiAction.Search).Type("Spiel 07").Settle();

@@ -85,7 +85,8 @@ public sealed class ArtworkWindowTests : IDisposable
 
         window.AssertRingAround(tile, "Cover mit Bild", ring: "FocusRingLifted");
 
-        // The background on the detail page: blue up to its left and right edges, no red band, no bar above.
+        // The background on the detail page fills the screen under the side scrim: blue up to its left and right edges,
+        // no red band. Looked at above the stacks and below the top scrim.
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         window.Settle().WaitForTransitions();
         await WaitShowingAsync(window);
@@ -93,10 +94,10 @@ public sealed class ArtworkWindowTests : IDisposable
         using (var frame = window.Capture())
         {
             var bounds = window.Bounds(hero);
-            // Inside the card's rounded corners (20): the red bands would reach well past them.
-            foreach (var point in new[] { new Point(bounds.Left + 24, bounds.Top + 24), new Point(bounds.Right - 25, bounds.Top + 24), new Point(bounds.Center.X, bounds.Top + 1) })
+            var y = bounds.Top + (bounds.Height * 0.3);
+            foreach (var point in new[] { new Point(bounds.Left + 2, y), new Point(bounds.Right - 2, y) })
             {
-                AssertColour(frame.At(point), blue, $"Hintergrund bei {point}");
+                AssertColour(frame.At(point), UnderSideScrim(blue, (point.X - bounds.Left) / bounds.Width), $"Hintergrund bei {point}");
             }
         }
     }
@@ -332,15 +333,19 @@ public sealed class ArtworkWindowTests : IDisposable
         foreach (var image in shown)
         {
             var bounds = window.Bounds(image);
-            // The top band: below it lie the detail page's name and the scrim; tiles and the preview are one colour.
-            var point = new Point(bounds.Center.X, bounds.Top + Math.Min(12, bounds.Height / 4));
+            // Tiles and the preview are one colour: their top band. The detail page's background lies under the side
+            // scrim and, at the top, the header's: its right edge above the stack.
+            var isBackground = image.Name == "HeroArt";
+            var point = isBackground
+                ? new Point(bounds.Right - 2, bounds.Top + (bounds.Height * 0.3))
+                : new Point(bounds.Center.X, bounds.Top + Math.Min(12, bounds.Height / 4));
             if (IsCovered(window, image, point))
             {
                 // Under another page, e.g. the library's preview under the search.
                 continue;
             }
 
-            var own = colours[image.File!.GameKey];
+            var own = isBackground ? UnderSideScrim(colours[image.File!.GameKey], (point.X - bounds.Left) / bounds.Width) : colours[image.File!.GameKey];
             var drawn = frame.At(point);
             Assert.True(ArcadiaWindow.Distance(drawn, own) <= 12, $"{where}: {image.Name} von {image.File.GameKey} zeigt {drawn} statt {own}.");
         }
@@ -366,6 +371,18 @@ public sealed class ArtworkWindowTests : IDisposable
     private static ArtworkImage ArtOf(Control tile) => tile.GetVisualDescendants().OfType<ArtworkImage>().Single();
 
     private static TextBlock Monogram(Control tile) => tile.GetVisualDescendants().OfType<TextBlock>().First(text => text.FontSize == 56);
+
+    /// <summary>What <paramref name="own"/> looks like under the detail page's side scrim at <paramref name="fraction"/> of its width.</summary>
+    private static Color UnderSideScrim(Color own, double fraction)
+    {
+        var stops = ArcadiaWindow.ThemeResource<LinearGradientBrush>("DetailScrimSide").GradientStops.OrderBy(stop => stop.Offset).ToList();
+        var before = stops.Last(stop => stop.Offset <= fraction);
+        var after = stops.First(stop => stop.Offset >= fraction);
+        var t = after.Offset > before.Offset ? (fraction - before.Offset) / (after.Offset - before.Offset) : 0;
+        var alpha = (before.Color.A + ((after.Color.A - before.Color.A) * t)) / 255;
+        byte Over(byte image, byte scrim) => (byte)Math.Round((image * (1 - alpha)) + (scrim * alpha));
+        return Color.FromRgb(Over(own.R, after.Color.R), Over(own.G, after.Color.G), Over(own.B, after.Color.B));
+    }
 
     private static Color ColourOf(int i) => Color.FromRgb((byte)(30 + (i * 37 % 190)), (byte)(30 + (i * 71 % 190)), (byte)(30 + (i * 113 % 190)));
 

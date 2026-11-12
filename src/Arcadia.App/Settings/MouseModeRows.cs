@@ -1,3 +1,4 @@
+using Arcadia.App.ViewModels;
 using Arcadia.App.Services;
 using Arcadia.Core.Settings;
 
@@ -265,10 +266,5 @@ public static class GameMouseModes
     };
 
     /// <summary>Standard → Erlaubt → Deaktiviert → Standard.</summary>
-    public static bool? Next(bool? choice) => choice switch
-    {
-        null => true,
-        true => false,
-        false => null,
-    };
+    public static bool? Next(bool? choice) => ThreeWayChoice.Step(choice, 1);
 }

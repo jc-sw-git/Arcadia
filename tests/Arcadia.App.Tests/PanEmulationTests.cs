@@ -437,14 +437,13 @@ public sealed class PanEmulationTests
 
         arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
         var detail = arcadia.Detail!;
-        var mode = detail.Current.GameSettingsRow.Single(action => action.Kind == GameActionKind.ControllerMode);
-        Assert.True(mode.IsBroken);
-        Assert.Equal(ControllerModes.Steam, mode.ButtonLabel);
-        Assert.Equal(ControllerModes.PanNotRunning, mode.DisabledReason);
+        var mode = detail.Current.Row(GameActionKind.ControllerMode);
+        Assert.True(mode.IsGreyed);
+        Assert.Equal(ControllerModes.Steam, mode.ValueText);
+        Assert.Equal(ControllerModes.PanNotRunning, mode.Note);
 
         // Greyed out, yet the focus goes there and A works.
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(GameActionKind.ControllerMode, detail.Current.FocusedKind);
+        Assert.Same(mode, arcadia.FocusDetailRow(DetailAreaViewModel.ControllerKey, GameActionKind.ControllerMode));
         arcadia.Press(UiAction.Accept);
         var controller = Assert.IsType<ControllerSettingsViewModel>(arcadia.Main.Settings?.Selected);
         Assert.Equal("pan:start-failed", controller.Rows.Single(row => row.IsFocused).Key);

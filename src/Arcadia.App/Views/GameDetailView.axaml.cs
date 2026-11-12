@@ -136,6 +136,10 @@ public partial class GameDetailView : UserControl
         {
             FollowInfoRow();
         }
+        else if (e.PropertyName == nameof(GameDetailPageViewModel.Zone))
+        {
+            UpdateInfoOverflow();
+        }
     }
 
     private void OnInfoRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -194,12 +198,12 @@ public partial class GameDetailView : UserControl
         InfoScroller.Offset = new Vector(0, Math.Clamp(InfoScroller.Offset.Y + (direction * InfoScrollStep), 0, max));
     }
 
-    /// <summary>While the info box can scroll, the footer names RS.</summary>
+    /// <summary>While the focus is on a row whose info box can scroll, RS scrolls it and the footer names RS.</summary>
     private void UpdateInfoOverflow()
     {
         if (_viewModel is not null)
         {
-            _viewModel.InfoOverflows = InfoScroller.Extent.Height - InfoScroller.Viewport.Height > 1;
+            _viewModel.InfoOverflows = _page is { IsInRows: true } && InfoScroller.Extent.Height - InfoScroller.Viewport.Height > 1;
         }
     }
 }

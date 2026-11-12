@@ -3,7 +3,7 @@
 Part A of #506 (scenarios 1–5 and the failure case "info box changes while scrolled"). Part B (when artwork is
 searched) and part C (waiting list) have their own files; part A uses the IDs T506-1 to T506-39.
 
-**Status:** Automated: T506-1 to -9, -11 to -35 (T506-30 red: finding of the QE review) · QE: T506-36, -37 · Open: T506-10 (not measured) · Open for the owner: T506-38, T506-39
+**Status:** Automated: T506-1 to -9, -11 to -35 · QE: T506-36, -37 · Open: T506-10 (not measured) · Open for the owner: T506-38, T506-39
 
 Every case runs with the gamepad alone; keys follow `docs/product/controls.md` (WASD, Space = A, Esc = B, Q/E = LT/RT,
 Shift+W/S = RS). "A jump" is the animation of one carousel turn: the cover moving out of its stack, the background
@@ -108,7 +108,7 @@ otherwise; the cases follow the recommendation (the implementation follows all t
   ◀ ▶ still change its value. · E2E: yes
 - [x] **T506-29** A box that fits: no fade; RS and Shift+W/S do nothing at all (no scroll, no focus move, no turn of the
   carousel, no other action). · E2E: yes
-- [ ] **T506-30** Footer: it names RS only while the focused row's box overflows; moving the focus from an overflowing
+- [x] **T506-30** Footer: it names RS only while the focused row's box overflows; moving the focus from an overflowing
   row to a fitting one and back adds and removes the hint at once; in the button row, the rail and "Übersicht" RS
   does nothing and has no hint. · E2E: yes
 - [x] **T506-31** Scrolled down, then ◀ ▶ change the value: the box is at the top again (note and name visible), on the
@@ -170,3 +170,4 @@ History:
 | T506-37 | 2026-11-12 | QE | as above | the implementation's tests red against: jumps replayed, no highlight (detail and settings), note under the name, RS ignored, offset kept after a value change (detail and settings) | – |
 | T506-33 and all | 2026-11-12 | QE | Release, Linux cloud container, `tools/ci/run-tests.sh 4` | all green except T506-30 | – |
 | T506-36 | 2026-11-12 | QE | Debug, Xvfb 1920×1080 and 1280×720, `--demo`, keys only | detail page "Controller" of a game not installed: note on top, name, three boxes, chips; Shift+S scrolls, three quick E show the newest game at once; settings "Controller" and "Datenquellen" fine; in the rail the footer names RS (T506-30) | finding to the implementer |
+| T506-30 | 2026-11-12 | Implementation | Debug, Linux cloud container, .NET 10.0.115, headless (`InfoBoxWindowTests`, `InfoBoxViewTests` and the other #506 tests) | fixed: in the rail and the button row RS does nothing and the footer doesn't name it; the QE test, red before, passes | – |

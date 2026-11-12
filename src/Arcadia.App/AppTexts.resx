@@ -619,12 +619,12 @@
   <data name="DetailControllerModeInfo" xml:space="preserve"><value>Gilt ab dem nächsten Spielstart.</value></data>
   <data name="DetailControllerModeDefaultInfo" xml:space="preserve"><value>Folgt der Vorauswahl des Launchers in den Einstellungen.</value></data>
   <data name="DetailControllerModeArcadiaInfo" xml:space="preserve"><value>Arcadia macht aus dem Steam Controller einen virtuellen Controller, den jedes Spiel versteht.</value></data>
-  <data name="DetailControllerModeSteamInfo" xml:space="preserve"><value>Steam steuert ihn mit deinen Steam-Layouts.</value></data>
+  <data name="DetailControllerModeSteamInfo" xml:space="preserve"><value>Steam steuert den Controller mit deinen Steam-Layouts.</value></data>
   <data name="DetailMouseModeTitle" xml:space="preserve"><value>Individueller Mausmodus</value></data>
   <data name="DetailMouseModeSubtitle" xml:space="preserve"><value>Ob der Mausmodus in diesem Spiel an sein darf</value></data>
   <data name="DetailMouseModeDefaultInfo" xml:space="preserve"><value>Folgt der Standardeinstellung bei „Individuell“: Controller → Mausmodus.</value></data>
   <data name="DetailMouseModeAllowedInfo" xml:space="preserve"><value>Der Mausmodus lässt sich auch in diesem Spiel einschalten, zum Beispiel für Menüs, die nur mit der Maus gehen.</value></data>
-  <data name="DetailMouseModeBlockedInfo" xml:space="preserve"><value>Arcadia beendet ihn, sobald das Spiel im Vordergrund läuft.</value></data>
+  <data name="DetailMouseModeBlockedInfo" xml:space="preserve"><value>Arcadia beendet den Mausmodus, sobald das Spiel im Vordergrund läuft.</value></data>
   <data name="DetailMouseModeNotPerGame" xml:space="preserve"><value>Einstellbar, wenn „Beenden des Mausmodus in Spielen erzwingen“ auf „Individuell“ steht: Controller → Mausmodus.</value></data>
   <data name="DetailModeNoSteamController" xml:space="preserve"><value>Einstellbar, sobald ein Steam Controller verbunden ist.</value></data>
   <data name="DetailSetAfterInstall" xml:space="preserve"><value>Einstellbar, sobald das Spiel installiert ist.</value></data>

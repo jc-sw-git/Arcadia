@@ -70,7 +70,10 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506).</summary>
     public event Action<int>? InfoScrollRequested;
 
-    /// <summary>Set by the view: the info box has more than it shows, so the footer names RS.</summary>
+    /// <summary>
+    /// Set by the view: the focus is on a row and its info box has more than it shows, so RS scrolls it and the footer
+    /// names RS. In the rail and the button row the box isn't the focused thing's, so RS does nothing there.
+    /// </summary>
     [ObservableProperty]
     public partial bool InfoOverflows { get; set; }
 
@@ -155,7 +158,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             case UiAction.ViewOptions:
                 OpenViewOptions();
                 break;
-            case UiAction.SecondaryUp or UiAction.SecondaryDown:
+            case UiAction.SecondaryUp or UiAction.SecondaryDown when InfoOverflows:
                 // RS (Shift+W/S) scrolls the info box (#506); the focus stays where it is.
                 InfoScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);
                 break;

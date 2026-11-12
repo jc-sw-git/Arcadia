@@ -8,8 +8,8 @@ have their own files; part B uses the IDs T506-40 to T506-79.
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that counts every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. "A run" is one pass
 of the artwork service over a set of games; "known" means Arcadia has seen the game in its library before.
-Open questions Q1 to Q6 (bottom) are answered with their recommendation unless the owner says otherwise; the cases
-follow the recommendation.
+Decisions Q1 to Q7 (bottom) close gaps in the specification and are agreed with the owner; the cases
+follow them.
 
 **When a run starts (scenarios 6–8)**
 
@@ -148,7 +148,7 @@ follow the recommendation.
 T506-50 to -52), T489-19 (run after every scan, replaced by T506-40/-41; its texts stay), T489-23 and T491-25 (next
 scan/start continues, replaced by T506-69), T491-8 ("asked again at the next scan", replaced by T506-42).
 
-**Open questions (answered with the recommendation unless the owner objects)**
+**Decisions on the gaps (agreed with the owner)**
 
 - **Q1** A game that arrives while there is no key, a rejected key or SteamGridDB off: recommended it becomes known
   and is searched only by the first usable key's run (T506-46) or "Jetzt suchen"; switching SteamGridDB on starts

@@ -30,9 +30,16 @@ public sealed class InfoBoxViewTests
         var jumps = 0;
         arcadia.Arcadia.Detail!.Jumped += _ => jumps++;
 
+        var pressed = System.Diagnostics.Stopwatch.StartNew();
         arcadia.Press(UiAction.NextPage);
         Assert.Equal(1, jumps);
-        Assert.True(heading.Opacity < 1, "Ein einzelner Druck springt.");
+
+        // The animation runs on real time: on a loaded machine its first frame may come after its end.
+        if (pressed.Elapsed < GameDetailViewModel.JumpTime / 2)
+        {
+            Assert.True(heading.Opacity < 1, "Ein einzelner Druck springt.");
+        }
+
         arcadia.WaitForTransitions();
         Assert.Equal(1, heading.Opacity, 2);
 

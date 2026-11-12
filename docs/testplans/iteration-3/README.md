@@ -93,3 +93,4 @@ Charter: –. Time box: –. Findings: –.
 | T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |
 | T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
+| T506-40, -41, -46 to -48, -50, -53, -54, -58 to -60, -62 to -67, -70 | `ArtworkSearchTriggerAcceptanceTests` (T506-40, -41, -70, real Steam and Epic integrations), `DataSourcesTests` (T506-50, -54, -60 in `DataSourcesTests.Acceptance506.cs`); T506-65 in `Window/DataSourcesViewTests`; the variants in `ArtworkSearchTriggerTests` (Core) |

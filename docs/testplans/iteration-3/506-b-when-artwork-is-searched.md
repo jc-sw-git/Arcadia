@@ -3,7 +3,7 @@
 Part B of #506 (scenarios 6–14 and their failure cases). Part A (detail page, info box) and part C (waiting list)
 have their own files; part B uses the IDs T506-40 to T506-79.
 
-**Status:** Automated: T506-40 to -72 · QE: – · Open for the owner: T506-73, T506-74, T506-75, T506-76, T506-77, T506-78, T506-79
+**Status:** Automated: T506-40 to -72 · QE: acceptance tests T506-40, -41, -50, -54, -60, -70, app run under Xvfb · Open for the owner: T506-73, T506-74, T506-75, T506-76, T506-77, T506-78, T506-79
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that counts every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. "A run" is one pass
@@ -174,3 +174,6 @@ History:
 | T506-40 to -45, -49 to -52, -54 to -57, -60, -61, -68 to -72 | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container; made-up games and images, fake SteamGridDB and image server | ✅ `ArtworkSearchTriggerTests` (Core); T506-60 red once: switching the launcher images off dropped the SteamGridDB cover kept aside | fixed in `ArtworkService.UpdateGameAsync` |
 | T506-46 to -48, -53, -58, -59, -62 to -64, -66, -67 | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container, fake SteamGridDB | ✅ `DataSourcesTests` (App) | – |
 | T506-65 | 2026-11-12 | Claude | PR branch, Debug, headless window, Linux cloud container | ✅ `Window/DataSourcesViewTests` | – |
+| T506-40, -41, -70 | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, Linux cloud container; real Steam and Epic integrations on recreated folders, made-up ids, fake SteamGridDB and image server (Steam's server answers 404) | ✅ `ArtworkSearchTriggerAcceptanceTests`; red once: `GoesOnlineFor` always true (-40, -41), `KnownGames.HoldsArtwork` always false (-70) | – |
+| T506-50, -54, -60 | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, Linux cloud container, fake SteamGridDB and image server | ✅ `DataSourcesTests.Acceptance506.cs`; red once: `SettingsChanged` starting no run (-50, -60), `CancelSearch` not cancelling (-54) | – |
+| Own app run | 2026-11-12 | Claude (QE) | PR head c68358a, Debug, `--demo` under Xvfb, keys for the controller | "Datenquellen": sources, a source lifted and moved (C, S), hints and info box | info box of a source row cut at the bottom (finding) |

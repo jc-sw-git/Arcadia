@@ -24,11 +24,14 @@ public sealed partial class DataSourcesTests
 
     private static readonly LauncherInfo Store = new("store", "Shop", "shop", null);
 
-    /// <summary>A launcher whose one game has a 16 : 9 background (as Epic's) and a store id SteamGridDB knows.</summary>
-    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartAsync(AppSettings? settings = null)
+    /// <summary>
+    /// A launcher whose one game has a 16 : 9 background (as Epic's; another height with <paramref name="wideHeroHeight"/>)
+    /// and a store id SteamGridDB knows.
+    /// </summary>
+    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartAsync(AppSettings? settings = null, int wideHeroHeight = 1440)
     {
         var images = new FakeImageServer();
-        images.Serve(WideHero, TestImages.Png(2560, 1440));
+        images.Serve(WideHero, TestImages.Png(2560, wideHeroHeight));
         images.Serve(GridHero, TestImages.Png(1920, 620));
         var game = new Game
         {

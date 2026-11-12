@@ -38,6 +38,13 @@ fitting hero and the cover stays Epic's (#13, scenario 2): tested in #489.
 - [ ] **T488-16** **Owner:** own Epic library, controller: start Arcadia and wait for the scan, page through the Epic tab, open the detail page of an installed and an uninstalled game, search for two Epic games: real covers and backgrounds, cropped sensibly (no cut-off title in the middle of the cover), no visible pause when turning pages; games without catalog images keep the placeholder. `arcadia.log` has no line `Epic-Katalogbilder: Bild von Katalogeintrag … übergangen` (it would name an image host Arcadia doesn't know yet). · E2E: no (real catalog, real images, real timings)
 - [ ] **T488-17** **Owner:** network off, close and start Arcadia: every Epic image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T488-1, -8, -13 | `EpicArtworkTests` |
+| T488-14, -15 | `Window/EpicArtworkWindowTests`; the variants T488-2 to -7, -9 to -12 in `EpicArtworkTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

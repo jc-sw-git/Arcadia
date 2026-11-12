@@ -1,5 +1,7 @@
 # #433 Show recent toasts and status messages and open the logs in "Über Arcadia"
 
+**Status:** Automated: T433-1 to T433-25 except T433-22 · QE: T433-4, -23 (demo run) · Open for the owner: none (tested before the merge)
+
 Settings › "Über Arcadia", group "LOGGING" (design: artboard "#433" in the designs). "Entry" = a line of the list in
 the info panel of "Letzte Meldungen"; "Meldung" = a toast, "Status" = a status message. Controller only unless a case
 says otherwise; B goes back. Acceptance tests use `ArcadiaDriver` (fake time, fake opener, fake Steam and Pan).
@@ -92,6 +94,12 @@ says otherwise; B goes back. Acceptance tests use `ArcadiaDriver` (fake time, fa
 - [x] **T433-25** Only the three fixed paths reach the process start: the opener takes a log kind, not a string;
       nothing from `settings.json`, a file or the UI reaches the path. · E2E: no (unit test and code review, no player
       flow)
+
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T433-1, -2, -5 to -21, -23, -24 | `RecentMessagesAndLogsTests` (T433-7 included); T433-19 in `LoggingRowsTests` |
 
 History:
 

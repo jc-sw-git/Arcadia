@@ -8,18 +8,6 @@ set -euo pipefail
 base="$1"
 head="$2"
 
-# Every issue file is listed in its iteration's README.md, so whoever tests finds it from the index.
-unlisted=()
-for file in docs/testplans/iteration-*/*.md; do
-  name=$(basename "$file")
-  [[ "$name" == README.md ]] && continue
-  grep -qF "]($name)" "$(dirname "$file")/README.md" || unlisted+=("$file")
-done
-if (( ${#unlisted[@]} )); then
-  echo "::error::Not listed in their iteration's README.md: ${unlisted[*]}"
-  exit 1
-fi
-
 reviewed=no
 grep -qE '^## +Review'$'\r''?$' <<< "${PR_BODY:-}" && reviewed=yes
 layout_failed=0

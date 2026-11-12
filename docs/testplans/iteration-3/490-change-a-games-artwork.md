@@ -43,6 +43,13 @@ stays offered after another choice (T490-19, D3). T490-17 has no test of its own
 whatever its source (T487-11). T490-29's limit (20, best first, failed downloads left out) and T490-30's use of a
 downloaded offer are unit-tested against a fake source; the SteamGridDB client and its key come with #489.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
+| T490-2, -5 | `Window/ChangeArtworkViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

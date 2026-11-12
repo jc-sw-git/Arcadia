@@ -23,6 +23,14 @@ Part 1 (hold): T476-8 to T476-13. Part 2 (search and library wrap, release thres
 - [x] **T476-17** Library: a held stick or D-pad stops at the page's edge (also at the last game of a page); a fresh press crosses onto the next page, from the last page round to the first · E2E: yes
 - [x] **T476-15** **Owner:** On the real PC with the Steam Controller and an Xbox pad: in the library and the search, D-pad/stick and LT/RT go round at the ends and across the library's pages as described; RT held half way at the last page or window, pulled a little less and more again, doesn't jump to the first · E2E: no (feel of the real triggers and sticks)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T476-8 to -12 | `HeldButtonsTests`, `Window/HeldKeysTests`; variants in `GamepadPollsTests`, `ListFocusTests`, `ValueCycleTests`, `HitWindowTests` |
+| T476-1 to -4, -6, -7, -14, -16, -17 | `HeldButtonsTests` (T476-16), `SearchWrapTests`, `LibraryTests` (grid, pages, page buttons), `Window/SearchViewTests.More_hits_than_fit_the_row_…_turns_by_two_rows_and_round`, `SteamControllerTests`; variants in `GridFocusTests`, `HitWindowTests`, `GamepadPollsTests` |
+| T476-5 | `ListWrapTests`, `FirstRunTests.The_first_starts_rows_go_round_…`, `EveryControllerForGamesTests.Controller_zuordnen_goes_round_…`, `WindowsRestartTests.The_restart_questions_two_buttons_go_round_…`, `LibraryFilterTests.The_filters_values_go_round_…`, `OnScreenKeyboardTests.The_D_pad_walks_the_keys_…_goes_round_at_the_edges_…`, `LibraryFilterTests.Alle_Filter_zuruecksetzen_…`; variants in `ListFocusTests`, `KeyGridTests`, `FullKeyboardTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

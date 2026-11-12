@@ -79,6 +79,12 @@ Tests: T24-1 `PagingTests`, `LibraryTests.View_options_change_the_page_size…`;
 T24-5 `LibrarySpeedTests.A_page_of_128_turns_with_the_same_covers`; T24-6, T24-7, T24-11, T24-13 `CoverAndIconTests`;
 T24-8 to T24-11 `EmbeddedFontTests`; T24-12 `ButtonSymbolSetsTests`, `ButtonSymbolsTests` (#215, unchanged).
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T24-1 to -4, -6 to -13 | `PagingTests`, `SettingsServiceTests`, `LibraryTests`, `GridFadeTests`, `LibrarySpeedTests`, `Window/CoverAndIconTests`, `Window/EmbeddedFontTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

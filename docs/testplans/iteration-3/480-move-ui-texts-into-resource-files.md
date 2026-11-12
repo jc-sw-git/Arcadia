@@ -28,6 +28,12 @@
 Tests: T480-1 to -7, -10, -11 `UiTextTests` (Core); T480-8 `BrokenTextTests`; T480-9 `PluralTextsTests`; T480-15
 `UiTextsStayInResourcesTests` (Core); T480-16 `ArchitectureTests`.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T480-8, -9 | `BrokenTextTests`, `PluralTextsTests`; the fallback T480-1 to -7, -10, -11 in `UiTextTests`, T480-15 in `UiTextsStayInResourcesTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

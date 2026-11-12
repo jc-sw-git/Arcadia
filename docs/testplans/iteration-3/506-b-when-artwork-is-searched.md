@@ -167,6 +167,12 @@ scan/start continues, replaced by T506-69), T491-8 ("asked again at the next sca
 - **Q7** The rule of scenarios 6 and 7 holds for every network request, not only SteamGridDB: Steam's image server and
   Epic's image URLs are asked only for new games and at "Jetzt suchen"/"Neu laden"; local launcher files at every scan.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T506-40, -41, -46 to -48, -50, -53, -54, -58 to -60, -62 to -67, -70 | `ArtworkSearchTriggerAcceptanceTests` (T506-40, -41, -70, real Steam and Epic integrations), `DataSourcesTests` (T506-50, -54, -60 in `DataSourcesTests.Acceptance506.cs`); T506-65 in `Window/DataSourcesViewTests`; the variants in `ArtworkSearchTriggerTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

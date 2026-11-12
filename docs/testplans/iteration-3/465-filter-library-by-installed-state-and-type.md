@@ -54,6 +54,12 @@ checklist as far as part A has it, for the quality engineer to check in the revi
       at the funnel (`--demo-games 5000` with a filter); funnel in its three states; hints for Xbox, PlayStation and
       keyboard. · E2E: no (look, the quality engineer's run)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T465-1 to -9, -11 to -13 | `LibraryFilterTests`, variants in `GameFilterTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

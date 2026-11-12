@@ -160,6 +160,12 @@ now scrolled with RS, T506-28 to -35), T499-18 and T499-19 (turning, extended by
 - **Q3** (confirmed: 2 px accent-blue border and a brighter title) The highlight needs a mark besides colour (border or check), so it is readable for players who can't tell
   the colours apart; recommended.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T506-1 to -9, -11 to -35 | `ValueBoxTests`, `ValueBoxFollowTests`, `DetailQuickTurnTests`, `TurnJumpTests`; T506-1 to -3, -11, -14, -21, -23, -27 to -33 in `Window/InfoBoxViewTests`; T506-5, -13, -21, -22, -26, -30, -34, -35 in `Window/InfoBoxWindowTests`; T506-33 also `Window/SettingsViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

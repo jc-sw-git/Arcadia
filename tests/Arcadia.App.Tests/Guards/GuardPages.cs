@@ -60,6 +60,8 @@ internal static class GuardPages
         new("Erster Start", [typeof(FirstRunViewModel)],
             Walk: arcadia => Down(arcadia, arcadia.Arcadia.Main.FirstRun!.Found.Count + arcadia.Arcadia.Main.FirstRun!.Missing.Count),
             Start: () => ArcadiaWindow.ShowAsync(settings: new AppSettings())),
+        new("Erster Start › Datenquellen", [typeof(FirstRunDataSourcesViewModel)], Pressing(UiAction.Settings), Rows,
+            Start: () => ArcadiaWindow.ShowAsync(settings: new AppSettings())) { IsSettingsPage = true },
         GuardPage.NotWalkedYet("Anmeldung im Browser", [typeof(WebPageViewModel)], "Zeigt den Browser des Systems, den das Fenster ohne Bildschirm nicht zeichnet."),
         GuardPage.NotWalkedYet("Firmware-Hinweis", [typeof(FirmwareAttemptViewModel)], "Erscheint nur, wenn Steam die Firmware des Steam Controllers schreiben will."),
         GuardPage.NotWalkedYet("Pan-Update", [typeof(PanUpdatePageViewModel)], "Erscheint nur beim Start mit einem fremden Pan."),

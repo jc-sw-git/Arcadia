@@ -16,22 +16,30 @@ namespace Arcadia.App.Setup;
 /// The first start's page "Welche Launcher soll Arcadia nutzen?" (#139) in place of the library, pattern "Leiste" (#15):
 /// under "Gefunden" the launchers found on this PC, switched on, under "Nicht gefunden" the others, greyed out. ▲ ▼ move,
 /// ◀ ▶ (and A) switch; the info panel explains the focused launcher and sums up which become tabs. ≡, Enter or "Fertig"
-/// end it; B does nothing, there is nothing to go back to. Only which launchers are active is chosen here; their order,
-/// names and logos are in the settings.
+/// lead on to the step "Datenquellen" (#497); B does nothing, there is nothing to go back to. Only which launchers are
+/// active is chosen here; their order, names and logos are in the settings. Every switch is kept for a restart.
 /// </summary>
 public sealed partial class FirstRunViewModel : ViewModelBase, IPage
 {
     private readonly LauncherRegistry _launchers;
     private readonly Action<IReadOnlyList<string>> _done;
+    private readonly Action<IReadOnlyList<string>> _switched;
+    private readonly HashSet<string> _switchedOff;
     private readonly Dictionary<string, FirstRunLauncherViewModel> _rows = new(StringComparer.Ordinal);
     private int _focus;
 
     /// <param name="badgeOf">A launcher's logo, as its tab shows it.</param>
+    /// <param name="switchedOff">Found launchers switched off before Arcadia closed (#497); they start off.</param>
+    /// <param name="switched">A switch changed, with the found launchers now off.</param>
     /// <param name="done">"Fertig", with the launchers switched on in registered order.</param>
-    public FirstRunViewModel(LauncherRegistry launchers, Func<LauncherInfo, LauncherBadge> badgeOf, Action<IReadOnlyList<string>> done)
+    public FirstRunViewModel(
+        LauncherRegistry launchers, Func<LauncherInfo, LauncherBadge> badgeOf, IReadOnlyCollection<string> switchedOff, Action<IReadOnlyList<string>> switched,
+        Action<IReadOnlyList<string>> done)
     {
         _launchers = launchers;
         _done = done;
+        _switched = switched;
+        _switchedOff = [.. switchedOff];
         foreach (var integration in launchers.All)
         {
             var launcher = launchers.Info(integration.Launcher.Id);
@@ -91,7 +99,8 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
         {
             var row = _rows[id];
             var isFound = found.Contains(id);
-            var switchOn = isFound && (wasSearching || !row.IsFound);
+            // At first all found are on but those switched off before a restart; one found later comes on.
+            var switchOn = isFound && (wasSearching ? !_switchedOff.Contains(id) : !row.IsFound);
             // A failed scan can't count its games (#369).
             var library = libraries.FirstOrDefault(l => l.Launcher.Id == id);
             row.Show(isFound, _launchers.LocationOf(id), library is { ScanFailed: true } ? null : library?.Games);
@@ -179,6 +188,7 @@ public sealed partial class FirstRunViewModel : ViewModelBase, IPage
         Focus(row);
         row.IsOn = on;
         Numbered();
+        _switched(Found.Where(r => !r.IsOn).Select(r => r.Launcher.Id).ToList());
     }
 
     /// <summary>The tab each launcher switched on will be, and the preview of the tabs.</summary>

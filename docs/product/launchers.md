@@ -1,10 +1,10 @@
-# Product decisions: Launchers: activate, order, launcher page, first start
+# Product decisions: Launchers: activate, order, launcher page
 
 ## Launcher list (#136)
 
 - The settings' first category "Launcher" lists "Aktiv · erscheinen als Tabs" in tab order (key 1 … 0), then "Nicht
   aktiv" (installed first, then not found, greyed out). Saved as `ActiveLaunchers` (order = tabs). Until the list was
-  saved once, the first start asks (below); a saved empty list means no launcher is active, not the question again.
+  saved once, the first start asks ([first-start.md](first-start.md)); a saved empty list means no launcher is active, not the question again.
   Only `--demo` runs without the list, with every launcher found active.
 - ◀ ▶ switch "Aktiv": off means not scanned, no tab, no search hits, not watched; on goes to the end of the active
   ones, off to the top of the inactive ones. A click anywhere on the switch's box switches it too (a click elsewhere on
@@ -100,17 +100,3 @@
   come from Steam's web API, installed ones keep `localconfig.vdf`. All types: uninstalled software, tools and
   soundtracks appear under #141's switches like installed ones, free ones from packages too, as Steam counts them
   (except Proton and runtimes, which Arcadia never shows).
-
-## First start (#139)
-
-- Arcadia never takes a launcher on just because it is installed. While `settings.json` has no `ActiveLaunchers` (also
-  after an update from a version without it), a page "Welche Launcher soll Arcadia nutzen?" stands in place of the
-  library, pattern "Leiste".
-- "Gefunden" switched on with their games, "Nicht gefunden" greyed out and not switchable; ◀ ▶ (and A, a click on the
-  switch) switch. The info panel shows above the preview "Launcher-Reihenfolge" as in the launcher settings, below the
-  focused launcher (games, location, keyword), "Später änderbar" and "Fertig"; the header has date and clock like
-  every page.
-- ≡, Enter or a click on "Fertig" save the list; B does nothing. Only on/off is chosen there, order and looks in the
-  settings.
-- `--demo` skips it (all launchers active, nothing saved); `--first-run` shows it again (with `--demo` the answer holds
-  for the session only).

@@ -119,8 +119,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         LauncherTabs.Chosen += OnTabChosen;
         if (firstRun.IsPending)
         {
-            // Shown from the start, so the library never flashes up before it; its launchers follow once they are read.
-            FirstRun = new FirstRunViewModel(library.Launchers, logos.BadgeOf, CompleteFirstRun);
+            StartFirstRun(library.Launchers, logos.BadgeOf);
         }
 
         AppErrors.Occurred += OnAppError;
@@ -599,7 +598,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>Shows the scanned libraries in the tabs and on every page. Keeps tab, page and focused game where they were.</summary>
     private void ApplyLibraries(IReadOnlyList<LauncherLibrary> libraries)
     {
-        FirstRun?.Show(libraries);
+        ShowLaunchersInFirstRun(libraries);
         LauncherTabs.Show(libraries);
         UpdateSearch();
         if (LauncherTabs.SelectedTab is null)
@@ -625,24 +624,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         LauncherTabs.Restyle(Session.Launchers.Info);
         Library.Restyle();
         UpdateSearch();
-    }
-
-    /// <summary>"Fertig" in the first start's question: only the launchers switched on there keep their tab.</summary>
-    private void CompleteFirstRun(IReadOnlyList<string> active)
-    {
-        try
-        {
-            _firstRun.Complete(active);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            AppLog.Write($"Launcherauswahl nicht gespeichert: {ex.Message}");
-            Toast.Show(HealthSeverity.Error, AppTexts.FirstRunNotSaved);
-        }
-
-        AppLog.Write($"Ersteinrichtung abgeschlossen, aktive Launcher: {string.Join(", ", active)}");
-        FirstRun = null;
-        Session.ShowChosenLaunchers();
     }
 
     private void RefreshLauncherSettings() => Settings?.Categories.OfType<LauncherSettingsViewModel>().FirstOrDefault()?.Refresh();
@@ -1307,6 +1288,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         else if (page == Detail)
         {
             CloseDetail();
+        }
+        else if (page == Settings && Settings.IsFirstRun)
+        {
+            FinishFirstRun();
         }
         else if (page == Settings)
         {

@@ -33,6 +33,15 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
 
     public IReadOnlyList<SettingsCategoryViewModel> Categories { get; }
 
+    /// <summary>
+    /// The first start's step "Datenquellen" (#497) in the settings' frame: the header says "Einrichtung", there is no ✕,
+    /// and ≡ ends the first start instead of closing a page.
+    /// </summary>
+    public bool IsFirstRun { get; init; }
+
+    /// <summary>The header's name of the page.</summary>
+    public string Title => IsFirstRun ? AppTexts.Setup : AppTexts.Settings;
+
     /// <summary>LB/RB only switch between several categories, so the footer names them only then.</summary>
     public bool HasSeveralCategories => Categories.Count > 1;
 

@@ -45,8 +45,9 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
 
 ## Folders
 
-- `Setup/`: the first start's page (#139): `FirstRunViewModel` with `FirstRunLauncherViewModel` rows, drawn by
-  `Views/FirstRunView`.
+- `Setup/`: the first start (#139, #497): `FirstRunViewModel` (launcher page, `Views/FirstRunView`), then
+  `FirstRunDataSourcesViewModel`, a settings category shown alone as the settings page (`IsFirstRun`); Main's part
+  in `MainViewModel.FirstRun.cs`.
 - `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
   hits shown in `TileSlotViewModel` places too).
 - `Keyboard/` (#110): `OnScreenKeyboardViewModel` (view `Views/OnScreenKeyboardView`), `BoardKeyViewModel`,

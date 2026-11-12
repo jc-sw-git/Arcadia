@@ -8,6 +8,7 @@
         xmlns:settings="using:Arcadia.App.Settings"
         xmlns:status="using:Arcadia.App.Status"
         xmlns:filter="using:Arcadia.App.Filter"
+        xmlns:setup="using:Arcadia.App.Setup"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -1132,7 +1133,8 @@
                     StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
               <TextBlock Text="ARCADIA" FontSize="24" FontWeight="ExtraBold" LetterSpacing="1.4" VerticalAlignment="Center" />
               <Border Classes="divider" Margin="6,0" Height="26" />
-              <TextBlock Text="{x:Static app:AppTexts.Settings}" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+              <!-- "Einrichtung" for the first start's step "Datenquellen" (#497), as on its launcher page. -->
+              <TextBlock Text="{Binding Settings?.Title, TargetNullValue=''}" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
             </StackPanel>
 
             <!-- As the launcher tabs: in the middle, the selected one centred, faded where more follow (TabStrip). -->
@@ -1179,7 +1181,14 @@
               <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
               <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
               <!-- Mouse or keyboard in use: ✕ closes; the controller has B (owner, 2026-10-22). -->
-              <Button Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="{x:Static app:AppTexts.CloseTip}" IsVisible="{Binding Input.ShowsCloseButtons}" Command="{Binding CloseSettingsCommand}">
+              <!-- Not on the first start's step: there it would end the first start, which its last row does. -->
+              <Button Classes="plain dialogClose" VerticalAlignment="Center" ToolTip.Tip="{x:Static app:AppTexts.CloseTip}" Command="{Binding CloseSettingsCommand}">
+                <Button.IsVisible>
+                  <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="Input.ShowsCloseButtons" />
+                    <Binding Path="!Settings.IsFirstRun" FallbackValue="{x:True}" />
+                  </MultiBinding>
+                </Button.IsVisible>
                 <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
               </Button>
             </StackPanel>
@@ -1190,6 +1199,12 @@
           <Grid Grid.Row="1" Margin="80,0,80,22" ColumnDefinitions="*,620" ColumnSpacing="56" DataContext="{Binding Settings?.Selected}" x:DataType="settings:SettingsCategoryViewModel">
             <!-- While a text is written, the on-screen keyboard takes the clicks: ↵ takes it, "Ausblenden" drops it. -->
             <DockPanel IsHitTestVisible="{Binding !IsEditing}">
+            <!-- The first start's step "Datenquellen" (#497): what it is for, as the launcher page says what it asks. -->
+            <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="18,6,0,8" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Settings?.IsFirstRun, TargetNullValue=False}">
+              <TextBlock Text="{x:Static app:AppTexts.WelcomeCaption}" FontSize="15" FontWeight="Bold" LetterSpacing="2" Foreground="{StaticResource Accent}" />
+              <TextBlock Text="{x:Static app:AppTexts.FirstRunDataSourcesQuestion}" FontSize="42" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
+              <TextBlock Text="{x:Static app:AppTexts.FirstRunDataSourcesExplanation}" FontSize="18" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+            </StackPanel>
             <!-- Above the rows, e.g. a launcher's logo, name and its neighbours on its page (#137). -->
             <ContentControl DockPanel.Dock="Top" Content="{Binding Head}" IsVisible="{Binding Head, Converter={x:Static ObjectConverters.IsNotNull}}">
               <ContentControl.DataTemplates>
@@ -1718,6 +1733,8 @@
               <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Selected.Head, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="Klick" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+              <!-- The first start's step (#497): ≡ ends it like its last row. -->
+              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>

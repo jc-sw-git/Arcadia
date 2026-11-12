@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// Where focus rings would be cut off, worked out from the layout instead of the pixels (#180): every visible button is

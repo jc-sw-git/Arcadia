@@ -7,7 +7,7 @@ using Avalonia.Controls.Documents;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// The UI texts as drawn (#339): the copy games see is a "virtueller Controller" everywhere the player reads about it,

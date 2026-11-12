@@ -20,7 +20,8 @@ mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mou
 dotnet build Arcadia.slnx
 dotnet test Arcadia.slnx
 dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all launchers
-tools/ci/run-tests.sh 4                               # after a Release build: all tests as CI runs them, ~2.5 min not 7
+tools/ci/run-tests.sh 4                               # after a Release build: all tests as a PR's CI runs them
+WINDOW_GUARDS=1 tools/ci/run-tests.sh 4               # … plus the window guards, as main's CI runs them
 ```
 
 - .NET 10 SDK. `Directory.Build.props` sets `TreatWarningsAsErrors` — keep the build warning-free.
@@ -38,7 +39,8 @@ tools/ci/run-tests.sh 4                               # after a Release build: a
 ## Verifying UI changes
 
 Tests cover Core/Launchers/ControllerSupport logic and, in `Arcadia.App.Tests`, the core flows through the view models
-(acceptance tests, no rendering). For UI changes, run the app and
+(acceptance tests, no rendering); a few cross-page window guards run on `main` only, and features get no window
+tests (`docs/testplans/README.md` → Window guards). For UI changes, run the app and
 look at it — see the skill `.claude/skills/arcadia-verify/SKILL.md` (Windows and Linux; its pre-push checklist is a must) and
 the scripts in `tools/dev/` (screenshot with key presses, foreground tracing, XInput probe, Steam shortcuts).
 The owner often tests manually at the same time — say before driving the app with keys.
@@ -80,9 +82,9 @@ milestone again; this list keeps it small.
   as its own file in `docs/testplans/iteration-<n>/` (IDs `T<issue>-<n>`, each marked `E2E: yes/no`) and records the test runs done
   during implementation with their real environment; if nothing new needs a manual test, the file says so in one
   line with the reason. The `Testplan` CI check fails without it.
-- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test per `E2E: yes` case) and the
-  quality engineer's own run of the app are in the same PR before the owner tests the few cases the PR hands him
-  (`docs/testplans/README.md`).
+- **Tested before merge:** all of the issue's tests (unit, integration, an acceptance test without a window per
+  `E2E: yes` case) and the quality engineer's own run of the app, which checks the `E2E: no (window)` cases, are in the
+  same PR before the owner tests the few cases the PR hands him (`docs/testplans/README.md`).
 - **Performant:** no blocking work on the UI thread; code on a hot path (start, scan, library,
   input, running in the background beside a game) stays within the budgets below, measured when touched.
 

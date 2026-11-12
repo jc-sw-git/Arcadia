@@ -15,7 +15,8 @@ An issue goes refinement: the specification with the player's scenarios (product
 tech debt, spikes, CI) → design, when a screen is new or changes visibly (designer) → the owner approves specification
 and design together → test cases derived from them before any code (quality engineer) → implementation (architect)
 → review, acceptance tests and an own run of the app (quality engineer, in the same PR) → the owner's manual test of
-the few cases the PR hands him; his feedback and the open review findings are fixed in one batch. Codex reviews only
+the few cases the PR hands him; his feedback and the open review findings are fixed in one batch → after the merge
+the quality engineer watches `main` until it is green (`quality-engineer.md` → Red `main`). Codex reviews only
 the whole iteration (`AGENTS.md`).
 
 ## Decisions

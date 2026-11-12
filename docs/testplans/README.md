@@ -13,9 +13,10 @@ not the whole folder.
 
 - **Test cases come from the specification, before any code:** the quality engineer derives them from the issue
   and its design and writes them into the issue; the PR copies them into the issue's file. Test level per case:
-  a window test only for layout, bindings and real click paths; one acceptance test per acceptance criterion,
-  variants as unit tests. Issues on drivers or installation get manual cases for a fresh install and for a
-  driver arriving while Arcadia runs.
+  one acceptance test without a window per acceptance criterion, variants as unit tests; a case only the real window
+  can show (layout, pixels, a real click path) is `E2E: no (window)` and checked in the quality engineer's own run of
+  the app, recorded with a screenshot or recording in the History. Issues on drivers or installation get manual
+  cases for a fresh install and for a driver arriving while Arcadia runs.
 - **Every PR that closes an issue extends the test plan** with a file holding that issue's test cases
   (Definition of Done in `CLAUDE.md`; the CI check `Testplan` checks it). If an issue needs no
   new manual tests (e.g. a refactoring of features already covered automatically or by
@@ -52,9 +53,8 @@ not the whole folder.
 
 ## Acceptance tests
 
-- They live in `tests/Arcadia.App.Tests` and talk only through `ArcadiaDriver` (keys, time, restart)
-  or, for the real window, through `ArcadiaWindow` (click, real key, mouse wheel, layout, pixels, focus ring)
-  and what view models and window show. Steam and Epic read recreated files with made-up IDs there
+- They live in `tests/Arcadia.App.Tests` and talk only through `ArcadiaDriver` (keys, time, restart) and what the
+  view models show; they open no window. Steam and Epic read recreated files with made-up IDs there
   (`Fixtures/`, `ArcadiaDriver.StartWithLaunchersAsync`); nothing opens a real launcher. Every test carries
   the IDs of its test cases as `[Trait("TestCase", "T15-1")]`;
   the issue's file lists them under "Automated tests" (test cases → test classes).
@@ -65,3 +65,14 @@ not the whole folder.
   behaviour); the case is safety-critical (HidHide, VIIPER, firmware, crash); or the quality engineer wrote
   the test.
 - **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
+- **CI:** a PR runs the Core, Pan and App tests without a window; no CI test asserts a timing budget (budgets are
+  measured by hand, `CLAUDE.md` → Performant).
+
+## Window guards
+
+- `tests/Arcadia.App.Tests/Guards/` opens the real headless window through `ArcadiaWindow` (click, real key, wheel,
+  layout, pixels, focus ring). It holds only cross-page guards (focus ring, ring geometry, fades, consistent texts,
+  embedded font, covers and icons, reused covers and search keys); they run on `main` only (`tools/ci/run-tests.sh`,
+  `WINDOW_GUARDS=1`), and `ArcadiaWindow` anywhere else fails the test run.
+- No window test per feature. A new window test is written only as a cross-page guard or to pin a layout bug that
+  escaped to the owner, and only with the owner's OK in the refinement.

@@ -25,6 +25,9 @@ public enum StatusTarget
 
     /// <summary>SteamGridDB turned the key down (#489): "Schlüssel" in "Datenquellen"; no fix of its own.</summary>
     SteamGridDbKey,
+
+    /// <summary>IGDB turned the access down (#494): "Client-ID" in "Datenquellen"; no fix of its own.</summary>
+    IgdbAccess,
 }
 
 /// <summary>

@@ -24,6 +24,12 @@ public interface ILauncherMetadata
 
     /// <summary>The launcher's store page per game; null if Arcadia asks no store for this launcher.</summary>
     IMetadataStore? Store => null;
+
+    /// <summary>
+    /// The game's id in a store that metadata collections know it by (#494), e.g. its Steam AppID: IGDB finds the game by
+    /// it, without searching by name. Null if the launcher can't name one. Never throws.
+    /// </summary>
+    ArtworkStoreId? StoreIdOf(Game game) => null;
 }
 
 /// <summary>What <see cref="ILauncherMetadata.Look"/> found in the launcher's local files.</summary>

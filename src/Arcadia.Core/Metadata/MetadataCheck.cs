@@ -15,6 +15,7 @@ public static class MetadataCheck
     public const int MaxNames = 10;
     public const int MaxTags = 40;
     public const int MaxTag = 40;
+    public const int MaxTitle = 200;
 
     private static readonly DateOnly Earliest = new(1950, 1, 1);
     private static readonly DateOnly Latest = new(2100, 12, 31);
@@ -38,6 +39,9 @@ public static class MetadataCheck
         Tags = Names(metadata.Tags, MaxTags, MaxTag),
         AgeRatings = [.. (metadata.AgeRatings ?? []).Select(CheckedRating).OfType<AgeRating>().Distinct()],
     };
+
+    /// <summary>A provider's title of a game (#494) in one line, without markup; null if it is empty or too long.</summary>
+    public static string? CheckedTitle(string? title) => PlainName(title, MaxTitle);
 
     /// <summary>The rating with its board's spelling (<c>m</c> → <c>M</c>, <c>e10</c> → <c>E10+</c>); null for a value the board doesn't have.</summary>
     public static AgeRating? CheckedRating(AgeRating? rating)

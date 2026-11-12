@@ -13,11 +13,18 @@ namespace Arcadia.Core.Metadata;
 /// <param name="Source">The provider's name as shown, e.g. "Steam".</param>
 /// <param name="Store">The store's answer; null while the game wasn't asked yet (or its answer was unusable).</param>
 /// <param name="StoreAt">When the store answered.</param>
-public sealed record CachedMetadata(string GameKey, string Source, GameMetadata? Local, GameMetadata? Store, DateTimeOffset? StoreAt)
+/// <param name="Igdb">IGDB's answer (#494); null while IGDB wasn't asked or found nothing by the game's name.</param>
+public sealed record CachedMetadata(string GameKey, string Source, GameMetadata? Local, GameMetadata? Store, DateTimeOffset? StoreAt, IgdbCached? Igdb = null)
 {
     /// <summary>The provider's data: the local files' fields first, the store's for what they lack.</summary>
     public GameMetadata Data => (Local ?? GameMetadata.Empty).Or(Store);
 }
+
+/// <summary>
+/// IGDB's answer for one game (#494): the IGDB game it is (null: IGDB doesn't know the game's Steam AppID, so it has no
+/// data and is not searched by name, D3), that game's title and its data, unmerged.
+/// </summary>
+public sealed record IgdbCached(long? GameId, string? Title, GameMetadata Data, DateTimeOffset At);
 
 /// <summary>
 /// The raw metadata per provider (#493): <c>%LOCALAPPDATA%\Arcadia\metadata\&lt;launcher&gt;\&lt;game&gt;.json</c>, one
@@ -120,7 +127,12 @@ public sealed class MetadataCache(string root)
                 source,
                 stored.Local is null ? null : MetadataCheck.Checked(stored.Local),
                 stored.Store is null ? null : MetadataCheck.Checked(stored.Store),
-                stored.StoreAt);
+                stored.StoreAt,
+                stored.Igdb is { At: { } at } igdb ? new IgdbCached(
+                    igdb.GameId is > 0 ? igdb.GameId : null,
+                    MetadataCheck.CheckedTitle(igdb.Title),
+                    MetadataCheck.Checked(igdb.Data),
+                    at) : null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or ArgumentException)
         {
@@ -152,6 +164,8 @@ public sealed class MetadataCache(string root)
 
         public DateTimeOffset? StoreAt { get; set; }
 
+        public StoredIgdb? Igdb { get; set; }
+
         public static Stored Of(CachedMetadata cached) => new()
         {
             Game = cached.GameKey,
@@ -159,6 +173,13 @@ public sealed class MetadataCache(string root)
             Local = Escaped(cached.Local),
             Store = Escaped(cached.Store),
             StoreAt = cached.StoreAt,
+            Igdb = cached.Igdb is { } igdb ? new StoredIgdb
+            {
+                GameId = igdb.GameId,
+                Title = igdb.Title is null ? null : System.Net.WebUtility.HtmlEncode(igdb.Title),
+                Data = Escaped(igdb.Data),
+                At = igdb.At,
+            } : null,
         };
 
         /// <summary>
@@ -175,5 +196,16 @@ public sealed class MetadataCache(string root)
         };
 
         private static string? Escape(string? text) => text is null ? null : System.Net.WebUtility.HtmlEncode(text);
+    }
+
+    private sealed class StoredIgdb
+    {
+        public long? GameId { get; set; }
+
+        public string? Title { get; set; }
+
+        public GameMetadata? Data { get; set; }
+
+        public DateTimeOffset? At { get; set; }
     }
 }

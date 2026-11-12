@@ -106,6 +106,9 @@ public sealed record AppSettings
     /// </summary>
     public bool OverwritesArtworkSetByHand { get; init; }
 
+    /// <summary>"Reihenfolge für Metadaten" in "Datenquellen" (#494).</summary>
+    public MetadataSettings Metadata { get; init; } = new();
+
     /// <summary>The quick selection of each game's "Übersicht" (#500).</summary>
     public QuickSelectionSettings QuickSelection { get; init; } = new();
 
@@ -125,6 +128,7 @@ public sealed record AppSettings
         MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
         Artwork = (Artwork ?? new ArtworkSettings()).WithValidValues(),
+        Metadata = (Metadata ?? new MetadataSettings()).WithValidValues(),
     };
 
     /// <summary>Replaces a quick selection written as <c>null</c> by hand with an empty one, so every game shows the defaults.</summary>

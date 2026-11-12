@@ -60,10 +60,10 @@ progress row reads "Alle Metadaten geladen" (greyed).
 
 **Detail page** (look: window, checked in the quality engineer's run)
 
-- [ ] **T493-12** Info line under the title: "Action, Abenteuer · <Developer> · 2021" and the USK badge; a missing
+- [x] **T493-12** Info line under the title: "Action, Abenteuer · <Developer> · 2021" and the USK badge; a missing
       part leaves no stray "·"; long genre lists and developer names end with "…" in one line. Colours and the badge
       from `Theme.axaml`. · E2E: no (window)
-- [ ] **T493-13** "Übersicht": the short description (at most the lines the artboard gives, then "…") and the tags
+- [x] **T493-13** "Übersicht": the short description (at most the lines the artboard gives, then "…") and the tags
       line with "+n"; the facts sit where #499/#500 place them. · E2E: no (window)
 - [x] **T493-14** "Infos": full description, then genres, developer, publisher, release date (German date), tags and
       every age rating, each with its source ("Steam", "Epic", "laut Steam"); the source shows only here. Controller
@@ -123,14 +123,14 @@ progress row reads "Alle Metadaten geladen" (greyed).
 - [x] **T493-31** Architecture: the Steam provider lives in the Steam folder, the Epic provider in the Epic folder, both
       only through `Arcadia.Launchers.Abstractions`; Core and UI don't special-case a launcher (`ArchitectureTests`).
       · E2E: no (unit test)
-- [ ] **T493-32** Release build, made-up data: start to usable library < 2 s with 1,000 cached games; < 400 MB RAM
+- [x] **T493-32** Release build, made-up data: start to usable library < 2 s with 1,000 cached games; < 400 MB RAM
       with 5,000 games with cached metadata; idle CPU < 1 % after the fetch. · E2E: no (Release timings; quality engineer's run)
-- [ ] **T493-33** Look of T493-12 to -14 with `--demo` and a made-up cache: short and long texts, missing fields,
+- [x] **T493-33** Look of T493-12 to -14 with `--demo` and a made-up cache: short and long texts, missing fields,
       English description, "laut Steam", at 1920 × 1080. · E2E: no (window)
-- [ ] **T493-34** Look of T493-24 and the question of T493-26. · E2E: no (window)
-- [ ] **T493-35** Mouse and keyboard: a click on "Infos" opens it, the mouse wheel scrolls the description, a click on
+- [x] **T493-34** Look of T493-24 and the question of T493-26. · E2E: no (window)
+- [x] **T493-35** Mouse and keyboard: a click on "Infos" opens it, the mouse wheel scrolls the description, a click on
       "Alle Metadaten neu laden" asks; keys as elsewhere (WASD/arrows, Space = A, Esc = B). · E2E: no (window: real clicks)
-- [ ] **T493-36** A store description with markup, images, links, very long text and emoji shows as plain text,
+- [x] **T493-36** A store description with markup, images, links, very long text and emoji shows as plain text,
       readable, nothing clickable opens a browser. · E2E: no (window)
 
 **Owner** (real Steam store, own library; collected by the closing thread of #43)
@@ -165,3 +165,6 @@ History:
 | `tools/ci/run-tests.sh 4` (PR set) | 2026-11-12 | Claude | PR branch, Release, Linux cloud container, de_DE | ✅ after renaming one binding path (`XamlBindingTests`) | – |
 | Start time and RAM, `--demo --demo-games 5000` | 2026-11-12 | Claude | PR branch vs `main`, Release, Linux cloud container (Xvfb) | start 2.8 s (main 2.7 s), 352 MB (main 302 MB) | not the owner's PC; T493-32 stays with QE |
 | App looked at, `--demo`, 1920 × 1080 | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container (Xvfb), keys | ✅ info line with and without badge, "Übersicht" with description and tags, "Infos" long (scrolled with S), short, English and "Noch keine Infos", footer hints | bottom margin of "Infos" removed so a text that fits shows no fade |
+| QE run, `--demo`, 1920 × 1080, keys and mouse (T493-12, -13, -33 to -36) | 2026-11-12 | Claude (QE) | `ff1494b`, Debug, Linux cloud container (Xvfb) | ✅ info line with and without badge, two genres, long developer name (fits, so "…" checked only in the view's `MaxWidth`/`TextTrimming`); "Übersicht" four lines then "…", tags "+n"; "Infos" long (W/S and wheel scroll, B back to the rail), short, English, "laut Battle.net", "Noch keine Infos"; markup, link, image and emoji in the demo text show as plain text; click on "Infos" opens it; METADATEN rows in "Datenquellen". The reload question isn't reachable in `--demo` (no store, button greyed): its text is checked in `MetadataSettingsTests`, the dialog is the shared settings question | rail value line of "Infos" cut for long genres ("Karten- und Brettspiel · 2011 · U…"), optional |
+| Start, RAM, idle CPU (T493-32), `--demo --demo-games 1000/5000` | 2026-11-12 | Claude (QE) | `ff1494b`, Release, Linux cloud container (Xvfb) | start to library 2.9 s / 3.0 s (container; the implementer's `main` comparison 2.7 s), 282 / 326 MB, 0 CPU ticks in 5 s idle | the demo's metadata is local, so 5,000 cached store answers weren't loaded; the owner's PC numbers come with #43's final test |
+| Code review, `MetadataCheck` on a cached value | 2026-11-12 | Claude (QE) | `ff1494b`, unit test | ❌ a description with an escaped `<` ("Drücke &lt;E&gt;", "3 &lt; 5 Spieler") loses text when the cache is read again after a restart | finding F1 in the PR's Review |

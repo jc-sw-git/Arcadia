@@ -1,6 +1,6 @@
 # #491 Find artwork by name and let the player pick when several games match
 
-**Status:** Automated: T491-1 to -26 · QE: T491-27, run 2026-11-12, findings fixed and checked again · Open for the owner: T491-28, T491-29
+**Status:** Automated: T491-1 to -26 · QE: T491-27, run 2026-11-12, findings fixed and checked again · Owner: T491-28, T491-29 passed
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. Decisions D1 to D7
@@ -50,8 +50,8 @@ reaches the real one. "Shown everywhere" means library tile, preview, detail pag
 
 **Owner** (real SteamGridDB, own library; together with T489-25 to T489-27, T490-34 and T490-35)
 
-- [ ] **T491-28** **Owner:** with a key, "Jetzt suchen" on the own library: Epic games get SteamGridDB backgrounds instead of the cropped 16 : 9 image, covers fit, none shows the wrong game. Also checks that SteamGridDB's `egs` ids are Epic's `AppName` (an assumption, see `docs/launchers/epic.md`). · E2E: no (real SteamGridDB, own library)
-- [ ] **T491-29** **Owner:** if "Warten auf deine Auswahl" then shows games: open it with the controller, take the right hit for one game, skip another, close and start Arcadia: the first keeps its new images, the second its old one, neither is on the list again; after "Jetzt suchen" still the same. If no game waits, note that; T491-10 to T491-22 cover the list with made-up data. · E2E: no (real SteamGridDB, own library)
+- [x] **T491-28** **Owner:** with a key, "Jetzt suchen" on the own library: Epic games get SteamGridDB backgrounds instead of the cropped 16 : 9 image, covers fit, none shows the wrong game. Also checks that SteamGridDB's `egs` ids are Epic's `AppName` (an assumption, see `docs/launchers/epic.md`). · E2E: no (real SteamGridDB, own library)
+- [x] **T491-29** **Owner:** if "Warten auf deine Auswahl" then shows games: open it with the controller, take the right hit for one game, skip another, close and start Arcadia: the first keeps its new images, the second its old one, neither is on the list again; after "Jetzt suchen" still the same. If no game waits, note that; T491-10 to T491-22 cover the list with made-up data. · E2E: no (real SteamGridDB, own library)
 
 Notes on the automated cases: launchers without images of their own (a demo launcher, a plugin) now get SteamGridDB's
 images by name when a key is set; the tests use such a launcher. The choices are kept in `artwork/name-matches.json`.
@@ -74,3 +74,4 @@ History:
 | T491-1, -3, -10, -11, -22 | 2026-11-12 | QE (Claude) | PR branch, Release, Linux cloud container, recreated Epic files, fake SteamGridDB and image servers | ✅ `FindArtworkByNameAcceptanceTests` (App); each red once (see the commit) | – |
 | T491-27 | 2026-11-12 | QE (Claude) | 2fdb27e, Release; headless window with 100 games waiting × 8 hits and 1,000 games searched by name at 2 s per answer; Xvfb (software rendering), `--demo`, 146 games waiting × 8 hits | ❌ moves fine (hits 1 ms, games 14–27 ms), library during the search 0.8–4.2 ms; but Y 1.1–3.2 s and A about 1 s to the next frame, opening 225–630 ms; with 5–8 hits the second row ran out of the modal | B1, B2 fixed in 0a111af |
 | T491-27, -13 | 2026-11-12 | QE (Claude) | 0a111af, Release; same headless and Xvfb setups | ✅ headless: open 6–8 ms, moves max 10 ms, A max 12.5 ms, library during the search max 3 ms; Xvfb: open 35 ms (first 55), A 29–41 ms (first 76), Y 28–35 ms, D-pad 0.4–22 ms; 8 hits in two rows with the note and hints inside the modal. Only the first press after the start goes over 50 ms (warm-up) | first presses on the owner's PC: exploratory |
+| T491-28, T491-29 | 2026-11-12 | Owner | `main`, Windows, own PC with own Steam/Epic library and Steam Controller | ✅ passed | – |

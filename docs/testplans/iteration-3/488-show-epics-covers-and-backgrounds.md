@@ -1,6 +1,6 @@
 # #488 Show Epic's covers and backgrounds from its catalog
 
-**Status:** Automated: T488-1 to T488-15 · QE: app run with `--demo --demo-games 200` (Epic formats cropped, no distortion) · Open for the owner: T488-16, T488-17
+**Status:** Automated: T488-1 to T488-15 · QE: app run with `--demo --demo-games 200` (Epic formats cropped, no distortion) · Owner: T488-16, T488-17 passed
 
 Automated tests read a recreated `catcache.bin` (Base64 JSON) with made-up catalog ids, app names and image URLs and a
 fake image server; nothing reaches Epic's real servers. "Shown" means at all four places: library tile, preview, detail
@@ -35,8 +35,8 @@ fitting hero and the cover stays Epic's (#13, scenario 2): tested in #489.
 
 **Owner** (only he has a real Epic catalog with real images)
 
-- [ ] **T488-16** **Owner:** own Epic library, controller: start Arcadia and wait for the scan, page through the Epic tab, open the detail page of an installed and an uninstalled game, search for two Epic games: real covers and backgrounds, cropped sensibly (no cut-off title in the middle of the cover), no visible pause when turning pages; games without catalog images keep the placeholder. `arcadia.log` has no line `Epic-Katalogbilder: Bild von Katalogeintrag … übergangen` (it would name an image host Arcadia doesn't know yet). · E2E: no (real catalog, real images, real timings)
-- [ ] **T488-17** **Owner:** network off, close and start Arcadia: every Epic image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
+- [x] **T488-16** **Owner:** own Epic library, controller: start Arcadia and wait for the scan, page through the Epic tab, open the detail page of an installed and an uninstalled game, search for two Epic games: real covers and backgrounds, cropped sensibly (no cut-off title in the middle of the cover), no visible pause when turning pages; games without catalog images keep the placeholder. `arcadia.log` has no line `Epic-Katalogbilder: Bild von Katalogeintrag … übergangen` (it would name an image host Arcadia doesn't know yet). · E2E: no (real catalog, real images, real timings)
+- [x] **T488-17** **Owner:** network off, close and start Arcadia: every Epic image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
 
 Automated tests:
 
@@ -56,3 +56,4 @@ History:
 | – | 2026-11-11 | Claude (QE) | PR branch, Debug build, Linux cloud container, Xvfb 1920 × 1080, `--demo --demo-games 200`, keys | ✅ covers and preview background in Epic's formats fill their frames, cropped centred; only checked with demo gradients, not real art | – |
 | T488-5, -6 (review fixes) | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container; made-up catalog, fake image server | ✅ `EpicArtworkTests.Two_entries_naming_the_same_image_both_show_it_after_one_scan` (red before the fix: the second engine's cover null) and the base game without images in `A_dlc_lends_its_game_no_images…`; Core tests 2,726 green | `ArtworkService` counts only failed addresses as tried in a run; a base game without images keeps its placeholder |
 | T488-14 | 2026-11-11 | Claude | PR branch at 37c4b34, Debug, headless window, Linux cloud container | ✅ 8 runs in a row green, together with T487-20; the QE's one failure in 7 runs did not reproduce | if CI shows it, it becomes a bug issue |
+| T488-16, T488-17 | 2026-11-12 | Owner | `main`, Windows, own PC with own Steam/Epic library and Steam Controller | ✅ passed | – |

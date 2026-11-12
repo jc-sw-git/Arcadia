@@ -1,6 +1,6 @@
 # #487 Show real Steam covers and backgrounds in the library, preview, detail page and search
 
-**Status:** Automated: T487-1 to -20, -22 (T487-5's 404 case waits for a review finding) · QE: T487-21 (Linux; Windows timings with T487-23) · Open for the owner: T487-23, T487-24, T487-25
+**Status:** Automated: T487-1 to -20, -22 (T487-5's 404 case waits for a review finding) · QE: T487-21 (Linux; Windows timings with T487-23) · Owner: T487-23, T487-24, T487-25 passed
 
 - [x] **T487-1** A Steam game with `library_600x900.jpg` and `library_hero.jpg` directly in `appcache/librarycache/<appid>/`, no network: after the scan its cover and background are shown; no request leaves Arcadia. · E2E: yes
 - [x] **T487-2** The same images in a hash-named subfolder of `librarycache/<appid>/` are found the same way; a folder with only one of the two shows that one and the placeholder for the other. · E2E: no (variant: unit test of the Steam source)
@@ -24,9 +24,9 @@
 - [x] **T487-20** A scan with 1,000 games that all need the image server, each answer taking 2 s: the library is usable at once, a focus move stays under 50 ms, the search opens as fast as without images. · E2E: yes (speed test like `LibrarySpeedTests`)
 - [x] **T487-21** Release build, `--demo --demo-games 5000` with artwork: start to usable library < 2 s, focus move and page turn < 50 ms (`Bild:` lines), < 400 MB RAM after paging through every page, `Bild: Search` from the second opening as before (#477). · E2E: no (real rendering, Release timings; quality engineer's run)
 - [x] **T487-22** Controller only, B back: library → detail page → back, page turns, search with X → hit → detail page → B twice: every place shows the game's own images, none shows another game's (slots reused since #229). · E2E: yes
-- [ ] **T487-23** **Owner:** own library, controller: start Arcadia and wait for the scan, page through the Steam tab, open the detail page of an installed and an uninstalled game, search for three games: real covers and backgrounds everywhere, cropped sensibly, no visible pause when turning pages; games Steam has never shown get their image after a short while. · E2E: no (real Steam, real images, real timings)
-- [ ] **T487-24** **Owner:** network off (Wi-Fi or cable), close and start Arcadia: every image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
-- [ ] **T487-25** **Owner:** in Steam set an own cover for one game (Bibliothek → right click → Verwalten → Eigenes Artwork festlegen), close Steam, rescan in Arcadia: the own cover is shown. · E2E: no (real Steam client)
+- [x] **T487-23** **Owner:** own library, controller: start Arcadia and wait for the scan, page through the Steam tab, open the detail page of an installed and an uninstalled game, search for three games: real covers and backgrounds everywhere, cropped sensibly, no visible pause when turning pages; games Steam has never shown get their image after a short while. · E2E: no (real Steam, real images, real timings)
+- [x] **T487-24** **Owner:** network off (Wi-Fi or cable), close and start Arcadia: every image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
+- [x] **T487-25** **Owner:** in Steam set an own cover for one game (Bibliothek → right click → Verwalten → Eigenes Artwork festlegen), close Steam, rescan in Arcadia: the own cover is shown. · E2E: no (real Steam client)
 
 Automated tests:
 
@@ -48,3 +48,4 @@ History:
 | T487-11, -18, -20, -22 | 2026-11-11 | Claude (QE) | PR branch, Release, headless window, Linux cloud container, one colour per game | ✅ `Window/ArtworkWindowTests`; red once: -11 drawing the whole image stretched, -22 keeping the old bitmap when a slot changes game, -18 never setting `IsShowing`, -20 starting the run on the UI thread with a blocking download (hangs) | – |
 | T487-21 (QE run) | 2026-11-11 | Claude (QE) | PR branch, Release, Xvfb, Linux cloud container, `--demo --demo-games 5000` | ⚠️ start to library 2.1–2.5 s (`main` 2.1 s here); page turns 14–21 ms once started; the first page turns within ~2 s after the library shows wait 1–3.8 s (`main` 0.8–1.4 s at the same moment), noisy, not clearly the PR's; RAM not judgeable in this container | Windows budgets with the owner's run (T487-23) |
 | T487-5, -6 (review fixes) | 2026-11-11 | Claude | PR branch, Debug, Linux cloud container, fake image server | ✅ `ArtworkServiceTests.An_image_the_server_adds_later_comes_with_the_next_scan` (404, 403, 410; red before the fix: the second scan didn't ask), `ImageCheckTests.An_image_with_more_than_40_megapixels_is_none`, `LibraryRefresherTests` (a skipped refresh starts no image run); `ArtworkTests` and `Window/ArtworkWindowTests` still green | – |
+| T487-23, T487-24, T487-25 | 2026-11-12 | Owner | `main`, Windows, own PC with own Steam/Epic library and Steam Controller | ✅ passed | – |

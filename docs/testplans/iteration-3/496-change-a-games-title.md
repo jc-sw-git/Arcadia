@@ -19,7 +19,7 @@ holds at most 200 characters (the field says "Höchstens 200 Zeichen" beyond); l
 and "Titel zurücksetzen" are also in the context menu (`docs/product/detail-page.md`: menu and detail page offer the
 same actions). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Open for the owner: T496-18
+**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Open for the owner: T496-18, T496-16 with a real gamepad (the QE ran it with keys)
 
 **Change and reset**
 
@@ -63,7 +63,7 @@ same actions). The owner's cases are collected by the closing thread of #43.
       Without an own title there is no hint and R3 does nothing on the detail page. · E2E: yes
 - [x] **T496-12** The line is off again after leaving the page (B) and opening it again, after LT/RT to another game and
       back, and after LB/RB to another tab; R3 still works from the buttons, the rail and the rows. · E2E: yes
-- [ ] **T496-13** Look: the "Original-Titel" line sits under the title, does not push the button row out of place or
+- [x] **T496-13** Look: the "Original-Titel" line sits under the title, does not push the button row out of place or
       overlap the artwork's scrim; the [R3] hint stands with the other hints; colours from `Theme.axaml`; a long
       original title is cut with "…". · E2E: no (window)
 
@@ -79,11 +79,11 @@ same actions). The owner's cases are collected by the closing thread of #43.
       the info box. After the file is repaired or deleted and Arcadia started again, everything works. Writing that
       fails while Arcadia runs (disk full, file locked): logged with stack trace, toast, the title shown stays the one
       stored, Arcadia keeps running. · E2E: no (unit test; one acceptance test for the status message)
-- [ ] **T496-16** Controller only, B back: library → A held → ▼ → "Verwalten" → A → "Titel ändern" → type with the
+- [x] **T496-16** Controller only, B back: library → A held → ▼ → "Verwalten" → A → "Titel ändern" → type with the
       D-pad and A → ↵ → R3 → R3 → "Titel zurücksetzen" → B → B; the library shows the automatic title again. The same
       with keys only (WASD, Space, Esc, G). · E2E: no (real gamepad in the quality engineer's run; the key path is
       covered by T496-2, -5, -11)
-- [ ] **T496-17** Release build, demo data with 1,000 games: changing a title, resetting it and toggling the line each
+- [x] **T496-17** Release build, demo data with 1,000 games: changing a title, resetting it and toggling the line each
       show within 50 ms (`Bild:` lines); the UI thread never waits for the file write. · E2E: no (Release timings;
       quality engineer's run)
 - [ ] **T496-18** **Owner:** own library, Windows, Steam Controller: give an Epic game with a broken title (`?` in it)
@@ -121,3 +121,4 @@ History:
 | QE run T496-13, -16 (keys), -17, T496-15 status message | 2026-11-12 | quality engineer | Release, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | failed | two-line own title with the R3 line hides the button row behind the areas; "Titel ändern" opens in 380–560 ms (search with keyboard 20–90 ms); status line cut, "Zu den Einstellungen" lands on the SteamGridDB key; reset 40 ms, R3 ≤ 1 ms |
 | Fixes of the QE's first pass: "Titel ändern" press to frame (`Bild: Accept`), 1,000 demo games | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | first opening 15.5 ms, later 6–8 ms (before: 525–688 ms); "Artwork ändern" 81 ms | view kept by `MainWindow`, its keyboard drawer in the layout from the start |
 | Fixes of the QE's first pass: two-line own title with the R3 line | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed: the line takes the info line's place, the button row stays above the areas | — |
+| QE second run T496-13, -16 (keys), -17, "Eigene Titel" row | 2026-11-12 | quality engineer | Release, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | passed | two-line title with the R3 line keeps the button row; "Titel ändern" opens in 4–15 ms, R3 ≤ 1 ms (reset 40 ms in the first run); status line whole, entry opens "Eigene Titel", B back |

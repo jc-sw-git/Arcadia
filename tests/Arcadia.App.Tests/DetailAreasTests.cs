@@ -43,7 +43,6 @@ public sealed class DetailAreasTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T499-5")]
-    [Trait("TestCase", "T499-7")]
     public async Task Down_leads_into_the_rail_which_goes_round_shows_each_area_at_once_and_Up_on_the_first_returns_to_Spielen()
     {
         using var arcadia = await ArcadiaDriver.StartAsync();
@@ -64,8 +63,8 @@ public sealed class DetailAreasTests
         arcadia.Press(UiAction.Down);
         Assert.Same(page.Areas[0], page.OpenArea);
 
-        // ◀ ▶ do nothing in the rail, A on "Übersicht" neither.
-        arcadia.Press(UiAction.Left).Press(UiAction.Right).Press(UiAction.Accept);
+        // ◀ ▶ do nothing in the rail.
+        arcadia.Press(UiAction.Left).Press(UiAction.Right);
         Assert.Equal(DetailZone.Rail, page.Zone);
         Assert.Same(page.Areas[0], page.OpenArea);
 
@@ -305,8 +304,9 @@ public sealed class DetailAreasTests
         var page = arcadia.Detail!.Current;
         Assert.Equal((AppTexts.GameTypePlay, true, false, AppTexts.Back), (page.AcceptHint, page.ShowsAreasHint, page.ShowsChangeHint, page.BackHint));
 
+        // "Übersicht" in the rail: A leads into its quick selection (T500-2).
         arcadia.Press(UiAction.Down);
-        Assert.Equal((null, false, false, AppTexts.Back), (page.AcceptHint, page.ShowsAreasHint, page.ShowsChangeHint, page.BackHint));
+        Assert.Equal((AppTexts.Select, false, false, AppTexts.Back), (page.AcceptHint, page.ShowsAreasHint, page.ShowsChangeHint, page.BackHint));
 
         arcadia.FocusDetailRowFromRail(DetailAreaViewModel.ControllerKey);
         Assert.Equal((false, true, AppTexts.DetailAreas), (page.ShowsAreasHint, page.ShowsChangeHint, page.BackHint));

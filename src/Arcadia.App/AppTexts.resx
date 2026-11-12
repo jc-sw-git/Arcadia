@@ -610,6 +610,19 @@
   <data name="DetailOverviewLine" xml:space="preserve"><value>{lastPlayed} · {playtime}</value></data>
   <data name="DetailControllerLine" xml:space="preserve"><value>Modus „{mode}“</value></data>
   <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Deinstallieren</value></data>
+  <data name="DetailQuickSelectionCaption" xml:space="preserve"><value>SCHNELLAUSWAHL</value></data>
+  <data name="DetailCustomizeOverview" xml:space="preserve"><value>Übersicht anpassen</value></data>
+  <data name="QuickSelectionDialogSubtitle" xml:space="preserve"><value>Bis zu 5 Einträge für die Schnellauswahl von {game}.</value></data>
+  <data name="QuickSelectionCount" xml:space="preserve"><value>{count} von {max}</value></data>
+  <data name="QuickSelectionFull" xml:space="preserve"><value>{max} von {max} gewählt. Wähle zuerst einen Eintrag ab, um einen anderen aufzunehmen.</value></data>
+  <data name="QuickSelectionPerGame" xml:space="preserve"><value>Jedes Spiel hat seine eigene Schnellauswahl.</value></data>
+  <data name="QuickSelectionPerGameText" xml:space="preserve"><value>Diese Auswahl lässt sich für alle Spiele übernehmen.</value></data>
+  <data name="QuickSelectionApplyToAll" xml:space="preserve"><value>Für alle Spiele übernehmen</value></data>
+  <data name="QuickSelectionAskReplace" xml:space="preserve"><value>Schnellauswahl aller Spiele ersetzen?</value></data>
+  <data name="QuickSelectionAskReplaceText" xml:space="preserve"><value>Eigene Auswahlen anderer Spiele gehen dabei verloren.</value></data>
+  <data name="QuickSelectionReplace" xml:space="preserve"><value>Ersetzen</value></data>
+  <data name="QuickSelectionApplied" xml:space="preserve"><value>Für alle Spiele übernommen.</value></data>
+  <data name="QuickSelectionMoveHint" xml:space="preserve"><value>Wählen</value></data>
   <data name="DetailInfoCaption" xml:space="preserve"><value>INFO</value></data>
   <data name="DetailBefore" xml:space="preserve"><value>DAVOR</value></data>
   <data name="DetailAfter" xml:space="preserve"><value>DANACH</value></data>

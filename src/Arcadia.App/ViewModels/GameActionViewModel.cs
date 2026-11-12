@@ -68,6 +68,12 @@ public interface IGameActionHost
 
     /// <summary>"Artwork ändern" (#490): the modal for the game's cover and background.</summary>
     void ChangeArtwork(GameTileViewModel tile);
+
+    /// <summary>The ids of the game's quick selection in "Übersicht" (#500): its own, else the one for all games, else the defaults.</summary>
+    IReadOnlyList<string> QuickSelectionOf(Game game);
+
+    /// <summary>"Übersicht anpassen" (#500): the dialog over the detail page, listing <paramref name="choices"/>.</summary>
+    void CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices);
 }
 
 /// <summary>

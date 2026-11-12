@@ -9,7 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>The focus ring is drawn whole wherever the focus goes (G-32): nothing clips or covers it.</summary>
 public sealed class FocusRingTests

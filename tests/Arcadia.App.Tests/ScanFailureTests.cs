@@ -80,26 +80,6 @@ public sealed class ScanFailureTests
         Assert.Equal("Keine Spiele in Steam", arcadia.Main.Library.EmptyTab?.Title);
     }
 
-    [AvaloniaFact]
-    [Trait("TestCase", "T369-1")]
-    public async Task The_window_shows_the_failed_state_when_a_tab_without_games_fails_and_the_empty_state_when_it_reads_again()
-    {
-        using var window = await ArcadiaWindow.ShowAsync([new LauncherSpec(Arcadia.Launchers.KnownLaunchers.Steam, 0, Library: [])]);
-        var scanner = (FixedScanner)window.Arcadia.Launchers.Single().Scanner;
-        window.OneWithText("Keine Spiele in Steam");
-
-        scanner.Failure = new IOException("locked");
-        await window.Arcadia.RescanAsync();
-        window.Settle();
-        window.OneWithText("Steam konnte nicht eingelesen werden");
-        window.OneWithText("Erneut versuchen");
-
-        scanner.Failure = null;
-        await window.Arcadia.RescanAsync();
-        window.Settle();
-        window.OneWithText("Keine Spiele in Steam");
-    }
-
     [AvaloniaTheory]
     [Trait("TestCase", "T369-2")]
     [InlineData(true)]

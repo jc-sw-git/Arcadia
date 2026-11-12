@@ -8,7 +8,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// The mouse mode's on-screen keyboard (#110) in its own window, as <c>MouseModeHost</c> opens it over the window in

@@ -7,6 +7,7 @@ using Arcadia.Core.Settings;
 using Arcadia.Core.Tests.Artwork;
 using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
@@ -51,10 +52,42 @@ public sealed class DataSourcesViewTests
         var bar = Assert.Single(ProgressBars(window));
         Assert.True(window.Bounds(bar).Width > 200, "Der Fortschrittsbalken ist zu schmal.");
 
-        // A click on "2. SteamGridDB" moves it up, as A does.
-        window.Click(window.RowButton(window.Row(ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb))));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T506-65")]
+    public async Task A_click_switches_a_source_and_the_mouse_drags_it_to_another_place()
+    {
+        using var window = await ArcadiaWindow.ShowAsync([WithStoreIds(1)]);
+        var arcadia = window.Arcadia;
+        await arcadia.Artwork.WhenIdleAsync();
+        Open(window);
+        var steamGridDb = ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb);
+        var launcher = ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher);
+
+        // A click switches it, as A does; it doesn't move it any more.
+        window.Click(window.RowButton(window.Row(steamGridDb)));
+        Assert.Equal([ArtworkSourceKind.SteamGridDb], arcadia.Settings.Current.Artwork.Off);
+        Assert.Equal(ArtworkSettings.DefaultOrder, arcadia.Settings.Current.Artwork.Order);
+        window.Click(window.RowButton(window.Row(steamGridDb)));
+        Assert.Empty(arcadia.Settings.Current.Artwork.Off);
+
+        // "2. SteamGridDB" pressed on its name and dragged above "1. Launcher-Bilder".
+        var row = window.Bounds(window.RowButton(window.Row(steamGridDb)));
+        var start = new Point(row.Left + 80, row.Center.Y);
+        var target = window.Bounds(window.RowButton(window.Row(launcher)));
+        var end = new Point(start.X, target.Top + (target.Height / 4));
+        window.MouseDown(start);
+        for (var step = 1; step <= 4; step++)
+        {
+            window.MouseMove(new Point(start.X, start.Y + ((end.Y - start.Y) * step / 4)));
+        }
+
+        Assert.Contains("lifted", window.RowButton(window.Row(steamGridDb)).Classes);
+        window.MouseUp(end);
+        Assert.DoesNotContain("lifted", window.RowButton(window.Row(steamGridDb)).Classes);
         Assert.Equal([ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher], arcadia.Settings.Current.Artwork.Order);
-        Assert.Equal(ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb), arcadia.Main.Settings!.FocusedRow!.Key);
+        Assert.Empty(arcadia.Settings.Current.Artwork.Off);
     }
 
     [AvaloniaFact]

@@ -45,6 +45,7 @@ its file.
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 | [491](491-find-artwork-by-name.md) | #491 | Find artwork by name and let the player pick when several games match | T491-1 to T491-29 (owner: T491-28, -29) |
 | [506-a](506-a-detail-page-and-info-box.md) | #506 | Part A: detail page and info box: fast turning, value chips, one box per value, note on top, scrolling | T506-1 to T506-39 (owner: T506-38, -39) |
+| [506-b](506-b-when-artwork-is-searched.md) | #506 | Part B: when Arcadia searches artwork, cancel, sources on and off, their order | T506-40 to T506-79 (owner: T506-73 to -79) |
 | [506-c](506-c-clearer-waiting-list.md) | #506 | Part C: "Warten auf deine Auswahl" in two levels, what is sought, only hits with images, own search term | T506-80 to T506-115 (owner: T506-112 to -115) |
 | [507](507-one-steam-image-keeps-epic-covers-away.md) | #507 | One Steam image that doesn't answer keeps all Epic covers away | T507-1 to T507-3 (owner: T507-3) |
 
@@ -96,3 +97,4 @@ Charter: –. Time box: –. Findings: –.
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |
 | T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
 | T506-1 to -9, -11 to -35 | `ValueBoxTests`, `ValueBoxFollowTests`, `DetailQuickTurnTests`, `TurnJumpTests`; T506-1 to -3, -11, -14, -21, -23, -27 to -33 in `Window/InfoBoxViewTests`; T506-5, -13, -21, -22, -26, -30, -34, -35 in `Window/InfoBoxWindowTests`; T506-33 also `Window/SettingsViewTests` |
+| T506-40, -41, -46 to -48, -50, -53, -54, -58 to -60, -62 to -67, -70 | `ArtworkSearchTriggerAcceptanceTests` (T506-40, -41, -70, real Steam and Epic integrations), `DataSourcesTests` (T506-50, -54, -60 in `DataSourcesTests.Acceptance506.cs`); T506-65 in `Window/DataSourcesViewTests`; the variants in `ArtworkSearchTriggerTests` (Core) |

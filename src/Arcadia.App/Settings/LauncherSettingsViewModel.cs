@@ -16,7 +16,7 @@ namespace Arcadia.App.Settings;
 /// launcher before or after it in the list, B goes back to the list. Applies at once. This class routes the input and
 /// puts the rows together; the parts do the rest.
 /// </summary>
-public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILauncherCategory
+public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILauncherCategory, IDraggableRows
 {
     private static string ActiveGroup => AppTexts.LauncherGroupActive;
     private static string InactiveGroup => AppTexts.LauncherGroupInactive;
@@ -289,12 +289,16 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _order.PutBack();
     }
 
+    public bool CanDrag(SettingsRowViewModel row) => row is LauncherRowViewModel { CanMove: true };
+
+    public bool IsInDragList(SettingsRowViewModel row) => row is LauncherRowViewModel;
+
     /// <summary>The mouse starts dragging <paramref name="row"/>: lifted as with L3.</summary>
-    public void BeginDrag(LauncherRowViewModel row)
+    public void BeginDrag(SettingsRowViewModel row)
     {
-        if (_order.Lifted is null)
+        if (_order.Lifted is null && row is LauncherRowViewModel launcher)
         {
-            _order.Lift(row);
+            _order.Lift(launcher);
         }
     }
 

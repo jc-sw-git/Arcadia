@@ -111,10 +111,10 @@ public sealed class ArtworkTests
         Assert.Equal((400, 600), (after.Size.Width, after.Size.Height));
     }
 
-    /// <summary>T487-5 as the player meets it: Arcadia started before the network was up gets the images at the next rescan.</summary>
+    /// <summary>T487-5 as the player meets it: Arcadia started before the network was up gets the images at the next search (#506).</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T487-5")]
-    public async Task Images_missed_without_network_come_with_the_next_rescan()
+    public async Task Images_missed_without_network_come_with_the_next_search_not_the_next_rescan()
     {
         using var files = new LauncherFiles();
         var steam = files.Steam.Install();
@@ -127,6 +127,11 @@ public sealed class ArtworkTests
 
         files.ImageServer.Offline = false;
         await arcadia.Main.Session.RescanAsync(null);
+        await ArtworkSettledAsync(arcadia);
+
+        // A rescan goes online for no known game (#506): the next "Jetzt suchen" brings the images.
+        Assert.All(arcadia.PageGames, tile => Assert.Null(tile.Cover));
+        Assert.True(arcadia.Artwork.SearchAgain(byPlayer: true));
         await ArtworkSettledAsync(arcadia);
 
         Assert.NotNull(Assert.Single(arcadia.PageGames).Cover);

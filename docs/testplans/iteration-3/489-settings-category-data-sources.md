@@ -43,7 +43,7 @@ Taken over from #490 (the settings rows and the SteamGridDB client are this PR's
 - [ ] **T490-32** **Owner:** Release build on the own PC, a game with 21 background tiles: opening the modal and every focus move < 50 ms (`Bild:` lines), images decoded at tile size, RAM back after closing. · E2E: no (real rendering and timings; Xvfb in the cloud only gives a rough number, see #490's History)
 
 Open question (owner): the search after a key arrives also replaces automatic images taken only as a fallback (none
-fitting), never images set by hand; implemented so in the PR, `docs/product/settings-data-sources.md`. T489-17 and
+fitting), never images set by hand; implemented so in the PR, `docs/product/settings-data-sources/`. T489-17 and
 T489-19 test it that way.
 
 History:

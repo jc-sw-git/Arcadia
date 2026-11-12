@@ -12,7 +12,7 @@ and "Verwalten" on the detail page, and the info panel beside the rows on the se
 small boxes in it, one per value of a value row. "The blue note" is the note with the round blue i. Automated cases
 use the demo or made-up Steam and Epic fixtures (`ArcadiaDriver`) and a fake Steam Controller, window cases
 `ArcadiaWindow`. Open questions Q1 to Q3 (bottom) are answered with their recommendation unless the owner says
-otherwise; the cases follow the recommendation.
+otherwise; the cases follow the recommendation (the implementation follows all three).
 
 **Fast turning (scenario 1)**
 
@@ -61,20 +61,23 @@ otherwise; the cases follow the recommendation.
   both ways and going round; held ◀ ▶ (T476-9) ends with the highlight on the value reached. · E2E: yes
 - [ ] **T506-16** Settings page, every category: each value row with named values gets the value boxes the same way,
   e.g. "Mausmodus", "Beenden des Mausmodus in Spielen erzwingen", "Standardeinstellung bei „Individuell“", a launcher
-  page's "Steam Controller", "Zuschneiden erlaubt", "Bei mehreren Treffern", and the switches (one box for "Ein", one
-  for "Aus", Q2). ◀ ▶ moves the highlight as in T506-15. · E2E: yes
+  page's "Steam Controller", "Zuschneiden erlaubt", "Bei mehreren Treffern", and the switches (a box "Aus", then a box "An", in
+  the order ◀ ▶ go through them, Q2). ◀ ▶ moves the highlight as in T506-15. · E2E: yes
 - [ ] **T506-17** Rows with a plain range of numbers get no value boxes: "Haltedauer" (mouse mode and "Mit ⧉ zurück zu
   Arcadia"), "Zeigergeschwindigkeit"; their info box reads as before. Action and info rows ("Artwork ändern",
-  "Deinstallieren …", "Jetzt suchen", "Letzte Meldungen") get none either. · E2E: yes
+  "Deinstallieren …", "Jetzt suchen", "Letzte Meldungen") get none either. The logging switches ("Info", "Warnungen", "Fehler") keep showing
+  "Letzte Meldungen" instead of value boxes, since their info box is that list. · E2E: yes
 - [ ] **T506-18** A value changed elsewhere while the row is shown (a click on the arrows, the library's context menu
   for the same game, Pan switched off or on): the highlight shows the value now in use. Opening the detail page of a
   game whose mode was set in the context menu: the right box is highlighted at once. · E2E: yes
 - [ ] **T506-19** A greyed value row (no Steam Controller): the value boxes are shown, the current one highlighted,
-  greyed like the row; ◀ ▶ move neither chip nor highlight. · E2E: yes
-- [ ] **T506-20** Rows that already explained their values in boxes (Pan's mode cards "Arcadia" and "Steam" in the
-  category "Controller") show the new value boxes instead, current one highlighted, never both. · E2E: yes
+  at half opacity like the row; ◀ ▶ move neither chip nor highlight. · E2E: yes
+- [ ] **T506-20** A launcher page's row "Steam Controller": its value boxes replace the mode cards "Arcadia" and
+  "Steam", current one highlighted, never both. "Controller-Wächter (Pan)" keeps the mode cards in its section "Steam
+  Controller" (they aren't the row's values) and gets its own boxes "Aus" and "An" above them. · E2E: yes
 - [ ] **T506-21** Look: the value boxes and the highlight are the same on the detail page and the settings page (one
-  template), the highlight is visible without colour alone (e.g. border or mark), and its colours are resources in
+  template), the current box has a 2 px border in the accent blue and a brighter title, so it is
+  visible without colour alone (Q3), and its colours are resources in
   `Theme/Theme.axaml`. · E2E: yes (one template, window test), look no (visual judgement)
 - [ ] **T506-22** Value boxes don't change the width of the rows or the box, and the mouse over a value box focuses
   nothing and changes nothing (only the row's arrows change a value). · E2E: yes (window test)
@@ -93,7 +96,9 @@ otherwise; the cases follow the recommendation.
   game runs, without a way to uninstall; Pan's emulation not running) puts its reason as blue note at the top. An
   active row whose box has a note ("Deinstallieren …" that opens the launcher) shows that note at the top too.
   · E2E: yes
-- [ ] **T506-27** A row without a reason or note shows no empty note and no gap above the name. · E2E: yes (window test)
+- [ ] **T506-27** Settings page: the blue note stands at the very top only where a row has a reason text: a launcher
+  page's "Steam Controller" while it can't be changed, and "Zurücksetzen" while Pan is off. A row without a reason or
+  note, on either page, shows no empty note and no gap above the name. · E2E: yes (gap as window test)
 
 **Scrolling (scenario 5 and the failure case)**
 
@@ -146,11 +151,11 @@ now scrolled with RS, T506-28 to -35), T499-18 and T499-19 (turning, extended by
 
 **Open questions (answered with the recommendation unless the owner objects)**
 
-- **Q1** The mouse wheel turns the carousel and scrolls the settings' info panel; recommended: over an overflowing
+- **Q1** (confirmed by the implementation) The mouse wheel turns the carousel and scrolls the settings' info panel; recommended: over an overflowing
   info box on the detail page it scrolls the box, elsewhere it turns the carousel.
-- **Q2** Switches are value rows with two named values; recommended they get the two value boxes like every choice,
+- **Q2** (confirmed, boxes "Aus" then "An") Switches are value rows with two named values; recommended they get the two value boxes like every choice,
   so the layout is the same everywhere a box explains value rows; only plain number ranges have none.
-- **Q3** The highlight needs a mark besides colour (border or check), so it is readable for players who can't tell
+- **Q3** (confirmed: 2 px accent-blue border and a brighter title) The highlight needs a mark besides colour (border or check), so it is readable for players who can't tell
   the colours apart; recommended.
 
 History:

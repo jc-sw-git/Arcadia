@@ -44,6 +44,7 @@ its file.
 | [489](489-settings-category-data-sources.md) | #489 | Settings category "Datenquellen": SteamGridDB key, artwork order and search | T489-1 to T489-27, T490-21, -22, -27 to -30, -32 |
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 | [491](491-find-artwork-by-name.md) | #491 | Find artwork by name and let the player pick when several games match | T491-1 to T491-29 (owner: T491-28, -29) |
+| [506-b](506-b-when-artwork-is-searched.md) | #506 | Part B: when Arcadia searches artwork, cancel, sources on and off, their order | T506-40 to T506-79 (owner: T506-73 to -79) |
 
 ## Release candidate tests (restart or installation)
 

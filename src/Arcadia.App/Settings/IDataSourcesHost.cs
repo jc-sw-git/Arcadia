@@ -21,4 +21,7 @@ public interface IDataSourcesHost
     /// controller; says itself (a toast) whether that worked.
     /// </summary>
     Task OpenKeyPageAsync();
+
+    /// <summary>"Warten auf deine Auswahl" (#491): the waiting list over the settings; B there comes back to the row.</summary>
+    void OpenWaitingList();
 }

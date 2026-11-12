@@ -144,21 +144,37 @@ public sealed class SteamGridDbKey(SteamGridDbKeyStore store, SteamGridDbClient 
     }
 
     /// <summary>The game's images; <see cref="SteamGridDbOutcome.KeyRejected"/> without a usable key, with no request.</summary>
-    public async Task<SteamGridDbAnswer> ImagesAsync(ArtworkStoreId game, ArtworkKind kind, CancellationToken cancel)
+    public async Task<SteamGridDbAnswer> ImagesAsync(ArtworkStoreId game, ArtworkKind kind, CancellationToken cancel) =>
+        UsableKey() is { } key ? Learned(key, await client.ImagesAsync(key, game, kind, cancel)) : SteamGridDbAnswer.Of(SteamGridDbOutcome.KeyRejected);
+
+    /// <summary>The images of a game by SteamGridDB's own id (#491); as <see cref="ImagesAsync"/>.</summary>
+    public async Task<SteamGridDbAnswer> ImagesOfGameAsync(int gameId, ArtworkKind kind, CancellationToken cancel) =>
+        UsableKey() is { } key ? Learned(key, await client.ImagesOfGameAsync(key, gameId, kind, cancel)) : SteamGridDbAnswer.Of(SteamGridDbOutcome.KeyRejected);
+
+    /// <summary>The games SteamGridDB finds by the name (#491); <see cref="SteamGridDbOutcome.KeyRejected"/> without a usable key, with no request.</summary>
+    public async Task<SteamGridDbSearch> SearchAsync(string name, CancellationToken cancel)
     {
-        string? key;
+        if (UsableKey() is not { } key)
+        {
+            return new SteamGridDbSearch(SteamGridDbOutcome.KeyRejected, []);
+        }
+
+        var search = await client.SearchAsync(key, name, cancel);
+        Learn(key, search.Outcome, checkedNow: false);
+        return search;
+    }
+
+    private string? UsableKey()
+    {
         lock (_lock)
         {
             EnsureLoaded();
-            key = _state is SteamGridDbKeyState.Unchecked or SteamGridDbKeyState.Valid ? _key : null;
+            return _state is SteamGridDbKeyState.Unchecked or SteamGridDbKeyState.Valid ? _key : null;
         }
+    }
 
-        if (key is null)
-        {
-            return SteamGridDbAnswer.Of(SteamGridDbOutcome.KeyRejected);
-        }
-
-        var answer = await client.ImagesAsync(key, game, kind, cancel);
+    private SteamGridDbAnswer Learned(string key, SteamGridDbAnswer answer)
+    {
         Learn(key, answer.Outcome, checkedNow: false);
         return answer;
     }

@@ -56,6 +56,18 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
 
     public FakeSteamGridDb Hero(string store, string id, string url, int width, int height, int score = 0) => Add("heroes", store, id, url, width, height, score);
 
+    /// <summary>
+    /// The games its search by name answers for <paramref name="term"/> (#491), in this order; any other term finds none.
+    /// Their images are added with the store <c>game</c> and the id, e.g. <c>Cover("game", "501", …)</c>.
+    /// </summary>
+    public FakeSteamGridDb Finds(string term, params (int Id, string Name, int? Year)[] games)
+    {
+        _search[term] = [.. games];
+        return this;
+    }
+
+    private readonly Dictionary<string, List<(int Id, string Name, int? Year)>> _search = new(StringComparer.Ordinal);
+
     /// <summary>A game SteamGridDB knows, without images of the kind.</summary>
     public FakeSteamGridDb Knows(string kind, string store, string id)
     {
@@ -132,10 +144,26 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
             return Json(HttpStatusCode.OK, """{"success":true,"data":[]}""");
         }
 
-        if (!_images.TryGetValue(game, out var images))
+        if (game.StartsWith("search/autocomplete/", StringComparison.Ordinal))
+        {
+            var found = _search.GetValueOrDefault(game["search/autocomplete/".Length..]) ?? [];
+            var hits = found.Select(g => new Dictionary<string, object?>
+            {
+                ["id"] = g.Id,
+                ["name"] = g.Name,
+                ["types"] = new[] { "steam" },
+                ["verified"] = true,
+                ["release_date"] = g.Year is { } year ? new DateTimeOffset(year, 6, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds() : null,
+            });
+            return Json(HttpStatusCode.OK, JsonSerializer.Serialize(new { success = true, data = hits }));
+        }
+
+        if (!_images.TryGetValue(game, out var images) && !KnowsGame(game))
         {
             return Json(HttpStatusCode.NotFound, """{"success":false,"errors":["Game not found"]}""");
         }
+
+        images ??= [];
 
         var data = images.Select((image, i) => new Dictionary<string, object>
         {
@@ -151,6 +179,13 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
             ["thumb"] = image.Url,
         });
         return Json(HttpStatusCode.OK, JsonSerializer.Serialize(new { success = true, data }));
+    }
+
+    /// <summary>Like the real one, a game it knows by any kind of image answers an empty list for another kind, not 404.</summary>
+    private bool KnowsGame(string path)
+    {
+        var game = path[(path.IndexOf('/', StringComparison.Ordinal) + 1)..].Split('?')[0];
+        return _images.Keys.Any(k => k[(k.IndexOf('/', StringComparison.Ordinal) + 1)..] == game);
     }
 
     private static HttpResponseMessage Json(HttpStatusCode status, string body) =>

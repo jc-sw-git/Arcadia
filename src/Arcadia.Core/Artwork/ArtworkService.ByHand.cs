@@ -62,7 +62,7 @@ public sealed partial class ArtworkService
     /// </summary>
     public IArtworkSuggestions? Suggestions
     {
-        get => _suggestions ??= SteamGridDb is { } key ? new SteamGridDbSuggestions(key, StoreIdOf) : null;
+        get => _suggestions ??= SteamGridDb is { } key ? new SteamGridDbSuggestions(key, SuggestionImagesAsync) : null;
         init => _suggestions = value;
     }
 

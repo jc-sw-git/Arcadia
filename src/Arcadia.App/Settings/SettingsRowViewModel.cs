@@ -70,6 +70,13 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool IsLampFailure => Lamp == RowLamp.Failure;
 
+    /// <summary>A count beside the title that asks for the player, e.g. the games waiting for a choice (#491); null shows none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCountBadge))]
+    public partial string? CountBadge { get; set; }
+
+    public bool HasCountBadge => CountBadge is not null;
+
     /// <summary>Whether what the row stands for really works (null: no lamp), e.g. Pan's switch or the SteamGridDB key (#489).</summary>
     public void ShowLamp(RowLamp? lamp) => Lamp = lamp;
 

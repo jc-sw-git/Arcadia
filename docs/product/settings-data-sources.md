@@ -31,8 +31,9 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   is checked against it in the order; the first that fits wins, none fitting: the first source with any image, cropped.
 - SteamGridDB is asked only for a game and kind whose current image doesn't fit, so a key arriving later also
   replaces fallback images (e.g. a 16 : 9 background), never an image set by hand; an image it gave holds SteamGridDB's
-  place in the order at later scans. It is asked by the launcher's id (Steam's AppID); games without one wait for the
-  search by name (#13). Of its images the best-rated one that fits (static only, no NSFW or humour) is downloaded;
+  place in the order at later scans. It is asked by the launcher's id (Steam's AppID, Epic's `AppName` on `egs`); a game
+  without one, or whose id SteamGridDB doesn't know, is searched by name (below), also in launchers without images of
+  their own. Of its images the best-rated one that fits (static only, no NSFW or humour) is downloaded;
   only one per game and kind.
 - After every scan a background run fills what is missing; "Fehlende Cover und Hintergründe" counts the games still
   without ("N Spiele ohne Cover, M ohne Hintergrund"), shows "Suche läuft · n von N Spielen" with a progress bar, and A
@@ -50,3 +51,22 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   set by hand unless the switch is on, and is greyed out while a search or reload runs ("Neu laden läuft · n von N").
 - With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, best rated first) after the
   launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen ›" to the row "Schlüssel".
+
+## Search by name and "Warten auf deine Auswahl" (#491)
+
+- The name sent is the shown title without ™ ® ©, trimmed, once per game and run. A hit "matches" when its name is the
+  same ignoring case, punctuation and ™ ® ©. One matching hit, or one result at all, is taken without a question;
+  several matching, or none matching but several results, are "several hits" (at most 8, SteamGridDB's order). No
+  result: the launcher image or the placeholder, searched again at the next scan.
+- "Bei mehreren Treffern" (group "ARTWORK"): "Selbst auswählen" (default) puts the game on the waiting list, "Ersten
+  nehmen" takes the first hit. Switching to "Ersten nehmen" while games wait gives each its first hit at once (one
+  toast); switching back puts none of them back.
+- Indented below, always shown, "Warten auf deine Auswahl" with the count; greyed out with no game waiting or with
+  "Ersten nehmen". A opens the screen: games left, the current game's hits right (cover, name, year). Left/right move
+  through the hits, up/down change the game, both round at the ends; A takes the hit and goes to the next game, Y skips
+  the game, B closes (undecided games stay in their order). Until chosen a game keeps its launcher image or placeholder.
+- A chosen hit is the game's SteamGridDB game from then on; its images are automatic (order, "Zuschneiden erlaubt" and
+  "Alle Artworks neu laden" apply), an image set by hand stays. A skipped game is never searched by name again.
+  "Artwork ändern" offers the chosen game's images; for a waiting or skipped game none from SteamGridDB.
+- The choice, a skip and the waiting list are kept per game across restarts and a game leaving the library and coming
+  back.

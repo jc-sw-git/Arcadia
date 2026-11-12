@@ -161,12 +161,8 @@ public sealed partial class DataSourcesTests
             arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
         }
 
-        var page = arcadia.Detail!.Current;
-        for (var step = 0; step < 6 && page.FocusedKind != GameActionKind.Artwork; step++)
-        {
-            arcadia.Press(UiAction.Right);
-        }
-
+        // The detail page's areas (#499): "Artwork ändern" is in the area "Verwalten".
+        arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Artwork);
         arcadia.Press(UiAction.Accept);
         var modal = arcadia.Main.ChangeArtwork ?? throw new InvalidOperationException("Das Modal ist nicht offen.");
         await ChangedAsync(arcadia, modal);

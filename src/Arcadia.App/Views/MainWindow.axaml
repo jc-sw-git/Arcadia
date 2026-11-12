@@ -1290,6 +1290,10 @@
                                 <!-- No local Fill: it would override the "active" style. -->
                                 <Ellipse Classes="statusDot" Classes.active="{Binding IsLampWorking}" Classes.warning="{Binding IsLampProblem}" Classes.error="{Binding IsLampFailure}" Width="10" Height="10" VerticalAlignment="Center"
                                          IsVisible="{Binding HasLamp}" />
+                                <!-- A count that asks for the player, e.g. the games waiting for a choice (#491). -->
+                                <Border Classes="rowBadge" IsVisible="{Binding HasCountBadge}">
+                                  <TextBlock Text="{Binding CountBadge}" />
+                                </Border>
                               </StackPanel>
                               <!-- A DockPanel, not a horizontal StackPanel: the subtitle keeps its width and wraps. -->
                               <DockPanel>
@@ -1864,6 +1868,15 @@
           </ContentControl.DataTemplates>
         </ContentControl>
       </Panel>
+
+      <!-- "Warten auf deine Auswahl" (#491): games found by name with several hits, over the settings. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding WaitingList}" IsVisible="{Binding IsWaitingListOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:WaitingListViewModel">
+            <views:WaitingListView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
 
       <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">

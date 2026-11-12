@@ -193,7 +193,8 @@ public sealed class SteamGridDbNameTests : IDisposable
 
         var store = Store();
 
-        Assert.Equal(["other:good", "other:waiting"], store.All.Keys.Order(StringComparer.Ordinal));
+        // One hit is enough to wait since #506: the others may have been dropped for having no image.
+        Assert.Equal(["other:good", "other:one-hit", "other:waiting"], store.All.Keys.Order(StringComparer.Ordinal));
         Assert.Equal([Hit(1, "A"), Hit(3, "C")], store.Of("other:waiting")!.Hits);
     }
 

@@ -1070,7 +1070,6 @@
   <data name="WaitingGames" xml:space="preserve"><value>{count} SPIELE</value></data>
   <data name="WaitingGamesOne" xml:space="preserve"><value>1 SPIEL</value></data>
   <data name="WaitingHits" xml:space="preserve"><value>{launcher} · {count} Treffer</value></data>
-  <data name="WaitingHitCount" xml:space="preserve"><value>{count} Treffer</value></data>
   <data name="WaitingTitle" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
   <data name="WaitingQuestion" xml:space="preserve"><value>Welches Spiel ist gemeint?</value></data>
   <data name="WaitingPosition" xml:space="preserve"><value>Spiel {number} von {count}</value></data>

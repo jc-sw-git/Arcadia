@@ -66,7 +66,7 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   what the game is missing or has that doesn't fit and wasn't set by hand: cover, background or both; with both a hit
   needs a cover. A failed check stops SteamGridDB for the run (one request, not one per hit).
 - Indented below, always shown, "Warten auf deine Auswahl" with the count; greyed out with no game waiting or with
-  "Ersten nehmen". A opens the screen with two levels. Games list (left): ▲ ▼ choose a game, round at the ends; A goes
+  "Ersten nehmen". A opens the screen with two levels. Games list (left; name and launcher, no hit count since hits drop out as they are checked): ▲ ▼ choose a game, round at the ends; A goes
   into its hits; B closes (undecided games stay in their order). Hits (right): "Gesucht: Cover und Hintergrund" /
   "Gesucht: Cover" / "Gesucht: Hintergrund" (decided again when shown), the field "Eigener Suchbegriff" with
   "Zurücksetzen", and a grid of the hits' images of that kind (cover when both; five covers or three backgrounds a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).

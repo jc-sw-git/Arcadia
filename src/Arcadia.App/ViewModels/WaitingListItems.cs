@@ -6,12 +6,11 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>One game on the waiting list, left: its initial, name, launcher and how many hits it has.</summary>
+/// <summary>One game on the waiting list, left: its initial, name and launcher.</summary>
 public sealed partial class WaitingGameViewModel(WaitingGame waiting, Action<WaitingGameViewModel> pick) : ViewModelBase
 {
     /// <summary>The game as the service has it now; its hits change when some are dropped for having no image (#506).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HitsText))]
     public partial WaitingGame Waiting { get; set; } = waiting;
 
     public string Key => Waiting.Game.Key;
@@ -21,8 +20,6 @@ public sealed partial class WaitingGameViewModel(WaitingGame waiting, Action<Wai
     public string Monogram => Formatting.Monogram(Waiting.Game.Title);
 
     public string LauncherName => Waiting.LauncherName;
-
-    public string HitsText => AppTexts.WaitingHitCount(Waiting.Hits.Count);
 
     /// <summary>The game the focus is on in the games list, and whose hits show right.</summary>
     [ObservableProperty]

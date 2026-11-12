@@ -15,6 +15,10 @@ public sealed class EpicMetadata(string? catalogPath = null) : ILauncherMetadata
 
     private readonly string _catalogPath = catalogPath ?? EpicCatalog.DefaultPath();
 
+    public string Summary => EpicTexts.EpicMetadataSummary;
+
+    public string About => EpicTexts.EpicMetadataAbout;
+
     public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField> { MetadataField.Developers };
 
     public IMetadataLookup Look(IReadOnlyCollection<Game> games)

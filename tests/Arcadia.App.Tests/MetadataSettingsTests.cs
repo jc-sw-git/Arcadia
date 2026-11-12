@@ -1,0 +1,174 @@
+using Arcadia.App.Input;
+using Arcadia.App.Settings;
+using Arcadia.Core.Metadata;
+using Arcadia.Core.Settings;
+using Arcadia.Core.Tests.Metadata;
+using Arcadia.Launchers.Abstractions;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+
+namespace Arcadia.App.Tests;
+
+/// <summary>
+/// #493: the group "METADATEN" of "Datenquellen" through the view models, with a made-up launcher, its fake store and
+/// fake time: the launcher's row, "Fehlende Metadaten" and "Alle Metadaten neu laden" by controller
+/// (T493-24 to T493-28).
+/// </summary>
+public sealed class MetadataSettingsTests
+{
+    private static readonly LauncherInfo Store = new("store", "Shop", "shop", null);
+
+    private static Game GameOf(string id) => new()
+    {
+        Id = id,
+        LauncherId = Store.Id,
+        Title = "Erfundenes Spiel " + id,
+        Launch = new LaunchTarget.ProtocolUri("shop://run/" + id),
+    };
+
+    /// <param name="served">The games whose store page answers from the start.</param>
+    private static Task<ArcadiaDriver> StartAsync(string[] ids, params string[] served) => ArcadiaDriver.StartAsync(
+        [LauncherSpec.With(Store, [.. ids.Select(GameOf)]) with { Metadata = new FakeMetadataSource() }],
+        new AppSettings { PanEnabled = true, ActiveLaunchers = [Store.Id] },
+        stores: store =>
+        {
+            foreach (var id in served)
+            {
+                store.Serve(id, "Beschreibung von " + id + ", die dir gefällt und nicht zu lang ist.");
+            }
+        });
+
+    /// <summary>Lets fake time pass until the metadata run is idle, the UI thread following.</summary>
+    private static async Task RunToIdleAsync(ArcadiaDriver arcadia)
+    {
+        for (var i = 0; i < 3000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(1);
+            arcadia.Time.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        await arcadia.Metadata.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static DataSourcesSettingsViewModel OpenDataSources(ArcadiaDriver arcadia)
+    {
+        arcadia.Press(UiAction.Settings);
+        for (var i = 0; i < 4 && arcadia.Main.Settings!.Selected is not DataSourcesSettingsViewModel; i++)
+        {
+            arcadia.Press(UiAction.NextTab);
+        }
+
+        return Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected);
+    }
+
+    private static SettingsRowViewModel Row(ArcadiaDriver arcadia, string key) => arcadia.Main.Settings!.Selected.Rows.Single(row => row.Key == key);
+
+    [Theory]
+    [Trait("TestCase", "T493-24")]
+    [InlineData(412, 1000, 20 * 60, "412 von 1.000, noch etwa 20 Minuten")]
+    [InlineData(3, 1000, 70, "3 von 1.000, noch etwa 1 Minute")]
+    [InlineData(1, 1000, 20, "1 von 1.000, weniger als eine Minute")]
+    [InlineData(1200, 5000, null, "1.200 von 5.000")]
+    [InlineData(0, 1000, null, "Alle Metadaten geladen")]
+    [InlineData(0, 0, null, "Arcadia lädt nach dem Einlesen von selbst")]
+    public void The_progress_reads_in_german_number_format(int missing, int total, int? seconds, string expected)
+    {
+        var progress = new MetadataProgress(missing, total, seconds is not null, false, seconds is { } s ? TimeSpan.FromSeconds(s) : null);
+
+        Assert.Equal(expected, MetadataRows.MissingText(progress));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T493-24")]
+    public async Task The_launchers_row_names_what_it_delivers_and_its_info_text_the_limit_and_what_the_store_learns()
+    {
+        using var arcadia = await StartAsync(["4000001"], "4000001");
+        await RunToIdleAsync(arcadia);
+        OpenDataSources(arcadia);
+
+        var row = Row(arcadia, "metadata-provider-" + Store.Id);
+        Assert.Equal((Store.DisplayName, "Made-up summary", AppTexts.DataSourcesMetadataGroup), (row.Title, row.Subtitle, row.Group));
+        Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, Row(arcadia, MetadataRows.MissingKey).Subtitle);
+        Assert.True(Row(arcadia, MetadataRows.MissingKey).IsDimmed);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T493-25")]
+    public async Task The_counts_follow_the_run_a_skipped_game_stays_missing_and_nothing_is_toasted()
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002", "4000003"], "4000001", "4000003");
+        OpenDataSources(arcadia);
+        var toasts = new List<string?>();
+        arcadia.Main.Toast.PropertyChanged += (_, _) => toasts.Add(arcadia.Main.Toast.Text);
+
+        // While the run goes the row names the time left and shows a bar.
+        await arcadia.WaitUntilAsync(() => Row(arcadia, MetadataRows.MissingKey).Subtitle == AppTexts.DataSourcesMetadataMissingUnderAMinute(missing: "2", total: "3"), "2 von 3");
+        Assert.Equal(100.0 / 3, Row(arcadia, MetadataRows.MissingKey).Progress!.Value, 3);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal(AppTexts.DataSourcesMetadataMissingCount(missing: "1", total: "3"), Row(arcadia, MetadataRows.MissingKey).Subtitle);
+        Assert.Null(Row(arcadia, MetadataRows.MissingKey).Progress);
+        Assert.Empty(toasts);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T493-26")]
+    [Trait("TestCase", "T493-28")]
+    public async Task Alle_Metadaten_neu_laden_asks_first_b_sends_nothing_and_a_reloads_every_game()
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002"], "4000001", "4000002");
+        await RunToIdleAsync(arcadia);
+        OpenDataSources(arcadia);
+        var asked = arcadia.MetadataStore.RequestCount;
+
+        arcadia.FocusRow(MetadataRows.ReloadKey);
+        arcadia.Press(UiAction.Accept);
+        var question = Assert.IsType<SettingsQuestionViewModel>(arcadia.Main.Settings!.Selected.Dialog);
+        Assert.Equal((AppTexts.DataSourcesMetadataReloadAsk, AppTexts.DataSourcesMetadataReloadAskText("2")), (question.Title, question.Message));
+        arcadia.Press(UiAction.Back);
+        Assert.Null(arcadia.Main.Settings.Selected.Dialog);
+        await RunToIdleAsync(arcadia);
+        Assert.Equal(asked, arcadia.MetadataStore.RequestCount);
+
+        arcadia.MetadataStore.Serve("4000001", "Neue Beschreibung, die dir gefällt und nicht zu lang ist.");
+        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(arcadia.Main.Settings.Selected.Dialog);
+        var reload = Assert.IsType<ActionRowViewModel>(Row(arcadia, MetadataRows.ReloadKey));
+        Assert.True(reload.IsWorking);
+        Assert.False(reload.CanActivate);
+
+        // A second A while it runs starts no second run.
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(arcadia.Main.Settings.Selected.Dialog);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal(asked + 2, arcadia.MetadataStore.RequestCount);
+        Assert.StartsWith("Neue Beschreibung", arcadia.Main.MetadataOf(Game.KeyOf(Store.Id, "4000001")).Description!.Value);
+        Assert.False(Assert.IsType<ActionRowViewModel>(Row(arcadia, MetadataRows.ReloadKey)).IsWorking);
+
+        // B leaves the settings as everywhere.
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T493-27")]
+    public async Task A_reload_without_any_network_says_so_once_and_a_background_run_says_nothing()
+    {
+        using var arcadia = await StartAsync(["4000001"]);
+        arcadia.MetadataStore.Offline = true;
+        await RunToIdleAsync(arcadia);
+        Assert.NotEqual(AppTexts.DataSourcesMetadataReloadNoConnection, arcadia.Main.Toast.Text);
+
+        OpenDataSources(arcadia);
+        arcadia.FocusRow(MetadataRows.ReloadKey);
+        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal(AppTexts.DataSourcesMetadataReloadNoConnection, arcadia.Main.Toast.Text);
+    }
+}

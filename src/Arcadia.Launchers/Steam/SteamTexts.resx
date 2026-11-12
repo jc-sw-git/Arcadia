@@ -32,4 +32,6 @@
   <data name="SteamOtherAccountInstall" xml:space="preserve"><value>In Steam ist ein anderes Konto angemeldet</value></data>
   <data name="SteamOtherAccountUninstalledNotice" xml:space="preserve"><value>In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Installationen aus Arcadia heraus sind so lange nicht möglich.</value></data>
   <data name="SteamOtherAccountInstalledNotice" xml:space="preserve"><value>In Steam ist derzeit ein anderes Konto angemeldet als in Arcadia. Das Spiel könnte daher entweder nicht starten oder falsche Spielstände verwenden.</value></data>
+  <data name="SteamMetadataSummary" xml:space="preserve"><value>Beschreibung, Genres, Entwickler, Erscheinungsdatum, Tags und Altersfreigaben · ohne Schlüssel</value></data>
+  <data name="SteamMetadataAbout" xml:space="preserve"><value>Genres, Entwickler, Publisher, Erscheinungsdatum und Tags liest Arcadia sofort aus Steams eigenen Dateien. Beschreibung und Altersfreigaben holt es einmal pro Spiel von Steams Shop-Seite. Steam nimmt ohne Schlüssel etwa 200 Anfragen in 5 Minuten an; Arcadia bleibt darunter. Steam erfährt dabei nur die AppID des Spiels, kein Konto und keinen Namen.</value></data>
 </root>

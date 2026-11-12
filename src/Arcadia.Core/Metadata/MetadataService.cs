@@ -88,6 +88,18 @@ public sealed class MetadataService : IDisposable
         }
     }
 
+    /// <summary>The launchers of the last libraries that deliver metadata, in tab order, for "Datenquellen"; none before the first scan.</summary>
+    public IReadOnlyList<(LauncherInfo Launcher, ILauncherMetadata Source)> Providers
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _lastLibraries?.Where(l => l.Source is not null).Select(l => (l.Library.Launcher, l.Source!)).ToList() ?? [];
+            }
+        }
+    }
+
     /// <summary>What the detail page shows of the game; <see cref="MergedMetadata.None"/> while nothing is known.</summary>
     public MergedMetadata Of(string gameKey) => _shown.GetValueOrDefault(gameKey) ?? MergedMetadata.None;
 

@@ -189,7 +189,7 @@ public sealed class MetadataServiceTests : IDisposable
         List<(string Id, DateTimeOffset At)> asked;
         lock (_server.Requests)
         {
-            asked = [.. _server.Requests.Select(r => (r.Request.RequestUri!.Segments[^1], r.At))];
+            asked = [.. _server.Requests.Select(r => (FakeStoreServer.IdOf(r.Request.RequestUri!), r.At))];
         }
 
         Assert.Equal(["1", "2", "2", "3", "3"], asked.Select(a => a.Id));
@@ -477,6 +477,10 @@ public sealed class MetadataServiceTests : IDisposable
     private sealed class ThrowingSource : ILauncherMetadata
     {
         public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField>();
+
+        public string Summary => "Made-up summary";
+
+        public string About => "Made-up about";
 
         public IMetadataLookup Look(IReadOnlyCollection<Game> games) => throw new InvalidOperationException("made-up failure");
     }

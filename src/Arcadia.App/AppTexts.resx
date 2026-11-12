@@ -1169,4 +1169,22 @@
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>Das Bild konnte nicht geladen werden. Das bisherige bleibt.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Artwork ändern</value></data>
   <data name="ErrorContextWaitingList" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
+  <data name="ErrorContextMetadata" xml:space="preserve"><value>Metadaten</value></data>
+  <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>METADATEN</value></data>
+  <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Fehlende Metadaten</value></data>
+  <data name="DataSourcesMetadataMissingCount" xml:space="preserve"><value>{missing} von {total}</value></data>
+  <data name="DataSourcesMetadataMissingMinutes" xml:space="preserve"><value>{missing} von {total}, noch etwa {minutes} Minuten</value></data>
+  <data name="DataSourcesMetadataMissingOneMinute" xml:space="preserve"><value>{missing} von {total}, noch etwa 1 Minute</value></data>
+  <data name="DataSourcesMetadataMissingUnderAMinute" xml:space="preserve"><value>{missing} von {total}, weniger als eine Minute</value></data>
+  <data name="DataSourcesMetadataMissingNone" xml:space="preserve"><value>Alle Metadaten geladen</value></data>
+  <data name="DataSourcesMetadataMissingNotYet" xml:space="preserve"><value>Arcadia lädt nach dem Einlesen von selbst</value></data>
+  <data name="DataSourcesMetadataMissingInfo" xml:space="preserve"><value>Nach jedem Einlesen lädt Arcadia im Hintergrund, was den Spielen noch fehlt, ein Spiel nach dem anderen und so langsam, wie es der Shop erlaubt. Ohne Netz oder ohne Antwort versucht Arcadia es beim nächsten Einlesen wieder. Was einmal geladen ist, bleibt auch offline da.</value></data>
+  <data name="DataSourcesMetadataReload" xml:space="preserve"><value>Alle Metadaten neu laden</value></data>
+  <data name="DataSourcesMetadataReloadSubtitle" xml:space="preserve"><value>Bis die neuen da sind, bleiben die alten zu sehen</value></data>
+  <data name="DataSourcesMetadataReloadRunning" xml:space="preserve"><value>Neu laden läuft</value></data>
+  <data name="DataSourcesMetadataReloadAction" xml:space="preserve"><value>Neu laden</value></data>
+  <data name="DataSourcesMetadataReloadInfo" xml:space="preserve"><value>Lädt Beschreibung, Genres, Entwickler und Altersfreigaben aller Spiele neu, zum Beispiel wenn der Shop sie inzwischen geändert hat. Vorher fragt Arcadia nach. Eigene Titel und Tags bleiben, wie sie sind.</value></data>
+  <data name="DataSourcesMetadataReloadAsk" xml:space="preserve"><value>Alle Metadaten neu laden?</value></data>
+  <data name="DataSourcesMetadataReloadAskText" xml:space="preserve"><value>Arcadia lädt die Metadaten aller {count} Spiele neu. Bis die neuen da sind, bleiben die alten zu sehen; eigene Titel und Tags bleiben, wie sie sind.</value></data>
+  <data name="DataSourcesMetadataReloadNoConnection" xml:space="preserve"><value>Metadaten nicht neu geladen: keine Verbindung zum Shop. Die bisherigen bleiben.</value></data>
 </root>

@@ -49,6 +49,9 @@ internal sealed record ArcadiaParts(
 
     /// <summary>The games' covers and backgrounds (#487); null: placeholders only.</summary>
     public Core.Artwork.ArtworkService? Artwork { get; init; }
+
+    /// <summary>The games' metadata (#493); null: none.</summary>
+    public Core.Metadata.MetadataService? Metadata { get; init; }
 }
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
@@ -164,7 +167,8 @@ internal sealed class ArcadiaComposition
             parts.FirstRun,
             time,
             parts.FolderCheck,
-            parts.Artwork);
+            parts.Artwork,
+            parts.Metadata);
         if (parts.Logs is { } logs)
         {
             main.Logs = logs;

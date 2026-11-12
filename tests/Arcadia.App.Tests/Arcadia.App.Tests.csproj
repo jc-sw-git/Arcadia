@@ -39,6 +39,7 @@
     <Compile Include="..\Arcadia.Core.Tests\Artwork\FakeImageServer.cs" Link="Fixtures\FakeImageServer.cs" />
     <Compile Include="..\Arcadia.Core.Tests\Artwork\FakeSteamGridDb.cs" Link="Fixtures\FakeSteamGridDb.cs" />
     <Compile Include="..\Arcadia.Core.Tests\Artwork\TestImages.cs" Link="Fixtures\TestImages.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\Metadata\FakeStore.cs" Link="Fixtures\FakeStore.cs" />
   </ItemGroup>
 
   <ItemGroup>

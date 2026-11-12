@@ -10,6 +10,12 @@ public interface ILauncherMetadata
     /// <summary>The fields this launcher can deliver at all, its local files and its store together.</summary>
     IReadOnlySet<MetadataField> Fields { get; }
 
+    /// <summary>One line in "Datenquellen" on what the launcher delivers, e.g. "Nur der Entwickler".</summary>
+    string Summary { get; }
+
+    /// <summary>The info text in "Datenquellen": where the data comes from, the store's limit and what the store learns.</summary>
+    string About { get; }
+
     /// <summary>
     /// Reads the launcher's local files once for a run over <paramref name="games"/> (the launcher's own). May read the disk;
     /// call it off the UI thread. Never throws for a file it can't read: it knows nothing then.

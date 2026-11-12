@@ -17,6 +17,10 @@ internal sealed class FakeMetadataSource : ILauncherMetadata
 
     public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField>(Enum.GetValues<MetadataField>());
 
+    public string Summary => "Made-up summary";
+
+    public string About => "Made-up about";
+
     public IMetadataStore? Store { get; init; } = new FakeStorePage();
 
     public IMetadataLookup Look(IReadOnlyCollection<Game> games)
@@ -78,10 +82,14 @@ internal sealed class FakeStoreServer(TimeProvider time) : HttpMessageHandler
         {
             lock (Requests)
             {
-                return [.. Requests.Select(r => r.Request.RequestUri!.Segments[^1])];
+                return [.. Requests.Select(r => IdOf(r.Request.RequestUri!))];
             }
         }
     }
+
+    /// <summary>The game's id in an address: Steam's <c>appids=</c>, else the last segment of the path.</summary>
+    public static string IdOf(Uri address) =>
+        System.Text.RegularExpressions.Regex.Match(address.Query, @"[?&]appids=([^&]*)") is { Success: true } appIds ? appIds.Groups[1].Value : address.Segments[^1];
 
     public void Serve(string id, string answer) => _answers[id] = _ => Task.FromResult(Ok(answer));
 
@@ -130,7 +138,7 @@ internal sealed class FakeStoreServer(TimeProvider time) : HttpMessageHandler
             throw new HttpRequestException(HttpRequestError.ConnectionError, "No connection could be made.");
         }
 
-        var id = request.RequestUri!.Segments[^1];
+        var id = IdOf(request.RequestUri!);
         if (_once.TryGetValue(id, out var queue) && queue.Count > 0)
         {
             return queue.Dequeue()(cancellationToken);

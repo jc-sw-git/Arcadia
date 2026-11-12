@@ -10,6 +10,10 @@ namespace Arcadia.Launchers.Steam;
 /// </summary>
 public sealed class SteamMetadata(Func<SteamInstallation?> locate) : ILauncherMetadata
 {
+    public string Summary => SteamTexts.SteamMetadataSummary;
+
+    public string About => SteamTexts.SteamMetadataAbout;
+
     public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField>
     {
         MetadataField.Description, MetadataField.ShortDescription, MetadataField.Genres, MetadataField.Developers,

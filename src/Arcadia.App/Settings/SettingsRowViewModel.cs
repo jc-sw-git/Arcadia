@@ -125,7 +125,18 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     /// value and can still be changed, so it is ready when the main setting comes on again.
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDimmedNote))]
     public partial bool IsDimmed { get; set; }
+
+    /// <summary>
+    /// Why the row is greyed out, as the blue note at the very top of the info panel (#506), e.g. that Pan is off; shown
+    /// only while <see cref="IsDimmed"/>.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDimmedNote))]
+    public partial string? DimmedNote { get; set; }
+
+    public bool HasDimmedNote => IsDimmed && !string.IsNullOrEmpty(DimmedNote);
 
     /// <summary>A status message the row shows with its level's symbol, e.g. a problem of Steam Controller Support.</summary>
     [ObservableProperty]
@@ -138,9 +149,14 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool IsError => Severity == HealthSeverity.Error;
 
-    /// <summary>What the info panel shows while the row has the focus.</summary>
+    /// <summary>What the info panel shows while the row has the focus, below <see cref="ValueBoxes"/>.</summary>
     [ObservableProperty]
     public partial IReadOnlyList<InfoBlock> Info { get; set; } = [];
+
+    /// <summary>One box per value below the row's name in the info panel (#506), the current one highlighted; empty: none.</summary>
+    public virtual IReadOnlyList<ValueBox> ValueBoxes => [];
+
+    public bool HasValueBoxes => ValueBoxes.Count > 0;
 
     /// <summary>
     /// A box of its own above the info panel showing what the row changes, e.g. the tab strip of the launchers (#136, owner
@@ -239,6 +255,8 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     private readonly Func<int, string> _format;
     private readonly int _min;
     private readonly int _max;
+    private IReadOnlyList<ValueBox> _valueBoxes = [];
+    private bool _boxesShown;
 
     public ChoiceRowViewModel(string key, string title, Func<int> get, Action<int> set, Func<int, string> format, int min, int max)
         : base(key, title)
@@ -251,6 +269,37 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     }
 
     public string ValueText => _format(_get());
+
+    /// <summary>
+    /// What each value does, one text per value from the lowest to the highest (a switch: "Aus", then "An"), for a box per
+    /// value in the info panel (#506). A number range (e.g. a hold time) has none: its values differ only in size.
+    /// </summary>
+    public IReadOnlyList<string> ValueInfos
+    {
+        init
+        {
+            if (value.Count != _max - _min + 1)
+            {
+                throw new ArgumentException($"{Key}: {value.Count} texts for {_max - _min + 1} values", nameof(value));
+            }
+
+            // Named and highlighted when first shown: some rows can't read their value before a page is chosen.
+            _valueBoxes = [.. value.Select(text => new ValueBox(string.Empty, text))];
+        }
+    }
+
+    public override IReadOnlyList<ValueBox> ValueBoxes
+    {
+        get
+        {
+            if (!_boxesShown)
+            {
+                ShowCurrentBox();
+            }
+
+            return _valueBoxes;
+        }
+    }
 
     public bool CanDecrease => CanStep(-1);
 
@@ -280,6 +329,7 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
         OnPropertyChanged(nameof(ValueText));
         OnPropertyChanged(nameof(CanDecrease));
         OnPropertyChanged(nameof(CanIncrease));
+        ShowCurrentBox();
         OnValueShown();
     }
 
@@ -292,6 +342,22 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     /// <summary>Whether the row may take this value; a subclass may hold one back, e.g. "Aktiv" for a launcher that isn't installed (#137).</summary>
     protected virtual bool Allows(int value) => true;
+
+    /// <summary>The names may depend on other settings (e.g. "Standard (erlaubt)"), so they are read again with the value.</summary>
+    private void ShowCurrentBox()
+    {
+        if (_valueBoxes.Count == 0)
+        {
+            return;
+        }
+
+        _boxesShown = true;
+        for (var i = 0; i < _valueBoxes.Count; i++)
+        {
+            _valueBoxes[i].Title = _format(_min + i);
+            _valueBoxes[i].IsCurrent = _min + i == _get();
+        }
+    }
 
     private bool CanStep(int delta)
     {

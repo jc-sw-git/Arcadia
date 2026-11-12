@@ -16,6 +16,7 @@ namespace Arcadia.App.ViewModels;
 /// </summary>
 public sealed partial class GameDetailViewModel : ViewModelBase, IPage
 {
+    private readonly TurnJump _jump;
     private readonly Func<Game, GameTileViewModel> _createTile;
     private readonly IGameActionHost _actions;
     private readonly IPageHost _host;
@@ -38,9 +39,11 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         IPageHost host,
         LauncherTabsViewModel tabs,
         Func<ViewOptionsViewModel?>? createViewOptions,
+        TimeProvider time,
         DetailFocus? focus = null)
     {
         TabName = tabName;
+        _jump = new TurnJump(time, JumpTime);
         _createTile = createTile;
         _actions = actions;
         _host = host;
@@ -55,8 +58,21 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         BuildCovers(focus ?? DetailFocus.Start);
     }
 
-    /// <summary>Raised after the shown game changed (-1 back, 1 forward), so the view can blend to it.</summary>
-    public event Action<int>? Rotated;
+    /// <summary>How long title and content take to jump in after a turn (#499); the covers move as long.</summary>
+    public static TimeSpan JumpTime { get; } = TimeSpan.FromMilliseconds(420);
+
+    /// <summary>
+    /// Raised after the shown game changed when title and content should jump in, with the token the next turn cancels
+    /// (#506): a quick turn raises nothing and stops the running jump, so the page shows the newest game at once.
+    /// </summary>
+    public event Action<CancellationToken>? Jumped;
+
+    /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506).</summary>
+    public event Action<int>? InfoScrollRequested;
+
+    /// <summary>Set by the view: the info box has more than it shows, so the footer names RS.</summary>
+    [ObservableProperty]
+    public partial bool InfoOverflows { get; set; }
 
     public string? TabName { get; }
 
@@ -139,6 +155,10 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             case UiAction.ViewOptions:
                 OpenViewOptions();
                 break;
+            case UiAction.SecondaryUp or UiAction.SecondaryDown:
+                // RS (Shift+W/S) scrolls the info box (#506); the focus stays where it is.
+                InfoScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);
+                break;
             case UiAction.PreviousTab or UiAction.NextTab or UiAction.Options:
                 // No context menu here: its actions are buttons on the page (owner, 2026-10-17).
                 break;
@@ -172,6 +192,9 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     }
 
     public void CancelHeldButtons() => CatchUp();
+
+    /// <summary>The page went: a jump still running stops.</summary>
+    public void StopJump() => _jump.Stop();
 
     /// <summary>The games of the carousel, the ones in the stacks included.</summary>
     public IEnumerable<GameTileViewModel> ShownTiles => Covers.Select(c => c.Tile);
@@ -214,7 +237,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             return;
         }
 
-        ShowFront(delta);
+        ShowFront();
     }
 
     /// <summary>
@@ -261,15 +284,18 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         if (_pageBehind)
         {
             _pageBehind = false;
-            ShowFront(0);
+            ShowFront();
         }
     }
 
     /// <summary>The page of the game in front, with the focus of the page before.</summary>
-    private void ShowFront(int delta)
+    private void ShowFront()
     {
         ShowPage(Current.Focus);
-        Rotated?.Invoke(delta);
+        if (_jump.Turn() is { } jump)
+        {
+            Jumped?.Invoke(jump);
+        }
     }
 
     private void ShowPage(DetailFocus focus)

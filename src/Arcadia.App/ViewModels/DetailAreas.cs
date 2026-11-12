@@ -22,13 +22,30 @@ public static class DetailAreas
     {
         var game = tile.Game;
         var notInstalled = game.IsInstalled ? null : AppTexts.DetailSetAfterInstall;
+        var defaultAllowed = host.DefaultGameMouseModeAllowed;
         return
         [
             new(GameActionKind.ControllerMode, AppTexts.DetailControllerModeTitle, AppTexts.DetailControllerModeSubtitle, AppTexts.DetailControllerModeInfo,
-                Find(actions, GameActionKind.ControllerMode), notInstalled ?? host.ControllerModeHiddenReason, host.ControllerModeOf(game), point),
-            new(GameActionKind.MouseMode, AppTexts.DetailMouseModeTitle, AppTexts.DetailMouseModeSubtitle, AppTexts.DetailMouseModeInfo,
+                Find(actions, GameActionKind.ControllerMode), notInstalled ?? host.ControllerModeHiddenReason, host.ControllerModeOf(game), point)
+            {
+                ValueBoxes =
+                [
+                    new(host.DefaultControllerModeOf(game), AppTexts.DetailControllerModeDefaultInfo),
+                    new(ControllerModes.Arcadia, AppTexts.DetailControllerModeArcadiaInfo),
+                    new(ControllerModes.Steam, AppTexts.DetailControllerModeSteamInfo),
+                ],
+            },
+            new(GameActionKind.MouseMode, AppTexts.DetailMouseModeTitle, AppTexts.DetailMouseModeSubtitle, infoText: string.Empty,
                 Find(actions, GameActionKind.MouseMode), notInstalled ?? AppTexts.DetailMouseModeNotPerGame,
-                GameMouseModes.Of(host.GameMouseModeOf(game), host.DefaultGameMouseModeAllowed), point),
+                GameMouseModes.Of(host.GameMouseModeOf(game), defaultAllowed), point)
+            {
+                ValueBoxes =
+                [
+                    new(GameMouseModes.Of(null, defaultAllowed), AppTexts.DetailMouseModeDefaultInfo),
+                    new(GameMouseModes.Allowed, AppTexts.DetailMouseModeAllowedInfo),
+                    new(GameMouseModes.Blocked, AppTexts.DetailMouseModeBlockedInfo),
+                ],
+            },
         ];
     }
 

@@ -69,13 +69,16 @@ public static class UiActionMap
 
     /// <summary>
     /// The keyboard plays like a game, with one hand on WASD (owner, 2026-10-21): WASD move, Space is A, Q/E are LT/RT,
-    /// Shift+Q/E LB/RB, R is ⧉, F is X, V is Y, C is L3, G is R3, Esc is B and Enter is ≡. The older keys stay as quiet
+    /// Shift+Q/E LB/RB, Shift+W/S RS, R is ⧉, F is X, V is Y, C is L3, G is R3, Esc is B and Enter is ≡. The older keys stay as quiet
     /// alternatives.
     /// </summary>
     public static UiAction? FromKey(Key key, KeyModifiers modifiers) => (key, modifiers) switch
     {
         (Key.W, KeyModifiers.None) or (Key.Up, _) => UiAction.Up,
         (Key.S, KeyModifiers.None) or (Key.Down, _) => UiAction.Down,
+        // Shift+W/S are RS, e.g. scrolling an info box (#506).
+        (Key.W, KeyModifiers.Shift) => UiAction.SecondaryUp,
+        (Key.S, KeyModifiers.Shift) => UiAction.SecondaryDown,
         // Shift+arrows are LT/RT for keyboards without page keys (owner, 2026-10-18).
         (Key.Left, KeyModifiers.Shift) => UiAction.PreviousPage,
         (Key.Right, KeyModifiers.Shift) => UiAction.NextPage,

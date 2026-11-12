@@ -156,7 +156,7 @@ public sealed class DetailAreasTests
         // The info box follows the focus.
         arcadia.Press(UiAction.Down);
         Assert.Equal(GameActionKind.MouseMode, page.InfoRow?.Kind);
-        Assert.Equal(AppTexts.DetailMouseModeInfo, page.InfoRow?.InfoText);
+        Assert.Equal(AppTexts.DetailMouseModeAllowedInfo, page.InfoRow?.ValueBoxes[1].Text);
         arcadia.Press(UiAction.Up);
 
         // A Steam Controller connects while the focus is on the row: active, the focus stays.

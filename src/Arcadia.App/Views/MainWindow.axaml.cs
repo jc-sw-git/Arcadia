@@ -63,6 +63,7 @@ public partial class MainWindow : Window
     private bool _draggingLauncher;
     private SearchViewModel? _search;
     private SettingsPageViewModel? _settingsPage;
+    private SettingsRowViewModel? _infoRow;
     private readonly TabStrip _tabs;
     private readonly TabStrip _categories;
 
@@ -679,6 +680,7 @@ public partial class MainWindow : Window
         }
 
         _settingsPage = page;
+        FollowInfoRow(page?.FocusedRow);
         if (page is not null)
         {
             page.FocusMoved += OnSettingsFocusMoved;
@@ -696,6 +698,7 @@ public partial class MainWindow : Window
         }
 
         _categories.Center(page.Selected);
+        FollowInfoRow(page.FocusedRow);
         InfoScroller.Offset = default;
         UpdateInfoOverflow();
         var byPointer = _focusedByPointer;
@@ -706,6 +709,33 @@ public partial class MainWindow : Window
             SettingsRowsFade.ScrollIntoView(container, row.StartsGroup ? new Thickness(0, SettingsGroupRoom, 0, 0) : default);
         }
     }, DispatcherPriority.Loaded);
+
+    /// <summary>The row the info panel explains: a change of its value or of its greying brings the panel to its top (#506).</summary>
+    private void FollowInfoRow(SettingsRowViewModel? row)
+    {
+        if (_infoRow is not null)
+        {
+            _infoRow.PropertyChanged -= OnInfoRowPropertyChanged;
+        }
+
+        _infoRow = row;
+        if (row is not null)
+        {
+            row.PropertyChanged += OnInfoRowPropertyChanged;
+        }
+    }
+
+    private void OnInfoRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is "ValueText" or nameof(SettingsRowViewModel.IsDimmed))
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                InfoScroller.Offset = default;
+                UpdateInfoOverflow();
+            }, DispatcherPriority.Loaded);
+        }
+    }
 
     private void OnInfoScrollRequested(object? sender, int direction)
     {

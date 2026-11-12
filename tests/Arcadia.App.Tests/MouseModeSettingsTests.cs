@@ -21,13 +21,13 @@ public sealed class MouseModeSettingsTests
 
         // Von Hand (default) → Automatisch → Aus → Von Hand, with ▶; ◀ goes back; A counts on like ▶.
         Assert.Equal(AppTexts.MouseModeManual, ValueOf(mode));
-        Assert.StartsWith("Durch Halten von ⧉ + ≡ wechselst du in den Mausmodus.", FirstText(mode));
+        Assert.Equal(AppTexts.MouseModeActivationManual, CurrentBoxText(mode));
         arcadia.Press(UiAction.Right);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Settings.Current.MouseMode.Activation);
-        Assert.StartsWith("Bei „Automatisch“ schaltet Arcadia automatisch in den Mausmodus", FirstText(mode));
+        Assert.Equal(AppTexts.MouseModeActivationAutomatic, CurrentBoxText(mode));
         arcadia.Press(UiAction.Accept);
         Assert.Equal(AppTexts.Off, ValueOf(mode));
-        Assert.Equal(AppTexts.MouseModeActivationOff, FirstText(mode));
+        Assert.Equal(AppTexts.MouseModeActivationOff, CurrentBoxText(mode));
         arcadia.Press(UiAction.Left).Press(UiAction.Left);
         Assert.Equal(AppTexts.MouseModeManual, ValueOf(mode));
         Assert.Equal(MouseModeActivation.Manual, arcadia.Settings.Current.MouseMode.Activation);
@@ -159,7 +159,8 @@ public sealed class MouseModeSettingsTests
 
     private static string ValueOf(SettingsRowViewModel row) => Assert.IsAssignableFrom<ChoiceRowViewModel>(row).ValueText;
 
-    private static string FirstText(SettingsRowViewModel row) => Assert.IsType<InfoText>(row.Info[0]).Text;
+    /// <summary>What the highlighted value box in the info panel says (#506).</summary>
+    private static string CurrentBoxText(SettingsRowViewModel row) => Assert.Single(row.ValueBoxes, box => box.IsCurrent).Text;
 
     private static void OpenController(ArcadiaDriver arcadia)
     {

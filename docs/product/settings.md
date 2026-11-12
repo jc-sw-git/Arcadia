@@ -12,6 +12,8 @@
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows
   explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses it.
+  A row with named values gets one box per value below its name, the current one highlighted (#506; a number range,
+  e.g. a hold time, gets none); a greyed row with a reason shows it as the blue note at the very top.
 - Rows that don't fit fade into the page at an edge where more rows follow, none where everything fits (#237, same
   look as the library). ▲ ▼ and a jump to a row scroll it out of the fades with its focus ring, at a group's first row
   with the heading; the mouse focuses a row under a fade without scrolling, a click passes through, the wheel scrolls.

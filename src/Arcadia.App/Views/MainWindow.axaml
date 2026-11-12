@@ -480,6 +480,7 @@
                        IsVisible="{Binding Detail?.Current.AcceptHint, Converter={x:Static ObjectConverters.IsNotNull}, TargetNullValue=False}" />
           <ctl:KeyHint Pad="▼" Keys="S" Text="{x:Static app:AppTexts.DetailAreas}" IsVisible="{Binding Detail?.Current.ShowsAreasHint, TargetNullValue=False}" />
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding Detail?.InfoOverflows, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
@@ -1638,7 +1639,16 @@
                 <Panel>
                   <ScrollViewer Name="InfoScroller" VerticalScrollBarVisibility="Hidden">
                     <StackPanel Spacing="20" Margin="32,30">
+                      <!-- Why the row is greyed out, at the very top (#506); then its name, a box per value, the rest. -->
+                      <Border Classes="infoNote info" IsVisible="{Binding FocusedRow?.HasDimmedNote, TargetNullValue=False}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                          <Path Classes="statusIcon info" VerticalAlignment="Top" />
+                          <TextBlock Grid.Column="1" Classes="noteText" ctl:ButtonTextBlock.Text="{Binding FocusedRow?.DimmedNote, TargetNullValue=''}" />
+                        </Grid>
+                      </Border>
                       <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
+                      <views:ValueBoxesView Boxes="{Binding FocusedRow?.ValueBoxes}" Classes.dimmed="{Binding FocusedRow?.IsDimmed, TargetNullValue=False}"
+                                            IsVisible="{Binding FocusedRow?.HasValueBoxes, TargetNullValue=False}" />
                       <ItemsControl ItemsSource="{Binding FocusedRow?.Info}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>

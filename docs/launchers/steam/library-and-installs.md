@@ -18,6 +18,10 @@ decides. Playtime (minutes) and `LastPlayed` come from `userdata/<user>/config/l
 Steam stores no install date (the game folder's creation time is used). Owned but uninstalled games are **not**
 readable locally: `appcache/packageinfo.vdf` keeps packages after a refund, and the real license list
 (`userdata/<id>/config/licensecache`) is encrypted — they come with a Steam login (`account.md`).
+An account can own a game twice under two ids, e.g. GTA III, Vice City and San Andreas as the Windows app and
+TransGaming's Mac port, same name (#510). The web API lists both; Steam hides an app whose `appinfo/common` has
+`VisibleOnlyOnAvailablePlatforms` 1 on a platform its `oslist` (`windows`, `macos`, `linux`) doesn't name, and so does
+Arcadia for an owned app that isn't installed. On Linux `windows` counts too (Proton; not checked against Steam there).
 
 ## Types (#141)
 

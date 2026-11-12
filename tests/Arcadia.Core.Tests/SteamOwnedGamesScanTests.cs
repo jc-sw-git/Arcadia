@@ -109,6 +109,40 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
     }
 
     [Fact]
+    public async Task An_owned_app_Steam_shows_only_on_another_platform_is_left_out()
+    {
+        // The owner's account (#510): every GTA classic twice, the Windows app and TransGaming's Mac port under its own id;
+        // Steam's library on Windows lists only the Windows app.
+        WriteSteam();
+        _web.OwnedGames.AddRange(
+        [
+            (12100, "Grand Theft Auto III", 0, 0),
+            (12230, "Grand Theft Auto III", 0, 0),
+            (12110, "Grand Theft Auto: Vice City", 91, 1_547_940_909),
+            (12240, "Grand Theft Auto: Vice City", 0, 0),
+            (40, "Linux Game", 0, 0),
+        ]);
+        WriteFile(Path.Combine(SteamRoot, "appcache", "appinfo.vdf"), AppInfoFile.Build(
+            AppInfoFile.V29,
+            [
+                (12100, "Grand Theft Auto III", "game"),
+                (12230, "Grand Theft Auto III", "game"),
+                (12110, "Grand Theft Auto: Vice City", "Game"),
+                (12240, "Grand Theft Auto: Vice City", "game"),
+                (40, "Linux Game", "game"),
+            ],
+            new Dictionary<uint, string> { [12100] = "windows", [12230] = "macos", [12110] = "windows", [12240] = "macos", [40] = "linux" }));
+        await SignInAsync();
+
+        var games = await new SteamScanner(() => new SteamInstallation(SteamRoot, Account), _account).ScanAsync();
+
+        // On Linux Steam runs Windows games through Proton, so they stay; a Mac-only app is hidden everywhere but on a Mac.
+        // 10 is WriteSteam's installed game.
+        string[] expected = OperatingSystem.IsLinux() ? ["10", "12100", "12110", "40"] : ["10", "12100", "12110"];
+        Assert.Equal(expected, games.Select(g => g.Id).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void An_unreadable_packageinfo_is_logged_once_and_adds_nothing()
     {
         var warnings = new List<string>();

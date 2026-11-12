@@ -1033,6 +1033,39 @@
   <data name="DataSourcesOverwriteOff" xml:space="preserve"><value>Diese Bilder bleiben beim Neuladen, wie sie sind.</value></data>
   <data name="DataSourcesOverwriteOnHeading" xml:space="preserve"><value>AN</value></data>
   <data name="DataSourcesOverwriteOn" xml:space="preserve"><value>Auch sie werden durch das Bild ersetzt, das Arcadia selbst wählen würde.</value></data>
+  <data name="DataSourcesSeveralHits" xml:space="preserve"><value>Bei mehreren Treffern</value></data>
+  <data name="DataSourcesSeveralHitsSubtitle" xml:space="preserve"><value>Wenn ein Spiel nur über den Namen gefunden wird</value></data>
+  <data name="DataSourcesSeveralHitsAsk" xml:space="preserve"><value>Selbst auswählen</value></data>
+  <data name="DataSourcesSeveralHitsFirst" xml:space="preserve"><value>Ersten nehmen</value></data>
+  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>Steam- und Epic-Spiele findet SteamGridDB eindeutig. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen.</value></data>
+  <data name="DataSourcesSeveralHitsAskHeading" xml:space="preserve"><value>SELBST AUSWÄHLEN</value></data>
+  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, bleibt das Launcher-Bild oder der Platzhalter.</value></data>
+  <data name="DataSourcesSeveralHitsFirstHeading" xml:space="preserve"><value>ERSTEN NEHMEN</value></data>
+  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Bild.</value></data>
+  <data name="DataSourcesTookFirstHits" xml:space="preserve"><value>{count} Spiele: Arcadia hat jeweils den ersten Treffer genommen.</value></data>
+  <data name="DataSourcesTookFirstHitOne" xml:space="preserve"><value>1 Spiel: Arcadia hat den ersten Treffer genommen.</value></data>
+  <data name="DataSourcesWaiting" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
+  <data name="DataSourcesWaitingSubtitle" xml:space="preserve"><value>Bis dahin zeigen sie das Launcher-Bild oder den Platzhalter</value></data>
+  <data name="DataSourcesWaitingNone" xml:space="preserve"><value>Kein Spiel wartet</value></data>
+  <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Nur bei „Selbst auswählen“</value></data>
+  <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Auswählen</value></data>
+  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB hat diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. A öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es.</value></data>
+  <data name="DataSourcesWaitingInfoNone" xml:space="preserve"><value>Gerade wartet kein Spiel. Findet die nächste Suche ein Spiel nur über den Namen und passen mehrere, erscheint es hier.</value></data>
+  <data name="DataSourcesWaitingInfoOff" xml:space="preserve"><value>Die Warteliste gibt es nur, wenn bei „Bei mehreren Treffern“ „Selbst auswählen“ eingestellt ist. Mit „Ersten nehmen“ wählt Arcadia sofort selbst.</value></data>
+  <data name="WaitingGames" xml:space="preserve"><value>{count} SPIELE</value></data>
+  <data name="WaitingGamesOne" xml:space="preserve"><value>1 SPIEL</value></data>
+  <data name="WaitingHits" xml:space="preserve"><value>{launcher} · {count} Treffer</value></data>
+  <data name="WaitingHitCount" xml:space="preserve"><value>{count} Treffer</value></data>
+  <data name="WaitingTitle" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
+  <data name="WaitingQuestion" xml:space="preserve"><value>Welches Spiel ist gemeint?</value></data>
+  <data name="WaitingPosition" xml:space="preserve"><value>Spiel {number} von {count}</value></data>
+  <data name="WaitingIntro" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen. Nach deiner Wahl lädt Arcadia Cover und Hintergrund dieses Spiels.</value></data>
+  <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
+  <data name="WaitingDoneTitle" xml:space="preserve"><value>Alles erledigt.</value></data>
+  <data name="WaitingDoneText" xml:space="preserve"><value>Kein Spiel wartet mehr auf deine Auswahl.</value></data>
+  <data name="WaitingChooseHint" xml:space="preserve"><value>Spiel wählen</value></data>
+  <data name="WaitingSkipHint" xml:space="preserve"><value>Überspringen</value></data>
+  <data name="WaitingTakeHint" xml:space="preserve"><value>Übernehmen, weiter zum nächsten</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
   <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>
@@ -1088,4 +1121,5 @@
   <data name="ArtworkFileUnreadable" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden und wurde nicht übernommen.</value></data>
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>Das Bild konnte nicht geladen werden. Das bisherige bleibt.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Artwork ändern</value></data>
+  <data name="ErrorContextWaitingList" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
 </root>

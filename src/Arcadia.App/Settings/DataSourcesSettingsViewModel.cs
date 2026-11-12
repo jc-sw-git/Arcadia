@@ -8,7 +8,8 @@ namespace Arcadia.App.Settings;
 
 /// <summary>
 /// The category "Datenquellen" (#489): where covers and backgrounds come from. Groups "STEAMGRIDDB" (the key,
-/// <see cref="SteamGridDbKeyRows"/>), "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" (<see cref="ArtworkSourceRows"/>); #43 adds
+/// <see cref="SteamGridDbKeyRows"/>), "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" (<see cref="ArtworkSourceRows"/>,
+/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>); #43 adds
 /// the metadata providers. A key SteamGridDB turned down is a warning beside the category's name.
 /// </summary>
 public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
@@ -18,6 +19,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
     private readonly SteamGridDbKeyRows _keyRows;
     private readonly ArtworkSourceRows _sourceRows;
     private readonly ArtworkReloadRows _reloadRows;
+    private readonly ArtworkNameRows _nameRows;
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
@@ -29,8 +31,10 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         _keyRows = new SteamGridDbKeyRows(key, artwork, host, editor => Editor = editor, time, keyPersists);
         _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
         _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
+        _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList);
         _key.Changed += OnChanged;
         _artwork.SearchChanged += OnChanged;
+        _artwork.WaitingChanged += OnChanged;
         Show();
     }
 
@@ -52,6 +56,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         Editor?.Drop();
         _key.Changed -= OnChanged;
         _artwork.SearchChanged -= OnChanged;
+        _artwork.WaitingChanged -= OnChanged;
     }
 
     /// <summary>From the run's thread or the key's: the rows follow on the UI thread while the category is shown.</summary>
@@ -68,7 +73,9 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         _keyRows.Refresh();
         _sourceRows.Refresh();
         _reloadRows.Refresh();
+        _nameRows.Refresh();
         Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
-        SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow]);
+        SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
+            _nameRows.SeveralHitsRow, _nameRows.WaitingRow]);
     }
 }

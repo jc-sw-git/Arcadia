@@ -59,7 +59,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   as the real keyboard's keys, ISO or ANSI), `KeyboardPlacement` (the mouse mode keyboard's edge and size on a
   monitor).
 
-**Artwork** (`Artwork/`, #13, #487, #489)
+**Artwork** (`Artwork/`, #13, #487, #489, #491)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
   launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
@@ -76,6 +76,10 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 - `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's
   as a scan would choose it, then `IArtworkSuggestions`' up to 20, waiting in `artwork/.suggestions/`), `UseAsync`,
   `UseFileAsync` (own file, 20 MB), `UseOwnFileAsync`, `RestoreAsync`. All set by hand; one lock per game write with the run.
+- `ArtworkService.ByName.cs` (#491): a game SteamGridDB doesn't know by id is searched by name (`SteamGridDbNames`:
+  search term, comparison, `Decide`); `NameMatchStore` keeps per game key Chosen (a SteamGridDB game id), Skipped or
+  Waiting (hits, position) in `artwork/name-matches.json`. `Waiting`/`WaitingChanged`, `ChooseAsync`, `Skip`,
+  `TakeFirstForAllWaiting`, `HitCoverAsync` (a hit's cover for the waiting list, in `.suggestions/`).
 - `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), the own
   files as `own-cover|own-hero.*`, every file through a temporary file and a rename; folder names from the key that never
   leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.

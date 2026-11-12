@@ -29,3 +29,8 @@ buffers (`MALLOC_MMAP_THRESHOLD_=131072` keeps it flat); no managed or native le
 `ArtworkTileViewModel`, the notice `ArtworkNoticeViewModel`) over `ArtworkService.ByHand`; `Views/ChangeArtworkView`.
 `MainViewModel.ChangeArtwork.cs` opens it from the game action (`IGameActionHost.ChangeArtwork`) as a dialog over the
 page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and the warning toast.
+
+"Warten auf deine Auswahl" (#491): `Settings/ArtworkNameRows` ("Bei mehreren Treffern", the waiting row with its count)
+in "Datenquellen"; `ViewModels/WaitingListViewModel` (games, the current game's hits with their covers loading off the
+UI thread) over `ArtworkService.ByName`; `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens it over the
+settings; while open it takes every press before the settings.

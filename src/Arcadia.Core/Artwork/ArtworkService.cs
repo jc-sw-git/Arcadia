@@ -98,14 +98,18 @@ public sealed partial class ArtworkService : IDisposable
         }
     }
 
-    /// <summary>The games of the last libraries with images, e.g. for "Alle Artworks neu laden?"; 0 before the first scan.</summary>
+    /// <summary>
+    /// The games of the last libraries a run looks at (with images of their launcher, or any with a usable SteamGridDB key),
+    /// e.g. for "Alle Artworks neu laden?"; 0 before the first scan.
+    /// </summary>
     public int GameCount
     {
         get
         {
+            var withSteamGridDb = SteamGridDb is { IsUsable: true };
             lock (_gate)
             {
-                return _lastLibraries?.Where(l => l.Source is not null).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).Count() ?? 0;
+                return _lastLibraries?.Where(l => l.Source is not null || withSteamGridDb).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).Count() ?? 0;
             }
         }
     }
@@ -241,6 +245,12 @@ public sealed partial class ArtworkService : IDisposable
                 _runner = Task.Run(RunAsync);
             }
         }
+
+        if (run is not null)
+        {
+            // New libraries: a waiting game may have left or come back.
+            WaitingChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private async Task RunAsync()
@@ -355,16 +365,16 @@ public sealed partial class ArtworkService : IDisposable
         var watch = Stopwatch.StartNew();
         var run = NewRunState(SteamGridDb is { IsUsable: true }) with { Reload = pending.Reload, Overwrite = pending.Overwrite };
         var libraries = pending.Libraries;
-        var searched = libraries.Where(l => l.Source is not null).SelectMany(l => l.Library.Games).Where(g => run.Reload || IsMissingAny(g.Key)).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
+        var searched = libraries.Where(l => IsSearched(l.Source, run)).SelectMany(l => l.Library.Games).Where(g => run.Reload || IsMissingAny(g.Key)).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
         ShowSearch(new ArtworkRun(0, searched.Count, byPlayer, run.Reload), force: true);
         foreach (var (library, source) in libraries)
         {
-            if (source is null)
+            if (!IsSearched(source, run))
             {
                 continue;
             }
 
-            var lookup = source.Look();
+            var lookup = source?.Look() ?? NoImages;
             foreach (var game in library.Games)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -415,6 +425,14 @@ public sealed partial class ArtworkService : IDisposable
             + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty));
         EndSearch(libraries, run, byPlayer);
     }
+
+    /// <summary>
+    /// A launcher without images of its own is searched only for SteamGridDB, by name (#491): with a usable key, so a run
+    /// without one doesn't read the cache for every game of it.
+    /// </summary>
+    private static bool IsSearched(ILauncherArtwork? source, RunState run) => source is not null || run.SteamGridDbUsable;
+
+    private static readonly IArtworkLookup NoImages = new FixedCandidates([]);
 
     private bool IsMissingAny(string key) => _shown.GetValueOrDefault(key) is not { Cover: not null, Hero: not null };
 

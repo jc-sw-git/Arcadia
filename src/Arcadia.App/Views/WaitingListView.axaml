@@ -1,0 +1,115 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             x:Class="Arcadia.App.Views.WaitingListView"
+             x:DataType="vm:WaitingListViewModel">
+
+  <!-- "Warten auf deine Auswahl" (#491, prototype in #13): left the games waiting, right the current game's hits. -->
+  <Panel>
+    <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Command="{Binding CloseCommand}" />
+    <Border Classes="artworkModal" Width="1520" Height="940" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" Height="64" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="18">
+          <Border Classes="promptIcon warning">
+            <Path Classes="waitingIcon" />
+          </Border>
+          <TextBlock Grid.Column="1" Text="{x:Static vm:WaitingListViewModel.Title}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Classes="artworkGame" Text="{x:Static vm:WaitingListViewModel.Question}" />
+          <TextBlock Grid.Column="4" Classes="waitingPosition" Text="{Binding Position}" />
+          <Button Grid.Column="5" Classes="plain dialogClose" Margin="8,0,-22,0" VerticalAlignment="Top" ToolTip.Tip="{x:Static app:AppTexts.Close}"
+                  IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+        </Grid>
+
+        <!-- Footer: with games waiting the D-pad, Y and A; after the last one only B. -->
+        <Border DockPanel.Dock="Bottom" Classes="artworkFooter">
+          <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.WaitingChooseHint}" IsVisible="{Binding HasGames}" />
+            <Button Classes="plain" Command="{Binding SkipCommand}" IsVisible="{Binding HasGames}">
+              <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.WaitingSkipHint}" />
+            </Button>
+            <Button Classes="plain" Command="{Binding CloseCommand}">
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+            </Button>
+            <Button Classes="plain" Command="{Binding TakeCommand}" IsVisible="{Binding HasGames}">
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.WaitingTakeHint}" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <Panel>
+          <Grid ColumnDefinitions="440,*" Margin="0,28,0,0" IsVisible="{Binding HasGames}">
+            <!-- The games: a click makes one current. -->
+            <Border Classes="waitingGames">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="artworkLabel" Text="{Binding GamesHeading}" />
+                <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                  <ItemsControl Name="GameList" ItemsSource="{Binding Games}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:WaitingGameViewModel">
+                        <Button Classes="plain waitingGame" Classes.current="{Binding IsCurrent}" Command="{Binding PickCommand}">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                            <Border Classes="waitingMonogram">
+                              <TextBlock Text="{Binding Monogram}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                              <TextBlock Classes="waitingGameName" Text="{Binding Title}" />
+                              <TextBlock Classes="waitingGameLauncher" Text="{Binding LauncherName}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Classes="waitingGameLauncher" Text="{Binding HitsText}" VerticalAlignment="Center" />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </DockPanel>
+            </Border>
+
+            <!-- The current game's hits: cover, name, year; a placeholder with the name until the cover is there. -->
+            <StackPanel Grid.Column="1" Margin="40,0,0,0">
+              <TextBlock Classes="waitingCurrent" Text="{Binding CurrentTitle}" />
+              <TextBlock Classes="waitingIntro" Text="{Binding Intro}" />
+              <ItemsControl ItemsSource="{Binding Hits}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel ItemSpacing="24" LineSpacing="20" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:WaitingHitViewModel">
+                    <Button Classes="plain artworkTile waitingHit" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
+                      <StackPanel Spacing="4">
+                        <Border Classes="artworkFrame">
+                          <Panel>
+                            <TextBlock Classes="waitingHitPlaceholder" Text="{Binding Name}" IsVisible="{Binding !#HitCover.IsShowing}" />
+                            <ctl:ArtworkImage Name="HitCover" File="{Binding Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                          </Panel>
+                        </Border>
+                        <TextBlock Classes="waitingHitName" Text="{Binding Name}" />
+                        <TextBlock Classes="waitingHitYear" Text="{Binding YearText}" IsVisible="{Binding HasYear}" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Classes="waitingNote">
+                <TextBlock Text="{x:Static app:AppTexts.WaitingNote}" />
+              </Border>
+            </StackPanel>
+          </Grid>
+
+          <!-- After the last game. -->
+          <StackPanel Classes="waitingDone" IsVisible="{Binding IsDone}">
+            <TextBlock Classes="waitingDoneTitle" Text="{x:Static app:AppTexts.WaitingDoneTitle}" />
+            <TextBlock Classes="waitingDoneText" Text="{x:Static app:AppTexts.WaitingDoneText}" />
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+    </Border>
+  </Panel>
+</UserControl>

@@ -105,6 +105,8 @@ public sealed partial class DataSourcesTests
                 (ArtworkReloadRows.ReloadKey, AppTexts.DataSourcesArtworkGroup, 0),
                 ("artwork-crop", AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 0),
+                (ArtworkNameRows.SeveralHitsKey, AppTexts.DataSourcesArtworkGroup, 0),
+                (ArtworkNameRows.WaitingKey, AppTexts.DataSourcesArtworkGroup, 1),
             ],
             category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
 

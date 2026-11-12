@@ -48,6 +48,8 @@
     <!-- Status message levels: information (blue i), warning (yellow triangle), error (red X, Danger). -->
     <SolidColorBrush x:Key="Info" Color="#5AAEFF" />
     <SolidColorBrush x:Key="Warning" Color="#F5B868" />
+    <!-- Text on a warning-coloured surface, e.g. the count of games waiting for a choice (#491). -->
+    <SolidColorBrush x:Key="OnWarning" Color="#1A1206" />
     <SolidColorBrush x:Key="Success" Color="#6FD99A" />
     <!-- A running game (#95): the badge on its cover, the preview's line and the detail page's chip. -->
     <SolidColorBrush x:Key="Running" Color="#6FD99A" />
@@ -1314,6 +1316,22 @@
   </Style>
   <Style Selector="Border.valuePill TextBlock.valueText.on">
     <Setter Property="Foreground" Value="{StaticResource Success}" />
+  </Style>
+  <!-- A count beside a row's title that asks for the player (#491: games waiting for a choice). -->
+  <Style Selector="Border.rowBadge">
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{StaticResource Warning}" />
+  </Style>
+  <Style Selector="Border.rowBadge > TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource OnWarning}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
   <!-- An action on the right of a row ("Erneut versuchen ›"): a pill as wide as the value chips, so the rows' right edge
        stays one column; it fills with the accent while its row has the focus, like a button about to be pressed
@@ -3165,5 +3183,135 @@
   <Style Selector="Button.artworkRestore.off">
     <Setter Property="Opacity" Value="0.4" />
     <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+
+  <!-- "Warten auf deine Auswahl" (#491, prototype in #13): the games left, the current game's hits right, four a row. -->
+  <Style Selector="Path.waitingIcon">
+    <Setter Property="Data" Value="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M20 20l-4.2-4.2M11 8.5v3M11 13.8v.2" />
+    <Setter Property="Stroke" Value="{StaticResource Warning}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.waitingPosition">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.waitingGames">
+    <Setter Property="Padding" Value="0,0,28,0" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+  </Style>
+  <Style Selector="Button.waitingGame">
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.waitingGame.current">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.waitingMonogram">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="66" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.waitingMonogram > TextBlock">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Black" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.waitingGameName">
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.waitingGameLauncher">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.waitingCurrent">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.waitingIntro">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="LineHeight" Value="26" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="Margin" Value="0,0,0,28" />
+  </Style>
+  <!-- A hit without a year is shorter; its tile stays at the top of the row with the others. -->
+  <Style Selector="Button.waitingHit">
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.waitingHit Border.artworkFrame">
+    <Setter Property="Width" Value="208" />
+    <Setter Property="Height" Value="312" />
+  </Style>
+  <Style Selector="TextBlock.waitingHitPlaceholder">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="Margin" Value="14" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.waitingHitName">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="Margin" Value="0,8,0,0" />
+    <Setter Property="MaxWidth" Value="208" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.waitingHitYear">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.waitingNote">
+    <Setter Property="Margin" Value="0,30,0,0" />
+    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.waitingNote > TextBlock">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="25" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="StackPanel.waitingDone">
+    <Setter Property="Spacing" Value="16" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.waitingDoneTitle">
+    <Setter Property="FontSize" Value="32" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.waitingDoneText">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
 </Styles>

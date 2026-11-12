@@ -221,7 +221,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen;
+        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsWaitingListOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -366,7 +366,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         var page = OpenPages().First();
         object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
-            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? ChangeArtwork;
+            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? WaitingList;
         return new ShownLayer(page.GetType(), dialog, page.Layout);
     }
 
@@ -381,6 +381,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (WebPage is { IsShown: true } webPage)
         {
             webPage.Handle(action);
+            return;
+        }
+
+        // Opened from the settings and shown over them, so it comes before the page that covers the window.
+        if (WaitingList is { } waiting)
+        {
+            waiting.Handle(action);
             return;
         }
 

@@ -5,7 +5,7 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Core.Artwork;
 
 /// <summary>A game on the waiting list "Warten auf deine Auswahl" (#491) with the games SteamGridDB found by its name.</summary>
-public sealed record WaitingGame(Game Game, IReadOnlyList<SteamGridDbHit> Hits);
+public sealed record WaitingGame(Game Game, string LauncherName, IReadOnlyList<SteamGridDbHit> Hits);
 
 /// <summary>
 /// The search by name (#491): a game SteamGridDB doesn't know by a launcher's id is searched by its name once; one
@@ -40,13 +40,13 @@ public sealed partial class ArtworkService
             var matches = Names.All;
             return libraries is null
                 ? []
-                : libraries.Where(l => l.Source is not null)
-                    .SelectMany(l => l.Library.Games)
-                    .DistinctBy(g => g.Key, StringComparer.Ordinal)
-                    .Select(g => (Game: g, Match: matches.GetValueOrDefault(g.Key)))
+                : libraries
+                    .SelectMany(l => l.Library.Games.Select(g => (Game: g, Launcher: l.Library.Launcher.DisplayName)))
+                    .DistinctBy(e => e.Game.Key, StringComparer.Ordinal)
+                    .Select(e => (e.Game, e.Launcher, Match: matches.GetValueOrDefault(e.Game.Key)))
                     .Where(e => e.Match is { State: NameMatchState.Waiting })
                     .OrderBy(e => e.Match!.Position)
-                    .Select(e => new WaitingGame(e.Game, e.Match!.Hits))
+                    .Select(e => new WaitingGame(e.Game, e.Launcher, e.Match!.Hits))
                     .ToList();
         }
     }
@@ -60,7 +60,9 @@ public sealed partial class ArtworkService
         Names.Set(game.Key, NameMatch.Chosen(hit.Id));
         Log($"Artwork: {game.Key} ist SteamGridDB-Spiel {hit.Id} (gewählt)");
         WaitingChanged?.Invoke(this, EventArgs.Empty);
-        await UpdateOneAsync(game, cancel);
+
+        // Off the caller's thread: downloads and decoding never hold the UI.
+        await Task.Run(() => UpdateOneAsync(game, cancel), cancel);
     }
 
     /// <summary>Y: the game leaves the waiting list, keeps what it shows and is never searched by name again.</summary>
@@ -208,7 +210,7 @@ public sealed partial class ArtworkService
     /// <summary>One game's images brought up to date at once, as a run would, e.g. after the player chose its SteamGridDB game.</summary>
     private async Task UpdateOneAsync(Game game, CancellationToken cancel)
     {
-        var lookup = _sources.TryGetValue(game.LauncherId, out var source) ? source.Look() : new FixedCandidates([]);
+        var lookup = _sources.TryGetValue(game.LauncherId, out var source) ? source.Look() : NoImages;
         var changes = new ChangeBatcher(this);
         await _write.WaitAsync(cancel);
         try

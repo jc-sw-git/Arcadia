@@ -157,6 +157,26 @@ public sealed class ArtworkServiceByNameTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T491-3")]
+    public async Task A_launcher_without_images_of_its_own_gets_steamgriddbs_by_name_only_with_a_key()
+    {
+        ThreeEchoes();
+        _sgdb.Finds("Solo", (501, "Solo", 2010));
+        var solo = GameOf("solo", "Solo");
+
+        _service.Update([new LibraryArtwork(new LauncherLibrary(Other, [solo]), Source: null)]);
+        await _service.WhenIdleAsync();
+        Assert.Null(Cached("other:solo"));
+
+        await WithKeyAsync();
+        _service.Update([new LibraryArtwork(new LauncherLibrary(Other, [solo]), Source: null)]);
+        await _service.WhenIdleAsync();
+
+        Assert.Equal(Cover501, Cached("other:solo")!.Cover!.Stamp);
+        Assert.Equal(1, _service.GameCount);
+    }
+
+    [Fact]
     [Trait("TestCase", "T491-4")]
     public async Task A_game_known_by_its_id_is_never_searched_by_name()
     {
@@ -408,6 +428,33 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         Assert.Empty(Searches());
         Assert.Empty(_service.Waiting);
         Assert.Equal(Cover502, Cached()!.Cover!.Stamp);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T491-25")]
+    public async Task Closing_during_a_name_search_doesnt_wait_and_the_next_start_keeps_the_list_and_searches_on()
+    {
+        await WithKeyAsync();
+        ThreeEchoes();
+        await ScanAsync();
+        var later = GameOf("later", "Later Game");
+        _sgdb.Finds("Later Game", (601, "Later Game", null), (602, "Later Game", 2001));
+        _sgdb.Hangs = true;
+        _service.Update([new LibraryArtwork(new LauncherLibrary(Other, [Echo, later]), _source)]);
+        for (var i = 0; i < 500 && Searches().Count == 0; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        _service.Dispose();
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        _sgdb.Hangs = false;
+        await RestartAsync();
+        await ScanAsync(Echo, later);
+
+        Assert.Equal(["search/autocomplete/Later Game"], Searches());
+        Assert.Equal(["other:echo", "other:later"], _service.Waiting.Select(w => w.Game.Key));
     }
 
     [Fact]

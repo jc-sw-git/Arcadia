@@ -9,11 +9,11 @@ changed decision changes its case. #494 comes in two PRs: this one (access, matc
 list entries "Metadaten" (T494-16 to T494-20, struck here until that PR takes them up). The owner's cases are collected
 by the closing thread of #43.
 
-**Status:** Automated: T494-2 to T494-15, T494-21, T494-23, T494-24, T494-26 to T494-30, T494-32 · QE: T494-1, T494-22, T494-31, T494-33 · Open for the owner: T494-34, T494-35, T494-36
+**Status:** Automated: T494-2 to T494-15, T494-21, T494-23, T494-24, T494-26 to T494-32 · QE checked: T494-1, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
 
 **IGDB access**
 
-- [ ] **T494-1** Settings → "Datenquellen" → group "IGDB": rows "Client-ID" and "Client-Secret" (A "Eingeben"/
+- [x] **T494-1** Settings → "Datenquellen" → group "IGDB": rows "Client-ID" and "Client-Secret" (A "Eingeben"/
   "Bearbeiten": on-screen keyboard, field starts empty), each with an indented "Aus der Zwischenablage einfügen", then
   "Zugang anlegen", "Verbindung testen", "Zugang löschen" (greyed out without access). The rows show only the last four
   characters. The info text names IGDB's limit (4 requests per second) and what IGDB gets (launcher ids or game names
@@ -101,7 +101,7 @@ data and are asked once per session, `Several_hits_with_selbst_auswaehlen_keep_t
 - [x] **T494-21** Group "REIHENFOLGE FÜR METADATEN": "1. Launcher-Daten", "2. IGDB" (default), each a switch An/Aus
   (◀ ▶ or A, default on). L3 lifts, ▲ ▼ move (no wrap), L3 drops, B puts it back without leaving the page; saved in
   `settings.json`, kept after a restart. · E2E: yes
-- [ ] **T494-22** Mouse: dragging a source moves it, a click switches it, as in the artwork order. · E2E: no (window)
+- [x] **T494-22** Mouse: dragging a source moves it, a click switches it, as in the artwork order. · E2E: no (window)
 - [x] **T494-23** Scenario 5: a Steam game with Steam's German description and genres and IGDB's English description,
   genres and release date; moving IGDB first changes the fields at once with 0 requests (merged from the cache): genres
   and date from IGDB, a field IGDB lacks from Steam, the description stays Steam's German one (language rule). · E2E: yes
@@ -131,13 +131,13 @@ data and are asked once per session, `Several_hits_with_selbst_auswaehlen_keep_t
 
 **Controller and performance**
 
-- [ ] **T494-31** Controller only, B back (scenario 12): "Datenquellen" → "Client-ID" and "Client-Secret" typed →
+- [x] **T494-31** Controller only, B back (scenario 12): "Datenquellen" → "Client-ID" and "Client-Secret" typed →
   "Verbindung testen" → IGDB lifted to first and back → "Warten auf deine Auswahl" → a metadata entry → A on a hit → B;
   no mouse or keyboard needed. Only Twitch's developer console needs the mouse (named in the PR). · E2E: yes (the steps
   up to the order are in `IgdbSettingsTests`; the waiting list steps come with part 2)
 - [x] **T494-32** Without access no request reaches IGDB or Twitch over a whole session with 1,000 games (start, scans,
   every page opened): the fakes count 0 (acceptance criterion of #43). · E2E: no (unit test over the composition)
-- [ ] **T494-33** Release build, made-up data: 1,000 Epic games, each IGDB answer taking 2 s: library usable at once,
+- [x] **T494-33** Release build, made-up data: 1,000 Epic games, each IGDB answer taking 2 s: library usable at once,
   every focus move < 50 ms (`Bild:` lines), the UI thread never blocked, the settings page operable; idle CPU after the
   run as before. · E2E: no (real rendering, Release timings; quality engineer's run)
 
@@ -160,6 +160,7 @@ Automated tests:
 | Test cases | Tests |
 |---|---|
 | T494-2, -3, -5, -6, -9, -10, -21, -26 | `IgdbSettingsTests` (App); access rules in `IgdbAccessTests` (Core) |
+| T494-31 (up to the order) | `IgdbControllerFlowTests` (App): every step a button press, both values typed on the on-screen keyboard |
 | T494-4, -11, -13 to -15, -27, -28 | `IgdbRulesTests`, `IgdbAccessTests`, `MetadataServiceIgdbTests` (Core) |
 | T494-7, -8 | `IgdbAccessTests` (Core), `IgdbSettingsTests.The_access_is_there_again_after_a_restart` (App) |
 | T494-12, -23, -24, -29, -30, -32 | `MetadataServiceIgdbTests` (Core); T494-32 also `IgdbSettingsTests` over the composition |
@@ -172,3 +173,6 @@ History:
 | T494-2 to -15, -21, -23 to -30, -32 | 2026-11-12 | Claude | branch of PR, Debug, Linux container, made-up data | ✅ | – |
 | T494-9 (red once) | 2026-11-12 | Claude | branch of PR, the IGDB warning switched off on purpose | ❌ as expected, ✅ again | – |
 | T494-1, -21 (look only) | 2026-11-12 | Claude | branch of PR, Debug, Linux Xvfb 1920 × 1080, `--demo`, keys | ✅ group IGDB with greyed rows, order with "Wird übersprungen …", a lifted source; QE's own run still checks T494-1 | – |
+| T494-31 (red once) | 2026-11-12 | QE (Claude) | branch of PR, Release, the editor's keyboard limited to letters on purpose | ❌ as expected, ✅ again | – |
+| T494-1, -22 | 2026-11-12 | QE (Claude) | branch of PR, Release, Linux Xvfb 1920 × 1080, `--demo --demo-games 1000`, keys and mouse | ✅ group IGDB without and with access (rows, last four characters, greyed rows focusable, info texts); IGDB dragged above the launcher data and switched off and on by click, `settings.json` follows | – |
+| T494-33 | 2026-11-12 | QE (Claude) | same, a local fake Twitch/IGDB over HTTPS answering every request after 2 s, 1,031 demo games | ✅ library usable throughout; 15 focus and page moves during the fetch 1.4–14 ms (`Bild:`); settings operable; idle CPU after the run 0 %; managed heap after a full GC 296 MB with and without IGDB (RSS under Xvfb not comparable) | – |

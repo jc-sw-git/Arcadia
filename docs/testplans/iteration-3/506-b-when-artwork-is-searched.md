@@ -17,8 +17,10 @@ follow the recommendation.
   SteamGridDB is asked only for that game (the fake counts requests for exactly its id, none for the others), silently:
   no toast, no status message; its images are shown everywhere without the focus moving. · E2E: yes
 - [ ] **T506-41** Given a usable key and no new game, when Arcadia's window becomes active again, a game ends, an
-  install or an uninstall finishes (each triggers a rescan), then SteamGridDB gets 0 requests, also for games still
-  missing images. · E2E: yes
+  install or an uninstall finishes (each triggers a rescan), then nothing is requested over the network: 0 requests to
+  SteamGridDB, to Steam's image server and to Epic's image URLs, also for games still missing images. Local launcher
+  files (Steam's `grid` folder and library cache) are read at every scan, so an image Steam newly cached is shown at
+  once (Q7). · E2E: yes
 - [ ] **T506-42** A new game whose search found nothing, hit no network, a timeout, a 5xx or throttling that ended the
   run is never searched again on its own: not at the next rescans, not after a restart; "Jetzt suchen" asks it again.
   · E2E: no (unit test with fake time)
@@ -161,6 +163,8 @@ scan/start continues, replaced by T506-69), T491-8 ("asked again at the next sca
 - **Q5** In "Artwork ändern" an image set by hand from a source now off stays shown as the one in use; the other
   images of that source are not offered.
 - **Q6** Reordering doesn't wrap at the ends, as the launcher list.
+- **Q7** The rule of scenarios 6 and 7 holds for every network request, not only SteamGridDB: Steam's image server and
+  Epic's image URLs are asked only for new games and at "Jetzt suchen"/"Neu laden"; local launcher files at every scan.
 
 History:
 

@@ -28,7 +28,21 @@ public enum CropAllowance
     Much,
 }
 
-/// <summary>The settings of the group "Reihenfolge für Artwork" and "Zuschneiden erlaubt" in "Datenquellen" (#489).</summary>
+/// <summary>"Bei mehreren Treffern" (#491): what happens when a game found only by its name matches several games.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<SeveralHits>))]
+public enum SeveralHits
+{
+    /// <summary>"Selbst auswählen", the default: the game waits in "Warten auf deine Auswahl".</summary>
+    Ask,
+
+    /// <summary>"Ersten nehmen": the first hit in SteamGridDB's order.</summary>
+    TakeFirst,
+}
+
+/// <summary>
+/// The settings of the group "Reihenfolge für Artwork", "Zuschneiden erlaubt" (#489) and "Bei mehreren Treffern" (#491) in
+/// "Datenquellen".
+/// </summary>
 public sealed record ArtworkSettings
 {
     /// <summary>Launcher images first, then SteamGridDB (#13).</summary>
@@ -37,6 +51,8 @@ public sealed record ArtworkSettings
     public IReadOnlyList<ArtworkSourceKind> Order { get; init; } = DefaultOrder;
 
     public CropAllowance Crop { get; init; } = CropAllowance.Normal;
+
+    public SeveralHits SeveralHits { get; init; } = SeveralHits.Ask;
 
     /// <summary>The share of an image <see cref="Crop"/> lets the crop cut away.</summary>
     public double Tolerance => ToleranceOf(Crop);
@@ -50,7 +66,7 @@ public sealed record ArtworkSettings
 
     /// <summary>
     /// What a hand-edited or newer <c>settings.json</c> may hold, made usable: every known source once, in the saved order,
-    /// a missing one at the end; an unknown tolerance is "Normal".
+    /// a missing one at the end; an unknown tolerance is "Normal", an unknown "Bei mehreren Treffern" "Selbst auswählen".
     /// </summary>
     public ArtworkSettings WithValidValues()
     {
@@ -60,6 +76,7 @@ public sealed record ArtworkSettings
         {
             Order = order.SequenceEqual(Order ?? []) ? Order! : order,
             Crop = Enum.IsDefined(Crop) ? Crop : CropAllowance.Normal,
+            SeveralHits = Enum.IsDefined(SeveralHits) ? SeveralHits : SeveralHits.Ask,
         };
     }
 }

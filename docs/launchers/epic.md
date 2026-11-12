@@ -49,6 +49,9 @@ re-sends once if no process appears from the install directory within 30 s. If t
 - The 3 : 4 cover fits the 2 : 3 tile within "Normal" (11 % cut away); the 16 : 9 image never fits the hero (43 %), so
   it is the cropped fallback until a source with a fitting hero (SteamGridDB, #489) has one. Downloaded once; a new
   address in the catalog for the same image (new art) is downloaded at the next scan.
+- SteamGridDB (#491): a game is asked for at SteamGridDB's platform `egs` by its AppName (letters, digits, `-`, `_`, at
+  most 100 characters; anything else is no id). That SteamGridDB files Epic games by AppName is an assumption, not
+  yet checked against the real service (T491-28); a game it doesn't know by it is searched by its name.
 
 ## Installs (`EpicInstallMonitor`, verified with real installs)
 

@@ -185,8 +185,23 @@ public sealed class EpicArtwork(string? catalogPath = null) : ILauncherArtwork
     /// <summary>A base game without images: it keeps its placeholders rather than take an edition's images.</summary>
     private static readonly Images None = new(null, null, OfBaseGame: true);
 
+    /// <summary>
+    /// The game's id at SteamGridDB's platform <c>egs</c> (#491): its AppName, as Epic writes it (letters, digits, <c>-</c> and
+    /// <c>_</c>); anything else (a manipulated manifest or catalog) is no id, and the game is found by its name instead.
+    /// </summary>
+    internal static string? StoreIdOf(Game game) =>
+        game.LauncherId == EpicIntegration.Info.Id
+        && game.Id.Length is > 0 and <= MaxAppName
+        && game.Id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
+            ? game.Id
+            : null;
+
+    private const int MaxAppName = 100;
+
     private sealed class Lookup(Dictionary<string, Images> byApp, Dictionary<string, Images> byItem) : IArtworkLookup
     {
+        public ArtworkStoreId? StoreIdOf(Game game) => EpicArtwork.StoreIdOf(game) is { } appName ? new ArtworkStoreId(ArtworkStoreId.Epic, appName) : null;
+
         public IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind)
         {
             if (game.LauncherId != EpicIntegration.Info.Id)

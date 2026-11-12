@@ -60,6 +60,9 @@ public sealed partial class ArtworkService : IDisposable
     // Games SteamGridDB answered for in this session (found or not): not asked again until the player searches again.
     private readonly HashSet<(string Key, ArtworkKind Kind)> _askedSteamGridDb = [];
 
+    // Games SteamGridDB doesn't know by their launcher's id in this session: found by name (#491); read by "Artwork ändern" too.
+    private readonly ConcurrentDictionary<string, bool> _unknownById = new(StringComparer.Ordinal);
+
     private PendingRun? _pending;
     private bool _pendingByPlayer;
     private bool _pendingSearchAgain;
@@ -328,6 +331,9 @@ public sealed partial class ArtworkService : IDisposable
         {
             // What "Artwork ändern" offered before isn't shown by any view now.
             _cache.ClearAllSuggestions();
+
+            // Read here, off the UI thread, before the waiting list asks for it (#491).
+            _ = Names.All;
             foreach (var artwork in _cache.All())
             {
                 _records[artwork.GameKey] = artwork;
@@ -649,43 +655,88 @@ public sealed partial class ArtworkService : IDisposable
             return (new Pick.Take(candidate, from, downloadedContent, downloaded, url.AbsoluteUri), downloaded);
         }
 
+        // SteamGridDB answered but its image didn't come: it is asked again at the next scan (#13: retried then).
+        if (from == ArtworkSource.SteamGridDb)
+        {
+            _askedSteamGridDb.Remove((game.Key, kind));
+        }
+
         run.Failed.Add(url);
         return null;
     }
 
     /// <summary>
     /// SteamGridDB's image for the game (#489): its best rated that fits by the size SteamGridDB names, else its best rated
-    /// at all, so only one is downloaded. None without a usable key, without a store id, while the cache holds a fitting
-    /// image, for a game it answered for in this session, or once SteamGridDB failed in this run.
+    /// at all, so only one is downloaded. Asked by the store id, else by the game it matched by name (#491,
+    /// ArtworkService.ByName.cs). None without a usable key, while the cache holds a fitting image, for a game it answered
+    /// for in this session, or once SteamGridDB failed in this run.
     /// </summary>
     private async Task<IReadOnlyList<ArtworkCandidate>> SteamGridDbCandidatesAsync(
         Game game, ArtworkKind kind, IArtworkLookup lookup, ImageSize? cachedSize, RunState run, CancellationToken cancel)
     {
-        if (SteamGridDb is not { } steamGridDb || !run.SteamGridDbUsable
+        if (SteamGridDb is null || !run.SteamGridDbUsable
             || cachedSize is { } held && ArtworkFormat.Fits(held, kind, run.Tolerance)
-            || _askedSteamGridDb.Contains((game.Key, kind))
-            || lookup.StoreIdOf(game) is not { } storeId)
+            || _askedSteamGridDb.Contains((game.Key, kind)))
         {
             return [];
         }
 
-        var answer = await steamGridDb.ImagesAsync(storeId, kind, cancel);
-        run.SteamGridDbAsked++;
-        switch (answer.Outcome)
+        if (await SteamGridDbImagesAsync(game, kind, lookup, run, cancel) is not { } answer)
         {
-            case SteamGridDbOutcome.KeyRejected or SteamGridDbOutcome.NoConnection:
-                // Not one request per game: the rest of the run does without SteamGridDB, the next scan tries again.
-                run.SteamGridDbUsable = false;
-                run.SteamGridDbStop = answer.Outcome;
-                return [];
-            case SteamGridDbOutcome.NotFound:
-                _askedSteamGridDb.Add((game.Key, kind));
-                return [];
+            return [];
         }
 
         _askedSteamGridDb.Add((game.Key, kind));
         var best = answer.Images.FirstOrDefault(i => ArtworkFormat.Fits(new ImageSize(i.Width, i.Height), kind, run.Tolerance)) ?? answer.Images.FirstOrDefault();
         return best is null ? [] : [new ArtworkCandidate(SteamGridDbOrigin, Download: best.Url)];
+    }
+
+    /// <summary>
+    /// What SteamGridDB answered for the game's images (found, or not found by anything Arcadia knows of it); null while it
+    /// can't say yet (waiting for the player's choice, skipped, no hit this run) or after it failed: not asked again then.
+    /// </summary>
+    private async Task<SteamGridDbAnswer?> SteamGridDbImagesAsync(Game game, ArtworkKind kind, IArtworkLookup lookup, RunState run, CancellationToken cancel)
+    {
+        var steamGridDb = SteamGridDb!;
+        if (!_unknownById.ContainsKey(game.Key) && lookup.StoreIdOf(game) is { } storeId)
+        {
+            var byId = await steamGridDb.ImagesAsync(storeId, kind, cancel);
+            run.SteamGridDbAsked++;
+            if (StopsSteamGridDb(byId.Outcome, run))
+            {
+                return null;
+            }
+
+            if (byId.Outcome == SteamGridDbOutcome.Found)
+            {
+                return byId;
+            }
+
+            // It doesn't know the game by its launcher's id: from now on it is a game found by name (D2).
+            _unknownById[game.Key] = true;
+        }
+
+        if (await MatchedGameAsync(game, run, cancel) is not { } gameId)
+        {
+            return null;
+        }
+
+        var byName = await steamGridDb.ImagesOfGameAsync(gameId, kind, cancel);
+        run.SteamGridDbAsked++;
+        return StopsSteamGridDb(byName.Outcome, run) ? null : byName;
+    }
+
+    /// <summary>A key turned down or no connection: not one request per game, the rest of the run does without SteamGridDB.</summary>
+    private static bool StopsSteamGridDb(SteamGridDbOutcome outcome, RunState run)
+    {
+        if (outcome is not (SteamGridDbOutcome.KeyRejected or SteamGridDbOutcome.NoConnection))
+        {
+            return false;
+        }
+
+        run.SteamGridDbUsable = false;
+        run.SteamGridDbStop = outcome;
+        return true;
     }
 
     /// <summary>The <see cref="CachedImage.Origin"/> of SteamGridDB's images.</summary>
@@ -860,6 +911,9 @@ public sealed partial class ArtworkService : IDisposable
                 {
                     _cache.DeleteImage(key, kind);
                     _checked.Remove((key, kind));
+
+                    // Back in the library, it is asked again for what it lost (a SteamGridDB image included).
+                    _askedSteamGridDb.Remove((key, kind));
                     kept = kept.With(kind, null);
                 }
             }
@@ -926,7 +980,14 @@ public sealed partial class ArtworkService : IDisposable
     private RunState NewRunState(bool steamGridDbUsable = false)
     {
         var settings = Settings().WithValidValues();
-        return new RunState { Order = settings.Order, Tolerance = settings.Tolerance, SteamGridDbUsable = steamGridDbUsable, WithSteamGridDb = steamGridDbUsable };
+        return new RunState
+        {
+            Order = settings.Order,
+            Tolerance = settings.Tolerance,
+            SeveralHits = settings.SeveralHits,
+            SteamGridDbUsable = steamGridDbUsable,
+            WithSteamGridDb = steamGridDbUsable,
+        };
     }
 
     private sealed record RunState
@@ -940,6 +1001,12 @@ public sealed partial class ArtworkService : IDisposable
         public IReadOnlyList<ArtworkSourceKind> Order { get; init; } = ArtworkSettings.DefaultOrder;
 
         public double Tolerance { get; init; } = ArtworkFormat.NormalTolerance;
+
+        /// <summary>"Bei mehreren Treffern" (#491).</summary>
+        public SeveralHits SeveralHits { get; init; }
+
+        /// <summary>Games searched by name in this run that SteamGridDB found nothing for: searched again at the next scan.</summary>
+        public HashSet<string> NoHits { get; } = new(StringComparer.Ordinal);
 
         /// <summary>A usable key at the start, and SteamGridDB hasn't failed in this run.</summary>
         public bool SteamGridDbUsable { get; set; }

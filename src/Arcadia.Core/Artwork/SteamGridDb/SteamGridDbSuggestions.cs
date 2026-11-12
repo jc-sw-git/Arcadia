@@ -3,11 +3,11 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Core.Artwork.SteamGridDb;
 
 /// <summary>
-/// SteamGridDB as the source of more images in "Artwork ändern" (#489, #490): its images for the game's store id, best
-/// rated first. Without a usable key nothing is sent (<see cref="SteamGridDbKey.ImagesAsync"/>); a game without a store id
-/// gets none (search by name: #491).
+/// SteamGridDB as the source of more images in "Artwork ändern" (#489, #490, #491): its images for the game's store id or
+/// the game it matched by name, best rated first. Without a usable key nothing is sent; a game with neither gets none.
 /// </summary>
-public sealed class SteamGridDbSuggestions(SteamGridDbKey key, Func<Game, ArtworkStoreId?> storeIdOf) : IArtworkSuggestions
+/// <param name="imagesOf">The game's images at SteamGridDB (ArtworkService.ByName.cs).</param>
+public sealed class SteamGridDbSuggestions(SteamGridDbKey key, Func<Game, ArtworkKind, CancellationToken, Task<SteamGridDbAnswer>> imagesOf) : IArtworkSuggestions
 {
     public SuggestionKeyState KeyState => key.State switch
     {
@@ -18,12 +18,12 @@ public sealed class SteamGridDbSuggestions(SteamGridDbKey key, Func<Game, Artwor
 
     public async Task<IReadOnlyList<SuggestedImage>> FindAsync(Game game, ArtworkKind kind, CancellationToken cancel)
     {
-        if (storeIdOf(game) is not { } storeId)
+        if (!key.IsUsable)
         {
             return [];
         }
 
-        var answer = await key.ImagesAsync(storeId, kind, cancel);
+        var answer = await imagesOf(game, kind, cancel);
         return answer.Outcome == SteamGridDbOutcome.Found
             ? [.. answer.Images.Select(image => new SuggestedImage(ArtworkService.SteamGridDbOrigin, image.Url, image.Score))]
             : [];

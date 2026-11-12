@@ -534,4 +534,33 @@ public sealed class EpicArtworkTests : IDisposable
             }
         }
     }
+
+    [Theory]
+    [Trait("TestCase", "T491-1")]
+    [InlineData("Sugar")]
+    [InlineData("9d2d0eb64d5c44529cece33fe2a46482")]
+    [InlineData("Made-up_Game-1")]
+    public void An_app_name_as_epic_writes_it_is_the_games_id_on_steamgriddbs_egs(string appName) =>
+        Assert.Equal(new ArtworkStoreId(ArtworkStoreId.Epic, appName), new EpicArtwork(Path.Combine(Path.GetTempPath(), "none.bin")).Look().StoreIdOf(GameOf(appName)));
+
+    [Theory]
+    [Trait("TestCase", "T491-2")]
+    [InlineData("")]
+    [InlineData("../grids")]
+    [InlineData("a/b")]
+    [InlineData("a?b=1")]
+    [InlineData("with space")]
+    [InlineData("Ümlaut")]
+    public void Anything_else_is_no_id_and_the_game_is_found_by_name(string appName) =>
+        Assert.Null(new EpicArtwork(Path.Combine(Path.GetTempPath(), "none.bin")).Look().StoreIdOf(GameOf(appName)));
+
+    [Fact]
+    [Trait("TestCase", "T491-2")]
+    public void An_id_over_the_length_limit_or_of_another_launcher_is_no_id()
+    {
+        var look = new EpicArtwork(Path.Combine(Path.GetTempPath(), "none.bin")).Look();
+        Assert.Null(look.StoreIdOf(GameOf(new string('a', 101))));
+        Assert.NotNull(look.StoreIdOf(GameOf(new string('a', 100))));
+        Assert.Null(look.StoreIdOf(GameOf("Sugar") with { LauncherId = "steam" }));
+    }
 }

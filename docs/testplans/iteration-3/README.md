@@ -93,3 +93,4 @@ Charter: –. Time box: –. Findings: –.
 | T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |
 | T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
+| T506-1 to -9, -11 to -35 | `ValueBoxTests`, `ValueBoxFollowTests`, `DetailQuickTurnTests`, `TurnJumpTests`; T506-1 to -3, -11, -14, -21, -23, -27 to -33 in `Window/InfoBoxViewTests`; T506-5, -13, -21, -22, -26, -30, -34, -35 in `Window/InfoBoxWindowTests`; T506-33 also `Window/SettingsViewTests` |

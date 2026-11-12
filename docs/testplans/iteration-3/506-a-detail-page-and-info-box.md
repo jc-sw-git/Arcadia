@@ -3,7 +3,7 @@
 Part A of #506 (scenarios 1–5 and the failure case "info box changes while scrolled"). Part B (when artwork is
 searched) and part C (waiting list) have their own files; part A uses the IDs T506-1 to T506-39.
 
-**Status:** Automated: T506-1 to -3, -6, -11, -14 to -17, -19, -20, -23, -24, -27 to -32 · QE: – · Open for the owner: T506-38, T506-39
+**Status:** Automated: T506-1 to -9, -11 to -35 (T506-30 red: finding of the QE review) · QE: T506-36, -37 · Open: T506-10 (not measured) · Open for the owner: T506-38, T506-39
 
 Every case runs with the gamepad alone; keys follow `docs/product/controls.md` (WASD, Space = A, Esc = B, Q/E = LT/RT,
 Shift+W/S = RS). "A jump" is the animation of one carousel turn: the cover moving out of its stack, the background
@@ -23,19 +23,19 @@ otherwise; the cases follow the recommendation (the implementation follows all t
 - [x] **T506-3** Five presses of E within one jump's time: after the fifth press the fifth game after the start is
   shown, at most the first press jumped; when the presses end, the page stays on that game and no jump follows, also
   after waiting 2 s. · E2E: yes
-- [ ] **T506-4** Mixed quick presses (RT, RT, LT): the page ends on the game after the start, never shows the
+- [x] **T506-4** Mixed quick presses (RT, RT, LT): the page ends on the game after the start, never shows the
   games in between afterwards; over the end of the tab's games it goes round as a single turn does. · E2E: yes
-- [ ] **T506-5** Mouse wheel turned quickly over the page (outside the info box, Q1): the same as T506-3, one notch is
+- [x] **T506-5** Mouse wheel turned quickly over the page (outside the info box, Q1): the same as T506-3, one notch is
   one game; one notch alone jumps as RT does. · E2E: yes (window test)
 - [x] **T506-6** A press after a jump has finished jumps again normally: fast turning leaves no "instant" state
   behind. RT held, released, then RT pressed quickly twice: held behaves as T499-19 (only covers run, the page follows
   on release), the quick presses as T506-2. · E2E: yes
-- [ ] **T506-7** Fast turning with the focus on the second row of "Controller": every game shown keeps "Controller"
+- [x] **T506-7** Fast turning with the focus on the second row of "Controller": every game shown keeps "Controller"
   open and the focus on that row, greyed or not (T499-18), its value chip and info box show the newest game's values;
   the button hints match the newest game. · E2E: yes
-- [ ] **T506-8** Fast turning with only two games, or one: with two it alternates correctly and ends on the right game;
+- [x] **T506-8** Fast turning with only two games, or one: with two it alternates correctly and ends on the right game;
   with one LT/RT and the wheel do nothing (T499-20). · E2E: yes
-- [ ] **T506-9** While the artwork dialog or the uninstall question is open, quick LT/RT and the wheel do nothing and
+- [x] **T506-9** While the artwork dialog or the uninstall question is open, quick LT/RT and the wheel do nothing and
   queue nothing: after B the page shows the game it showed before, no jump runs (T499-13). · E2E: yes
 - [ ] **T506-10** Budget, measured mechanically: from each press of a quick series to the visible title of the newest
   game < 50 ms; a cancelled jump frees the UI thread at once (no frame waits for the stopped animation).
@@ -46,9 +46,9 @@ otherwise; the cases follow the recommendation (the implementation follows all t
 - [x] **T506-11** "Controller" on the detail page: "Steam-Controller-Modus" and "Individueller Mausmodus" show their value
   in the same chip as the value rows of the settings page (same size, surface, ◀ ▶ beside it); a greyed row shows a
   greyed chip, the same as a greyed settings row. · E2E: yes (window test)
-- [ ] **T506-12** ◀ ▶ on each of the two rows: the chip shows the new value at once, going round at the ends; the rail's
+- [x] **T506-12** ◀ ▶ on each of the two rows: the chip shows the new value at once, going round at the ends; the rail's
   value line for "Controller" follows; a click on the arrows beside the chip does the same (T499-23). · E2E: yes
-- [ ] **T506-13** A long value (e.g. "Standard (Steam-Eingabe)") fits the chip or ends with "…" in one line; the focus
+- [x] **T506-13** A long value (e.g. "Standard (Steam-Eingabe)") fits the chip or ends with "…" in one line; the focus
   ring around the row is whole, the row keeps its height. No colour, brush or shadow of the chip outside
   `Theme/Theme.axaml`. · E2E: yes (window test), theme part checked on the diff
 
@@ -67,7 +67,7 @@ otherwise; the cases follow the recommendation (the implementation follows all t
   Arcadia"), "Zeigergeschwindigkeit"; their info box reads as before. Action and info rows ("Artwork ändern",
   "Deinstallieren …", "Jetzt suchen", "Letzte Meldungen") get none either. The logging switches ("Info", "Warnungen", "Fehler") keep showing
   "Letzte Meldungen" instead of value boxes, since their info box is that list. · E2E: yes
-- [ ] **T506-18** A value changed elsewhere while the row is shown (a click on the arrows, the library's context menu
+- [x] **T506-18** A value changed elsewhere while the row is shown (a click on the arrows, the library's context menu
   for the same game, Pan switched off or on): the highlight shows the value now in use. Opening the detail page of a
   game whose mode was set in the context menu: the right box is highlighted at once. · E2E: yes
 - [x] **T506-19** A greyed value row (no Steam Controller): the value boxes are shown, the current one highlighted,
@@ -75,11 +75,11 @@ otherwise; the cases follow the recommendation (the implementation follows all t
 - [x] **T506-20** A launcher page's row "Steam Controller": its value boxes replace the mode cards "Arcadia" and
   "Steam", current one highlighted, never both. "Controller-Wächter (Pan)" keeps the mode cards in its section "Steam
   Controller" (they aren't the row's values) and gets its own boxes "Aus" and "An" above them. · E2E: yes
-- [ ] **T506-21** Look: the value boxes and the highlight are the same on the detail page and the settings page (one
+- [x] **T506-21** Look: the value boxes and the highlight are the same on the detail page and the settings page (one
   template), the current box has a 2 px border in the accent blue and a brighter title, so it is
   visible without colour alone (Q3), and its colours are resources in
   `Theme/Theme.axaml`. · E2E: yes (one template, window test), look no (visual judgement)
-- [ ] **T506-22** Value boxes don't change the width of the rows or the box, and the mouse over a value box focuses
+- [x] **T506-22** Value boxes don't change the width of the rows or the box, and the mouse over a value box focuses
   nothing and changes nothing (only the row's arrows change a value). · E2E: yes (window test)
 
 **Note on top (scenario 4)**
@@ -89,10 +89,10 @@ otherwise; the cases follow the recommendation (the implementation follows all t
   · E2E: yes
 - [x] **T506-24** "Individueller Mausmodus" while the mouse mode in games isn't set per game: its reason as blue note at
   the top, then name, value boxes and text. · E2E: yes
-- [ ] **T506-25** No Steam Controller: "Steam-Controller-Modus" shows its reason as blue note at the top; the controller
+- [x] **T506-25** No Steam Controller: "Steam-Controller-Modus" shows its reason as blue note at the top; the controller
   connects with the focus on the row: the note goes, the row is active, the box starts with the name; it disconnects:
   the note is back at the top. The focus stays on the row throughout (T499-14). · E2E: yes
-- [ ] **T506-26** Every other greyed state of T499-15 (game running, "Deinstallieren …" during an installation, while the
+- [x] **T506-26** Every other greyed state of T499-15 (game running, "Deinstallieren …" during an installation, while the
   game runs, without a way to uninstall; Pan's emulation not running) puts its reason as blue note at the top. An
   active row whose box has a note ("Deinstallieren …" that opens the launcher) shows that note at the top too.
   · E2E: yes
@@ -108,7 +108,7 @@ otherwise; the cases follow the recommendation (the implementation follows all t
   ◀ ▶ still change its value. · E2E: yes
 - [x] **T506-29** A box that fits: no fade; RS and Shift+W/S do nothing at all (no scroll, no focus move, no turn of the
   carousel, no other action). · E2E: yes
-- [x] **T506-30** Footer: it names RS only while the focused row's box overflows; moving the focus from an overflowing
+- [ ] **T506-30** Footer: it names RS only while the focused row's box overflows; moving the focus from an overflowing
   row to a fitting one and back adds and removes the hint at once; in the button row, the rail and "Übersicht" RS
   does nothing and has no hint. · E2E: yes
 - [x] **T506-31** Scrolled down, then ◀ ▶ change the value: the box is at the top again (note and name visible), on the
@@ -116,22 +116,22 @@ otherwise; the cases follow the recommendation (the implementation follows all t
 - [x] **T506-32** Scrolled down, then the row greys or becomes active (Steam Controller disconnects or connects, the
   game starts or ends): the box is at the top again. Scrolled down, then ▲ ▼ to another row or LT/RT to another game:
   the new box starts at the top. · E2E: yes
-- [ ] **T506-33** Settings page regression: RS, Shift+W/S and the wheel still scroll the info panel with its fades
+- [x] **T506-33** Settings page regression: RS, Shift+W/S and the wheel still scroll the info panel with its fades
   (#15, #433), "Letzte Meldungen" still scrolls its list; a value change scrolls the panel back to the top.
   · E2E: yes
-- [ ] **T506-34** Mouse on the detail page: the wheel over an overflowing info box scrolls the box and doesn't turn the
+- [x] **T506-34** Mouse on the detail page: the wheel over an overflowing info box scrolls the box and doesn't turn the
   carousel; over a fitting box or anywhere else it turns the carousel (Q1). · E2E: yes (window test)
-- [ ] **T506-35** The fades of the info box cut no line in half at the start and end positions, and the text under a
+- [x] **T506-35** The fades of the info box cut no line in half at the start and end positions, and the text under a
   fade stays readable over bright, dark and no artwork; the fade's colours are resources in `Theme/Theme.axaml`.
   · E2E: yes (fade at the edge only, window test), look no (visual judgement)
 
 **QE run of the app**
 
-- [ ] **T506-36** Xvfb 1920×1080 and 1280×720, `--demo`, keys only: quick E/Q series and the wheel on the detail page,
+- [x] **T506-36** Xvfb 1920×1080 and 1280×720, `--demo`, keys only: quick E/Q series and the wheel on the detail page,
   "Controller" with value boxes and note on a game not installed and one installed, a box scrolled with Shift+S and
   reset by a value change; the settings categories "Controller", "Datenquellen" and a launcher page with value boxes.
   Nothing cut, one ring at a time, highlight readable. · E2E: no (visual judgement)
-- [ ] **T506-37** Red once: each new acceptance test failed once against a build that replays the queued jumps, gives
+- [x] **T506-37** Red once: each new acceptance test failed once against a build that replays the queued jumps, gives
   no highlight, puts the note under the name, ignores RS or keeps the scroll offset after a value change.
   · E2E: no (process check of the PR's note)
 
@@ -166,3 +166,7 @@ History:
 | T506-11, -14 to -17, -19, -20, -23, -24, -27 to -32 | 2026-11-12 | Implementation | Debug, Linux cloud container, headless (`ValueBoxTests`, `InfoBoxViewTests`, adjusted `DetailPageViewTests`, `SettingsViewTests`, `MouseModeSettingsTests`, `LauncherControllerModeTests`) | passed | – |
 | all App, Core and Pan tests | 2026-11-12 | Implementation | Release, Linux cloud container, `tools/ci/run-tests.sh 4` | passed after fixing one expectation (glyphs in a value box's text) | – |
 | look (part of T506-36) | 2026-11-12 | Implementation | Debug, Xvfb 1920×1080, `--demo`, keys only (`tools/dev/screenshot-arcadia.sh`) | detail page "Controller" of a game without Pan: blue note on top, name, three value boxes with the current framed, chips on both rows, RS hint; Shift+S scrolls to the end; settings "Controller" value boxes with glyphs | Shift+W/S scrolled only on the settings page: now RS on every page (`UiActionMap.FromKey`) |
+| T506-4, -5, -7 to -9, -12, -13, -18, -21, -22, -25, -26, -30, -34, -35 | 2026-11-12 | QE | Debug, Linux cloud container, .NET 10.0.115, headless (`DetailQuickTurnTests`, `ValueBoxFollowTests`, `InfoBoxWindowTests`) | passed except T506-30 (in the rail and the button row RS scrolls the open area's box and the footer names it); each red once by breaking the feature (jumps replayed, no highlight, note under the name, chip wrapping, no reason, no fade, the wheel turning over the box, one game turning, a turn passing a dialog, dead arrows); T506-22 not red-reachable (the box has a fixed width, the value boxes no input) | finding to the implementer |
+| T506-37 | 2026-11-12 | QE | as above | the implementation's tests red against: jumps replayed, no highlight (detail and settings), note under the name, RS ignored, offset kept after a value change (detail and settings) | – |
+| T506-33 and all | 2026-11-12 | QE | Release, Linux cloud container, `tools/ci/run-tests.sh 4` | all green except T506-30 | – |
+| T506-36 | 2026-11-12 | QE | Debug, Xvfb 1920×1080 and 1280×720, `--demo`, keys only | detail page "Controller" of a game not installed: note on top, name, three boxes, chips; Shift+S scrolls, three quick E show the newest game at once; settings "Controller" and "Datenquellen" fine; in the rail the footer names RS (T506-30) | finding to the implementer |

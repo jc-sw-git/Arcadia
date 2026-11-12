@@ -105,6 +105,7 @@ internal sealed class LauncherLibraryRows
             {
                 Group = LibraryGroup,
                 Subtitle = option.Subtitle,
+                ValueInfos = [AppTexts.LibraryOptionOff, AppTexts.LibraryOptionOn],
                 Info =
                 [
                     new InfoText(option.Info),

@@ -9,7 +9,7 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   The context menu stands beside the cover after a right click on it, over the preview's "Optionen" button after ⧉, R
   or a click on that button. No "all launchers" tab. No dedicated favourite button.
 - The keyboard plays like a game, one hand on WASD: WASD move, Space = A (held: details), Esc = B, F = X, V = Y, C = L3, G = R3,
-  Q/E = LT/RT, Shift+Q/E = LB/RB, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
+  Q/E = LT/RT, Shift+Q/E = LB/RB, Shift+W/S = RS, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
   the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real keyboard types, so only keys
   without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
 - Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
@@ -20,6 +20,9 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   dialog's buttons and the on-screen keyboard (`on-screen-keyboard.md`). Where a step past an edge leads to another
   area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
   the mouse wheel and the scroll bars stop at the ends.
+- RS (Shift+W/S, the wheel over it) scrolls an info box that doesn't fit, on the settings page and the detail page
+  (#506); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
+  again. The footer names RS only while the box overflows.
 - Held buttons repeat (#476): the D-pad and both sticks after 400 ms, then every 90 ms; LT/RT and LB/RB, wherever
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every
   150 ms; keys repeat as Windows repeats them. On the on-screen keyboard LB/RB are shift and AltGr and don't repeat.

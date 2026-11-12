@@ -44,6 +44,8 @@ public sealed class MouseModeRows
         {
             Group = Group,
             Subtitle = AppTexts.MouseModeSubtitle,
+            ValueInfos = [AppTexts.MouseModeActivationOff, AppTexts.MouseModeActivationManual, AppTexts.MouseModeActivationAutomatic],
+            Info = [Help],
         };
         _hold = new ChoiceRowViewModel(
             "mouse-mode-hold",
@@ -82,6 +84,7 @@ public sealed class MouseModeRows
             Group = Group,
             Indent = 1,
             Subtitle = AppTexts.MouseModeForDialogsSubtitle,
+            ValueInfos = [AppTexts.MouseModeForDialogsOff, AppTexts.MouseModeForDialogsOn],
             Info = [new InfoText(AppTexts.MouseModeForDialogsInfo)],
         };
         _endInFront = new SwitchRowViewModel(
@@ -93,6 +96,7 @@ public sealed class MouseModeRows
             Group = Group,
             Indent = 1,
             Subtitle = AppTexts.MouseModeOnlyManual,
+            ValueInfos = [AppTexts.MouseModeEndInFrontOff, AppTexts.MouseModeEndInFrontOn],
             Info = [new InfoText(AppTexts.MouseModeEndInFrontInfo)],
         };
         _inGames = new ChoiceRowViewModel(
@@ -107,6 +111,7 @@ public sealed class MouseModeRows
             Group = Group,
             Indent = 1,
             Subtitle = AppTexts.MouseModeOnlyManual,
+            ValueInfos = [AppTexts.MouseModeInGamesAllow, AppTexts.MouseModeInGamesEnd, AppTexts.MouseModeInGamesPerGame],
         };
         _perGameDefault = new ChoiceRowViewModel(
             "mouse-mode-per-game-default",
@@ -120,6 +125,7 @@ public sealed class MouseModeRows
             Group = Group,
             Indent = 2,
             Subtitle = AppTexts.MouseModeDefaultSubtitle,
+            ValueInfos = [AppTexts.MouseModeDefaultAllowedInfo, AppTexts.MouseModeDefaultDisabledInfo],
             Info = [new InfoText(AppTexts.MouseModeDefaultInfo)],
         };
         Update();
@@ -164,22 +170,6 @@ public sealed class MouseModeRows
         .. HelpLimits.Select(l => new InfoBullet(l)),
     ]);
 
-    /// <summary>What the chosen way of switching does, under "Mausmodus".</summary>
-    private string ActivationText => Current.Activation switch
-    {
-        MouseModeActivation.Off => AppTexts.MouseModeActivationOff,
-        MouseModeActivation.Automatic => AppTexts.MouseModeActivationAutomatic,
-        _ => AppTexts.MouseModeActivationManual,
-    };
-
-    /// <summary>What the chosen value of "Beenden des Mausmodus in Spielen erzwingen" does (owner's wording, 2026-10-21).</summary>
-    private string InGamesText => Current.InGames switch
-    {
-        MouseModeInGames.Blocked => AppTexts.MouseModeInGamesEnd,
-        MouseModeInGames.PerGame => AppTexts.MouseModeInGamesPerGame,
-        _ => AppTexts.MouseModeInGamesAllow,
-    };
-
     private void Change(Func<MouseModeSettings, MouseModeSettings> change)
     {
         _changes.Apply(s => s with { MouseMode = change(s.MouseMode) }, AppTexts.MouseMode);
@@ -197,8 +187,6 @@ public sealed class MouseModeRows
         _endInFront.IsDimmed = !manual;
         _inGames.IsDimmed = !manual;
         _perGameDefault.IsDimmed = !manual || Current.InGames != MouseModeInGames.PerGame;
-        _activation.Info = [new InfoText(ActivationText), Help];
-        _inGames.Info = [new InfoText(InGamesText)];
     }
 }
 
@@ -218,7 +206,7 @@ public sealed class ReturnWithViewRows
         {
             Group = Group,
             Subtitle = AppTexts.MouseModeBackToArcadiaSubtitle,
-            Info = [new InfoText(AppTexts.MouseModeBackToArcadiaInfo)],
+            ValueInfos = [AppTexts.MouseModeBackToArcadiaOff, AppTexts.MouseModeBackToArcadiaInfo],
         };
         _hold = new ChoiceRowViewModel(
             "return-with-view-hold",

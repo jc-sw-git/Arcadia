@@ -38,6 +38,7 @@ internal sealed class LauncherControllerRows
             () => category.Host.IsPanOn)
         {
             Group = ControllerGroup,
+            ValueInfos = [AppTexts.PanModeArcadiaCard, AppTexts.PanModeSteamCard],
         };
         _resetRow = new ActionRowViewModel("launcher-controller-reset", AppTexts.LauncherControllerResetTitle, AskReset)
         {
@@ -57,17 +58,14 @@ internal sealed class LauncherControllerRows
         var preset = ControllerModes.Of(settings.LauncherUsesArcadiaPad(id, host.Launchers.GamesUseSteamInput));
         var panSupported = host.IsPanSupported;
         var panOffSubtitle = panSupported ? PanOffSubtitle : PanUnsupportedSubtitle;
-        IReadOnlyList<InfoBlock> panOff = panOn ? [] : [new InfoNote(panSupported
-            ? AppTexts.LauncherControllerNeedsPan
-            : AppTexts.LauncherControllerPanUnsupported, HealthSeverity.Info)];
+        var panOff = panOn ? null : panSupported ? AppTexts.LauncherControllerNeedsPan : AppTexts.LauncherControllerPanUnsupported;
 
         _modeRow.ShowPan();
         _modeRow.Subtitle = panOn ? AppTexts.LauncherControllerPresetSubtitle : panOffSubtitle;
+        _modeRow.DimmedNote = panOff;
         _modeRow.Info =
         [
             new InfoText(AppTexts.LauncherControllerPresetInfo(name)),
-            .. panOff,
-            .. PanRows.ModeCards,
             new InfoFootnote(gamesUseSteamInput
                 ? AppTexts.LauncherControllerFactorySteam(mode: ControllerModes.Steam, launcher: name)
                 : AppTexts.LauncherControllerFactoryArcadia(ControllerModes.Arcadia)),
@@ -81,12 +79,12 @@ internal sealed class LauncherControllerRows
             .ToList();
         _resetRow.IsEnabled = panOn;
         _resetRow.IsDimmed = !panOn;
+        _resetRow.DimmedNote = panOff;
         _resetRow.Subtitle = !panOn ? panOffSubtitle : own.Count == 1 ? AppTexts.LauncherControllerOwnModeOne : AppTexts.LauncherControllerOwnModeMany(own.Count);
         _resetRow.Info =
         [
             new InfoText(AppTexts.LauncherControllerOwnModeInfo(launcher: name, preset: preset)),
             new InfoFacts(string.Empty, [.. own.Select(game => new InfoFact(game.Title, ControllerModes.Of(game.Choice!.Value)))]),
-            .. panOff,
             new InfoText(AppTexts.LauncherControllerAsksFirst),
             new InfoFootnote(AppTexts.AppliesFromNextStart),
         ];

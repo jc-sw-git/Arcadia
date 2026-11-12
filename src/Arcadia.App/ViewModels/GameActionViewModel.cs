@@ -49,6 +49,9 @@ public interface IGameActionHost
     /// <summary>The game's mode after the next [A], named as <see cref="ControllerModeOf"/> names it.</summary>
     string NextControllerModeOf(Game game);
 
+    /// <summary>"Standard" with what it means for the game's launcher, e.g. "Standard (Arcadia)", for the detail page's info box (#506).</summary>
+    string DefaultControllerModeOf(Game game);
+
     /// <summary>True when the mouse mode is "Von Hand" with "Beenden des Mausmodus in Spielen erzwingen" on "Individuell".</summary>
     bool ShowGameMouseMode { get; }
 

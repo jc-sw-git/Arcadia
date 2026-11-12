@@ -298,7 +298,7 @@ public sealed class LauncherPageTests
             var tabs = Assert.IsType<InfoTabBar>(Assert.Single(row.Preview));
             Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], tabs.Tabs.Select(tab => tab.Name));
             Assert.Equal(["GOG Galaxy"], tabs.Tabs.Where(tab => tab.IsHighlighted).Select(tab => tab.Name));
-            Assert.NotEmpty(row.Info.OfType<InfoText>());
+            Assert.True(row.Info.OfType<InfoText>().Any() || row.HasValueBoxes, $"{key} ohne Erklärung");
         }
 
         var keyword = arcadia.FocusRow("launcher-keyword");

@@ -29,13 +29,13 @@ public sealed class SteamDesktopLayoutRowViewModel : SwitchRowViewModel
     {
         _changes = changes;
         Group = GroupName;
+        ValueInfos = [AppTexts.SteamDesktopOff, AppTexts.SteamDesktopOn];
         Info =
         [
             new InfoText(AppTexts.SteamDesktopInfo1),
             new InfoText(AppTexts.SteamDesktopInfo2),
             new InfoText(AppTexts.SteamDesktopInfo3),
             new InfoNote(AppTexts.SteamDesktopInfo4, HealthSeverity.Info) { IsBold = true, Symbols = ButtonSymbols.SteamController },
-            new InfoText(AppTexts.SteamDesktopInfo5),
             new InfoText(AppTexts.SteamDesktopInfo6) { Symbols = ButtonSymbols.SteamController },
         ];
         ShowState();

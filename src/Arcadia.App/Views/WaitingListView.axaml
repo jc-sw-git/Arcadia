@@ -60,7 +60,7 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:WaitingGameViewModel">
                           <Button Classes="plain waitingGame" Classes.current="{Binding IsCurrent}" Command="{Binding PickCommand}">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
                               <Border Classes="waitingMonogram">
                                 <TextBlock Text="{Binding Monogram}" />
                               </Border>
@@ -68,7 +68,6 @@
                                 <TextBlock Classes="waitingGameName" Text="{Binding Title}" ToolTip.Tip="{Binding Title}" />
                                 <TextBlock Classes="waitingGameLauncher" Text="{Binding LauncherName}" />
                               </StackPanel>
-                              <TextBlock Grid.Column="2" Classes="waitingGameLauncher" Text="{Binding HitsText}" VerticalAlignment="Center" />
                             </Grid>
                           </Button>
                         </DataTemplate>

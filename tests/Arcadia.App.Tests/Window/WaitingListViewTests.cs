@@ -68,6 +68,7 @@ public sealed class WaitingListViewTests
     [Trait("TestCase", "T506-80")]
     [Trait("TestCase", "T506-82")]
     [Trait("TestCase", "T506-98")]
+    [Trait("TestCase", "T506-117")]
     public async Task The_screen_shows_two_levels_what_is_sought_and_the_own_term_with_the_ring_where_the_focus_is()
     {
         var (window, list) = await OpenAsync();
@@ -84,7 +85,7 @@ public sealed class WaitingListViewTests
             Assert.NotEmpty(window.WithText(text));
         }
 
-        Assert.Equal(3, window.WithText(AppTexts.WaitingHitCount(2)).Count);
+        Assert.Empty(window.WithText("2 Treffer"));
         var first = Frame(window, list.Hits!.Hits[0]);
         Assert.Equal(2.0 / 3, first.Bounds.Width / first.Bounds.Height, 2);
 

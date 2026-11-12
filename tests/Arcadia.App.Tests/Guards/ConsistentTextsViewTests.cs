@@ -1,7 +1,5 @@
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
-using Arcadia.Core.Settings;
-using Arcadia.Launchers;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Headless.XUnit;
@@ -16,16 +14,6 @@ namespace Arcadia.App.Tests.Guards;
 /// </summary>
 public sealed class ConsistentTextsViewTests
 {
-    private static readonly IReadOnlyList<LauncherSpec> Launchers = LauncherSettingsDriving.WithoutFolders;
-
-    /// <summary>Every part missing: the controller page shows all its part rows and "Treiber installieren".</summary>
-    private static FakeSteam EveryPartMissing()
-    {
-        var steam = new FakeSteam { IsUsbipReady = false, IsPanReady = false, HidHideVersion = null };
-        steam.Viiper.IsInstalled = false;
-        return steam;
-    }
-
     private static string Shown(TextBlock block) =>
         block.Text is { Length: > 0 } text ? text : string.Concat(block.Inlines?.OfType<Run>().Select(run => run.Text) ?? []);
 
@@ -67,7 +55,7 @@ public sealed class ConsistentTextsViewTests
     [Trait("TestCase", "T339-14")]
     public async Task No_text_on_the_controller_page_its_info_panels_or_the_install_dialog_says_emuliert()
     {
-        var steam = EveryPartMissing();
+        var steam = GuardPages.EveryPartMissing();
         steam.Pan.Running = new();
         using var arcadia = await ArcadiaWindow.ShowAsync(steam: steam);
         arcadia.Press(UiAction.Settings).Press(UiAction.NextTab);
@@ -96,51 +84,28 @@ public sealed class ConsistentTextsViewTests
         steam.Pan.Running.SetResult();
     }
 
+    /// <summary>No page, dialog or settings category of <see cref="GuardPages"/> says "emuliert"; the settings row by row, with each row's info panel.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T339-14")]
-    public async Task The_first_start_says_nothing_about_emulated_controllers()
-    {
-        using var arcadia = await ArcadiaWindow.ShowAsync([new(KnownLaunchers.Gog, 31), new(KnownLaunchers.Amazon, 6, IsInstalled: false)], new AppSettings());
-        Assert.True(arcadia.Arcadia.Main.IsFirstRunShown);
-
-        var texts = VisibleTexts(arcadia);
-
-        Assert.Contains(AppTexts.FirstRunExplanation, texts);
-        AssertNoEmulier(texts, "Erster Start");
-    }
+    public Task No_page_dialog_or_settings_category_says_emuliert() =>
+        GuardWalk.EveryAsync(_ => true, (arcadia, _, state) =>
+        {
+            var texts = VisibleTexts(arcadia.WaitForTransitions());
+            Assert.True(texts.Count > 0, $"{state}: kein Text gezeichnet");
+            AssertNoEmulier(texts, state);
+        }, walks: page => page.IsSettingsPage);
 
     [AvaloniaFact]
     [Trait("TestCase", "T339-15")]
     public async Task Every_subtitle_in_every_settings_category_and_on_the_launcher_page_takes_one_line()
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync(Launchers, steam: EveryPartMissing());
-        arcadia.Press(UiAction.Settings);
         var checkedRows = 0;
-        void Check(SettingsRowViewModel row, string where)
+        await GuardWalk.EveryAsync(page => page.IsSettingsPage, (arcadia, _, state) =>
         {
-            AssertSubtitleOnOneLine(arcadia, row, where);
+            arcadia.WaitForTransitions();
+            AssertSubtitleOnOneLine(arcadia, arcadia.Arcadia.Main.Settings!.Selected.FocusedRow ?? throw new InvalidOperationException("Keine Zeile fokussiert"), state);
             checkedRows++;
-        }
-
-        // Launcher: the list, then the page of its first launcher.
-        EveryRow(arcadia, row => Check(row, $"Launcher › {row.Key}"));
-        var launchers = arcadia.LauncherCategory();
-        for (var press = 0; press < launchers.Rows.Count && launchers.FocusedRow is not LauncherRowViewModel; press++)
-        {
-            arcadia.Press(UiAction.Up);
-        }
-
-        arcadia.Press(UiAction.Accept).Settle();
-        Assert.True(launchers.PageLauncherId is not null, $"focused {launchers.FocusedRow?.GetType().Name} {launchers.FocusedRow?.Key}; rows {string.Join(",", launchers.Rows.Select(r => r.GetType().Name + ":" + r.Key))}");
-        EveryRow(arcadia, row => Check(row, $"Launcherseite › {row.Key}"));
-        arcadia.Press(UiAction.Back).Settle();
-
-        foreach (var category in new[] { "Controller", "Über Arcadia" })
-        {
-            arcadia.Press(UiAction.NextTab).Settle();
-            await arcadia.Arcadia.WaitUntilAsync(() => arcadia.Arcadia.Main.Settings!.Selected.Rows.Count > 0, category);
-            EveryRow(arcadia, row => Check(row, $"{category} › {row.Key}"));
-        }
+        });
 
         Assert.True(checkedRows > 20, $"nur {checkedRows} Zeilen geprüft");
     }

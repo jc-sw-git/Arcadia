@@ -260,9 +260,14 @@ internal sealed class ArcadiaWindow : IDisposable
     public static void AssertRingAround(Window window, Control control, string where, string ring = "FocusRing") =>
         AssertRingAround(window, () => CaptureSettled(window), control, where, ring);
 
-    private static void AssertRingAround(Window window, Func<Frame> capture, Control control, string where, string ring)
+    /// <summary>As <see cref="AssertRingAround(Control, string, string)"/>, for a ring given as the shadows it is drawn with.</summary>
+    public void AssertRingAround(Control control, string where, BoxShadows ring) => AssertRingAround(Window, Capture, control, where, ring);
+
+    private static void AssertRingAround(Window window, Func<Frame> capture, Control control, string where, string ring) =>
+        AssertRingAround(window, capture, control, where, ThemeResource<BoxShadows>(ring));
+
+    private static void AssertRingAround(Window window, Func<Frame> capture, Control control, string where, BoxShadows shadow)
     {
-        var shadow = ThemeResource<BoxShadows>(ring);
         // The ring is the widest sharp outline; a narrower one painted over it (FocusRingGap) leaves a gap inside it.
         // A ring drawn only inside the edge (FocusRingInset, the game menu's items) is looked for inside it.
         var shadows = Enumerable.Range(0, shadow.Count).Select(i => shadow[i]).Where(s => s.Blur == 0 && s.Spread > 0).ToList();

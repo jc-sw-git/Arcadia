@@ -74,5 +74,8 @@ not the whole folder.
   layout, pixels, focus ring). It holds only cross-page guards (focus ring, ring geometry, fades, consistent texts,
   embedded font, covers and icons, reused covers and search keys); they run on `main` only (`tools/ci/run-tests.sh`,
   `WINDOW_GUARDS=1`), and `ArcadiaWindow` anywhere else fails the test run.
+- The guards walk one list of pages, dialogs and settings categories, `Guards/GuardPages.cs` (how to open each, how
+  the focus moves over it). A new page, dialog or category is one entry there; `GuardPageListTests` (in every PR) fails
+  while a view model a player sees is missing from it. A state with a known drawing bug names it in its entry.
 - No window test per feature. A new window test is written only as a cross-page guard or to pin a layout bug that
   escaped to the owner, and only with the owner's OK in the refinement.

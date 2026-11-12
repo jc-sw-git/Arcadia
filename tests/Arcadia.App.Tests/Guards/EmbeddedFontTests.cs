@@ -38,28 +38,14 @@ public sealed partial class EmbeddedFontTests
         Assert.Equal(wanted, typeface.Weight);
     }
 
-    /// <summary>T24-8: library, detail page, search with its keyboard, settings, "Ansicht", the menu and the mouse mode's keyboard.</summary>
+    /// <summary>T24-8: every page, dialog and settings category of <see cref="GuardPages"/>, and the mouse mode's keyboard.</summary>
     [AvaloniaFact]
     [Trait("TestCase", "T24-8")]
     public async Task Every_view_sets_its_texts_in_Figtree()
     {
-        using var arcadia = await ArcadiaWindow.ShowAsync();
-        var driver = arcadia.Arcadia;
         var notFigtree = new List<string>();
-        void Look(string view) => notFigtree.AddRange(NotInFigtree(arcadia.Settle().WaitForTransitions().Window).Select(text => $"{view}: {text}"));
-
-        Look("Bibliothek");
-        arcadia.Press(UiAction.ViewOptions);
-        Look("Ansicht");
-        arcadia.Press(UiAction.Back).Press(UiAction.Options);
-        Look("Kontextmenü");
-        arcadia.Press(UiAction.Back);
-        driver.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
-        Look("Detailseite");
-        arcadia.Press(UiAction.Back).Press(UiAction.Search).Type("Hollow");
-        Look("Suche");
-        arcadia.Press(UiAction.Back).Press(UiAction.Back).Press(UiAction.Settings);
-        Look("Einstellungen");
+        await GuardWalk.EveryAsync(_ => true, (arcadia, _, state) =>
+            notFigtree.AddRange(NotInFigtree(arcadia.WaitForTransitions().Window).Select(text => $"{state}: {text}")), walks: _ => false);
         using (var mouseMode = MouseModeKeyboard.Show())
         {
             Dispatcher.UIThread.RunJobs();

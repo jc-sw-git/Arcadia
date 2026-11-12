@@ -18,3 +18,4 @@ History:
 |---|---|---|---|---|---|
 | T510-1, T510-2 | 2026-11-12 | Claude | PR branch, Linux container, `dotnet test` | ✅ (T510-1 red before the fix) | – |
 | T510-1 | 2026-11-12 | Claude | PR branch, Linux container: `SteamAppInfo` over a copy of the owner's `appinfo.vdf` and owned-games list | ✅ hidden on Windows and Linux: exactly 12230, 12240, 12250 of 1,106 apps | – |
+| T510-1, T510-2 | 2026-11-12 | Claude (QE) | PR #513 at 2d57dab, Linux container, Release, `run-tests.sh 4` | ✅ red once each: filter removed in `SteamScanner`, Proton rule removed in `SteamAppEntry.IsHiddenOn` | – |

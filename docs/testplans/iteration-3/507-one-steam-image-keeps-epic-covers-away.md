@@ -1,6 +1,6 @@
 # #507 One Steam image that doesn't answer keeps all Epic covers away
 
-**Status:** Automated: T507-1, T507-2 · Open for the owner: T507-3
+**Status:** Automated: T507-1, T507-2 · QE: none (no app run possible without the owner's network and catalog) · Open for the owner: T507-3
 
 - [x] **T507-1** A Steam game's cover is missing on the server (404) and its background hangs; an Epic game after it has a catalog cover: the Epic cover is shown, the log names the hanging host. · E2E: no (unit test with fake server and fake time)
 - [x] **T507-2** A host that can't be reached isn't asked again for the next game in the run, another host is; the next scan asks the failed host again. · E2E: no (unit test)

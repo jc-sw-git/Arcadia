@@ -364,10 +364,14 @@ public sealed class WaitingListLevelsTests
         await WaitingListTests.ShownAsync(list);
         Assert.Equal(AppTexts.WaitingUnreachable, list.Hits!.Message);
 
+        // Nothing came back: no "findet 0 Spiele" above the reason.
+        Assert.False(list.Hits.HasIntro);
+
         arcadia.SteamGridDb.Offline = false;
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
         await WaitingListTests.ShownAsync(list);
         Assert.Equal([501, 502], list.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.True(list.Hits.HasIntro);
         Assert.False(list.Hits.HasMessage);
     }
 

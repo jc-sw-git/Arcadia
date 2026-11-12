@@ -80,17 +80,6 @@ public sealed class NameMatchStore(string path)
     /// <summary>The place behind every game waiting now.</summary>
     public int NextPosition => All.Values.Where(m => m.State == NameMatchState.Waiting).Select(m => m.Position + 1).DefaultIfEmpty(1).Max();
 
-    /// <summary>Forgets the game's match (it is searched by name again) and writes the file; false if it couldn't be written.</summary>
-    public bool Remove(string gameKey)
-    {
-        lock (_write)
-        {
-            var all = All.Remove(gameKey);
-            Volatile.Write(ref _matches, all);
-            return TryWrite(all);
-        }
-    }
-
     /// <summary>Keeps the game's match and writes the file; false if it couldn't be written (it lasts until Arcadia closes).</summary>
     public bool Set(string gameKey, NameMatch match) => Set([KeyValuePair.Create(gameKey, match)]);
 
@@ -101,6 +90,26 @@ public sealed class NameMatchStore(string path)
             var all = All.SetItems(matches);
             Volatile.Write(ref _matches, all);
             return TryWrite(all);
+        }
+    }
+
+    /// <summary>
+    /// Reads and changes the matches in one step, so writers that decide from what is there now never undo each other;
+    /// writes the file when something changed. Returns the matches as they are after the change.
+    /// </summary>
+    public ImmutableDictionary<string, NameMatch> Change(Func<ImmutableDictionary<string, NameMatch>, ImmutableDictionary<string, NameMatch>> change)
+    {
+        lock (_write)
+        {
+            var before = All;
+            var after = change(before);
+            if (!ReferenceEquals(after, before))
+            {
+                Volatile.Write(ref _matches, after);
+                TryWrite(after);
+            }
+
+            return after;
         }
     }
 

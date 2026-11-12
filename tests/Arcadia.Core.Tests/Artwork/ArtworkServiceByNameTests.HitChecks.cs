@@ -148,6 +148,48 @@ public sealed partial class ArtworkServiceByNameTests
     }
 
     [Fact]
+    [Trait("TestCase", "T506-94")]
+    [Trait("TestCase", "T491-12")]
+    public async Task Ersten_nehmen_takes_only_a_hit_with_an_image_and_searches_a_game_with_none_checked_again()
+    {
+        await WithKeyAsync();
+        FiveEchoes();
+        await OldWaitingListAsync(504, 501);
+        Assert.Empty(Match().Checked);
+        _settings = _settings with { SeveralHits = SeveralHits.TakeFirst };
+
+        _service.TakeFirstForAllWaiting();
+        await _service.WhenIdleAsync();
+
+        Assert.Empty(_service.Waiting);
+        Assert.Equal((NameMatchState.Chosen, 501), (Match().State, Match().GameId));
+        Assert.Equal(Cover501, Cached()!.Cover!.Stamp);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T506-95")]
+    [Trait("TestCase", "T491-12")]
+    public async Task Ersten_nehmen_with_a_game_whose_hits_all_dropped_out_searches_it_again_instead_of_failing()
+    {
+        await WithKeyAsync();
+        FiveEchoes();
+        await OldWaitingListAsync(504, 505);
+        foreach (var hit in Match().Hits.ToList())
+        {
+            Assert.Equal(HitCheck.NoImage, await _service.CheckWaitingHitAsync(Echo, hit));
+        }
+
+        Assert.Empty(Assert.Single(_service.Waiting).Hits);
+        _settings = _settings with { SeveralHits = SeveralHits.TakeFirst };
+
+        _service.TakeFirstForAllWaiting();
+        await _service.WhenIdleAsync();
+
+        Assert.Empty(_service.Waiting);
+        Assert.Equal((NameMatchState.Chosen, 501), (Match().State, Match().GameId));
+    }
+
+    [Fact]
     [Trait("TestCase", "T506-96")]
     public async Task Checks_finishing_at_the_same_time_keep_every_result()
     {

@@ -103,15 +103,35 @@ public sealed partial class ArtworkService
     /// </returns>
     public int TakeFirstForAllWaiting()
     {
-        var waiting = Names.All.Where(e => e.Value.State == NameMatchState.Waiting).ToList();
-        if (waiting.Count == 0)
+        if (!Names.All.Values.Any(m => m.State == NameMatchState.Waiting))
         {
             return 0;
         }
 
         var shown = Waiting.Count;
-        Names.Set(waiting.Select(e => KeyValuePair.Create(e.Key, NameMatch.Chosen(e.Value.Hits[0].Id))));
-        Log($"Artwork: {waiting.Count} wartende Spiele nehmen den ersten Treffer");
+        var (taken, again) = (0, 0);
+        Names.Change(all =>
+        {
+            var changed = all.ToBuilder();
+            foreach (var (key, match) in all.Where(e => e.Value.State == NameMatchState.Waiting))
+            {
+                // Only a hit known to have an image is taken; a game with none checked (from before #506, or all dropped)
+                // is searched by name again, now taking its first hit with an image.
+                if (match.Hits.FirstOrDefault(h => match.Checked.Contains(h.Id)) is { } first)
+                {
+                    changed[key] = NameMatch.Chosen(first.Id);
+                    taken++;
+                }
+                else
+                {
+                    changed.Remove(key);
+                    again++;
+                }
+            }
+
+            return changed.ToImmutable();
+        });
+        Log($"Artwork: {taken} wartende Spiele nehmen den ersten Treffer, {again} werden neu gesucht");
         WaitingChanged?.Invoke(this, EventArgs.Empty);
         IReadOnlyList<LibraryArtwork>? libraries;
         lock (_gate)
@@ -167,29 +187,28 @@ public sealed partial class ArtworkService
         return check;
     }
 
-    // The list checks several hits of a game at once: each result is applied to the entry as it is now, under one lock,
-    // so a hit kept by one check never brings back a hit another check just dropped.
-    private readonly Lock _keepCheck = new();
-
+    // The list checks several hits of a game at once, and the player may take or skip the game meanwhile: each result
+    // is applied to the entry as it is now in one step, so it never brings back a dropped hit or a game that left.
     private void KeepCheck(Game game, SteamGridDbHit hit, HitCheck check)
     {
-        lock (_keepCheck)
+        var dropped = false;
+        Names.Change(all =>
         {
-            if (Names.Of(game.Key) is not { State: NameMatchState.Waiting } match)
+            if (all.GetValueOrDefault(game.Key) is not { State: NameMatchState.Waiting } match)
             {
-                return;
+                return all;
             }
 
-            if (check == HitCheck.HasImage)
-            {
-                Names.Set(game.Key, match with { Checked = match.Checked.Append(hit.Id).ToHashSet() });
-                return;
-            }
+            dropped = check == HitCheck.NoImage;
+            return all.SetItem(game.Key, dropped
+                ? match with { Hits = [.. match.Hits.Where(h => h.Id != hit.Id)] }
+                : match with { Checked = match.Checked.Append(hit.Id).ToHashSet() });
+        });
 
-            Names.Set(game.Key, match with { Hits = [.. match.Hits.Where(h => h.Id != hit.Id)] });
+        if (dropped)
+        {
+            WaitingChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        WaitingChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -424,26 +443,19 @@ public sealed partial class ArtworkService
     public NameMatch? WaitingMatchNow(Game game)
     {
         var sought = SoughtOf(game);
-        lock (_keepCheck)
+        return Names.Change(all =>
         {
-            if (Names.Of(game.Key) is not { State: NameMatchState.Waiting } match)
+            if (all.GetValueOrDefault(game.Key) is not { State: NameMatchState.Waiting } match || sought.SequenceEqual(match.Sought))
             {
-                return null;
+                return all;
             }
 
-            if (sought.SequenceEqual(match.Sought))
-            {
-                return match;
-            }
-
-            var now = match with
+            return all.SetItem(game.Key, match with
             {
                 Sought = sought,
                 Checked = NameMatch.TileKindOf(sought) == match.TileKind ? match.Checked : System.Collections.Immutable.ImmutableHashSet<int>.Empty,
-            };
-            Names.Set(game.Key, now);
-            return now;
-        }
+            });
+        }).GetValueOrDefault(game.Key) is { State: NameMatchState.Waiting } now ? now : null;
     }
 
     /// <summary>One game's images brought up to date at once, as a run would, e.g. after the player chose its SteamGridDB game.</summary>

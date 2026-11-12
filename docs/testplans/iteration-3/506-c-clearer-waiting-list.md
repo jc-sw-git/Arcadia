@@ -3,7 +3,7 @@
 Part C of #506 (scenarios 15–20 and their failure cases). Part A (detail page, info box) and part B (when artwork is
 searched) have their own files; part C uses the IDs T506-80 to T506-119.
 
-**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116 · QE: – (T506-109 on Windows) · Open for the owner: T506-112, T506-113, T506-114, T506-115
+**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116 · QE: – · Open for the owner: T506-109, T506-112, T506-113, T506-114, T506-115
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request (search by
 name, the images per hit, the image downloads) and can answer slowly, throttle, fail or reject the key; nothing
@@ -121,10 +121,10 @@ otherwise; the cases follow the recommendation.
 - [x] **T506-108** Images load only for the game the focus rests on: holding ▼ through 50 games, the fake gets
   requests (check and image downloads) only for the game where the focus stops, none for the ones passed; requests of
   a game the focus left are cancelled. Tiles decode at tile size. · E2E: no (view model test with fake time)
-- [ ] **T506-109** Release build, made-up data, 100 waiting games with 8 hits and one with 25: opening the screen, every
+- [ ] **T506-109** **Owner:** Release build, made-up data, 100 waiting games with 8 hits and one with 25: opening the screen, every
   step in the games list, held and fast, and every step in the grid < 50 ms from input to visible focus move (`Bild:`
   lines), no stutter while images arrive; measured on Windows, numbers in the PR. · E2E: no (real rendering, Release
-  timings; quality engineer's run)
+  timings on Windows; the owner sends the `Bild:` lines from `arcadia.log`)
 
 **Failure cases, controller only**
 
@@ -176,3 +176,4 @@ History:
 | T506-100, T506-110 (red once) | 2026-11-12 | Claude | same, with the fix undone on purpose (focus follows the first check to finish; closing doesn't dispose the open waiting list) | ❌ as intended | both fixed in this PR |
 | T506-109 (part) | 2026-11-12 | Claude | same, Release, headless software rendering, 100 waiting games with 8 hits, 60 steps ▼: UI thread (press, jobs, layout) mean 3.4 ms; with the headless software frame mean 59 ms, settings rows 36 ms in the same harness; the gap is the software render of the bigger frame, not the UI thread | ✅ UI thread, frame time needs Windows | QE measures on Windows |
 | T506-96 (red once) | 2026-11-12 | Claude | CI ubuntu-latest on this PR, then the container: 60 hits of one game checked at the same time | ❌ then ✅ | a kept check could bring back a hit another check had just dropped; fixed in this PR (one lock around each change of the entry) |
+| T491-12, T506-94, T506-95 (red once) | 2026-11-12 | Claude | branch of this PR, Linux container, Core tests | ❌ as intended, then ✅ | QE finding: "Ersten nehmen" took an unchecked first hit and failed on a game with no hits left; it now takes the first hit with an image and searches a game without one again |

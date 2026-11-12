@@ -111,6 +111,12 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>
+    /// The intro's count says what SteamGridDB found; with the grid empty and a reason shown (no key, no connection, no
+    /// hits) the reason says it, and a count of 0 would claim an answer that may never have come.
+    /// </summary>
+    public bool HasIntro => Hits.Count > 0 || !HasMessage;
+
     /// <summary>What the tiles show and the hits are checked for: the cover when both are sought.</summary>
     public ArtworkKind TileKind => NameMatch.TileKindOf(Sought);
 
@@ -136,7 +142,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     /// <summary>Why the grid is empty: no hits, SteamGridDB not reachable or the key turned down; null while it isn't.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasMessage))]
+    [NotifyPropertyChangedFor(nameof(HasMessage), nameof(HasIntro))]
     public partial string? Message { get; private set; }
 
     public bool HasMessage => Message is not null && !IsChecking;
@@ -404,6 +410,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
 
         OnPropertyChanged(nameof(Intro));
+        OnPropertyChanged(nameof(HasIntro));
     }
 
     private WaitingHitViewModel NewHit(SteamGridDbHit hit)
@@ -581,6 +588,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         var wasEmpty = Hits.Count == 0;
         Hits.Insert(at, NewHit(hit));
         OnPropertyChanged(nameof(Intro));
+        OnPropertyChanged(nameof(HasIntro));
 
         // The focus stays on the hit it is on once the player moved it; before that on the first hit.
         if (!_playerMoved || wasEmpty)
@@ -600,6 +608,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         IsChecking = false;
         Message = message;
         OnPropertyChanged(nameof(Intro));
+        OnPropertyChanged(nameof(HasIntro));
         if (Hits.Count == 0 && IsActive && Zone == WaitingHitsFocus.Grid)
         {
             Zone = WaitingHitsFocus.Term;

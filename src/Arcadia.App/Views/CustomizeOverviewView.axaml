@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             x:Class="Arcadia.App.Views.CustomizeOverviewView"
+             x:DataType="vm:CustomizeOverviewViewModel">
+
+  <!-- "Übersicht anpassen" (#500, design RD6Mischung): every entry of the other areas by area, the counter, and
+       "Für alle Spiele übernehmen", which asks in place. The checkbox rows are the filter's (#44). -->
+  <Panel>
+    <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Command="{Binding CloseCommand}" />
+    <Border Classes="prompt quickDialog" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Panel>
+        <Button Classes="plain dialogClose" Margin="0,-24,-28,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
+                IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding CloseCommand}">
+          <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+        </Button>
+        <StackPanel Spacing="26">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Margin="0,0,40,0">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{x:Static app:AppTexts.DetailCustomizeOverview}" FontSize="34" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+              <TextBlock Text="{Binding Subtitle}" FontSize="17" Foreground="{StaticResource TextMuted}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <Border Grid.Column="1" Classes="quickCount" Classes.full="{Binding IsFull}" VerticalAlignment="Top">
+              <TextBlock Text="{Binding CountText}" />
+            </Border>
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
+            <ItemsControl Name="LeftGroups" ItemsSource="{Binding LeftGroups}" ItemTemplate="{StaticResource QuickGroup}" />
+            <ItemsControl Name="RightGroups" Grid.Column="1" ItemsSource="{Binding RightGroups}" ItemTemplate="{StaticResource QuickGroup}" />
+          </Grid>
+
+          <DockPanel IsVisible="{Binding IsFull}">
+            <Path DockPanel.Dock="Left" Classes="quickFullIcon" Margin="0,0,10,0" />
+            <TextBlock Classes="quickFullNote" Text="{x:Static vm:CustomizeOverviewViewModel.FullNote}" />
+          </DockPanel>
+
+          <!-- "Für alle Spiele übernehmen": offered, asked about in place, or done. -->
+          <Border Classes="quickAll">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Name="ApplyToAll" Classes="plain quickAllButton" Classes.focused="{Binding IsApplyFocused}" IsVisible="{Binding !IsAsking}"
+                        Content="{x:Static app:AppTexts.QuickSelectionApplyToAll}" Command="{Binding AskCommand}" />
+                <Button Name="CancelReplace" Classes="plain quickAllButton" Classes.focused="{Binding IsCancelFocused}" IsVisible="{Binding IsAsking}"
+                        Content="{x:Static app:AppTexts.Cancel}" Command="{Binding CancelQuestionCommand}" />
+                <Button Name="Replace" Classes="plain quickAllButton primary" Classes.focused="{Binding IsReplaceFocused}" IsVisible="{Binding IsAsking}"
+                        Content="{x:Static app:AppTexts.QuickSelectionReplace}" Command="{Binding ReplaceCommand}" />
+              </StackPanel>
+              <Panel Margin="0,0,20,0" VerticalAlignment="Center">
+                <StackPanel Spacing="2" IsVisible="{Binding IsOffered}">
+                  <TextBlock Classes="quickAllTitle" Text="{x:Static app:AppTexts.QuickSelectionPerGame}" />
+                  <TextBlock Classes="quickAllText" Text="{x:Static app:AppTexts.QuickSelectionPerGameText}" />
+                </StackPanel>
+                <StackPanel Spacing="2" IsVisible="{Binding IsAsking}">
+                  <TextBlock Classes="quickAllTitle" Text="{x:Static app:AppTexts.QuickSelectionAskReplace}" />
+                  <TextBlock Classes="quickAllText" Text="{x:Static app:AppTexts.QuickSelectionAskReplaceText}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsApplied}">
+                  <Path Classes="quickAppliedIcon" />
+                  <TextBlock Classes="quickAllTitle" Text="{x:Static app:AppTexts.QuickSelectionApplied}" />
+                </StackPanel>
+              </Panel>
+            </DockPanel>
+          </Border>
+
+          <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" IsVisible="{Binding !MovesSideways}" />
+              <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" IsVisible="{Binding MovesSideways}" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptText}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Panel>
+    </Border>
+  </Panel>
+
+  <UserControl.Resources>
+    <DataTemplate x:Key="QuickGroup" x:DataType="vm:QuickChoiceGroup">
+      <StackPanel Spacing="8" Margin="0,0,0,22">
+        <TextBlock Classes="label" Text="{Binding Caption}" FontSize="13" />
+        <ItemsControl ItemsSource="{Binding Entries}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="8" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:QuickChoiceViewModel">
+              <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsTicked}" Classes.noHits="{Binding IsGreyed}"
+                      Command="{Binding ClickCommand}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                  <Border Classes="filterCheck">
+                    <Path Classes="filterCheckMark" />
+                  </Border>
+                  <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Title}" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
+</UserControl>

@@ -18,7 +18,7 @@ public sealed class SettingsService
     {
         _store = store;
         var loaded = store.Load();
-        _current = loaded.WithValidLibraryView().WithValidMouseMode();
+        _current = loaded.WithValidLibraryView().WithValidMouseMode().WithValidQuickSelection();
         if (loaded.LibrarySort != _current.LibrarySort || loaded.PreferredPageSize != _current.PreferredPageSize)
         {
             // A view value this version replaced, e.g. a page size of an older Arcadia (#24): saved at once, so

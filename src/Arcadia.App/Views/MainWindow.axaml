@@ -154,7 +154,8 @@
       </Grid>
 
       <!-- Detail page (#499): the whole layout under header and footer, its artwork behind both. -->
-      <Panel Grid.RowSpan="4" ZIndex="-1" IsVisible="{Binding IsDetailOpen}">
+      <!-- Under a dialog its focus ring goes, so only the dialog shows one (T500-25). -->
+      <Panel Grid.RowSpan="4" ZIndex="-1" IsVisible="{Binding IsDetailOpen}" Classes.detailCovered="{Binding IsDialogOpen}">
         <views:GameDetailView DataContext="{Binding Detail}" />
       </Panel>
 
@@ -942,6 +943,15 @@
         <ContentControl.DataTemplates>
           <DataTemplate x:DataType="vm:ChangeArtworkViewModel">
             <views:ChangeArtworkView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
+      <!-- "Übersicht anpassen" (#500): a game's quick selection, over the detail page. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding CustomizeOverview}" IsVisible="{Binding IsCustomizeOverviewOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:CustomizeOverviewViewModel">
+            <views:CustomizeOverviewView />
           </DataTemplate>
         </ContentControl.DataTemplates>
       </ContentControl>

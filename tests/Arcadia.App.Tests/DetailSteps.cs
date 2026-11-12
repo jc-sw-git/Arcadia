@@ -5,9 +5,12 @@ namespace Arcadia.App.Tests;
 
 internal static class DetailSteps
 {
-    /// <summary>The row of this kind in any of the detail page's areas.</summary>
+    /// <summary>The row of this kind in any of the detail page's areas, not its entry in the quick selection (#500).</summary>
     public static DetailRowViewModel Row(this GameDetailPageViewModel page, GameActionKind kind) =>
-        page.Areas.SelectMany(area => area.Rows).Single(row => row.Kind == kind);
+        page.Areas.Where(area => !area.IsOverview).SelectMany(area => area.Rows).Single(row => row.Kind == kind);
+
+    /// <summary>The quick selection's entries in "Übersicht" (#500), by kind.</summary>
+    public static IEnumerable<GameActionKind> QuickKinds(this GameDetailPageViewModel page) => page.Overview.Rows.Select(row => row.Kind);
 
     /// <summary>
     /// From the buttons down into the rail, down to the area <paramref name="areaKey"/>, A into its rows and down to the

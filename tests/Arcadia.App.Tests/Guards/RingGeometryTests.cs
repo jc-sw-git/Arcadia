@@ -4,7 +4,7 @@ using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// No focus ring runs into a clipping parent, on any page state with focusable buttons (#180, G-32): each visible

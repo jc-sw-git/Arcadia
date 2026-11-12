@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Runs all tests of the built solution (Release, --no-build) in parallel processes and fails if any of them fails.
-# Arcadia.App.Tests runs its window tests on Avalonia's one headless UI thread, so in one process they run one after
-# another and take minutes; split into shards they run side by side, each in a process with its own UI thread. The
-# other test projects run before them. Shards take every n-th test method in name order: test methods,
-# not classes, so the long window tests of one class spread over all shards.
-# Usage: run-tests.sh <shards> [extra dotnet test arguments, e.g. coverage]
+# The window guards (namespace Arcadia.App.Tests.Guards: cross-page layout guards that open the real headless window)
+# run only with WINDOW_GUARDS=1, which CI sets on main; PR runs skip them (#517). Rules for window tests: docs/testplans/README.md.
+# Arcadia.App.Tests runs its tests on Avalonia's one headless UI thread, so in one process they run one after another;
+# split into shards they run side by side, each in a process with its own UI thread. The other test projects run
+# before them. Shards take every n-th test method in name order: test methods, not classes, so the long tests of one
+# class spread over all shards.
+# Usage: [WINDOW_GUARDS=1] run-tests.sh <shards> [extra dotnet test arguments, e.g. coverage]
 set -uo pipefail
 
 shards="${1:?number of App test shards}"
@@ -16,9 +18,18 @@ app_dll="$app_bin/Arcadia.App.Tests.dll"
 # A test that hangs ends its run after this instead of holding the runner until the job's timeout.
 common=(--blame-hang-timeout 5m --blame-hang-dump-type none "$@")
 
+# A window test outside the guards would run in every PR again.
+outside=$(grep -rlw ArcadiaWindow tests/Arcadia.App.Tests --include='*.cs' | grep -v '^tests/Arcadia.App.Tests/Guards/')
+if [[ -n "$outside" ]]; then
+  echo "::error::ArcadiaWindow used outside tests/Arcadia.App.Tests/Guards/ (window tests are guards only, docs/testplans/README.md):"
+  echo "$outside"
+  exit 1
+fi
+
 # xunit v3 test projects are programs; this lists the test methods without running them.
 # Sorted bytewise: the same shards on every OS and in every language.
-mapfile -t methods < <(dotnet "$app_dll" -list methods -noColor | grep -E '^Arcadia\.' | tr -d '\r' | LC_ALL=C sort)
+if [[ "${WINDOW_GUARDS:-}" == 1 ]]; then keep_guards=(cat); else keep_guards=(grep -vE '^Arcadia\.App\.Tests\.Guards\.'); fi
+mapfile -t methods < <(dotnet "$app_dll" -list methods -noColor | grep -E '^Arcadia\.' | tr -d '\r' | "${keep_guards[@]}" | LC_ALL=C sort)
 if (( ${#methods[@]} == 0 )); then
   echo "::error::No test methods found in $app_dll"
   exit 1
@@ -34,7 +45,7 @@ for (( shard = 0; shard < shards; shard++ )); do
 <RunSettings><RunConfiguration><TestCaseFilter>$filter</TestCaseFilter></RunConfiguration></RunSettings>
 EOF
 done
-echo "${#methods[@]} App test methods in $shards shards."
+echo "${#methods[@]} App test methods in $shards shards (window guards: ${WINDOW_GUARDS:-0})."
 
 pids=()
 names=()

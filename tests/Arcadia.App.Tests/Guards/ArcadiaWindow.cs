@@ -10,7 +10,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// Arcadia's real window on the headless platform, drawn by Skia (#191): what the user sees and does with the mouse
@@ -136,12 +136,6 @@ internal sealed class ArcadiaWindow : IDisposable
         return MouseUp(point, button);
     }
 
-    public ArcadiaWindow DoubleClick(Control control)
-    {
-        var point = CentreOf(control);
-        return Click(point).Click(point);
-    }
-
     public ArcadiaWindow MouseDown(Point point, MouseButton button = MouseButton.Left)
     {
         Window.MouseMove(point);
@@ -251,11 +245,6 @@ internal sealed class ArcadiaWindow : IDisposable
     public T Named<T>(string name)
         where T : Control => Window.FindControl<T>(name) ?? throw new InvalidOperationException($"Kein {typeof(T).Name} namens {name} im Fenster.");
 
-    /// <summary>The visible button whose tooltip begins with <paramref name="tip"/>, e.g. "Nächste Seite".</summary>
-    public Button ButtonWithTip(string tip) => Assert.Single(
-        Window.GetVisualDescendants().OfType<Button>(),
-        button => button.IsEffectivelyVisible && ToolTip.GetTip(button) is string text && text.StartsWith(tip, StringComparison.Ordinal));
-
     /// <summary>The cover of <paramref name="tile"/> in the library's grid.</summary>
     public Button Tile(ViewModels.GameTileViewModel tile) =>
         (Named<ItemsControl>("GameGrid").ContainerFromIndex(((ViewModels.MainViewModel)Window.DataContext!).Library.PageGames.IndexOf(tile)) as Control)?.GetVisualDescendants().OfType<Button>().FirstOrDefault()
@@ -327,21 +316,6 @@ internal sealed class ArcadiaWindow : IDisposable
         }
     }
 
-    /// <summary>Nothing lies over <paramref name="control"/>: a click anywhere on it reaches it or something inside it.</summary>
-    public void AssertOnTop(Control control)
-    {
-        var bounds = Bounds(control).Deflate(4);
-        foreach (var x in new[] { 0.1, 0.5, 0.9 })
-        {
-            foreach (var y in new[] { 0.05, 0.5, 0.95 })
-            {
-                var point = new Point(bounds.Left + (bounds.Width * x), bounds.Top + (bounds.Height * y));
-                var hit = Window.InputHitTest(point) as Visual;
-                Assert.True(hit is not null && hit.GetSelfAndVisualAncestors().Contains(control), $"Bei {point} liegt {hit} über {control}");
-            }
-        }
-    }
-
     /// <summary>
     /// The button hints shown in the footer, left to right, as the user reads them: the buttons or keys, then the text,
     /// e.g. "LB RB Launcher" or "Leertaste / Klick Auswählen".
@@ -375,33 +349,12 @@ internal sealed class ArcadiaWindow : IDisposable
         _ => null,
     };
 
-    /// <summary>The glyphs (button or key frames) drawn inside <paramref name="within"/>.</summary>
-    public static IReadOnlyList<Border> Glyphs(Control within) => within.GetVisualDescendants().OfType<Border>()
-        .Where(border => border.Classes.Contains("glyph") && border.IsEffectivelyVisible)
-        .ToList();
-
-    /// <summary>How much larger than its own size a control is drawn (Viewbox, lift).</summary>
-    public double ScaleOf(Control control) => Bounds(control).Width / control.Bounds.Width;
-
     public static int Distance(Color a, Color b) => Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B);
-
-    /// <summary>The outermost visible control that shows <paramref name="item"/>, e.g. the cover of a tile.</summary>
-    public Control Showing(object item) => ShowingAll(item).FirstOrDefault()
-        ?? throw new InvalidOperationException($"Nichts im Fenster zeigt {item}.");
 
     public IEnumerable<Control> ShowingAll(object item) => Window.GetVisualDescendants()
         .OfType<Control>()
         .Where(control => ReferenceEquals(control.DataContext, item) && control.IsEffectivelyVisible
             && (control.GetVisualParent() as Control)?.DataContext != item);
-
-    /// <summary>Visible controls of type <typeparamref name="T"/> whose text or content says <paramref name="text"/>.</summary>
-    public IReadOnlyList<Control> WithText(string text) => Window.GetVisualDescendants()
-        .OfType<TextBlock>()
-        .Where(block => block.IsEffectivelyVisible && block.Text == text && Bounds(block).Width > 0)
-        .Cast<Control>()
-        .ToList();
-
-    public Control OneWithText(string text) => Assert.Single(WithText(text));
 
     /// <summary>Where <paramref name="control"/> stands in the window, after render transforms (a slide, a lift).</summary>
     public Rect Bounds(Control control) => Bounds(Window, control);
@@ -504,28 +457,6 @@ internal sealed class Frame : IDisposable
         var pixel = (uint)_pixels[(Math.Clamp(y, 0, Height - 1) * _width) + Math.Clamp(x, 0, _width - 1)];
         var (first, second, third, alpha) = ((byte)pixel, (byte)(pixel >> 8), (byte)(pixel >> 16), (byte)(pixel >> 24));
         return _isRgba ? Color.FromArgb(alpha, first, second, third) : Color.FromArgb(alpha, third, second, first);
-    }
-
-    /// <summary>The brightness (0–255) of a point, as the eye weighs the colours.</summary>
-    public double Brightness(Point point)
-    {
-        var colour = At(point);
-        return (0.299 * colour.R) + (0.587 * colour.G) + (0.114 * colour.B);
-    }
-
-    /// <summary>The brightest point of an area, e.g. whether anything light is drawn there.</summary>
-    public double BrightestIn(Rect area)
-    {
-        var brightest = 0.0;
-        for (var y = area.Top; y < area.Bottom; y += 1 / _scaling)
-        {
-            for (var x = area.Left; x < area.Right; x += 1 / _scaling)
-            {
-                brightest = Math.Max(brightest, Brightness(new Point(x, y)));
-            }
-        }
-
-        return brightest;
     }
 
     /// <summary>Saved as PNG, to look at a failing test.</summary>

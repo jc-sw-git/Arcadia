@@ -7,7 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>The fades at the grid's edges (#102), drawn: where they show, and that nothing unfaded is left at the edge.</summary>
 public sealed class GridFadeTests

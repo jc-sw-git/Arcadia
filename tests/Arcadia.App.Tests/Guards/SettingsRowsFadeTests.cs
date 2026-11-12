@@ -10,7 +10,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// The settings rows fade out where more rows follow (#237), with the shared edge fade: where the fades show, that the

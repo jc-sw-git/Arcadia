@@ -123,27 +123,6 @@ public sealed class ControllerTypesTests
         Assert.Equal([dualSense], arcadia.Sdl.OpenPads);
     }
 
-    [AvaloniaFact]
-    [Trait("TestCase", "T72-9")]
-    public async Task Without_a_usable_SDL3_Arcadia_says_so_and_keyboard_and_mouse_keep_working()
-    {
-        using var window = await ArcadiaWindow.ShowAsync();
-        var arcadia = window.Arcadia;
-        arcadia.Sdl.InitError = new DllNotFoundException("Unable to load shared library 'SDL3' or one of its dependencies.");
-        arcadia.Sdl.Plug(KnownPads.Xbox360);
-
-        arcadia.StartControllers();
-        Assert.Equal(ControllerInput.UnavailableText, arcadia.Main.Toast.Text);
-        var log = await File.ReadAllTextAsync(Path.Combine(Services.AppLog.Directory!, "arcadia.log"), TestContext.Current.CancellationToken);
-        Assert.Contains("Controller-Eingabe nicht verfügbar (SDL3): System.DllNotFoundException", log);
-
-        var first = arcadia.Main.Library.FocusedGame!.Game;
-        window.Key(Key.D);
-        Assert.NotSame(first, arcadia.Main.Library.FocusedGame!.Game);
-        window.Key(Key.F);
-        Assert.NotNull(arcadia.Main.Search);
-    }
-
     /// <summary>
     /// Codex review of #219: no poll lets go of a button held when SDL fails. A held A neither starts the game nor opens
     /// the details later; it is dropped.

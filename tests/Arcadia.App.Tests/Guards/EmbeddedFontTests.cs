@@ -8,7 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// Every view sets its text in Figtree, with Inter only for the symbols Figtree lacks (#24). Both are embedded, so a

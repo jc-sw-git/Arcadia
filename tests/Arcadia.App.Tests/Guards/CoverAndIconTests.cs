@@ -14,7 +14,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-namespace Arcadia.App.Tests;
+namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// The design polish of #24 as drawn: covers in 2 : 3 wherever one is shown, and ⧉ ≡ ↹ as theme icons instead of

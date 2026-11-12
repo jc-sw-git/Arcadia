@@ -16,7 +16,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// The view models post to Avalonia's UI thread; the headless platform gives the tests one. With Skia and Arcadia's
-/// styles, <see cref="ArcadiaWindow"/> shows the real window and can look at its pixels (#191).
+/// styles, the window guards (<c>Guards/</c>) show the real window and can look at its pixels (#191).
 /// </summary>
 public static class TestApplication
 {

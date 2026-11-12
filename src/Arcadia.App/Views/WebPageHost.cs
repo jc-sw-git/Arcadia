@@ -37,12 +37,6 @@ public sealed class WebPageHost : Decorator
     // The page in the web view loaded once; reset with every new page.
     private bool _hasLoaded;
 
-    /// <summary>
-    /// Off in the window tests: the headless window runs on a thread WebView2 can't start on, and they look only at
-    /// where the page sits.
-    /// </summary>
-    internal bool OpensBrowser { get; set; } = true;
-
     public WebPageViewModel? Page
     {
         get => GetValue(PageProperty);
@@ -66,7 +60,7 @@ public sealed class WebPageHost : Decorator
             (old as IDisposable)?.Dispose();
         }
 
-        if (page is null || !OpensBrowser)
+        if (page is null)
         {
             return;
         }

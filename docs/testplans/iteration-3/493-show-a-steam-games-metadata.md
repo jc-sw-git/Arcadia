@@ -8,14 +8,15 @@ AppIDs, names and texts, and a fake Steam store that records every request; noth
 area with the full description and every field with its source. The owner's cases are collected by the closing
 thread of #43 and handed over there, not in this PR.
 
-Open points for the implementation, as the cases assume them (named in the PR; changed only with the owner):
-A1 "Infos" does not exist on `main` yet; #493 adds it to the rail as in the artboard. A2 a long description in
-"Infos" is read with ▲ ▼ (and the right stick), B goes back to the rail. A3 the names of Steam's store tags come from
-a German tag list that Arcadia keeps locally (no request beside `appdetails`); where it comes from is decided in the
-PR. A4 while "Alle Metadaten neu laden" runs, the old data stays visible until the new one is there. A5 with no game
-missing, the progress row reads "Alle Metadaten geladen" (greyed); the wording goes into the PR's UI texts.
+Agreed with the owner (assumptions of the issue): A1 "Infos" does not exist on `main` yet; #493 adds it to the rail
+as in the artboard. A2 a long description in "Infos" is read with ▲ ▼ (and the right stick), B goes back to the rail;
+the owner judges it in #43's final manual test and may still change it. A3 the names of Steam's store tags come from
+a German tag list Arcadia keeps locally: Steam's public list `store.steampowered.com/tagdata/populartags/german`,
+saved as `src/Arcadia.Launchers/Steam/steam-tags-german.json` (no request beside `appdetails`). A4 while "Alle
+Metadaten neu laden" runs, the old data stays visible until the new one is there. A5 with no game missing, the
+progress row reads "Alle Metadaten geladen" (greyed).
 
-**Status:** Automated: T493-1 to -31 · QE: T493-32 to -36 · Open for the owner: T493-37, T493-38, T493-39, T493-40
+**Status:** Automated: T493-1 to -31, T493-41 · QE: T493-32 to -36 · Open for the owner: T493-37, T493-38, T493-39, T493-40
 
 **Steam data from `appinfo.vdf` and the store page**
 
@@ -67,6 +68,8 @@ missing, the progress row reads "Alle Metadaten geladen" (greyed); the wording g
 - [ ] **T493-14** "Infos": full description, then genres, developer, publisher, release date (German date), tags and
       every age rating, each with its source ("Steam", "Epic", "laut Steam"); the source shows only here. Controller
       alone: ▲ ▼ scroll a long description (A2), B goes back to the rail, B again closes the page. · E2E: yes
+- [ ] **T493-41** "Infos" offers nothing in "Übersicht anpassen" and its content is never a quick-pick entry.
+      · E2E: no (view model test)
 
 **Fetching, throttling, cache**
 

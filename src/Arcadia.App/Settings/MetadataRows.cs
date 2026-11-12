@@ -43,7 +43,8 @@ public sealed class MetadataRows
         Refresh();
     }
 
-    public IReadOnlyList<SettingsRowViewModel> Rows => [.. ProviderRows(), _missing, _reload];
+    /// <summary>The group's rows; none while no launcher of the libraries delivers metadata.</summary>
+    public IReadOnlyList<SettingsRowViewModel> Rows => ProviderRows().ToList() is { Count: > 0 } providers ? [.. providers, _missing, _reload] : [];
 
     /// <summary>A run or the libraries changed; UI thread.</summary>
     public void Refresh()

@@ -103,6 +103,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per
   launcher: name, keyword, logo file, folder. `MouseModeSettings`, `ReturnWithViewSettings`.
+  `QuickSelectionSettings`: the detail page's quick selection per game, else for all games, else the defaults (#500);
+  an unreadable value gives the defaults without failing the file.
 - `ListFocus`: focus in a list that goes round at its ends (rows, menus, buttons, tabs), `Next` passing over items
   that can't take it. `ValueCycle`: a ◀ ▶ selector whose step
   past one end comes in at the other. `GridFocus`: focus in a grid cut into pages (library, search hits), round at

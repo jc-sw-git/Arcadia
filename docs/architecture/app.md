@@ -28,9 +28,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   the UI thread (#227). It keeps each tab's sorted and filtered list until a rescan, the sort or the tab's filter
   changes it. `Filter/` (#44): `FilterModalViewModel` (R3) with its category and value rows, drawn by
   `Views/FilterModalView`; Main hosts it, the library saves its choice when it closes.
-- `GameDetailViewModel`: detail carousel, its `DetailCoverViewModel`s placed by `Controls/DepthSlot`, and the shown
-  `GameDetailPageViewModel` (buttons, rail of `DetailAreaViewModel`s with `DetailRowViewModel`s from `DetailAreas`,
-  focus as `DetailFocus`), `Views/GameDetailView.axaml`; covers in the grid are `GameTileViewModel`s.
+- Detail page (carousel, areas, quick selection, "Übersicht anpassen"): [app-detail-page.md](app-detail-page.md).
 - `GameActions`: what a game does (start, install, back to it, held A), one per window.
 - `LauncherTabsViewModel` the tabs; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu),
   `ViewOptionsViewModel` ("Ansicht": sort and page size, the search's filter), `ConfirmationViewModel` (asks before

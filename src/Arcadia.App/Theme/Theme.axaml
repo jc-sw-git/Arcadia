@@ -124,6 +124,7 @@
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
+    <BoxShadows x:Key="NoRing">0 0 0 0 #00000000</BoxShadows>
     <!-- Shadows paint in order: the drop shadow first, so it doesn't darken the ring's lower edge. -->
     <BoxShadows x:Key="FocusRingLifted">0 18 40 0 #A6000000, 0 0 0 3 #F2F5F8</BoxShadows>
     <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
@@ -1020,6 +1021,161 @@
   </Style>
   <Style Selector="Button.detailRow.greyed Border.valuePill">
     <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- The quick selection in "Übersicht" (#500): pills like the detail page's buttons; "Übersicht anpassen" set apart
+       as an outline. A greyed entry keeps the focus but reads as off. -->
+  <Style Selector="Button.quickEntry">
+    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="28" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.quickEntry:pointerover">
+    <Setter Property="Background" Value="{StaticResource DetailActionHover}" />
+  </Style>
+  <Style Selector="Button.quickEntry.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.quickEntry.customize">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.quickEntry.customize:pointerover">
+    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+  </Style>
+  <Style Selector="TextBlock.quickTitle">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.quickValue">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="MaxWidth" Value="150" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Path.quickIcon">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+  </Style>
+  <Style Selector="Button.quickEntry.danger TextBlock.quickTitle">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.quickEntry.danger Path.quickIcon">
+    <Setter Property="Stroke" Value="{StaticResource Danger}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed TextBlock.quickTitle, Button.quickEntry.greyed TextBlock.quickValue">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed Path.quickIcon">
+    <Setter Property="Stroke" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed Button.quickArrow">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.quickArrow">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
+
+  <!-- "Übersicht anpassen" (#500): the counter turns amber with five, the bar for "Für alle Spiele übernehmen". -->
+  <Style Selector="Border.quickDialog">
+    <Setter Property="Width" Value="1040" />
+    <Setter Property="Padding" Value="48,44,48,28" />
+  </Style>
+  <Style Selector="Border.quickCount">
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.quickCount TextBlock">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Border.quickCount.full TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource NoteText}" />
+  </Style>
+  <Style Selector="Path.quickFullIcon">
+    <Setter Property="Data" Value="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7.5v5.5M12 16.5v.5" />
+    <Setter Property="Stroke" Value="{StaticResource NoteText}" />
+    <Setter Property="StrokeThickness" Value="2.2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.quickFullNote">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource NoteText}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.quickAll">
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20,14" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="TextBlock.quickAllTitle">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.quickAllText">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Path.quickAppliedIcon">
+    <Setter Property="Data" Value="M5 12.5l4.5 4.5 9.5-10" />
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2.6" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.quickAllButton">
+    <Setter Property="Height" Value="48" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="22,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.quickAllButton:pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Button.quickAllButton.primary">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.quickAllButton.primary:pointerover">
+    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+  </Style>
+  <Style Selector="Button.quickAllButton.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
   </Style>
 
   <!-- One box per value of a value row in an info box (#506), the current one highlighted; same everywhere. -->
@@ -3408,5 +3564,9 @@
     <Setter Property="FontSize" Value="20" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- The detail page under a dialog: no ring of its own, only the dialog's (T500-25). After the focused styles. -->
+  <Style Selector="Panel.detailCovered Button.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
 </Styles>

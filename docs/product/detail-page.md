@@ -7,10 +7,21 @@
   - On the game's artwork beside its cover: title, then one button row "Spielen", "Zu Favoriten", "In … öffnen" and
     a quiet note beside it (update, installation, soundtrack) that the focus never takes. The page always opens on
     "Spielen" with "Übersicht" open.
-  - Below, a panel with a rail of areas, each with a value line: "Übersicht" (the game's figures, no rows yet),
-    "Controller" (Steam Controller mode, "Individueller Mausmodus") and "Verwalten" ("Artwork ändern",
-    "Deinstallieren …"). ▼ from any button goes to the rail, ▲ on the first area back to "Spielen"; a focused area
-    shows its content at once, A goes into its rows, B back to the rail. ◀ ▶ change a value row at once, both ways.
+  - Below, a panel with a rail of areas, each with a value line: "Übersicht", "Controller" (Steam Controller mode,
+    "Individueller Mausmodus") and "Verwalten" ("Artwork ändern", "Deinstallieren …"). ▼ from any button goes to the
+    rail, ▲ on the first area back to "Spielen"; a focused area shows its content at once, A goes into its rows, B back
+    to the rail. ◀ ▶ change a value row at once, both ways.
+  - "Übersicht" (#500): left the quick selection, up to 5 rows of the other areas in the order of the areas, each acting
+    as its row (a greyed one says why below the entries, there is no info box), and set apart "Übersicht anpassen";
+    right the game's facts, which take no focus. ▲ ▼ walk the entries and "Übersicht anpassen", round at the ends; it
+    keeps the focus when the carousel turns, an entry past the next game's last goes to its last.
+  - "Übersicht anpassen" is a dialog, not a game action (not in the context menu): every row of the other areas by
+    area, A ticks or unticks and holds at once, "n von 5", with 5 the others greyed and passed over. Below, "Für alle
+    Spiele übernehmen" asks in place ("Abbrechen" first) and stays open after "Ersetzen". A game shows its own selection,
+    else the one for all games, else the defaults (every entry there is); "Ersetzen" drops every own selection in the
+    same save and holds for games added later. So a new default entry reaches only games never changed while nothing was
+    applied to all. Stored by stable ids in `settings.json`; an unknown id drops out, an unreadable selection gives the
+    defaults with a log line. There is no "Standard wiederherstellen".
   - A row that doesn't apply now is greyed out but never hidden and still takes the focus, so an area keeps its rows;
     the info box beside the rows explains the focused row and says why it is greyed. A greyed button of the row is
     skipped and says why in its tooltip.

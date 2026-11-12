@@ -6,7 +6,7 @@ namespace Arcadia.App.ViewModels;
 
 /// <summary>
 /// An area in the detail page's rail (#499): its name, the line with its current value, and its rows. The open area's
-/// content stands beside the rail; "Übersicht" has no rows, it shows the game's facts.
+/// content stands beside the rail; the rows of "Übersicht" are the game's quick selection (#500), beside its facts.
 /// </summary>
 public sealed partial class DetailAreaViewModel : ViewModelBase
 {
@@ -38,11 +38,13 @@ public sealed partial class DetailAreaViewModel : ViewModelBase
     public partial string ValueLine { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasRows))]
+    [NotifyPropertyChangedFor(nameof(HasRows), nameof(HasInfoBox))]
     public partial IReadOnlyList<DetailRowViewModel> Rows { get; set; } = [];
 
-    /// <summary>Settings or actions to explain: the info box stands beside them.</summary>
     public bool HasRows => Rows.Count > 0;
+
+    /// <summary>Settings or actions to explain: the info box stands beside them. "Übersicht" shows the facts there instead.</summary>
+    public bool HasInfoBox => HasRows && !IsOverview;
 
     /// <summary>Its content is shown beside the rail.</summary>
     [ObservableProperty]

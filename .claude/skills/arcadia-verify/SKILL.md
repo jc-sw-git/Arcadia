@@ -5,8 +5,8 @@ description: Run Arcadia and check a change for real — build, start with demo 
 
 # Verify Arcadia changes in the running app
 
-`Arcadia.App.Tests` drive the view models and a headless window, but not the real screen, real input, launchers or
-the controller emulation. Check those in the running app.
+`Arcadia.App.Tests` drive the view models (only a few cross-page guards open a headless window, on `main`), but not
+the real screen, a feature's layout, real input, launchers or the controller emulation. Check those in the running app.
 
 ## 1. Build cleanly
 

@@ -131,7 +131,7 @@ public sealed class DetailPageStateTests
             arcadia.Press(UiAction.Back).Hold(UiAction.Accept, PastHoldTime);
             var page = arcadia.Detail!.Current;
             var onPage = page.Buttons.Where(button => button.IsEnabled).Select(button => button.Kind)
-                .Concat(page.Areas.SelectMany(area => area.Rows).Where(row => !row.IsGreyed).Select(row => row.Kind))
+                .Concat(page.Areas.Where(area => !area.IsOverview).SelectMany(area => area.Rows).Where(row => !row.IsGreyed).Select(row => row.Kind))
                 .Order().ToList();
             Assert.Equal(menu, onPage);
             arcadia.Press(UiAction.Back).Press(UiAction.NextTab);

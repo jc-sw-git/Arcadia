@@ -16,7 +16,7 @@ namespace Arcadia.App.Tests;
 /// <summary>
 /// The header's status messages in a modal with Y (#166): opening it, its entries and order, the way into the settings
 /// and the update, the live list and its empty state, and the buttons that moved for it (Ansicht and the launcher order
-/// on L3). The real window (chip, ✕, clicks, layout) is in <c>Window/StatusModalViewTests</c>.
+/// on L3). The real window (chip, ✕, clicks, layout) is checked in the quality engineer's run of the app.
 /// </summary>
 public sealed class StatusModalTests
 {

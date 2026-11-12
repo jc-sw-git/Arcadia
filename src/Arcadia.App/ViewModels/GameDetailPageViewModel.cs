@@ -4,6 +4,7 @@ using Arcadia.App.Services;
 using Arcadia.Core.Navigation;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
@@ -17,9 +18,10 @@ public enum DetailZone
 
 /// <summary>
 /// The focus of a detail page, carried to the next game when the carousel turns or the tab changes (#499): the open area
-/// and the focus stay; only a page opened anew starts on "Spielen" and "Übersicht".
+/// and the focus stay; only a page opened anew starts on "Spielen" and "Übersicht". <paramref name="OnCustomize"/>: the focus
+/// is on "Übersicht anpassen" below the quick selection (#500), which stays there whatever the next game's entries are.
 /// </summary>
-public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button, string AreaKey, int Row)
+public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button, string AreaKey, int Row, bool OnCustomize = false)
 {
     public static DetailFocus Start { get; } = new(DetailZone.Buttons, GameActionKind.Play, DetailAreaViewModel.OverviewKey, 0);
 }
@@ -28,7 +30,8 @@ public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button
 /// The shown game of the detail page (#499): title and the button row "Spielen", "Zu Favoriten", "In … öffnen" with a quiet
 /// note beside it, and the rail of areas ("Übersicht", "Controller", "Verwalten") with the open area's content and the info
 /// box. ▼ leads from the buttons into the rail, A into the area's rows, B back; ◀ ▶ change a value at once, A starts an
-/// action, as on the settings page.
+/// action, as on the settings page. "Übersicht" holds the game's quick selection (#500): up to five rows of the other
+/// areas that act as their rows do, and below them "Übersicht anpassen".
 /// </summary>
 public sealed partial class GameDetailPageViewModel : ViewModelBase
 {
@@ -86,6 +89,9 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public IReadOnlyList<DetailAreaViewModel> Areas { get; }
 
+    /// <summary>"Übersicht", whose rows are the quick selection (#500).</summary>
+    public DetailAreaViewModel Overview => Areas[0];
+
     /// <summary>The area whose content stands beside the rail.</summary>
     [ObservableProperty]
     public partial DetailAreaViewModel OpenArea { get; private set; }
@@ -140,13 +146,19 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public bool HasNotes => HasUpdateNote || HasPlayNote || HasSoundtrackNote;
 
     /// <summary>The focus to carry to the next game.</summary>
-    public DetailFocus Focus => new(Zone, FocusedButton?.Kind ?? GameActionKind.Play, OpenArea.Key, _row);
+    public DetailFocus Focus => new(Zone, FocusedButton?.Kind ?? GameActionKind.Play, OpenArea.Key, _row, IsOnCustomize);
 
     /// <summary>The kind of the focused button, null while the focus is in the areas.</summary>
     public GameActionKind? FocusedKind => Zone == DetailZone.Buttons ? FocusedButton?.Kind : null;
 
     /// <summary>The focused row, null while the focus is on the buttons or in the rail.</summary>
     public DetailRowViewModel? FocusedRow => Zone == DetailZone.Rows && _row < OpenArea.Rows.Count ? OpenArea.Rows[_row] : null;
+
+    /// <summary>The focus is on "Übersicht anpassen", after the quick selection's entries (#500).</summary>
+    private bool IsOnCustomize => Zone == DetailZone.Rows && OpenArea.IsOverview && _row == OpenArea.Rows.Count;
+
+    /// <summary>▲ ▼ go round over the rows; in "Übersicht" "Übersicht anpassen" comes after the entries.</summary>
+    private int FocusableRowCount => OpenArea.Rows.Count + (OpenArea.IsOverview ? 1 : 0);
 
     private GameActionViewModel? FocusedButton => _button >= 0 && _button < Buttons.Count ? Buttons[_button] : null;
 
@@ -185,13 +197,17 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             case (DetailZone.Rail, UiAction.Up or UiAction.Down):
                 ShowArea(ListFocus.Cycle(_area, action == UiAction.Up ? -1 : 1, Areas.Count, HeldPress.IsRepeat));
                 break;
-            case (DetailZone.Rail, UiAction.Accept) when OpenArea.HasRows:
+            case (DetailZone.Rail, UiAction.Accept) when OpenArea.HasRows || OpenArea.IsOverview:
+                // "Übersicht" always has "Übersicht anpassen", also with an empty quick selection (#500).
                 _row = 0;
                 SetZone(DetailZone.Rows);
                 break;
             case (DetailZone.Rows, UiAction.Up or UiAction.Down):
-                _row = ListFocus.Cycle(_row, action == UiAction.Up ? -1 : 1, OpenArea.Rows.Count, HeldPress.IsRepeat);
+                _row = ListFocus.Cycle(_row, action == UiAction.Up ? -1 : 1, FocusableRowCount, HeldPress.IsRepeat);
                 ShowFocus();
+                break;
+            case (DetailZone.Rows, UiAction.Accept) when IsOnCustomize:
+                Customize();
                 break;
             case (DetailZone.Rows, UiAction.Left or UiAction.Right):
                 FocusedRow?.Change(action == UiAction.Left ? -1 : 1);
@@ -214,13 +230,59 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         var actions = GameActionViewModel.For(Tile, _host);
         Buttons = [.. new[] { GameActionKind.Play, GameActionKind.Favorite, GameActionKind.OpenInLauncher }
             .SelectMany(kind => actions.Where(a => a.Kind == kind))];
+        var onCustomize = IsOnCustomize;
         Area(DetailAreaViewModel.ControllerKey).Rows = Watched(DetailAreas.ControllerRows(Tile, actions, _host, Point));
         Area(DetailAreaViewModel.ManageKey).Rows = Watched(DetailAreas.ManageRows(Tile, actions, Point));
+        // The entries are rows of their own on the same actions, so a value changed in one shows in the other at once.
+        var quick = Area(DetailAreaViewModel.OverviewKey);
+        quick.Rows = Watched(DetailAreas.QuickRows(
+            _host.QuickSelectionOf(Tile.Game),
+            [.. DetailAreas.ControllerRows(Tile, actions, _host, Point), .. DetailAreas.ManageRows(Tile, actions, Point)]));
+        if (OpenArea == quick)
+        {
+            _row = QuickRow(_row, onCustomize);
+        }
+
         UpdateValueLines();
         _button = -1;
         FocusButton(focusedKind ?? GameActionKind.Play);
         ShowFocus();
         UpdatePlayNote();
+    }
+
+    /// <summary>
+    /// What "Übersicht anpassen" lists (#500): every row of the other areas, grouped by area, in the order of the areas.
+    /// </summary>
+    public IReadOnlyList<QuickChoice> QuickChoices =>
+        [.. Areas.Where(area => !area.IsOverview).SelectMany(area => area.Rows.Select(row => new QuickChoice(row.QuickId, row.Title, area.Name)))];
+
+    /// <summary>"Übersicht anpassen" has the focus (#500).</summary>
+    [ObservableProperty]
+    public partial bool IsCustomizeFocused { get; private set; }
+
+    /// <summary>
+    /// Why the focused quick selection entry is greyed out (#500), below the entries: "Übersicht" has no info box. Null while
+    /// the focus is elsewhere or the entry applies.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasQuickNote))]
+    public partial string? QuickNote { get; private set; }
+
+    public bool HasQuickNote => QuickNote is not null;
+
+    /// <summary>A, a click on "Übersicht anpassen": the dialog over the page, with the focus here when it closes.</summary>
+    [RelayCommand]
+    private void Customize()
+    {
+        var overview = Areas.ToList().FindIndex(area => area.IsOverview);
+        if (_area != overview)
+        {
+            ShowArea(overview);
+        }
+
+        _row = OpenArea.Rows.Count;
+        SetZone(DetailZone.Rows);
+        _host.CustomizeOverview(Tile, QuickChoices);
     }
 
     /// <summary>Stops following the game's cover; the page was replaced by the next game's.</summary>
@@ -233,8 +295,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         FocusButton(focus.Button);
         _area = Math.Max(0, Areas.ToList().FindIndex(area => area.Key == focus.AreaKey));
         OpenArea = Areas[_area];
-        _row = Math.Clamp(focus.Row, 0, Math.Max(0, OpenArea.Rows.Count - 1));
-        SetZone(focus.Zone == DetailZone.Rows && !OpenArea.HasRows ? DetailZone.Rail : focus.Zone);
+        _row = OpenArea.IsOverview ? QuickRow(focus.Row, focus.OnCustomize) : Math.Clamp(focus.Row, 0, Math.Max(0, OpenArea.Rows.Count - 1));
+        SetZone(focus.Zone == DetailZone.Rows && !OpenArea.HasRows && !OpenArea.IsOverview ? DetailZone.Rail : focus.Zone);
     }
 
     /// <summary>Focuses the button of <paramref name="kind"/>, else the first one that can be pressed; none if none can.</summary>
@@ -260,6 +322,16 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         _row = 0;
         OpenArea = Areas[index];
         ShowFocus();
+    }
+
+    /// <summary>
+    /// Where the focus goes in "Übersicht" when its entries change (another game, a tick in the dialog): "Übersicht
+    /// anpassen" stays focused; an entry past the end goes to the last entry, with none to "Übersicht anpassen".
+    /// </summary>
+    private int QuickRow(int row, bool onCustomize)
+    {
+        var entries = Area(DetailAreaViewModel.OverviewKey).Rows.Count;
+        return onCustomize ? entries : Math.Clamp(row, 0, Math.Max(0, entries - 1));
     }
 
     private void OpenByPointer(DetailAreaViewModel area)
@@ -303,15 +375,18 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             }
         }
 
-        InfoRow = OpenArea.HasRows ? OpenArea.Rows[Zone == DetailZone.Rows ? Math.Min(_row, OpenArea.Rows.Count - 1) : 0] : null;
+        InfoRow = OpenArea.HasInfoBox ? OpenArea.Rows[Zone == DetailZone.Rows ? Math.Min(_row, OpenArea.Rows.Count - 1) : 0] : null;
         var row = FocusedRow;
+        IsCustomizeFocused = IsOnCustomize;
         AcceptHint = Zone switch
         {
             DetailZone.Buttons => FocusedButton?.ButtonLabel,
-            DetailZone.Rail => OpenArea.HasRows ? AppTexts.Select : null,
+            DetailZone.Rail => OpenArea.HasRows || OpenArea.IsOverview ? AppTexts.Select : null,
+            _ when IsOnCustomize => AppTexts.DetailCustomizeOverview,
             _ => row is { IsAction: true, IsGreyed: false } ? row.Title : null,
         };
         ShowsChangeHint = row is { IsChoice: true, IsGreyed: false };
+        QuickNote = OpenArea.IsOverview && row is { IsGreyed: true, HasNote: true } ? row.Note : null;
         OnPropertyChanged(nameof(FocusedKind));
         OnPropertyChanged(nameof(FocusedRow));
     }
@@ -325,6 +400,11 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             {
                 if (e.PropertyName == nameof(DetailRowViewModel.ValueText))
                 {
+                    foreach (var same in Areas.SelectMany(area => area.Rows).Where(other => other != row && other.Kind == row.Kind))
+                    {
+                        same.FollowValue();
+                    }
+
                     UpdateValueLines();
                 }
             };

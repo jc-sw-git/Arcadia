@@ -106,6 +106,9 @@ public sealed record AppSettings
     /// </summary>
     public bool OverwritesArtworkSetByHand { get; init; }
 
+    /// <summary>The quick selection of each game's "Übersicht" (#500).</summary>
+    public QuickSelectionSettings QuickSelection { get; init; } = new();
+
     /// <summary>
     /// Replaces view values this version doesn't know — written by a newer Arcadia or edited by
     /// hand — with the defaults, instead of failing on them later.
@@ -123,6 +126,9 @@ public sealed record AppSettings
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
         Artwork = (Artwork ?? new ArtworkSettings()).WithValidValues(),
     };
+
+    /// <summary>Replaces a quick selection written as <c>null</c> by hand with an empty one, so every game shows the defaults.</summary>
+    public AppSettings WithValidQuickSelection() => this with { QuickSelection = QuickSelection ?? new() };
 
     /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>
     public GameFilter FilterOf(string launcherId) =>

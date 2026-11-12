@@ -52,7 +52,17 @@ public static class SteamAppInfo
     }
 
     /// <inheritdoc cref="ReadApps(string, IReadOnlySet{uint})"/>
-    public static IReadOnlyDictionary<uint, SteamAppEntry> ReadApps(SafeFileHandle file, IReadOnlySet<uint> appIds)
+    public static IReadOnlyDictionary<uint, SteamAppEntry> ReadApps(SafeFileHandle file, IReadOnlySet<uint> appIds) =>
+        ReadEntries(file, appIds, EntryOf, skipBroken: false);
+
+    /// <summary>
+    /// Reads the entry of every app of <paramref name="appIds"/> found in the file with <paramref name="read"/>, which gets
+    /// the entry's root map and returns null for an entry it can't use.
+    /// </summary>
+    /// <param name="skipBroken">An entry whose VDF is broken costs only that app; else the whole read fails.</param>
+    /// <exception cref="FormatException">An unknown version or a broken file (with <paramref name="skipBroken"/>: a broken frame).</exception>
+    internal static IReadOnlyDictionary<uint, T> ReadEntries<T>(SafeFileHandle file, IReadOnlySet<uint> appIds, Func<VdfMap, T?> read, bool skipBroken)
+        where T : class
     {
         var length = RandomAccess.GetLength(file);
         Span<byte> header = stackalloc byte[16];
@@ -81,7 +91,7 @@ public static class SteamAppInfo
         }
 
         var entryHeader = magic == V27 ? EntryHeaderV27 : EntryHeaderV28;
-        var types = new Dictionary<uint, SteamAppEntry>();
+        var types = new Dictionary<uint, T>();
         while (types.Count < appIds.Count && position + 4 <= end)
         {
             // Id and size in one read: one system call per app, and there are tens of thousands.
@@ -108,7 +118,7 @@ public static class SteamAppInfo
             {
                 var entry = new byte[size - entryHeader];
                 Read(file, entry, data + entryHeader, end);
-                if (EntryOf(entry, strings) is { } app)
+                if (ReadEntry(entry, strings, read, skipBroken) is { } app)
                 {
                     types[appId] = app;
                 }
@@ -120,10 +130,27 @@ public static class SteamAppInfo
         return types;
     }
 
-    private static SteamAppEntry? EntryOf(ReadOnlySpan<byte> entry, string[]? strings)
+    private static T? ReadEntry<T>(ReadOnlySpan<byte> entry, string[]? strings, Func<VdfMap, T?> read, bool skipBroken)
+        where T : class
     {
-        var reader = new Reader(entry, strings);
-        var common = reader.Map().GetMap("appinfo")?.GetMap("common");
+        if (!skipBroken)
+        {
+            return read(new Reader(entry, strings).Map());
+        }
+
+        try
+        {
+            return read(new Reader(entry, strings).Map());
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    private static SteamAppEntry? EntryOf(VdfMap root)
+    {
+        var common = root.GetMap("appinfo")?.GetMap("common");
         return common?.GetString("type") is { Length: > 0 } type
             ? new SteamAppEntry(type, common.GetString("name") is { Length: > 0 } name ? name : null)
             {

@@ -56,4 +56,7 @@ public interface ILauncherIntegration
 
     /// <summary>The launcher's own covers and backgrounds for its games (#13); null if it has none.</summary>
     ILauncherArtwork? Artwork => null;
+
+    /// <summary>The launcher's own metadata of its games (#43): local files, optionally a store page; null if it has none.</summary>
+    ILauncherMetadata? Metadata => null;
 }

@@ -14,6 +14,11 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Steam's store tags by id, in German (#493): the names appinfo.vdf's tag ids need, without a request. -->
+    <EmbeddedResource Include="Steam\steam-tags-german.json" LogicalName="Arcadia.Launchers.Steam.steam-tags-german.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

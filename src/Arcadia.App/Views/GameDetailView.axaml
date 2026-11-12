@@ -200,48 +200,107 @@
         </Border>
 
         <Panel Name="AreaContent" Margin="34,28">
-          <!-- "Übersicht": the game's facts in full width (the quick selection follows with #498's second part). -->
-          <StackPanel Spacing="20" IsVisible="{Binding OpenArea.IsOverview}">
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="16">
-              <Border Classes="detailStat">
-                <StackPanel Spacing="6">
-                  <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="13" />
-                  <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
-                  <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
+          <!-- "Übersicht" (#500): left the quick selection, up to five rows of the other areas that act as their rows do, and set
+               apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so a
+               name and a value like "Standard (Arcadia)" fit side by side. -->
+          <Grid Name="Overview" ColumnDefinitions="480,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
+            <StackPanel Spacing="8">
+              <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailQuickSelectionCaption}" FontSize="13" Margin="0,0,0,6" />
+              <ItemsControl Name="QuickEntries" ItemsSource="{Binding Overview.Rows}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DetailRowViewModel">
+                    <Button Classes="plain quickEntry" Classes.focused="{Binding IsFocused}" Classes.greyed="{Binding IsGreyed}" Classes.danger="{Binding IsDanger}"
+                            Command="{Binding ClickCommand}" PointerEntered="OnRowPointerEntered" ToolTip.Tip="{Binding Note}">
+                      <DockPanel>
+                        <Viewbox DockPanel.Dock="Left" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center">
+                          <Path Classes="quickIcon" Data="{Binding QuickIcon}" Width="24" Height="24" Stretch="None" />
+                        </Viewbox>
+                        <!-- ◀ value ▶: the arrows change it with the mouse, as on the row. -->
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" Margin="12,0,-10,0" IsVisible="{Binding IsChoice}">
+                          <Button Classes="plain valueArrow quickArrow" Command="{Binding StepBackCommand}">
+                            <Path Classes="chevronLeft" />
+                          </Button>
+                          <TextBlock Classes="quickValue" Text="{Binding ValueText}" />
+                          <Button Classes="plain valueArrow quickArrow" Command="{Binding StepOnCommand}">
+                            <Path Classes="chevronRight" />
+                          </Button>
+                        </StackPanel>
+                        <TextBlock Classes="quickTitle" Text="{Binding Title}" />
+                      </DockPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Name="Customize" Classes="plain quickEntry customize" Classes.focused="{Binding IsCustomizeFocused}" Margin="0,18,0,0"
+                      Command="{Binding CustomizeCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                  <Viewbox Width="20" Height="20" VerticalAlignment="Center">
+                    <Path Classes="quickIcon" Data="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" Width="24" Height="24" Stretch="None" />
+                  </Viewbox>
+                  <TextBlock Classes="quickTitle" Text="{x:Static app:AppTexts.DetailCustomizeOverview}" />
                 </StackPanel>
-              </Border>
-              <Border Grid.Column="1" Classes="detailStat">
-                <StackPanel Spacing="6">
-                  <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="13" />
-                  <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
-                  <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
-                </StackPanel>
-              </Border>
-              <Border Grid.Column="2" Classes="detailStat">
-                <StackPanel Spacing="6">
-                  <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="13" />
-                  <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
-                  <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
-                </StackPanel>
-              </Border>
-              <Border Grid.Column="3" Classes="detailStat">
-                <StackPanel Spacing="6">
-                  <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="13" />
-                  <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
-                  <TextBlock Classes="statSource" Text="{Binding DriveText}" />
-                </StackPanel>
-              </Border>
-            </Grid>
-            <!-- E.g. another account in Steam than in Arcadia (#83). -->
-            <DockPanel IsVisible="{Binding Tile.HasNotice}">
-              <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
-                    VerticalAlignment="Top" Margin="0,2,10,0" />
-              <TextBlock Text="{Binding Tile.Notice}" FontSize="17" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
-            </DockPanel>
-          </StackPanel>
+              </Button>
+              <!-- Why the focused entry is greyed out: "Übersicht" has no info box. -->
+              <DockPanel Name="QuickNote" Margin="4,6,0,0" IsVisible="{Binding HasQuickNote}">
+                <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
+                      VerticalAlignment="Top" Margin="0,2,10,0" />
+                <TextBlock Text="{Binding QuickNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+              </DockPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="16">
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Border Classes="detailStat">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="13" />
+                    <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
+                    <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="detailStat">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="13" />
+                    <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
+                    <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Classes="detailStat">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="13" />
+                    <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
+                    <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" Classes="detailStat">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="13" />
+                    <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
+                    <TextBlock Classes="statSource" Text="{Binding DriveText}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <!-- E.g. another account in Steam than in Arcadia (#83). -->
+              <DockPanel IsVisible="{Binding Tile.HasNotice}">
+                <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
+                      VerticalAlignment="Top" Margin="0,2,10,0" />
+                <TextBlock Text="{Binding Tile.Notice}" FontSize="17" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+              </DockPanel>
+              <!-- E.g. another account in Steam than in Arcadia (#83). -->
+              <DockPanel IsVisible="{Binding Tile.HasNotice}">
+                <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
+                      VerticalAlignment="Top" Margin="0,2,10,0" />
+                <TextBlock Text="{Binding Tile.Notice}" FontSize="17" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+              </DockPanel>
+            </StackPanel>
+          </Grid>
 
           <!-- An area with rows: its name and value line, the rows, and the info box that explains the focused row. -->
-          <DockPanel IsVisible="{Binding OpenArea.HasRows}">
+          <DockPanel IsVisible="{Binding OpenArea.HasInfoBox}">
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="0,0,0,20">
               <TextBlock Text="{Binding OpenArea.Name}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Bottom" />
               <TextBlock Text="{Binding OpenArea.ValueLine}" FontSize="18" Foreground="{StaticResource TextSoft}" VerticalAlignment="Bottom" Margin="0,0,0,3"

@@ -16,7 +16,8 @@ Page and button row
 - [x] **T499-1** Open a game's detail page from the library (A held 1 s) and from the search: the game's artwork fills
       the screen under a scrim, the launcher tabs stay on top; title, info line and the row "Spielen", "Zu Favoriten",
       "In <Launcher> öffnen" stand on the artwork; the focus is on "Spielen"; the rail shows "Übersicht", "Controller"
-      and "Verwalten", each with its value line, "Übersicht" open with the game's facts in full width and no info box.
+      and "Verwalten", each with its value line, "Übersicht" open with the game's ~~facts in full width~~ facts (beside the
+      quick selection since #500, T500-1) and no info box.
       · E2E: yes
 - [x] **T499-2** Button row: ◀ ▶ move between the buttons and go round at the ends; a disabled button (e.g. "In … öffnen"
       without a launcher target) is passed over and tells why in its tooltip; A on each does what it does today. A
@@ -38,8 +39,8 @@ Rail and rows
 - [x] **T499-6** A on "Controller" (and on "Verwalten") in the rail: the focus is on the area's first row; ▲ ▼ move through
       the rows and go round at the ends; B returns to that area in the rail; B in the rail or on the button row returns
       to where the page was opened from (T499-11). · E2E: yes
-- [x] **T499-7** A on "Übersicht" in the rail does nothing and moves no focus (no rows in slice 1; open question 1).
-      · E2E: yes
+- [x] ~~**T499-7** A on "Übersicht" in the rail does nothing and moves no focus (no rows in slice 1; open question 1).
+      · E2E: yes~~ Replaced by T500-2: A leads into the quick selection (#500).
 - [x] **T499-8** Focus on "Steam-Controller-Modus": ▶ changes the value at once to the next, ◀ to the previous, going round
       at the ends; the rail's line for "Controller" and the row show the new value; it holds for this game only, also
       after leaving and reopening the page and after a restart of Arcadia. The same for "Individueller Mausmodus".

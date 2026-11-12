@@ -48,6 +48,9 @@ public interface IGameActionsOwner
     /// <summary>"Artwork ändern" (#490): the modal over the page.</summary>
     void ChangeArtwork(GameTileViewModel tile);
 
+    /// <summary>"Übersicht anpassen" (#500): the dialog over the detail page.</summary>
+    void CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices);
+
     /// <summary>A game is starting or its start failed: every shown cover takes its run state again.</summary>
     void RunStatesChanged();
 }
@@ -475,4 +478,8 @@ public sealed class GameActions : IGameActionHost
     void IGameActionHost.StepGameMouseMode(GameTileViewModel tile, int delta) => _owner.StepGameMouseMode(tile.Game, delta);
 
     void IGameActionHost.ChangeArtwork(GameTileViewModel tile) => _owner.ChangeArtwork(tile);
+
+    IReadOnlyList<string> IGameActionHost.QuickSelectionOf(Game game) => _settings.Current.QuickSelection.Of(game.Key, DetailAreas.QuickDefaults);
+
+    void IGameActionHost.CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices) => _owner.CustomizeOverview(tile, choices);
 }

@@ -125,6 +125,12 @@ internal sealed class ArcadiaComposition
         // logged once, never toasted: the page around it still works (#480).
         UiText.Log = AppLog.Write;
 
+        // A quick selection written by hand in a shape this version can't read shows the defaults, without a message (#500).
+        if (settings.Current.QuickSelection.WasUnreadable)
+        {
+            AppLog.Write("Schnellauswahl in settings.json nicht lesbar, es gilt die Vorauswahl.");
+        }
+
         // The first start asks which launchers are active (#139), the settings change them and their order (#136);
         // while the question shows, every launcher found is read, so it can count their games. Names, keywords and
         // folders the user gave launchers apply from their next read (#137, #138).

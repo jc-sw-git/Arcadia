@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -34,6 +35,12 @@ public sealed partial class DetailRowViewModel : ViewModelBase
     }
 
     public GameActionKind Kind { get; }
+
+    /// <summary>What the quick selection stores the row by (#500).</summary>
+    public string QuickId => DetailAreas.QuickIdOf(Kind);
+
+    /// <summary>Its icon as a quick selection entry in "Übersicht" (#500).</summary>
+    public Geometry QuickIcon => DetailAreas.QuickIconOf(Kind);
 
     public string Title { get; }
 
@@ -91,6 +98,19 @@ public sealed partial class DetailRowViewModel : ViewModelBase
         if (IsChoice && _action is not null)
         {
             _action.Step(delta);
+            ValueText = _action.ButtonLabel;
+            ValueBox.ShowCurrent(ValueBoxes, ValueText);
+        }
+    }
+
+    /// <summary>
+    /// The same setting shown elsewhere on the page (a quick selection entry and its row, #500) changed: the value follows,
+    /// both act on the same game.
+    /// </summary>
+    public void FollowValue()
+    {
+        if (IsChoice && _action is not null)
+        {
             ValueText = _action.ButtonLabel;
             ValueBox.ShowCurrent(ValueBoxes, ValueText);
         }

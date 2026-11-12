@@ -221,7 +221,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsWaitingListOpen;
+        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsCustomizeOverviewOpen || IsWaitingListOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -366,7 +366,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         var page = OpenPages().First();
         object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
-            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? WaitingList;
+            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? (object?)CustomizeOverview ?? WaitingList;
         return new ShownLayer(page.GetType(), dialog, page.Layout);
     }
 
@@ -474,6 +474,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (ChangeArtwork is { } artwork)
         {
             artwork.Handle(action);
+            return true;
+        }
+
+        if (CustomizeOverview is { } customize)
+        {
+            customize.Handle(action);
             return true;
         }
 

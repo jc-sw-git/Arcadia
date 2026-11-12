@@ -143,7 +143,7 @@ public partial class GameDetailView : UserControl
         {
             UpdateInfoOverflow();
         }
-        else if (e.PropertyName is nameof(GameDetailPageViewModel.OpenArea) or nameof(GameDetailPageViewModel.Metadata))
+        else if (e.PropertyName is nameof(GameDetailPageViewModel.OpenArea) or nameof(GameDetailPageViewModel.GameInfo))
         {
             // Another area, or the text of "Infos" arrived: it starts at its top.
             ShowInfosTop();

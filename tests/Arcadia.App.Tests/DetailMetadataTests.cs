@@ -89,11 +89,11 @@ public sealed class DetailMetadataTests
         await RunToIdleAsync(arcadia);
         var page = OpenDetail(arcadia);
 
-        Assert.Equal("Action, Abenteuer · Nordkai Studio · 2021", page.Metadata.InfoLine);
-        Assert.Null(page.Metadata.Badge);
-        Assert.Null(page.Metadata.ShortDescription);
-        Assert.Equal(["Open World", "Atmosphärisch", "Erkundung"], page.Metadata.OverviewTags);
-        Assert.Equal("+2", page.Metadata.MoreTags);
+        Assert.Equal("Action, Abenteuer · Nordkai Studio · 2021", page.GameInfo.InfoLine);
+        Assert.Null(page.GameInfo.Badge);
+        Assert.Null(page.GameInfo.ShortDescription);
+        Assert.Equal(["Open World", "Atmosphärisch", "Erkundung"], page.GameInfo.OverviewTags);
+        Assert.Equal("+2", page.GameInfo.MoreTags);
         Assert.Equal("Action · 2021", page.Area(DetailAreaViewModel.InfosKey).ValueLine);
 
         // The store answers at the next scan; the open page shows it without being opened again.
@@ -103,9 +103,9 @@ public sealed class DetailMetadataTests
 
         Assert.True(arcadia.Main.IsDetailOpen);
         page = arcadia.Detail!.Current;
-        Assert.Equal(Description, page.Metadata.ShortDescription);
-        Assert.Equal(Description, page.Metadata.Description);
-        Assert.Equal("USK 12", page.Metadata.Badge);
+        Assert.Equal(Description, page.GameInfo.ShortDescription);
+        Assert.Equal(Description, page.GameInfo.Description);
+        Assert.Equal("USK 12", page.GameInfo.Badge);
         Assert.Equal("Action · 2021 · USK 12", page.Area(DetailAreaViewModel.InfosKey).ValueLine);
     }
 
@@ -124,7 +124,7 @@ public sealed class DetailMetadataTests
         await RunToIdleAsync(arcadia);
 
         var page = arcadia.Detail!.Current;
-        Assert.Equal(Description, page.Metadata.Description);
+        Assert.Equal(Description, page.GameInfo.Description);
         Assert.True(page.OpenArea.IsInfos);
         Assert.Equal(DetailZone.Rows, page.Zone);
     }
@@ -142,9 +142,9 @@ public sealed class DetailMetadataTests
         arcadia.Main.Toast.PropertyChanged += (_, _) => toasts.Add(arcadia.Main.Toast.Text);
         var page = OpenDetail(arcadia);
 
-        Assert.Equal("Kornfeld Interactive", page.Metadata.InfoLine);
-        Assert.False(page.Metadata.HasBadge || page.Metadata.HasShortDescription || page.Metadata.HasDescription || page.Metadata.HasTags);
-        var fact = Assert.Single(page.Metadata.Facts);
+        Assert.Equal("Kornfeld Interactive", page.GameInfo.InfoLine);
+        Assert.False(page.GameInfo.HasBadge || page.GameInfo.HasShortDescription || page.GameInfo.HasDescription || page.GameInfo.HasTags);
+        var fact = Assert.Single(page.GameInfo.Facts);
         Assert.Equal((AppTexts.DetailDevelopersCaption, "Kornfeld Interactive", "Epic Games"), (fact.Caption, fact.Value, fact.Source));
         Assert.Equal("Kornfeld Interactive", page.Area(DetailAreaViewModel.InfosKey).ValueLine);
         Assert.Empty(toasts);
@@ -158,8 +158,8 @@ public sealed class DetailMetadataTests
         using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, GameOf(KnownLaunchers.Gog, "bravo"))]);
         var page = OpenDetail(arcadia);
 
-        Assert.True(page.Metadata.IsEmpty);
-        Assert.False(page.Metadata.HasInfoLine || page.Metadata.HasShortDescription || page.Metadata.HasTags || page.Metadata.HasFacts);
+        Assert.True(page.GameInfo.IsEmpty);
+        Assert.False(page.GameInfo.HasInfoLine || page.GameInfo.HasShortDescription || page.GameInfo.HasTags || page.GameInfo.HasFacts);
         Assert.Equal(AppTexts.DetailInfosNone, page.Area(DetailAreaViewModel.InfosKey).ValueLine);
         Assert.Equal(GameActionKind.Play, page.FocusedKind);
 
@@ -195,9 +195,9 @@ public sealed class DetailMetadataTests
                 (AppTexts.DetailAgeRatingCaption, "USK 16", "laut Steam", true),
                 (string.Empty, "PEGI 16", "Steam", true),
             ],
-            page.Metadata.Facts.Select(fact => (fact.Caption, fact.Value, fact.Source, fact.IsBadge)));
-        Assert.Equal((Description, "Steam"), (page.Metadata.Description, page.Metadata.DescriptionSource));
-        Assert.Equal((5, "Steam"), (page.Metadata.Tags.Count, page.Metadata.TagsSource));
+            page.GameInfo.Facts.Select(fact => (fact.Caption, fact.Value, fact.Source, fact.IsBadge)));
+        Assert.Equal((Description, "Steam"), (page.GameInfo.Description, page.GameInfo.DescriptionSource));
+        Assert.Equal((5, "Steam"), (page.GameInfo.Tags.Count, page.GameInfo.TagsSource));
 
         // Rail → "Infos" → A → ▲ ▼ scroll the text → B back to the rail → B closes the page.
         var scrolls = new List<int>();
@@ -251,8 +251,8 @@ public sealed class DetailMetadataTests
         await RunToIdleAsync(restarted);
         var page = OpenDetail(restarted);
 
-        Assert.Equal((Description, "USK 12"), (page.Metadata.Description, page.Metadata.Badge));
-        Assert.Equal("Action, Abenteuer · Nordkai Studio · 2021", page.Metadata.InfoLine);
+        Assert.Equal((Description, "USK 12"), (page.GameInfo.Description, page.GameInfo.Badge));
+        Assert.Equal("Action, Abenteuer · Nordkai Studio · 2021", page.GameInfo.InfoLine);
         Assert.Empty(toasts);
     }
 

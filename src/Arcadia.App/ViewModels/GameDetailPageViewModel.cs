@@ -60,8 +60,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         ];
         Areas[0].ValueLine = DetailAreas.OverviewLine(tile);
         OpenArea = Areas[0];
-        Metadata = metadata ?? DetailMetadata.None;
-        Area(DetailAreaViewModel.InfosKey).ValueLine = Metadata.RailLine;
+        GameInfo = metadata ?? DetailMetadata.None;
+        Area(DetailAreaViewModel.InfosKey).ValueLine = GameInfo.RailLine;
 
         tile.PropertyChanged += OnTilePropertyChanged;
         RebuildActions();
@@ -72,7 +72,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     /// <summary>The game's metadata (#493): the info line, the short description and tags, and the content of "Infos".</summary>
     [ObservableProperty]
-    public partial DetailMetadata Metadata { get; private set; }
+    public partial DetailMetadata GameInfo { get; private set; }
 
     /// <summary>
     /// ▲ ▼ while the focus is in "Infos" (#493, A2): the view scrolls its text, -1 up, 1 down. Kept to this one event, so
@@ -305,7 +305,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     /// <summary>The game's metadata arrived or changed while the page is shown (#493): it shows at once, the focus stays.</summary>
     public void ShowMetadata(DetailMetadata metadata)
     {
-        Metadata = metadata;
+        GameInfo = metadata;
         Area(DetailAreaViewModel.InfosKey).ValueLine = metadata.RailLine;
         ShowFocus();
     }
@@ -316,7 +316,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     private DetailAreaViewModel Area(string key) => Areas.First(area => area.Key == key);
 
     /// <summary>A leads from the rail into the area: to its rows, or to reading "Infos" when there is something to read.</summary>
-    private bool CanEnter(DetailAreaViewModel area) => area.HasRows || area.IsOverview || (area.IsInfos && !Metadata.IsEmpty);
+    private bool CanEnter(DetailAreaViewModel area) => area.HasRows || area.IsOverview || (area.IsInfos && !GameInfo.IsEmpty);
 
     private void Restore(DetailFocus focus)
     {

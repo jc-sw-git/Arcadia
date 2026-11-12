@@ -140,11 +140,11 @@
       <TextBlock Name="Title" Margin="0,10,0,0" Text="{Binding Tile.Title}" FontSize="66" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2"
                  TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
       <!-- The info line (#493): genres · developer · year in one line, cut with "…", and the first age rating. -->
-      <StackPanel Name="InfoLine" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0" IsVisible="{Binding Metadata.HasInfoLine}">
-        <TextBlock Text="{Binding Metadata.InfoLine, TargetNullValue=''}" IsVisible="{Binding Metadata.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"
+      <StackPanel Name="InfoLine" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0" IsVisible="{Binding GameInfo.HasInfoLine}">
+        <TextBlock Text="{Binding GameInfo.InfoLine, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"
                    MaxWidth="1040" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-        <Border Classes="ageBadge" IsVisible="{Binding Metadata.HasBadge}">
-          <TextBlock Text="{Binding Metadata.Badge, TargetNullValue=''}" />
+        <Border Classes="ageBadge" IsVisible="{Binding GameInfo.HasBadge}">
+          <TextBlock Text="{Binding GameInfo.Badge, TargetNullValue=''}" />
         </Border>
       </StackPanel>
       <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). -->
@@ -263,8 +263,8 @@
 
             <DockPanel Grid.Column="1">
             <!-- The first tags and "+n" (#493), at the foot of the column as in the artboard. -->
-            <StackPanel Name="OverviewTags" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,16,0,0" ClipToBounds="True" IsVisible="{Binding Metadata.HasTags}">
-              <ItemsControl ItemsSource="{Binding Metadata.OverviewTags}">
+            <StackPanel Name="OverviewTags" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,16,0,0" ClipToBounds="True" IsVisible="{Binding GameInfo.HasTags}">
+              <ItemsControl ItemsSource="{Binding GameInfo.OverviewTags}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" Spacing="8" />
@@ -278,13 +278,13 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Border Classes="metadataTag" IsVisible="{Binding Metadata.HasMoreTags}">
-                <TextBlock Text="{Binding Metadata.MoreTags, TargetNullValue=''}" />
+              <Border Classes="metadataTag" IsVisible="{Binding GameInfo.HasMoreTags}">
+                <TextBlock Text="{Binding GameInfo.MoreTags, TargetNullValue=''}" />
               </Border>
             </StackPanel>
             <StackPanel Spacing="16">
               <!-- The short description (#493): four lines at most, then "…"; the whole text is in "Infos". -->
-              <TextBlock Name="ShortDescription" Text="{Binding Metadata.ShortDescription, TargetNullValue=''}" IsVisible="{Binding Metadata.HasShortDescription}"
+              <TextBlock Name="ShortDescription" Text="{Binding GameInfo.ShortDescription, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasShortDescription}"
                          FontSize="20" LineHeight="30" Foreground="{StaticResource Text}" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
               <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
                 <Border Classes="detailStat">
@@ -329,22 +329,22 @@
           <!-- "Infos" (#493): the full description on the left, every field with its source on the right; ▲ ▼ and RS scroll
                both together, so every field can be read with the controller alone (A2). -->
           <Panel Name="Infos" IsVisible="{Binding OpenArea.IsInfos}">
-            <StackPanel Spacing="12" IsVisible="{Binding Metadata.IsEmpty}">
+            <StackPanel Spacing="12" IsVisible="{Binding GameInfo.IsEmpty}">
               <TextBlock Text="{x:Static app:AppTexts.DetailInfosNone}" FontSize="28" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
               <TextBlock Text="{x:Static app:AppTexts.DetailInfosNoneText}" FontSize="19" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" />
             </StackPanel>
-            <Panel IsVisible="{Binding !Metadata.IsEmpty}">
+            <Panel IsVisible="{Binding !GameInfo.IsEmpty}">
               <ScrollViewer Name="InfosScroller" VerticalScrollBarVisibility="Hidden">
                 <Grid ColumnDefinitions="*,500" ColumnSpacing="44">
-                  <StackPanel Spacing="16" IsVisible="{Binding Metadata.HasDescription}">
+                  <StackPanel Spacing="16" IsVisible="{Binding GameInfo.HasDescription}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                       <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailDescriptionCaption}" FontSize="13" VerticalAlignment="Center" />
-                      <TextBlock Classes="metadataSource" Text="{Binding Metadata.DescriptionSource, TargetNullValue=''}" VerticalAlignment="Center" />
+                      <TextBlock Classes="metadataSource" Text="{Binding GameInfo.DescriptionSource, TargetNullValue=''}" VerticalAlignment="Center" />
                     </StackPanel>
-                    <TextBlock Name="Description" Text="{Binding Metadata.Description, TargetNullValue=''}" FontSize="21" LineHeight="32" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                    <TextBlock Name="Description" Text="{Binding GameInfo.Description, TargetNullValue=''}" FontSize="21" LineHeight="32" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="22">
-                    <ItemsControl Name="Facts" ItemsSource="{Binding Metadata.Facts}" IsVisible="{Binding Metadata.HasFacts}">
+                    <ItemsControl Name="Facts" ItemsSource="{Binding GameInfo.Facts}" IsVisible="{Binding GameInfo.HasFacts}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:DetailFact">
                           <Border Classes="metadataFact">
@@ -362,12 +362,12 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <StackPanel Spacing="10" IsVisible="{Binding Metadata.HasTags}">
+                    <StackPanel Spacing="10" IsVisible="{Binding GameInfo.HasTags}">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailTagsCaption}" FontSize="13" VerticalAlignment="Center" />
-                        <TextBlock Classes="metadataSource" Text="{Binding Metadata.TagsSource, TargetNullValue=''}" VerticalAlignment="Center" />
+                        <TextBlock Classes="metadataSource" Text="{Binding GameInfo.TagsSource, TargetNullValue=''}" VerticalAlignment="Center" />
                       </StackPanel>
-                      <ItemsControl ItemsSource="{Binding Metadata.Tags}">
+                      <ItemsControl ItemsSource="{Binding GameInfo.Tags}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
                             <WrapPanel ItemSpacing="8" LineSpacing="8" />

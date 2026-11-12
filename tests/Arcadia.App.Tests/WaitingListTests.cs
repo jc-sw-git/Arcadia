@@ -107,6 +107,7 @@ public sealed class WaitingListTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T491-9")]
+    [Trait("TestCase", "T506-117")]
     public async Task The_rows_show_how_many_games_wait_and_grey_out_with_ersten_nehmen()
     {
         using var arcadia = await StartAsync();
@@ -118,7 +119,7 @@ public sealed class WaitingListTests
         Assert.Equal(("3", AppTexts.DataSourcesWaitingSubtitle, true, false, 1), (waiting.CountBadge, waiting.Subtitle, waiting.CanActivate, waiting.IsDimmed, waiting.Indent));
         var facts = Assert.Single(waiting.Info.OfType<InfoFacts>());
         Assert.Equal(AppTexts.WaitingGames(3), facts.Title);
-        Assert.Equal(("Echo Drift", "Anderer Launcher · 2 Treffer"), (facts.Facts[0].Label, facts.Facts[0].Value));
+        Assert.Equal(("Echo Drift", "Anderer Launcher"), (facts.Facts[0].Label, facts.Facts[0].Value));
     }
 
     [AvaloniaFact]

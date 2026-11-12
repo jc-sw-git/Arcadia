@@ -36,7 +36,7 @@ engineer's own run of the app; the files of these issues stay as they are):
 | `Window/SettingsViewTests` (10) | T15-1, T15-2, T15-4, T15-6, T15-9, T64-11, T92-3, T92-5, T127-9 |
 | `Window/StatusModalViewTests` (3) | T166-12, T166-13, T166-15 |
 | `Window/WaitingListSoughtViewTests` (1) | T506-89 |
-| `Window/WaitingListViewTests` (5) | T491-9, T491-13, T491-17, T491-20, T506-80, T506-82, T506-88, T506-98, T506-106, T506-116 |
+| `Window/WaitingListViewTests` (5) | T491-9, T491-13, T491-17, T491-20, T506-80, T506-82, T506-88, T506-98, T506-106, T506-116, T506-117 |
 | `Window/WebPageViewTests` (1) | T280-9 |
 | `Window/WindowsRestartViewTests` (4) | T382-7, T382-18, T382-19, T382-22, T382-23, T382-25 |
 | `ControllerTypesTests.Without_a_usable_SDL3_…` (1) | T72-9 (its toast and log stay covered without a window) |

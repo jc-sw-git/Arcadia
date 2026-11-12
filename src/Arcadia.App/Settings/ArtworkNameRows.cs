@@ -105,7 +105,7 @@ public sealed class ArtworkNameRows
     private static IReadOnlyList<InfoFact> WaitingFacts(IReadOnlyList<WaitingGame> waiting)
     {
         var facts = waiting.Take(ShownWaitingGames)
-            .Select(w => new InfoFact(w.Game.Title, AppTexts.WaitingHits(launcher: w.LauncherName, count: w.Hits.Count)))
+            .Select(w => new InfoFact(w.Game.Title, w.LauncherName))
             .ToList();
         if (waiting.Count > ShownWaitingGames)
         {

@@ -65,7 +65,7 @@ not the whole folder.
   behaviour); the case is safety-critical (HidHide, VIIPER, firmware, crash); or the quality engineer wrote
   the test.
 - **Review** per PR (quality engineer): does every test cover the text of its test case IDs, where are the gaps?
-- **CI:** a PR runs the Core, Pan and App tests without a window; no CI test asserts milliseconds (budgets are
+- **CI:** a PR runs the Core, Pan and App tests without a window; no CI test asserts a timing budget (budgets are
   measured by hand, `CLAUDE.md` → Performant).
 
 ## Window guards

@@ -11,7 +11,7 @@ public sealed class SteamGridDbKeyStore(string folder, Func<byte[], byte[]>? pro
 {
     public const string FileName = "steamgriddb-key.dat";
 
-    private readonly SecretFile _file = new(folder, FileName, "SteamGridDB-Schlüssel", protect, unprotect);
+    private readonly SecretFile _file = new(folder, FileName, "SteamGridDB", protect, unprotect);
 
     public string? Load() => SteamGridDbKey.Normalize(_file.Load());
 

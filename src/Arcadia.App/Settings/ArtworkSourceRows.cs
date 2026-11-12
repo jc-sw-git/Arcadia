@@ -40,9 +40,7 @@ public sealed class ArtworkSourceRows
     private bool _searchAsked;
     private ArtworkSearchResult? _resultAtAsk;
 
-    // The source being moved and the place it stands at now.
-    private ArtworkSourceRowViewModel? _lifted;
-    private int _slot;
+    private readonly SourceOrder<ArtworkSourceKind> _order;
 
     /// <param name="orderChanged">The sources' order or a lift changed: the category puts the rows anew.</param>
     public ArtworkSourceRows(ArtworkService artwork, SteamGridDbKey key, SettingsChanges changes, Action orderChanged)
@@ -51,6 +49,14 @@ public sealed class ArtworkSourceRows
         _key = key;
         _changes = changes;
         _orderChanged = orderChanged;
+        _order = new SourceOrder<ArtworkSourceKind>(
+            () => Settings.Order,
+            order => Apply(s => s with { Order = order }, AppTexts.DataSourcesOrderGroup),
+            () =>
+            {
+                Refresh();
+                _orderChanged();
+            });
         foreach (var source in ArtworkSettings.DefaultOrder)
         {
             _sources[source] = new ArtworkSourceRowViewModel(SourceKey(source), NameOf(source), source, () => Settings.IsOn(source), on => Switch(source, on))
@@ -94,7 +100,7 @@ public sealed class ArtworkSourceRows
     }
 
     /// <summary>The sources in their order, a lifted one where it stands now.</summary>
-    public IReadOnlyList<SettingsRowViewModel> OrderRows => [.. Arrangement().Select(source => _sources[source])];
+    public IReadOnlyList<SettingsRowViewModel> OrderRows => [.. _order.Arrangement().Select(source => _sources[source])];
 
     /// <summary>"Fehlende Cover und Hintergründe", first in the group "ARTWORK".</summary>
     public SettingsRowViewModel MissingRow => _missing;
@@ -102,7 +108,7 @@ public sealed class ArtworkSourceRows
     public SettingsRowViewModel CropRow => _crop;
 
     /// <summary>A source is lifted: ▲ ▼ move it until it is put down.</summary>
-    public bool IsReordering => _lifted is not null;
+    public bool IsReordering => _order.IsLifted;
 
     public static string SourceKey(ArtworkSourceKind source) => "artwork-source-" + source.ToString().ToLowerInvariant();
 
@@ -113,12 +119,12 @@ public sealed class ArtworkSourceRows
     /// <summary>The key, the order or the search changed; UI thread.</summary>
     public void Refresh()
     {
-        var order = Arrangement();
+        var order = _order.Arrangement();
         for (var place = 0; place < order.Count; place++)
         {
             var row = _sources[order[place]];
             row.Title = AppTexts.DataSourcesOrderPlace(place: place + 1, source: NameOf(order[place]));
-            row.IsLifted = row == _lifted;
+            row.IsLifted = _order.Lifted == row.Source;
             row.Refresh();
         }
 
@@ -166,121 +172,20 @@ public sealed class ArtworkSourceRows
             : [new InfoText(AppTexts.DataSourcesMissingInfoSteamGridDbOff), new InfoText(AppTexts.DataSourcesMissingInfo)];
     }
 
-    /// <summary>
-    /// L3, ▲ ▼ and B while a source is lifted, L3 on a source; true if the input was for the order. Anything else waits
-    /// while a source is lifted.
-    /// </summary>
-    public bool Handle(UiAction action, SettingsRowViewModel? focused)
-    {
-        if (_lifted is null)
-        {
-            if (action == UiAction.ViewOptions && focused is ArtworkSourceRowViewModel row)
-            {
-                Lift(row);
-                return true;
-            }
+    /// <summary>L3 on a source lifts it; while one is lifted, ▲ ▼ move it, L3 drops it, B puts it back (<see cref="SourceOrder{TSource}"/>).</summary>
+    public bool Handle(UiAction action, SettingsRowViewModel? focused) =>
+        _order.Handle(action, focused is ArtworkSourceRowViewModel row ? row.Source : null);
 
-            return false;
-        }
-
-        switch (action)
-        {
-            case UiAction.Up:
-                MoveLifted(-1);
-                break;
-            case UiAction.Down:
-                MoveLifted(1);
-                break;
-            case UiAction.ViewOptions:
-                Drop();
-                break;
-            case UiAction.Back:
-                PutBack();
-                break;
-        }
-
-        return true;
-    }
-
-    public void Lift(ArtworkSourceRowViewModel row)
-    {
-        if (_lifted is not null)
-        {
-            return;
-        }
-
-        _lifted = row;
-        _slot = Settings.Order.ToList().IndexOf(row.Source);
-        Refresh();
-        _orderChanged();
-    }
+    public void Lift(ArtworkSourceRowViewModel row) => _order.Lift(row.Source);
 
     /// <summary>The dragged source is over the place below <paramref name="rowsAbove"/> of the other sources.</summary>
-    public void DragTo(int rowsAbove) => PlaceLifted(rowsAbove);
+    public void DragTo(int rowsAbove) => _order.PlaceAt(rowsAbove);
 
     /// <summary>The lifted source stays where it stands; the order is saved, the images follow it at once.</summary>
-    public void Drop()
-    {
-        if (_lifted is null)
-        {
-            return;
-        }
-
-        var order = Arrangement();
-        _lifted = null;
-        if (!order.SequenceEqual(Settings.Order))
-        {
-            Apply(s => s with { Order = order }, AppTexts.DataSourcesOrderGroup);
-        }
-
-        Refresh();
-        _orderChanged();
-    }
+    public void Drop() => _order.Drop();
 
     /// <summary>B while a source is lifted, or another category: it goes back to where it was.</summary>
-    public void PutBack()
-    {
-        if (_lifted is null)
-        {
-            return;
-        }
-
-        _lifted = null;
-        Refresh();
-        _orderChanged();
-    }
-
-    /// <summary>The sources as shown: in their order, a lifted one at its place now. No wrap at the ends, as the launcher list.</summary>
-    private IReadOnlyList<ArtworkSourceKind> Arrangement()
-    {
-        var order = Settings.Order;
-        if (_lifted is null)
-        {
-            return order;
-        }
-
-        var others = order.Where(s => s != _lifted.Source).ToList();
-        others.Insert(Math.Clamp(_slot, 0, others.Count), _lifted.Source);
-        return others;
-    }
-
-    private void MoveLifted(int delta) => PlaceLifted(_slot + delta);
-
-    private void PlaceLifted(int slot)
-    {
-        if (_lifted is null)
-        {
-            return;
-        }
-
-        slot = Math.Clamp(slot, 0, Settings.Order.Count - 1);
-        if (slot != _slot)
-        {
-            _slot = slot;
-            Refresh();
-            _orderChanged();
-        }
-    }
+    public void PutBack() => _order.PutBack();
 
     private void SearchOrCancel()
     {
@@ -304,7 +209,7 @@ public sealed class ArtworkSourceRows
 
     private void Switch(ArtworkSourceKind source, bool on)
     {
-        if (_lifted is not null)
+        if (_order.IsLifted)
         {
             return;
         }

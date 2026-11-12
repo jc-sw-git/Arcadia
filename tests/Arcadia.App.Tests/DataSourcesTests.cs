@@ -89,7 +89,7 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-1")]
-    public async Task The_category_shows_its_three_groups_and_without_a_key_greys_out_what_needs_one()
+    public async Task The_category_shows_its_groups_and_without_a_key_greys_out_what_needs_one()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
@@ -110,6 +110,15 @@ public sealed partial class DataSourcesTests
                 (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkNameRows.SeveralHitsKey, AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkNameRows.WaitingKey, AppTexts.DataSourcesArtworkGroup, 1),
+                (IgdbAccessRows.ClientIdRowKey, AppTexts.DataSourcesIgdbGroup, 0),
+                ("igdb-client-id-paste", AppTexts.DataSourcesIgdbGroup, 1),
+                (IgdbAccessRows.SecretRowKey, AppTexts.DataSourcesIgdbGroup, 0),
+                ("igdb-secret-paste", AppTexts.DataSourcesIgdbGroup, 1),
+                ("igdb-console", AppTexts.DataSourcesIgdbGroup, 0),
+                ("igdb-test", AppTexts.DataSourcesIgdbGroup, 0),
+                ("igdb-delete", AppTexts.DataSourcesIgdbGroup, 0),
+                (MetadataSourceRows.SourceKey(MetadataSourceKind.Launcher), AppTexts.DataSourcesMetadataOrderGroup, 0),
+                (MetadataSourceRows.SourceKey(MetadataSourceKind.Igdb), AppTexts.DataSourcesMetadataOrderGroup, 0),
             ],
             category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
 

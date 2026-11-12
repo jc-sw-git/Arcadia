@@ -17,10 +17,13 @@ public interface IDataSourcesHost
     Task<string?> ReadClipboardAsync();
 
     /// <summary>
-    /// "Schlüssel-Seite öffnen": SteamGridDB's key page in the default browser, the mouse mode on for it when opened by
-    /// controller; says itself (a toast) whether that worked.
+    /// "Schlüssel-Seite öffnen" (SteamGridDB's key page, #489) or "Zugang anlegen" (Twitch's developer console, #494): a page
+    /// fixed in code in the default browser, the mouse mode on for it when opened by controller; says itself (a toast)
+    /// whether that worked.
     /// </summary>
-    Task OpenKeyPageAsync();
+    /// <param name="opening">The info toast while it opens.</param>
+    /// <param name="failed">The error toast when it didn't.</param>
+    Task OpenPageAsync(Uri page, string opening, string failed);
 
     /// <summary>"Warten auf deine Auswahl" (#491): the waiting list over the settings; B there comes back to the row.</summary>
     void OpenWaitingList();

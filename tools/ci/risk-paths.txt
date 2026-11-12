@@ -21,4 +21,6 @@ src/Arcadia.Launchers/Steam/Account/**
 src/Arcadia.App/Messages/LogFiles.cs
 src/Arcadia.ControllerSupport/WindowsRestart.cs
 src/Arcadia.Core/Artwork/SteamGridDb/**
+src/Arcadia.Core/Metadata/Igdb/**
+src/Arcadia.Core/Settings/SecretFile.cs
 src/Arcadia.App/Services/ExternalApps.cs

@@ -946,6 +946,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 ShowSettings(typeof(DataSourcesSettingsViewModel));
                 FocusRowOrTop(Settings?.Selected, SteamGridDbKeyRows.KeyRowKey);
                 break;
+            case StatusTarget.IgdbAccess:
+                ShowSettings(typeof(DataSourcesSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, IgdbAccessRows.ClientIdRowKey);
+                break;
             case StatusTarget.ControllerIssue:
                 var controller = ((IControllerModeHost)this).OpenControllerSettings();
                 var row = FocusRowOrTop(controller, PanRows.IssueKey(entry.Id));

@@ -21,7 +21,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   address), best first (#487); `IArtworkLookup.StoreIdOf` the game's id at a store SteamGridDB knows (`ArtworkStoreId`, #489).
 - `ILauncherMetadata`: a launcher as a metadata provider (#493): the fields it delivers, `Look` (its local files),
   optionally `Store` (`IMetadataStore`: an `https` page per game, its `RequestLimit`, `Parse`). `GameMetadata` (one
-  provider's raw data), `Genre` (the fixed list), `AgeRating`.
+  provider's raw data), `Genre` (the fixed list), `AgeRating`; `StoreIdOf` the game's id at a store IGDB knows (#494).
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
   in Arcadia's data folder.
@@ -77,7 +77,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   `Search`/`SearchChanged`: the missing counts and the progress of a run that searches (#506).
 - `SteamGridDb/`: `SteamGridDbClient` (API v2, the key only in the `Authorization` header, 10 s, waits on 429, checks
   every answer), `SteamGridDbKey` (the key's shape, state None/Unchecked/Valid/Rejected, nothing sent without a
-  usable key), `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only) and
+  usable key), `SteamGridDbKeyStore` (the key in a `SecretFile`) and
   `SteamGridDbSuggestions` (the client as `IArtworkSuggestions` for "Artwork ändern").
 - `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's
   as a scan would choose it, then `IArtworkSuggestions`' up to 20, waiting in `artwork/.suggestions/`), `UseAsync`,
@@ -91,14 +91,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never
   leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
 
-**Metadata** (`Metadata/`, #43, #493)
-- `MetadataService`: `Open` reads the cache; after each scan one background run reads the launchers' local data, then
-  asks each store for the games without its answer, one at a time within its limit, 10 s each, waiting on 429; no
-  network stops the run, a timeout or 5xx skips the game until the next scan. `ReloadAll`, `Progress`, `Of(key)`.
-- `MetadataCache`: `metadata/<launcher>/<game>.json` (local and store data per provider, unmerged), temporary file and
-  rename, damaged files deleted. `MetadataCheck` checks every value (also from the cache), `PlainText` turns HTML
-  into text, `TextLanguage` the language rule, `MergedMetadata.Of` merges providers per field with their source.
-- `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.
+**Metadata** (`Metadata/`, #43, #493, #494): [core-metadata.md](core-metadata.md). `SecretFile` (`Settings/`): a player's
+secret (SteamGridDB key, IGDB access) encrypted through injected protect/unprotect, else memory only.
 
 **Settings and navigation**
 - `AppSettings`/`SettingsStore`/`SettingsService`: the one shared copy of the settings; `LauncherPreferences` per

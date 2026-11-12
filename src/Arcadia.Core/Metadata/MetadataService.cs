@@ -171,6 +171,27 @@ public sealed partial class MetadataService : IDisposable
     /// <summary>The libraries were read (again): their local data and, in the background, the store answers still missing.</summary>
     public void Update(IReadOnlyList<LibraryMetadata> libraries) => Start(new Pending(libraries, Reload: false));
 
+    /// <summary>
+    /// The first usable IGDB access (#494): what is missing is asked for at once, from the last libraries, as after a scan.
+    /// </summary>
+    /// <returns>False before the first scan: nothing starts.</returns>
+    public bool FetchMissing()
+    {
+        IReadOnlyList<LibraryMetadata>? libraries;
+        lock (_gate)
+        {
+            libraries = _lastLibraries;
+        }
+
+        if (libraries is null)
+        {
+            return false;
+        }
+
+        Update(libraries);
+        return true;
+    }
+
     /// <summary>"Alle Metadaten neu laden": asks the store again for every game; own titles and tags are no metadata and stay.</summary>
     /// <returns>False before the first scan or while a reload runs: no second run starts.</returns>
     public bool ReloadAll()

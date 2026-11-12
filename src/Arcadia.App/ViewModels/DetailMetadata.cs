@@ -37,6 +37,16 @@ public sealed class DetailMetadata
         MoreTags = Tags.Count > OverviewTagCount ? AppTexts.DetailMoreTags(count: Formatting.Count(Tags.Count - OverviewTagCount)) : null;
 
         var facts = new List<DetailFact>();
+        if (data.Title is { } title)
+        {
+            // A corrected title names its source, and the broken launcher title stands only here (#494).
+            facts.Add(new(AppTexts.DetailTitleCaption, title.Value, title.Source));
+            if (data.LauncherTitle is { } launcherTitle)
+            {
+                facts.Add(new(string.Empty, launcherTitle.Value, launcherTitle.Source));
+            }
+        }
+
         Add(facts, AppTexts.DetailGenresCaption, data.Genres, _ => List(genres!));
         Add(facts, AppTexts.DetailDevelopersCaption, data.Developers, List);
         Add(facts, AppTexts.DetailPublishersCaption, data.Publishers, List);
@@ -98,7 +108,7 @@ public sealed class DetailMetadata
 
     public bool HasMoreTags => MoreTags is not null;
 
-    /// <summary>Genres, developer, publisher, release date and every age rating, each with its source.</summary>
+    /// <summary>A corrected title beside the launcher's, genres, developer, publisher, release date and every age rating, each with its source.</summary>
     public IReadOnlyList<DetailFact> Facts { get; }
 
     public bool HasFacts => Facts.Count > 0;

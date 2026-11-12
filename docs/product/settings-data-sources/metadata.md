@@ -6,8 +6,16 @@ Index and the category's frame: [README.md](README.md). The specification is #43
 ## Where metadata comes from (#43, #493)
 
 - Providers: each launcher with metadata (Steam: `appinfo.vdf` and the store page `appdetails?l=german`, no key;
-  Epic's catalog: only the developer), later IGDB (#494). Fields are merged per field in the provider order; a field
-  missing from one comes from the next, and each keeps the provider it came from (shown only in "Infos").
+  Epic's catalog: only the developer) and IGDB with the player's access (#494, [igdb.md](igdb.md)). Fields are merged
+  per field in the order of "Reihenfolge für Metadaten"; a field missing from one comes from the next, and each keeps
+  the provider it came from (shown only in "Infos").
+- Group "REIHENFOLGE FÜR METADATEN": "1. Launcher-Daten", "2. IGDB" (default), each a switch An/Aus, moved and
+  switched as the artwork's sources (L3, ▲ ▼, B, the mouse drags), saved in `settings.json`. A change merges every game
+  again from the cache at once, without a request; a source switched off is never asked and its fields and corrected
+  titles disappear (the cache keeps them). IGDB without a usable access is greyed out ("Wird übersprungen …").
+- Doubtful titles: a launcher title with `?` (Epic's ASCII-only catalog) is replaced by IGDB's title regardless of the
+  order, while IGDB is on; a title without `?` stays the launcher's. The broken title is listed only in "Infos",
+  beside the corrected one. Own titles (#496) stand above both.
 - Language rule: a description that isn't German, or has a `?` inside a word, counts only when no provider has a German
   one; a broken one only when there is no other.
 - Genres: Arcadia's fixed German list (Action, Abenteuer, Rollenspiel, Strategie, Simulation, Rennspiel, Sport, Shooter,

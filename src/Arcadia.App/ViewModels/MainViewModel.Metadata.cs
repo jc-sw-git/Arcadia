@@ -4,7 +4,7 @@ using Arcadia.Core.Metadata;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>Main's part of the games' metadata (#493): the run's errors, a reload that failed as a whole, what the views show.</summary>
+/// <summary>Main's part of the games' metadata (#493): the run's errors, IGDB's warning (#494), a reload that failed as a whole, what the views show.</summary>
 public partial class MainViewModel
 {
     /// <summary>The metadata the views show of a game; <see cref="MergedMetadata.None"/> without the service.</summary>
@@ -26,6 +26,12 @@ public partial class MainViewModel
         });
         metadata.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextMetadata));
         metadata.ReloadFailed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.DataSourcesMetadataReloadNoConnection));
+        if (metadata.Igdb is { } igdb)
+        {
+            // A rejected IGDB access is a warning in the header, whose entry opens its row (#494).
+            Status.WatchIgdb(igdb);
+        }
+
         metadata.Open();
     }
 }

@@ -10,7 +10,7 @@ namespace Arcadia.Core.Settings;
 /// only until Arcadia closes, like the Steam sign-in, and nothing about it is written. A file that can't be read or
 /// decrypted counts as no secret; reading and writing never throw, and no log line holds the secret.
 /// </summary>
-/// <param name="what">The secret's name in a log line, e.g. "SteamGridDB-Schlüssel"; never the secret.</param>
+/// <param name="what">The service the secret is for, in a log line, e.g. "SteamGridDB"; never the secret.</param>
 /// <param name="protect">Encrypts the secret; null keeps it in memory only.</param>
 public sealed class SecretFile(string folder, string fileName, string what, Func<byte[], byte[]>? protect, Func<byte[], byte[]>? unprotect)
 {

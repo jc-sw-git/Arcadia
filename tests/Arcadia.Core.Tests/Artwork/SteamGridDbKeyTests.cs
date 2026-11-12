@@ -152,7 +152,7 @@ public sealed class SteamGridDbKeyTests : IDisposable
             Trace.Listeners.Remove(listener);
         }
 
-        Assert.Contains(lines, line => line.Contains("SteamGridDB: gespeicherter Schlüssel nicht lesbar", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.Contains("SteamGridDB: gespeicherter Wert nicht lesbar", StringComparison.Ordinal));
         Assert.Equal(0, _server.Count);
     }
 

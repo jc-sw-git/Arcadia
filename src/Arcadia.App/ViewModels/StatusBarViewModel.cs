@@ -5,6 +5,7 @@ using Arcadia.App.Status;
 using Arcadia.ControllerSupport;
 using Arcadia.ControllerSupport.Pan;
 using Arcadia.Core.Artwork.SteamGridDb;
+using Arcadia.Core.Metadata.Igdb;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -46,6 +47,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     private IReadOnlyList<StatusEntry> _controllerEntries = [];
     private IReadOnlyList<StatusMessage> _controllerMessages = [];
     private SteamGridDbKey? _steamGridDb;
+    private IgdbAccess? _igdb;
 
     /// <param name="history">Gets the status messages the header shows on every change (#433).</param>
     public StatusBarViewModel(ControllerSupportService controllerSupport, ArcadiaUpdateService updates, TimeProvider time, StatusMessageChanges history)
@@ -103,7 +105,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     public bool HasEntries => Entries.Count > 0;
 
     /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
-    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate || HasSteamGridDbWarning;
+    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate || HasSteamGridDbWarning || HasIgdbWarning;
 
     /// <summary>SteamGridDB turned the key down (#489): a warning in the header until a new key or none.</summary>
     [ObservableProperty]
@@ -116,17 +118,33 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     public void WatchSteamGridDb(SteamGridDbKey key)
     {
         _steamGridDb = key;
-        key.Changed += OnSteamGridDbChanged;
-        UpdateSteamGridDbState();
+        key.Changed += OnDataSourceChanged;
+        UpdateDataSourceWarnings();
     }
 
-    private void OnSteamGridDbChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateSteamGridDbState);
+    private void OnDataSourceChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateDataSourceWarnings);
 
-    private void UpdateSteamGridDbState()
+    private void UpdateDataSourceWarnings()
     {
         HasSteamGridDbWarning = _steamGridDb?.State == SteamGridDbKeyState.Rejected;
+        HasIgdbWarning = _igdb?.State == IgdbAccessState.Rejected;
         ShowHistory();
         ShowEntries();
+    }
+
+    /// <summary>IGDB turned the access down (#494): a warning in the header until a valid access or none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
+    public partial bool HasIgdbWarning { get; private set; }
+
+    public static string IgdbStatusId => "igdb-access";
+
+    /// <summary>Follows the IGDB access's state from now on (#494).</summary>
+    public void WatchIgdb(IgdbAccess access)
+    {
+        _igdb = access;
+        access.Changed += OnDataSourceChanged;
+        UpdateDataSourceWarnings();
     }
 
     [ObservableProperty]
@@ -143,7 +161,12 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         _updates.Changed -= OnUpdatesChanged;
         if (_steamGridDb is not null)
         {
-            _steamGridDb.Changed -= OnSteamGridDbChanged;
+            _steamGridDb.Changed -= OnDataSourceChanged;
+        }
+
+        if (_igdb is not null)
+        {
+            _igdb.Changed -= OnDataSourceChanged;
         }
 
         GC.SuppressFinalize(this);
@@ -232,6 +255,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     [
         .. _controllerMessages,
         .. HasSteamGridDbWarning ? [new StatusMessage(SteamGridDbStatusId, HealthSeverity.Warning, AppTexts.DataSourcesKeyStatus)] : Array.Empty<StatusMessage>(),
+        .. HasIgdbWarning ? [new StatusMessage(IgdbStatusId, HealthSeverity.Warning, AppTexts.DataSourcesIgdbStatus)] : Array.Empty<StatusMessage>(),
     ]);
 
     /// <summary>The header's messages as the modal's entries, each with the time it appeared at its level.</summary>
@@ -242,6 +266,9 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
             .. _controllerEntries,
             .. HasSteamGridDbWarning
                 ? [new StatusEntry(SteamGridDbStatusId, StatusLevel.Warning, AppTexts.DataSourcesKeyStatus, AppTexts.DataSourcesKeyStatusShort, default, StatusTarget.SteamGridDbKey, null)]
+                : Array.Empty<StatusEntry>(),
+            .. HasIgdbWarning
+                ? [new StatusEntry(IgdbStatusId, StatusLevel.Warning, AppTexts.DataSourcesIgdbStatus, AppTexts.DataSourcesIgdbStatusShort, default, StatusTarget.IgdbAccess, null)]
                 : Array.Empty<StatusEntry>(),
             .. HasArcadiaUpdate
                 ? [UpdateEntry()]

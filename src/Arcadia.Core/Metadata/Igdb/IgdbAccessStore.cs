@@ -11,7 +11,7 @@ public sealed class IgdbAccessStore(string folder, Func<byte[], byte[]>? protect
 {
     public const string FileName = "igdb-access.dat";
 
-    private readonly SecretFile _file = new(folder, FileName, "IGDB-Zugang", protect, unprotect);
+    private readonly SecretFile _file = new(folder, FileName, "IGDB", protect, unprotect);
 
     /// <summary>The access is kept across a restart (Windows); else only until Arcadia closes.</summary>
     public bool Persists => _file.Persists;

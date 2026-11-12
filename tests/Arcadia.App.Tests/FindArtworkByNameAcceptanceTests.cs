@@ -158,7 +158,8 @@ public sealed class FindArtworkByNameAcceptanceTests
 
         var asked = await SearchWithKeyAsync(arcadia);
 
-        Assert.Equal(["search/autocomplete/Echo Drift", "grids/game/501", "heroes/game/501"], asked);
+        // Both hits are checked for a cover first (#506); the check's answer for 501 is its cover, not asked twice.
+        Assert.Equal(["search/autocomplete/Echo Drift", "grids/game/501", "grids/game/503", "heroes/game/501"], asked);
         Assert.Equal((GridUrl(501), HeroUrl(501)), (Cached(arcadia, game.Key)!.Cover!.Stamp, Cached(arcadia, game.Key)!.Hero!.Stamp));
         Assert.Empty(arcadia.Artwork.Waiting);
         Assert.True(WaitingRow(arcadia).IsDimmed);
@@ -224,7 +225,9 @@ public sealed class FindArtworkByNameAcceptanceTests
         var waiting = Assert.Single(arcadia.Artwork.Waiting);
         Assert.Equal((game.Key, 3), (waiting.Game.Key, waiting.Hits.Count));
         Assert.Single(Searches(arcadia));
-        Assert.DoesNotContain(arcadia.SteamGridDb.Asked(), a => a.Contains("/game/", StringComparison.Ordinal));
+        // Each hit was checked for a cover once (#506), none of their images downloaded.
+        Assert.All(arcadia.SteamGridDb.Asked().Where(a => a.Contains("/game/", StringComparison.Ordinal)), a => Assert.StartsWith("grids/game/70", a, StringComparison.Ordinal));
+        Assert.True(arcadia.SteamGridDb.Asked().Count(a => a.Contains("/game/", StringComparison.Ordinal)) <= 3);
         var tile = Assert.Single(arcadia.PageGames, t => t.Game.Key == game.Key);
         Assert.Null(tile.Cover);
         Assert.Null(tile.Hero);
@@ -248,7 +251,7 @@ public sealed class FindArtworkByNameAcceptanceTests
 
         Assert.All(games.Select((game, i) => (game, first: 1001 + i)), e =>
             Assert.Equal((GridUrl(e.first), HeroUrl(e.first)), (Cached(arcadia, e.game.Key)!.Cover!.Stamp, Cached(arcadia, e.game.Key)!.Hero!.Stamp)));
-        Assert.DoesNotContain(arcadia.SteamGridDb.Asked(), a => a.Contains("/game/2", StringComparison.Ordinal));
+        Assert.DoesNotContain(images.Requests, r => r.RequestUri!.AbsoluteUri.Contains("/grid/2", StringComparison.Ordinal));
         Assert.Empty(arcadia.Artwork.Waiting);
         Assert.True(WaitingRow(arcadia).IsDimmed);
     }
@@ -273,11 +276,11 @@ public sealed class FindArtworkByNameAcceptanceTests
 
         await SearchWithKeyAsync(arcadia);
         var list = WaitingListTests.OpenList(arcadia);
-        await list.Covers;
-        Assert.Equal(chosen.Title, list.CurrentTitle);
-        arcadia.Press(UiAction.Right).Press(UiAction.Accept);
+        await WaitingListTests.ShownAsync(list);
+        Assert.Equal(chosen.Title, list.Hits!.Title);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
         await list.Loading;
-        Assert.Equal(skipped.Title, list.CurrentTitle);
+        Assert.Equal(skipped.Title, list.Hits!.Title);
         arcadia.Press(UiAction.Status).Press(UiAction.Back);
         await SettledAsync(arcadia);
         Assert.Equal(GridUrl(502), Cached(arcadia, chosen.Key)!.Cover!.Stamp);

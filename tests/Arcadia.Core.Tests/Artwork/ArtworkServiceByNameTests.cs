@@ -11,7 +11,7 @@ namespace Arcadia.Core.Tests.Artwork;
 /// #491: games SteamGridDB doesn't know by a launcher's id are found by their name; one matching game is taken, several
 /// wait for the player or the first is taken; the choice, a skip and the waiting list last across restarts.
 /// </summary>
-public sealed class ArtworkServiceByNameTests : IDisposable
+public sealed partial class ArtworkServiceByNameTests : IDisposable
 {
     private const string Title = "Echo Drift";
     private const string Cover501 = "https://cdn.example/grid/501.png";
@@ -37,7 +37,12 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         _key = NewKey();
         _service = NewService();
         _sgdb.Cover("game", "501", Cover501, 600, 900).Hero("game", "501", Hero501, 1920, 620)
-            .Cover("game", "502", Cover502, 600, 900).Hero("game", "502", Hero502, 1920, 620);
+            .Cover("game", "502", Cover502, 600, 900).Hero("game", "502", Hero502, 1920, 620)
+
+            // Listed by SteamGridDB, so the hits are offered (#506), but their images aren't served: tiles stay placeholders.
+            .Cover("game", "503", "https://cdn.example/grid/503.png", 600, 900)
+            .Cover("game", "601", "https://cdn.example/grid/601.png", 600, 900)
+            .Cover("game", "602", "https://cdn.example/grid/602.png", 600, 900);
         foreach (var url in new[] { Cover501, Cover502 })
         {
             _images.Serve(url, TestImages.Png(600, 900));
@@ -257,9 +262,10 @@ public sealed class ArtworkServiceByNameTests : IDisposable
 
         await ScanAsync();
 
+        // The launcher's cover fits, so only the background is sought: 503 has none and is dropped (#506).
         var waiting = Assert.Single(_service.Waiting);
         Assert.Equal(Echo.Key, waiting.Game.Key);
-        Assert.Equal([501, 502, 503], waiting.Hits.Select(h => h.Id));
+        Assert.Equal([501, 502], waiting.Hits.Select(h => h.Id));
         Assert.Equal(2019, waiting.Hits[0].Year);
         Assert.Equal("other-art", Cached()!.Cover!.Origin);
         Assert.Null(Cached()!.Hero);
@@ -349,6 +355,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T491-15")]
+    [Trait("TestCase", "T506-90")]
     public async Task A_chosen_hit_leaves_an_image_set_by_hand()
     {
         await WithKeyAsync();
@@ -485,8 +492,8 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         await ScanAsync();
         var hits = _service.Waiting[0].Hits;
 
-        var cover = await _service.HitCoverAsync(Echo, hits[1]);
-        var none = await _service.HitCoverAsync(Echo, hits[2]);
+        var cover = await _service.HitImageAsync(Echo, hits[1], ArtworkKind.Cover);
+        var none = await _service.HitImageAsync(Echo, hits[2], ArtworkKind.Cover);
 
         Assert.NotNull(cover);
         Assert.True(File.Exists(cover.Path));
@@ -496,7 +503,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
 
         // Shown again: the same file, no new request.
         var (asked, downloaded) = (_sgdb.Requests.Count, _images.Requests.Count);
-        Assert.Equal(cover, await _service.HitCoverAsync(Echo, hits[1]));
+        Assert.Equal(cover, await _service.HitImageAsync(Echo, hits[1], ArtworkKind.Cover));
         Assert.Equal((asked, downloaded), (_sgdb.Requests.Count, _images.Requests.Count));
     }
 
@@ -510,7 +517,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         var hit = _service.Waiting[0].Hits[0];
         _images.Offline = true;
 
-        Assert.Null(await _service.HitCoverAsync(Echo, hit));
+        Assert.Null(await _service.HitImageAsync(Echo, hit, ArtworkKind.Cover));
         await _service.ChooseAsync(Echo, hit);
         Assert.Empty(_service.Waiting);
 

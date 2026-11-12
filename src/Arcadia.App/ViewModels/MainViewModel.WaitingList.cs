@@ -18,9 +18,15 @@ public partial class MainViewModel
     {
         if (_artwork is not null)
         {
-            WaitingList = new WaitingListViewModel(_artwork, CloseWaitingList);
+            WaitingList = new WaitingListViewModel(
+                _artwork,
+                new WaitingKeyboard(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack),
+                CloseWaitingList);
         }
     }
+
+    /// <summary>The text being written with the on-screen keyboard: the waiting list's own term or a text of the settings.</summary>
+    public TextEditorViewModel? OpenTextEditor => WaitingList?.Hits?.Editor ?? Settings?.Selected.Editor;
 
     /// <summary>B or the ✕: the settings again, the focus on the row the list was opened from.</summary>
     private void CloseWaitingList(WaitingListViewModel list)

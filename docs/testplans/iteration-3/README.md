@@ -45,6 +45,7 @@ its file.
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 | [491](491-find-artwork-by-name.md) | #491 | Find artwork by name and let the player pick when several games match | T491-1 to T491-29 (owner: T491-28, -29) |
 | [507](507-one-steam-image-keeps-epic-covers-away.md) | #507 | One Steam image that doesn't answer keeps all Epic covers away | T507-1 to T507-3 (owner: T507-3) |
+| [506-c](506-c-clearer-waiting-list.md) | #506 | Part C: "Warten auf deine Auswahl" in two levels, what is sought, only hits with images, own search term | T506-80 to T506-115 (owner: T506-112 to -115) |
 
 ## Release candidate tests (restart or installation)
 

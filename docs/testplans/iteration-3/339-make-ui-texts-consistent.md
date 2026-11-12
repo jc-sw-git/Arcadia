@@ -26,6 +26,12 @@
 
 Tests: T339-1 to -3 `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`; T339-5, -6 `tools/ci/tests/run.sh` (`ui-texts/`); T339-12 `WindowsRestartTests`; T339-13 `SteamControllerXboxPadTests`; T339-14, -15 `ConsistentTextsViewTests` (App); T339-19 `UiTextsStayInResourcesTests` (Core).
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T339-1 to -3 | `ResourceTextPlaceholderTests` (Core); T339-4 `ConsistentTextsTests`, T339-12 `WindowsRestartTests`, T339-13 `SteamControllerXboxPadTests`, T339-14, -15 `Window/ConsistentTextsViewTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

@@ -28,6 +28,14 @@
 - [ ] **T487-24** **Owner:** network off (Wi-Fi or cable), close and start Arcadia: every image from before is still there, no message about the network. · E2E: no (owner's PC, real network)
 - [ ] **T487-25** **Owner:** in Steam set an own cover for one game (Bibliothek → right click → Verwalten → Eigenes Artwork festlegen), close Steam, rescan in Arcadia: the own cover is shown. · E2E: no (real Steam client)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T487-1, -4 | `ArtworkTests` (also T487-5 and -17 through a rescan) |
+| T487-11, -18, -20, -22 | `Window/ArtworkWindowTests` |
+| T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

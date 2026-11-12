@@ -40,6 +40,12 @@ allows one install poll on top (2 s). Automated cases use made-up Steam and Epic
 - [x] **T343-14** **Owner:** Real Epic: cancel Epic's install dialog: "Installieren" after about a minute; install again with A and
       confirm after the minute ended: the progress shows. · E2E: no (real Epic installation)
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T343-1…T343-8 | `tests/Arcadia.App.Tests/CancelledInstallDialogTests.cs` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

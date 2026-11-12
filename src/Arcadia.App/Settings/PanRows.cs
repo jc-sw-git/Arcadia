@@ -120,7 +120,7 @@ public sealed class PanRows
         _pan = pan;
         _gameInTheWay = gameInTheWay;
         _applyFix = applyFix;
-        Main = new PanRowViewModel(_ => Activate()) { Group = Group };
+        Main = new PanRowViewModel(_ => Activate()) { Group = Group, ValueInfos = (AppTexts.PanOffInfo, AppTexts.PanOnInfo) };
         Restore = new ActionRowViewModel(RestoreKey, AppTexts.ErrorContextRestoreControllers, () => _support.RestoreControllersAsync().Forget(AppTexts.ErrorContextRestoreControllers))
         {
             Group = Group,

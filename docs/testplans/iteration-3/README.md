@@ -44,6 +44,7 @@ its file.
 | [489](489-settings-category-data-sources.md) | #489 | Settings category "Datenquellen": SteamGridDB key, artwork order and search | T489-1 to T489-27, T490-21, -22, -27 to -30, -32 |
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 | [491](491-find-artwork-by-name.md) | #491 | Find artwork by name and let the player pick when several games match | T491-1 to T491-29 (owner: T491-28, -29) |
+| [506-a](506-a-detail-page-and-info-box.md) | #506 | Part A: detail page and info box: fast turning, value chips, one box per value, note on top, scrolling | T506-1 to T506-39 (owner: T506-38, -39) |
 | [506-c](506-c-clearer-waiting-list.md) | #506 | Part C: "Warten auf deine Auswahl" in two levels, what is sought, only hits with images, own search term | T506-80 to T506-115 (owner: T506-112 to -115) |
 | [510](510-steam-mac-only-apps-twice.md) | #510 | Steam tab lists owned games twice when the account also owns their Mac-only app | T510-1 to T510-3 (owner: T510-3) |
 
@@ -94,3 +95,4 @@ Charter: –. Time box: –. Findings: –.
 | T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |
 | T491-1, -3, -9 to -12, -14 to -18, -21, -22, -26 | `FindArtworkByNameAcceptanceTests` (T491-1, -3, -10, -11, -22), `WaitingListTests`; T491-9, -13, -17, -20 in `Window/WaitingListViewTests`; the variants in `ArtworkServiceByNameTests`, `SteamGridDbNameTests`, `EpicArtworkTests` (Core) |
+| T506-1 to -9, -11 to -35 | `ValueBoxTests`, `ValueBoxFollowTests`, `DetailQuickTurnTests`, `TurnJumpTests`; T506-1 to -3, -11, -14, -21, -23, -27 to -33 in `Window/InfoBoxViewTests`; T506-5, -13, -21, -22, -26, -30, -34, -35 in `Window/InfoBoxWindowTests`; T506-33 also `Window/SettingsViewTests` |

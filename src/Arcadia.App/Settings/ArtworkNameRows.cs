@@ -50,12 +50,8 @@ public sealed class ArtworkNameRows
         {
             Group = AppTexts.DataSourcesArtworkGroup,
             Subtitle = AppTexts.DataSourcesSeveralHitsSubtitle,
-            Info =
-            [
-                new InfoText(AppTexts.DataSourcesSeveralHitsInfo),
-                new InfoSection(AppTexts.DataSourcesSeveralHitsAskHeading, [new InfoText(AppTexts.DataSourcesSeveralHitsAskInfo)]),
-                new InfoSection(AppTexts.DataSourcesSeveralHitsFirstHeading, [new InfoText(AppTexts.DataSourcesSeveralHitsFirstInfo)]),
-            ],
+            ValueInfos = [AppTexts.DataSourcesSeveralHitsAskInfo, AppTexts.DataSourcesSeveralHitsFirstInfo],
+            Info = [new InfoText(AppTexts.DataSourcesSeveralHitsInfo)],
         };
         _waiting = new ActionRowViewModel(WaitingKey, AppTexts.DataSourcesWaiting, () =>
         {

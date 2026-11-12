@@ -427,6 +427,9 @@ public sealed class GameActions : IGameActionHost
     public void StepControllerMode(Game game, int delta) =>
         _controllerSupport.SetChoiceFor(game, ThreeWayChoice.Step(_controllerSupport.ChoiceFor(game), delta, HeldPress.IsRepeat));
 
+    string IGameActionHost.DefaultControllerModeOf(Game game) =>
+        ControllerModes.Of(null, _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
+
     string IGameActionHost.NextControllerModeOf(Game game) =>
         ControllerModes.Of(ControllerModes.Next(_controllerSupport.ChoiceFor(game)), _controllerSupport.LauncherUsesArcadiaPad(game.LauncherId));
 

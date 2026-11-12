@@ -44,7 +44,9 @@ public sealed class LauncherControllerModeTests
         Assert.Equal(("CONTROLLER", "Steam Controller", AppTexts.LauncherControllerPresetSubtitle), (steam.Group, steam.Title, steam.Subtitle));
         Assert.Equal(ControllerModes.Steam, steam.ValueText);
         Assert.Contains(steam.Info, block => block is InfoFootnote { Text: "Ab Werk: Steam-Eingabe, weil Spiele aus Steam Steams Belegungen nutzen. Gilt ab dem nächsten Spielstart." });
-        Assert.Contains(steam.Info, block => block is InfoCard { Title: ControllerModes.Arcadia });
+        Assert.Equal([ControllerModes.Arcadia, ControllerModes.Steam], steam.ValueBoxes.Select(box => box.Title));
+        Assert.Equal(ControllerModes.Steam, Assert.Single(steam.ValueBoxes, box => box.IsCurrent).Title);
+        Assert.DoesNotContain(steam.Info, block => block is InfoCard);
         Assert.True(steam.CanChange);
         Assert.DoesNotContain(launchers.Rows, row => row.Key == ResetKey);
 
@@ -208,7 +210,8 @@ public sealed class LauncherControllerModeTests
         Assert.True(mode.IsDimmed);
         Assert.False(mode.CanChange);
         Assert.Equal(AppTexts.LauncherControllerPanOff, mode.Subtitle);
-        Assert.Contains(mode.Info, block => block is InfoNote info && info.Text == AppTexts.LauncherControllerNeedsPan);
+        Assert.True(mode.HasDimmedNote);
+        Assert.Equal(AppTexts.LauncherControllerNeedsPan, mode.DimmedNote);
         arcadia.Press(UiAction.Right).Press(UiAction.Left).Press(UiAction.Accept);
         Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
 

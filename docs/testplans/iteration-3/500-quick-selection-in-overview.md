@@ -10,7 +10,7 @@ Mausmodus" ("Controller"), "Artwork ändern" and "Deinstallieren …" ("Verwalte
 entries (decision in #500). Automated cases use the demo or made-up Steam and Epic fixtures (`ArcadiaDriver`), window
 cases `ArcadiaWindow`. Replaces T499-7 (A on "Übersicht" did nothing) and the "facts in full width" part of T499-1.
 
-**Status:** Automated: T500-1 to -23 · QE: T500-24 to -28 · Open for the owner: T500-29, T500-30
+**Status:** Automated: T500-1 to -23 · QE run: T500-24 to -28 ✅ · Open for the owner: T500-29, T500-30
 
 Quick selection in "Übersicht"
 
@@ -90,22 +90,22 @@ Storage and failure cases
 - [x] **T500-23** Storing "Ersetzen" fails or Arcadia ends in the middle of it (fault injected at the write): after the
       next start either the old selections or the new one for all games hold, never a mix, and `settings.json` is
       readable. The per-game selections are removed in the same save that stores the one for all games. · E2E: yes
-- [ ] **T500-24** Mouse: a click on an entry focuses it, the arrows beside a value change it, a click on "Übersicht
+- [x] **T500-24** Mouse: a click on an entry focuses it, the arrows beside a value change it, a click on "Übersicht
       anpassen" opens the dialog, a click on an entry in the dialog ticks it, on "Für alle Spiele übernehmen" asks; the
       dialog and the question show ✕. · E2E: no (window; #517: no new window tests, QE run with screenshot)
 
 Look (QE run of the app, visual checklist of #498)
 
-- [ ] **T500-25** Focus ring fully visible, not clipped, on the first and last entry, "Übersicht anpassen", the first and
+- [x] **T500-25** Focus ring fully visible, not clipped, on the first and last entry, "Übersicht anpassen", the first and
       last checkbox row of the dialog, "Für alle Spiele übernehmen", "Abbrechen" and "Ersetzen"; exactly one ring at any
       time, none behind the dialog or the question. · E2E: no (window; #517: no new window tests, QE run with screenshot)
-- [ ] **T500-26** Long values and long entry names in the quick selection and in the dialog end with "…" in one line; the
+- [x] **T500-26** Long values and long entry names in the quick selection and in the dialog end with "…" in one line; the
       left half keeps its width whatever the facts on the right show; with 5 entries nothing overlaps the facts or the
       footer hints. · E2E: no (window; #517: no new window tests, QE run with screenshot)
-- [ ] **T500-27** Margins and the gap before "Übersicht anpassen" match the artboard at 1920×1080; at 1280×720 nothing is
+- [x] **T500-27** Margins and the gap before "Übersicht anpassen" match the artboard at 1920×1080; at 1280×720 nothing is
       cut; greyed entries and greyed checkbox rows are visibly greyed but readable; no colour, brush or shadow value
       outside `Theme/Theme.axaml`. · E2E: no (comparison with the artboard; the theme part is checked on the diff)
-- [ ] **T500-28** Budgets, measured mechanically: gamepad input to visible focus move < 50 ms for ▲ ▼ in the entries and in
+- [x] **T500-28** Budgets, measured mechanically: gamepad input to visible focus move < 50 ms for ▲ ▼ in the entries and in
       the dialog and for a tick; start to usable library < 2 s with 1,000 games and < 400 MB RAM with 5,000 games, also
       with a stored selection per game for all 5,000. · E2E: no (timing on the real machine; T500-30 confirms)
 
@@ -137,3 +137,4 @@ History:
 | All new tests in `QuickSelectionTests`, `QuickSelectionSettingsTests` | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container, deliberately broken builds | ✅ each red once: no entries shown (T500-1 to -9, -13, -16, -21), "Übersicht anpassen" not reachable by ▲ ▼ (T500-2, -11, -12, -15, -17), A in the rail ignored on an empty selection (T500-15), the dialog getting no keys (T500-11 to -13, -16, -17), unticked entries never greyed or not passed over at 5 (T500-14), "Ersetzen" storing nothing (T500-18 to -20), the focus on "Übersicht anpassen" lost on a turn (T500-8), the entry not following its row's value (T500-3), the context menu gaining the entry (T500-10), no defaults (T500-1, -21), per-game selections ignored (T500-13, -20, -21), the converter failing the file (T500-22), a `null` selection not repaired (T500-22) | – |
 | T500-1, -2, -5, -7, -11, -12, -17 (look) | 2026-11-12 | Claude | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ screenshots: entries with values and the greyed entries' reason, rings whole on the first and last entry, "Übersicht anpassen", the first and last checkbox row and "Abbrechen"; one ring at a time, none behind the dialog | software rendering only; mouse (T500-24) and the full look checklist left to the QE run |
 | T500-6, -25 (QE findings) | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container; Xvfb 1920 × 1080, `--demo` | ✅ `QuickSelectionTests`: an installation finishing activates "Deinstallieren …" in place with the focus on it (red with the focus place not restored); `IsDialogOpen` reported on opening and closing a dialog (red without the notifications); screenshot: no ring behind "Übersicht anpassen" under the dialog (pixel 33 → 10) | T500-9's L3, X and Y stay with the QE run, as T499-12 |
+| T500-9 (L3, X, Y), -24 to -28 (QE run) | 2026-11-12 | Claude (QE) | PR branch at ce59576, Release, Xvfb 1920 × 1080 and 1280 × 720, `--demo`, keys by xdotool, mouse by xdotool | ✅ T500-9: L3 ("Ansicht"), X (search) and Y leave "Übersicht" open and the focus on its entry after closing; T500-24: a click ticks an entry in the dialog, ✕ closes it with the focus on "Übersicht anpassen", a click on it opens the dialog, a click on "Für alle Spiele übernehmen" asks; T500-25: rings whole on the entries, "Übersicht anpassen", the checkbox rows, the button, "Abbrechen"; no ring behind the dialog (pixel 31 → 3 after ce59576); T500-26/-27: "Standard (Arcadia)" in one line beside its name at 480 px, nothing cut at 1280 × 720, greyed entries readable, gaps as the artboard RD6Mischung (34, 8, 26 before "Übersicht anpassen"; dialog gap 26, columns 28), no colour outside `Theme.axaml`; T500-28: ▲ ▼ and A in the entries and the dialog 0.6–25 ms press to frame, "Ersetzen" 20 ms; start with 1,031 / 5,031 demo games 2.1 / 2.6 s and 290 / 304 MB, also with 5,394 per-game selections, the same as without (2.3 s): the container's software rendering, not the selection | the arrows beside a value only mechanically (demo has no Pan, so both value entries are greyed); the 2 s start budget can only be judged on the real machine, since the container misses it without the change too |

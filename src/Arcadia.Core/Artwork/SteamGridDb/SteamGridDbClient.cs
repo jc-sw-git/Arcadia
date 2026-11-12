@@ -84,7 +84,8 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
     /// The games SteamGridDB finds by <paramref name="name"/> (#491), as its search ranks them; sends the name and the key,
     /// nothing else. <see cref="SteamGridDbOutcome.NotFound"/> for a name that can't be searched (empty or too long).
     /// </summary>
-    public async Task<SteamGridDbSearch> SearchAsync(string key, string name, CancellationToken cancel)
+    /// <param name="maxHits">The most hits kept: <see cref="MaxHits"/> for a game's own name, <see cref="MaxOwnTermResults"/> for a term the player typed.</param>
+    public async Task<SteamGridDbSearch> SearchAsync(string key, string name, CancellationToken cancel, int maxHits = MaxHits)
     {
         if (SearchAddressOf(name) is not { } address)
         {
@@ -93,7 +94,7 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
 
         var (outcome, body) = await SendAsync(key, address, cancel);
         return outcome != SteamGridDbOutcome.Found ? new SteamGridDbSearch(outcome, [])
-            : ReadHits(body!) is { } hits ? new SteamGridDbSearch(SteamGridDbOutcome.Found, hits)
+            : ReadHits(body!, maxHits) is { } hits ? new SteamGridDbSearch(SteamGridDbOutcome.Found, hits)
             : new SteamGridDbSearch(SteamGridDbOutcome.NoConnection, []);
     }
 
@@ -246,9 +247,9 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
 
     /// <summary>
     /// The games of a search's answer <c>{"success":true,"data":[{"id":…,"name":…,"release_date":…}]}</c>, in its order; a
-    /// game without an id or a name is left out, at most <see cref="MaxHits"/>. Null if the answer isn't such JSON.
+    /// game without an id or a name is left out, at most <paramref name="maxHits"/>. Null if the answer isn't such JSON.
     /// </summary>
-    internal static IReadOnlyList<SteamGridDbHit>? ReadHits(byte[] body)
+    internal static IReadOnlyList<SteamGridDbHit>? ReadHits(byte[] body, int maxHits = MaxHits)
     {
         try
         {
@@ -272,7 +273,7 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
                     hits.Add(new SteamGridDbHit(id, title, YearOf(item)));
                 }
 
-                if (hits.Count == MaxHits)
+                if (hits.Count == maxHits)
                 {
                     break;
                 }
@@ -288,6 +289,12 @@ public sealed class SteamGridDbClient(HttpClient http, TimeProvider time)
 
     /// <summary>The most games a search offers (#491): two rows of the waiting list.</summary>
     public const int MaxHits = 8;
+
+    /// <summary>The most games a search by the player's own term offers on the waiting list (#506), each with an image.</summary>
+    public const int MaxOwnTermHits = 25;
+
+    /// <summary>The most results of a search by the player's own term read, so that 25 with images can be left after the check.</summary>
+    public const int MaxOwnTermResults = 50;
 
     // release_date is seconds since 1970; SteamGridDB leaves it out or sends 0 for a game without one.
     private static int? YearOf(JsonElement item) =>

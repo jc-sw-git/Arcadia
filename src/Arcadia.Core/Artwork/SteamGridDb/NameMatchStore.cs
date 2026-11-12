@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Artwork.SteamGridDb;
 
@@ -21,11 +22,32 @@ public enum NameMatchState
 /// <param name="Position">While it waits: its place on the waiting list, later games behind earlier ones.</param>
 public sealed record NameMatch(NameMatchState State, int? GameId, IReadOnlyList<SteamGridDbHit> Hits, int Position = 0)
 {
+    /// <summary>Both kinds: what a game waiting from before #506 counts as seeking.</summary>
+    public static readonly IReadOnlyList<ArtworkKind> BothKinds = [ArtworkKind.Cover, ArtworkKind.Hero];
+
+    /// <summary>While it waits: the kinds SteamGridDB is to give it after the choice ("Gesucht: …", #506).</summary>
+    public IReadOnlyList<ArtworkKind> Sought { get; init; } = BothKinds;
+
+    /// <summary>
+    /// While it waits: the hits known to have an image of <see cref="TileKind"/>. The others weren't checked yet (waiting
+    /// from before #506, or the check failed) and are checked when the game is opened on the waiting list.
+    /// </summary>
+    public IReadOnlySet<int> Checked { get; init; } = ImmutableHashSet<int>.Empty;
+
+    /// <summary>The kind a hit's tile shows and is checked for: the cover when both are sought.</summary>
+    public ArtworkKind TileKind => TileKindOf(Sought);
+
+    public static ArtworkKind TileKindOf(IReadOnlyList<ArtworkKind> sought) => sought.Contains(ArtworkKind.Cover) ? ArtworkKind.Cover : ArtworkKind.Hero;
+
     public static NameMatch Chosen(int gameId) => new(NameMatchState.Chosen, gameId, []);
 
     public static NameMatch Skipped { get; } = new(NameMatchState.Skipped, null, []);
 
     public static NameMatch Waiting(IReadOnlyList<SteamGridDbHit> hits, int position) => new(NameMatchState.Waiting, null, hits, position);
+
+    /// <param name="hits">The hits with an image of the sought kind, every one checked.</param>
+    public static NameMatch Waiting(IReadOnlyList<SteamGridDbHit> hits, int position, IReadOnlyList<ArtworkKind> sought) =>
+        new(NameMatchState.Waiting, null, hits, position) { Sought = sought, Checked = hits.Select(h => h.Id).ToImmutableHashSet() };
 }
 
 /// <summary>
@@ -57,6 +79,17 @@ public sealed class NameMatchStore(string path)
 
     /// <summary>The place behind every game waiting now.</summary>
     public int NextPosition => All.Values.Where(m => m.State == NameMatchState.Waiting).Select(m => m.Position + 1).DefaultIfEmpty(1).Max();
+
+    /// <summary>Forgets the game's match (it is searched by name again) and writes the file; false if it couldn't be written.</summary>
+    public bool Remove(string gameKey)
+    {
+        lock (_write)
+        {
+            var all = All.Remove(gameKey);
+            Volatile.Write(ref _matches, all);
+            return TryWrite(all);
+        }
+    }
 
     /// <summary>Keeps the game's match and writes the file; false if it couldn't be written (it lasts until Arcadia closes).</summary>
     public bool Set(string gameKey, NameMatch match) => Set([KeyValuePair.Create(gameKey, match)]);
@@ -127,7 +160,8 @@ public sealed class NameMatchStore(string path)
 
     /// <summary>
     /// A stored match made usable, each value checked on its own; null for one that can't be (an unknown state, a chosen
-    /// game without a plain positive id, a waiting one with fewer than two hits).
+    /// game without a plain positive id, a waiting one without a list of hits). A waiting one from before #506 has no sought kinds
+    /// and no checked hits: it seeks both, and its hits are checked when it is opened.
     /// </summary>
     private static NameMatch? Valid(JsonElement stored)
     {
@@ -147,6 +181,7 @@ public sealed class NameMatchStore(string path)
         }
 
         var hits = new List<SteamGridDbHit>();
+        var checkedHits = ImmutableHashSet.CreateBuilder<int>();
         if (stored.TryGetProperty("hits", out var list) && list.ValueKind == JsonValueKind.Array)
         {
             foreach (var hit in list.EnumerateArray())
@@ -158,11 +193,37 @@ public sealed class NameMatchStore(string path)
                     && hits.Count < SteamGridDbClient.MaxHits)
                 {
                     hits.Add(new SteamGridDbHit(hitId, title, PositiveNumber(hit, "year") is { } year and < 10000 ? year : null));
+                    if (hit.TryGetProperty("checked", out var isChecked) && isChecked.ValueKind == JsonValueKind.True)
+                    {
+                        checkedHits.Add(hitId);
+                    }
                 }
             }
         }
 
-        return hits.Count > 1 ? NameMatch.Waiting(hits, PositiveNumber(stored, "position") ?? 0) : null;
+        // A waiting game may have no hits left: all dropped while the player looked (#506); it waits until skipped.
+        return list.ValueKind == JsonValueKind.Array
+            ? NameMatch.Waiting(hits, PositiveNumber(stored, "position") ?? 0) with { Sought = SoughtOf(stored), Checked = checkedHits.ToImmutable() }
+            : null;
+    }
+
+    /// <summary>The stored sought kinds, each a known kind once; both when none is stored.</summary>
+    private static IReadOnlyList<ArtworkKind> SoughtOf(JsonElement stored)
+    {
+        var sought = new List<ArtworkKind>();
+        if (stored.TryGetProperty("sought", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var kind in list.EnumerateArray())
+            {
+                if (kind.ValueKind == JsonValueKind.String
+                    && Enum.TryParse<ArtworkKind>(kind.GetString(), ignoreCase: false, out var known) && Enum.IsDefined(known) && !sought.Contains(known))
+                {
+                    sought.Add(known);
+                }
+            }
+        }
+
+        return sought.Count == 0 ? NameMatch.BothKinds : sought;
     }
 
     private static int? PositiveNumber(JsonElement item, string name) =>
@@ -189,8 +250,9 @@ public sealed class NameMatchStore(string path)
             e => new StoredMatch(
                 e.Value.State.ToString(),
                 e.Value.GameId,
-                e.Value.Hits.Count == 0 ? null : [.. e.Value.Hits.Select(h => new StoredHit(h.Id, h.Name, h.Year))],
-                e.Value.State == NameMatchState.Waiting ? e.Value.Position : null),
+                e.Value.Hits.Count == 0 && e.Value.State != NameMatchState.Waiting ? null : [.. e.Value.Hits.Select(h => new StoredHit(h.Id, h.Name, h.Year, e.Value.Checked.Contains(h.Id) ? true : null))],
+                e.Value.State == NameMatchState.Waiting ? e.Value.Position : null,
+                e.Value.State == NameMatchState.Waiting ? [.. e.Value.Sought.Select(k => k.ToString())] : null),
             StringComparer.Ordinal);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var temporary = path + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
@@ -198,7 +260,7 @@ public sealed class NameMatchStore(string path)
         File.Move(temporary, path, overwrite: true);
     }
 
-    private sealed record StoredMatch(string State, int? GameId, List<StoredHit>? Hits, int? Position);
+    private sealed record StoredMatch(string State, int? GameId, List<StoredHit>? Hits, int? Position, List<string>? Sought);
 
-    private sealed record StoredHit(int Id, string Name, int? Year);
+    private sealed record StoredHit(int Id, string Name, int? Year, bool? Checked);
 }

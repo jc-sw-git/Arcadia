@@ -48,6 +48,7 @@ its file.
 | [506-b](506-b-when-artwork-is-searched.md) | #506 | Part B: when Arcadia searches artwork, cancel, sources on and off, their order | T506-40 to T506-79 (owner: T506-73 to -79) |
 | [506-c](506-c-clearer-waiting-list.md) | #506 | Part C: "Warten auf deine Auswahl" in two levels, what is sought, only hits with images, own search term | T506-80 to T506-115 (owner: T506-112 to -115) |
 | [507](507-one-steam-image-keeps-epic-covers-away.md) | #507 | One Steam image that doesn't answer keeps all Epic covers away | T507-1 to T507-3 (owner: T507-3) |
+| [510](510-steam-mac-only-apps-twice.md) | #510 | Steam tab lists owned games twice when the account also owns their Mac-only app | T510-1 to T510-3 (owner: T510-3) |
 
 ## Release candidate tests (restart or installation)
 

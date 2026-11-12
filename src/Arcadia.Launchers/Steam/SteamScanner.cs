@@ -119,8 +119,9 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         {
             var hidden = SteamHiddenGames.Read(steam.UserDataDirectory);
             var names = _appTypes.Names;
+            var otherPlatformOnly = _appTypes.HiddenOnThisPlatform;
             games.AddRange(owned
-                .Where(game => !installed.Contains(game.AppId) && !hidden.Contains(game.AppId))
+                .Where(game => !installed.Contains(game.AppId) && !hidden.Contains(game.AppId) && !otherPlatformOnly.Contains(game.AppId))
                 .Select(game => Uninstalled(game, appTypes, names))
                 .OfType<Game>());
         }
@@ -495,6 +496,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
         private IReadOnlySet<uint> _asked = new HashSet<uint>();
         private IReadOnlyDictionary<uint, string>? _types;
         private IReadOnlyDictionary<uint, string>? _names = new Dictionary<uint, string>();
+        private IReadOnlySet<uint> _hiddenOnThisPlatform = new HashSet<uint>();
 
         // Whether the last read failed, so a file that stays missing or broken is logged once, not on every rescan.
         private bool _isUnreadable;
@@ -524,6 +526,7 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
                 var apps = stamp is null ? null : TryRead(path, appIds);
                 _types = apps?.ToDictionary(app => app.Key, app => app.Value.Type);
                 _names = apps?.Where(app => app.Value.Name is not null).ToDictionary(app => app.Key, app => app.Value.Name!);
+                _hiddenOnThisPlatform = apps?.Where(app => app.Value.IsHiddenOn(ThisPlatform)).Select(app => app.Key).ToHashSet() ?? [];
                 if (_types is null && !_isUnreadable)
                 {
                     _warn("Steam: appinfo.vdf nicht lesbar, Werkzeuge und Soundtracks werden am Namen erkannt, Software als Spiel");
@@ -534,6 +537,25 @@ public sealed class SteamScanner(Func<SteamInstallation?>? locate = null, SteamO
                 return _types;
             }
         }
+
+        /// <summary>
+        /// The apps read last that Steam's library hides on this platform (#510), e.g. an account's Mac port of a game it also
+        /// owns for Windows, under the same name; empty if the file is unreadable.
+        /// </summary>
+        public IReadOnlySet<uint> HiddenOnThisPlatform
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _hiddenOnThisPlatform;
+                }
+            }
+        }
+
+        // Steam's oslist names.
+        private static string ThisPlatform =>
+            OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "";
 
         /// <summary>The names of the apps read last, for owned apps that have no manifest; null if the file is unreadable.</summary>
         public IReadOnlyDictionary<uint, string>? Names

@@ -24,6 +24,9 @@ internal sealed class FakeImageServer : HttpMessageHandler
 
     public void Fail(string url, HttpStatusCode status) => _answers[url] = _ => Task.FromResult(new HttpResponseMessage(status));
 
+    /// <summary>The address fails as with a host that can't be reached.</summary>
+    public void Unreachable(string url) => _answers[url] = _ => throw new HttpRequestException(HttpRequestError.ConnectionError, "No connection could be made.");
+
     public void Hang(string url) => _answers[url] = async cancel =>
     {
         Hanging.TrySetResult();

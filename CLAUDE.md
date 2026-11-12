@@ -124,7 +124,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Mouse mode, "Zurück zu Arcadia", Steam's desktop layout | `docs/product/mouse-mode.md` |
 | Settings page, status messages | `docs/product/settings.md` |
 | Settings category "Controller": Pan's switch and rows, "Controller zuordnen", SISR | `docs/product/settings-controller.md` |
-| Settings category "Datenquellen": SteamGridDB key, artwork order, crop tolerance, the artwork search | `docs/product/settings-data-sources.md` |
+| Settings category "Datenquellen": SteamGridDB key, artwork order, crop tolerance, the artwork search | `docs/product/settings-data-sources/` |
 | Installing the drivers from the settings: questions first, the progress dialog | `docs/product/settings-controller-install.md` |
 | A driver change waiting for the PC restart, Pan paused, "PC neu starten" | `docs/product/settings-controller-restart.md` |
 | Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |

@@ -18,9 +18,16 @@ public sealed record ArtworkOffer(ArtworkFile File, ArtworkSource Source, string
 /// <param name="CurrentImage">Where the image in use came from and whether it was set by hand.</param>
 /// <param name="Own">The player's own file, also while another image is in use; null if none was chosen.</param>
 /// <param name="OwnName">The own file's name as it was chosen.</param>
-/// <param name="Offers">The launcher's image, then the source's, best first.</param>
+/// <param name="Offers">The launcher's image, then the source's, best first; none of a source switched off.</param>
+/// <param name="Off">The sources switched off in "Reihenfolge für Artwork" (#506): the notice says so.</param>
 public sealed record ArtworkChoices(
-    ArtworkFile? Current, CachedImage? CurrentImage, ArtworkFile? Own, string? OwnName, IReadOnlyList<ArtworkOffer> Offers, SuggestionKeyState KeyState)
+    ArtworkFile? Current,
+    CachedImage? CurrentImage,
+    ArtworkFile? Own,
+    string? OwnName,
+    IReadOnlyList<ArtworkOffer> Offers,
+    SuggestionKeyState KeyState,
+    IReadOnlyList<Settings.ArtworkSourceKind>? Off = null)
 {
     public bool OwnInUse => CurrentImage?.Source == ArtworkSource.File;
 }
@@ -98,18 +105,19 @@ public sealed partial class ArtworkService
 
         var run = NewRunState();
         var offers = new List<ArtworkOffer>();
-        if (await LauncherOfferAsync(game, kind, current, currentFile, currentSize, run, cancel) is { } launcher)
+        if (run.IsOn(ArtworkSource.Launcher) && await LauncherOfferAsync(game, kind, current, currentFile, currentSize, run, cancel) is { } launcher)
         {
             offers.Add(launcher);
         }
 
+        // A source switched off offers nothing and is asked nothing (#506).
         var keyState = Suggestions?.KeyState ?? SuggestionKeyState.Missing;
-        if (keyState == SuggestionKeyState.Valid)
+        if (keyState == SuggestionKeyState.Valid && run.IsOn(ArtworkSource.SteamGridDb))
         {
             offers.AddRange(await SuggestedOffersAsync(game, kind, run, cancel));
         }
 
-        return new ArtworkChoices(currentFile, current, own, ownName, offers, keyState);
+        return new ArtworkChoices(currentFile, current, own, ownName, offers, keyState, Settings().WithValidValues().Off);
     }
 
     /// <summary>Where the image in use came from and whether it was set by hand; null while the placeholder shows.</summary>
@@ -269,7 +277,7 @@ public sealed partial class ArtworkService
         var image = record.Of(kind);
         var size = image is null ? null : CheckedSize(game.Key, kind, image);
         var run = NewRunState();
-        var pick = lookup is null ? null : await PickAsync(game, kind, lookup.For(game, kind), image, size, run, cancel);
+        var pick = lookup is null || !run.IsOn(ArtworkSource.Launcher) ? null : await PickAsync(game, kind, lookup.For(game, kind), image, size, run, cancel);
         var restored = Apply(record with { Unreadable = false }, kind, pick ?? (size is null ? null : new Pick.Keep()), run);
         if (restored.IsEmpty)
         {

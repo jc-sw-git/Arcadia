@@ -9,7 +9,7 @@ namespace Arcadia.Core.Tests.Artwork;
 
 /// <summary>
 /// #487: the background run that brings covers and backgrounds into the cache: the fitting-format choice, downloads and
-/// their failures, the cache's failure cases (T487-4 to T487-6, T487-8, T487-10, T487-12 to T487-17).
+/// their failures, the cache's failure cases (T487-4 to T487-6, T487-8, T487-10, T487-12 to T487-17; T507-1, T507-2).
 /// </summary>
 public sealed class ArtworkServiceTests : IDisposable
 {
@@ -68,6 +68,13 @@ public sealed class ArtworkServiceTests : IDisposable
     private async Task ScanAsync(LauncherLibrary library, ILauncherArtwork source)
     {
         _service.Update([new LibraryArtwork(library, source)]);
+        await _service.WhenIdleAsync();
+    }
+
+    /// <summary>"Jetzt suchen": a scan goes online only for new games (#506), a search for every game missing an image.</summary>
+    private async Task SearchAsync()
+    {
+        Assert.True(_service.SearchAgain(byPlayer: true));
         await _service.WhenIdleAsync();
     }
 
@@ -161,7 +168,7 @@ public sealed class ArtworkServiceTests : IDisposable
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.Gone)]
-    public async Task An_image_the_server_adds_later_comes_with_the_next_scan(HttpStatusCode status)
+    public async Task An_image_the_server_adds_later_comes_with_the_next_search_not_the_next_scan(HttpStatusCode status)
     {
         _server.Fail(CoverUrl, status);
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -169,13 +176,15 @@ public sealed class ArtworkServiceTests : IDisposable
 
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"));
+        Assert.Equal(1, RequestCount);
+        await SearchAsync();
 
         Assert.Equal(2, RequestCount);
         Assert.NotNull(_service.Of("steam:4000001")!.Cover);
     }
 
     [Fact]
-    public async Task Without_network_nothing_is_shown_and_the_next_scan_asks_again()
+    public async Task Without_network_nothing_is_shown_and_the_next_search_asks_again()
     {
         _server.Offline = true;
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -186,6 +195,8 @@ public sealed class ArtworkServiceTests : IDisposable
         _server.Offline = false;
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"), GameOf("4000002"));
+        Assert.Equal(asked, RequestCount);
+        await SearchAsync();
 
         // The first failed connection ends the run's downloads: no wait per game.
         Assert.Equal(1, asked);
@@ -193,7 +204,7 @@ public sealed class ArtworkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_download_that_doesnt_answer_in_10_seconds_waits_for_the_next_scan()
+    public async Task A_download_that_doesnt_answer_in_10_seconds_waits_for_the_next_search()
     {
         _server.Hang(CoverUrl);
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -209,7 +220,53 @@ public sealed class ArtworkServiceTests : IDisposable
         Assert.Contains(_log, l => l.Contains("antwortet nicht in 10 s", StringComparison.Ordinal));
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"));
+        Assert.Null(_service.Of("steam:4000001"));
+        await SearchAsync();
         Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+    }
+
+    [Fact]
+    public async Task A_steam_image_that_doesnt_answer_doesnt_keep_epics_catalog_images_away()
+    {
+        // The owner's log: a Steam cover the server doesn't have, then that game's background hangs; Epic's library comes after.
+        const string epicCover = "https://cdn1.epicgames.example/made-up/cover.jpg";
+        _server.Fail(CoverUrl, HttpStatusCode.NotFound);
+        _server.Hang(HeroUrl);
+        _server.Serve(epicCover, TestImages.Jpeg(600, 900));
+        _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
+        _source.Hero = [new("steam-server", Download: new Uri(HeroUrl))];
+        var epicSource = new TestSource { Cover = [new("epic-catalog", Download: new Uri(epicCover))] };
+        var epic = new LauncherInfo("epic", "Epic Games", "epic", null);
+        var epicGame = new Game { Id = "MadeUpApp", LauncherId = "epic", Title = "Made-up Epic Game", Launch = new LaunchTarget.ProtocolUri("com.epicgames.launcher://apps/MadeUpApp?action=launch") };
+
+        _service.Update([new LibraryArtwork(new LauncherLibrary(Steam, [GameOf("4000001")]), _source), new LibraryArtwork(new LauncherLibrary(epic, [epicGame]), epicSource)]);
+        await _server.Hanging.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        _time.Advance(TimeSpan.FromSeconds(10));
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Only the host that hung waits for the next scan; the log names it, though the game logged its missing cover first.
+        Assert.NotNull(_service.Of("epic:MadeUpApp")?.Cover);
+        Assert.Contains(_log, l => l.Contains("steam:4000001: images.example antwortet nicht in 10 s", StringComparison.Ordinal));
+        Assert.Contains(_log, l => l.Contains("keine Verbindung zu images.example, der Rest folgt", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_host_that_cant_be_reached_is_not_asked_again_in_the_run_but_another_host_is()
+    {
+        const string otherHost = "https://other-images.example/4000002/cover.jpg";
+        _server.Unreachable(CoverUrl);
+        _server.Serve(otherHost, TestImages.Jpeg(600, 900));
+        var sources = new PerGameSource(new()
+        {
+            ["4000001"] = new TestSource { Cover = [new("steam-server", Download: new Uri(CoverUrl))] },
+            ["4000002"] = new TestSource { Cover = [new("steam-server", Download: new Uri(CoverUrl + "?2")), new("steam-server", Download: new Uri(otherHost))] },
+        });
+
+        await ScanAsync(new LauncherLibrary(Steam, [GameOf("4000001"), GameOf("4000002")]), sources);
+
+        Assert.Equal([CoverUrl, otherHost], _server.Requests.Select(r => r.RequestUri!.AbsoluteUri));
+        Assert.NotNull(_service.Of("steam:4000002")!.Cover);
+        Assert.Single(_log, l => l.Contains("keine Verbindung zu images.example (ConnectionError)", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -375,23 +432,24 @@ public sealed class ArtworkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_game_leaving_the_library_loses_its_automatic_images_and_keeps_those_set_by_hand()
+    [Trait("TestCase", "T487-16")]
+    [Trait("TestCase", "T506-45")]
+    public async Task A_game_leaving_the_library_keeps_its_images_and_comes_back_with_them()
     {
         _source.Cover = [new("steam-cache", File: File("cover.jpg", TestImages.Jpeg(600, 900)))];
         _source.Hero = [new("steam-cache", File: File("hero.jpg", TestImages.Jpeg(1920, 620)))];
         await ScanAsync(GameOf("4000001"), GameOf("4000002"));
         var cache = Cache;
-        var handSet = cache.Read("steam:4000002")!;
-        cache.WriteMetadata(handSet with { Cover = handSet.Cover! with { SetByHand = true } });
+        var before = cache.Read("steam:4000001")!;
         Restart();
 
-        await ScanAsync(GameOf("4000003"));
+        await ScanAsync(GameOf("4000002"));
+        Assert.Equal(before, cache.Read("steam:4000001"));
 
-        Assert.False(Directory.Exists(cache.FolderOf("steam:4000001")));
-        Assert.Null(_service.Of("steam:4000001"));
-        var kept = cache.Read("steam:4000002")!;
-        Assert.True(kept.Cover!.SetByHand);
-        Assert.Null(kept.Hero);
+        await ScanAsync(GameOf("4000001"), GameOf("4000002"));
+        Assert.Equal(before, cache.Read("steam:4000001"));
+        Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+        Assert.NotNull(_service.Of("steam:4000001")!.Hero);
     }
 
     [Fact]

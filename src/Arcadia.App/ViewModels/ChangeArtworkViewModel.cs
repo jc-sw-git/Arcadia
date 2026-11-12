@@ -112,7 +112,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(GridHeading))]
     public partial SuggestionKeyState KeyState { get; private set; } = SuggestionKeyState.Missing;
 
-    public bool ShowsNotice => KeyState != SuggestionKeyState.Valid;
+    public bool ShowsNotice => Notice.IsShown;
 
     public bool IsNoticeFocused => Notice.IsFocused;
 
@@ -233,7 +233,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
             Tiles.Add(ArtworkTileViewModel.Offered(offer, Tile.LauncherName, OnPicked));
         }
 
-        Notice.Show(KeyState);
+        Notice.Show(KeyState, choices.Off ?? []);
         GridItems.Clear();
         foreach (var tile in Tiles)
         {

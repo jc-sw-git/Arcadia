@@ -34,25 +34,40 @@ public sealed record CachedImage(string File, ArtworkSource Source, string Origi
 /// still offers it; in use when <paramref name="Cover"/> names the same file.</param>
 /// <param name="OwnHero">The player's own file for the background, as <paramref name="OwnCover"/>.</param>
 /// <param name="Unreadable">Its metadata couldn't be read: every image in the folder counts as set by hand (#13).</param>
+/// <param name="OffCover">The automatic cover of another source than the one in use (#506): of a source switched off, or one
+/// that gave way to a changed order or tolerance; kept so it is back in use without a copy or download; at most one per
+/// kind, the one shown last.</param>
+/// <param name="OffHero">The same for the background.</param>
 public sealed record CachedArtwork(
-    string GameKey, CachedImage? Cover, CachedImage? Hero, bool Unreadable = false, CachedImage? OwnCover = null, CachedImage? OwnHero = null)
+    string GameKey,
+    CachedImage? Cover,
+    CachedImage? Hero,
+    bool Unreadable = false,
+    CachedImage? OwnCover = null,
+    CachedImage? OwnHero = null,
+    CachedImage? OffCover = null,
+    CachedImage? OffHero = null)
 {
     public CachedImage? Of(ArtworkKind kind) => kind == ArtworkKind.Cover ? Cover : Hero;
 
     public CachedImage? OwnOf(ArtworkKind kind) => kind == ArtworkKind.Cover ? OwnCover : OwnHero;
 
-    /// <summary>Neither an image in use nor an own file: the game's folder can go.</summary>
-    public bool IsEmpty => Cover is null && Hero is null && OwnCover is null && OwnHero is null;
+    public CachedImage? OffOf(ArtworkKind kind) => kind == ArtworkKind.Cover ? OffCover : OffHero;
+
+    /// <summary>Neither an image in use nor an own file nor one kept for a source switched off: the game's folder can go.</summary>
+    public bool IsEmpty => Cover is null && Hero is null && OwnCover is null && OwnHero is null && OffCover is null && OffHero is null;
 
     public CachedArtwork With(ArtworkKind kind, CachedImage? image) => kind == ArtworkKind.Cover ? this with { Cover = image } : this with { Hero = image };
 
     public CachedArtwork WithOwn(ArtworkKind kind, CachedImage? image) => kind == ArtworkKind.Cover ? this with { OwnCover = image } : this with { OwnHero = image };
+
+    public CachedArtwork WithOff(ArtworkKind kind, CachedImage? image) => kind == ArtworkKind.Cover ? this with { OffCover = image } : this with { OffHero = image };
 }
 
 /// <summary>
 /// The artwork cache on disk (#13, #487): <c>%LOCALAPPDATA%\Arcadia\artwork\&lt;game&gt;\cover|hero.*</c> plus
-/// <c>artwork.json</c> with source and "set by hand" per image, and the player's own files as <c>own-cover|own-hero.*</c>
-/// (#490). Every file is written to a temporary file first and then
+/// <c>artwork.json</c> with source and "set by hand" per image, the player's own files as <c>own-cover|own-hero.*</c>
+/// (#490) and an image of another source kept aside as <c>off-cover|off-hero.*</c> (#506). Every file is written to a temporary file first and then
 /// renamed, so a crash never leaves half an image or half a metadata file; temporary files left by one are removed on the
 /// game's next write. A game's folder name is made from its key so that no key leads outside the cache.
 /// </summary>
@@ -144,10 +159,12 @@ public sealed class ArtworkCache(string root)
             {
                 return new CachedArtwork(
                     key,
-                    Checked(stored.Cover, ArtworkKind.Cover, inUse: true),
-                    Checked(stored.Hero, ArtworkKind.Hero, inUse: true),
-                    OwnCover: Checked(stored.OwnCover, ArtworkKind.Cover, inUse: false),
-                    OwnHero: Checked(stored.OwnHero, ArtworkKind.Hero, inUse: false));
+                    Checked(stored.Cover, ArtworkKind.Cover, Slot.InUse),
+                    Checked(stored.Hero, ArtworkKind.Hero, Slot.InUse),
+                    OwnCover: Checked(stored.OwnCover, ArtworkKind.Cover, Slot.Own),
+                    OwnHero: Checked(stored.OwnHero, ArtworkKind.Hero, Slot.Own),
+                    OffCover: Checked(stored.OffCover, ArtworkKind.Cover, Slot.Off),
+                    OffHero: Checked(stored.OffHero, ArtworkKind.Hero, Slot.Off));
             }
         }
         catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException or NotSupportedException)
@@ -166,9 +183,10 @@ public sealed class ArtworkCache(string root)
 
     /// <summary>
     /// A stored image whose file name is one of ours; anything else (a path, another name) counts as missing. An image in use
-    /// may be the own file (then it is from a file); an own file is only ever one.
+    /// may be the own file (then it is from a file); an own file is only ever one; one kept for a source switched off is an
+    /// automatic image of a source.
     /// </summary>
-    private static CachedImage? Checked(CachedImage? image, ArtworkKind kind, bool inUse)
+    private static CachedImage? Checked(CachedImage? image, ArtworkKind kind, Slot slot)
     {
         if (image is not { File: { } file } || image.Origin is null || image.Stamp is null)
         {
@@ -176,7 +194,19 @@ public sealed class ArtworkCache(string root)
         }
 
         var own = image.Source == ArtworkSource.File;
-        return (inUse || own) && IsFileName(file, BaseName(kind, own)) ? image : null;
+        return slot switch
+        {
+            Slot.InUse => IsFileName(file, BaseName(kind, own)) ? image : null,
+            Slot.Own => own && IsFileName(file, BaseName(kind, own: true)) ? image : null,
+            _ => !own && !image.SetByHand && IsFileName(file, OffName(kind)) ? image : null,
+        };
+    }
+
+    private enum Slot
+    {
+        InUse,
+        Own,
+        Off,
     }
 
     private static bool IsFileName(string file, string baseName) =>
@@ -185,6 +215,8 @@ public sealed class ArtworkCache(string root)
     private static readonly string[] Extensions = [".png", ".jpg", ".webp"];
 
     private static string BaseName(ArtworkKind kind, bool own = false) => (own ? "own-" : string.Empty) + (kind == ArtworkKind.Cover ? "cover" : "hero");
+
+    private static string OffName(ArtworkKind kind) => "off-" + BaseName(kind);
 
     /// <summary>The metadata can't be read: the images in the folder count as set by hand, so nothing overwrites them (#13).</summary>
     private static CachedArtwork Unreadable(string folder, string gameKey)
@@ -238,17 +270,70 @@ public sealed class ArtworkCache(string root)
         }
 
         Directory.CreateDirectory(folder);
-        var stored = new StoredArtwork { Game = artwork.GameKey, Cover = artwork.Cover, Hero = artwork.Hero, OwnCover = artwork.OwnCover, OwnHero = artwork.OwnHero };
+        var stored = new StoredArtwork
+        {
+            Game = artwork.GameKey,
+            Cover = artwork.Cover,
+            Hero = artwork.Hero,
+            OwnCover = artwork.OwnCover,
+            OwnHero = artwork.OwnHero,
+            OffCover = artwork.OffCover,
+            OffHero = artwork.OffHero,
+        };
         WriteThroughTemporary(Path.Combine(folder, MetadataFile), JsonSerializer.SerializeToUtf8Bytes(stored, Json));
     }
 
     /// <summary>Deletes the game's launcher copy of <paramref name="kind"/>, whatever its extension; the own file stays.</summary>
-    public void DeleteImage(string gameKey, ArtworkKind kind)
+    public void DeleteImage(string gameKey, ArtworkKind kind) => DeleteAll(FolderOf(gameKey), BaseName(kind));
+
+    /// <summary>Deletes the image of <paramref name="kind"/> kept aside (#506).</summary>
+    public void DeleteOffImage(string gameKey, ArtworkKind kind) => DeleteAll(FolderOf(gameKey), OffName(kind));
+
+    /// <summary>
+    /// The image in use of <paramref name="kind"/> is kept aside (#506): renamed, so the slot is free and nothing is copied;
+    /// an image kept before for this kind goes.
+    /// </summary>
+    /// <returns>The image as kept, by its new file name.</returns>
+    public CachedImage SetOff(string gameKey, ArtworkKind kind, CachedImage inUse) => Rename(gameKey, inUse, OffName(kind));
+
+    /// <summary>The image kept for its source is in use again (#506): renamed back; the image in use before goes.</summary>
+    /// <returns>The image in use, by its new file name.</returns>
+    public CachedImage SetOn(string gameKey, ArtworkKind kind, CachedImage off) => Rename(gameKey, off, BaseName(kind));
+
+    /// <summary>
+    /// The image kept for another source goes back in use and the one in use is kept in its place (#506): both renamed,
+    /// nothing copied.
+    /// </summary>
+    /// <returns>Both images by their new file names.</returns>
+    public (CachedImage InUse, CachedImage Off) Swap(string gameKey, ArtworkKind kind, CachedImage inUse, CachedImage off)
     {
         var folder = FolderOf(gameKey);
+        var aside = Path.Combine(folder, OffName(kind) + "-swap" + TemporarySuffix);
+        File.Move(Path.Combine(folder, off.File), aside, overwrite: true);
+        var kept = Rename(gameKey, inUse, OffName(kind));
+        var file = BaseName(kind) + Path.GetExtension(off.File);
+        File.Move(aside, Path.Combine(folder, file), overwrite: true);
+        return (off with { File = file }, kept);
+    }
+
+    private CachedImage Rename(string gameKey, CachedImage image, string baseName)
+    {
+        var folder = FolderOf(gameKey);
+        var file = baseName + Path.GetExtension(image.File);
+        File.Move(Path.Combine(folder, image.File), Path.Combine(folder, file), overwrite: true);
+        foreach (var other in Extensions.Where(e => e != Path.GetExtension(file)))
+        {
+            File.Delete(Path.Combine(folder, baseName + other));
+        }
+
+        return image with { File = file };
+    }
+
+    private static void DeleteAll(string folder, string baseName)
+    {
         foreach (var extension in Extensions)
         {
-            File.Delete(Path.Combine(folder, BaseName(kind) + extension));
+            File.Delete(Path.Combine(folder, baseName + extension));
         }
     }
 
@@ -332,5 +417,9 @@ public sealed class ArtworkCache(string root)
         public CachedImage? OwnCover { get; set; }
 
         public CachedImage? OwnHero { get; set; }
+
+        public CachedImage? OffCover { get; set; }
+
+        public CachedImage? OffHero { get; set; }
     }
 }

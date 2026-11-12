@@ -2,6 +2,7 @@ using Arcadia.App.Input;
 using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
+using Arcadia.Core.Settings;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Settings;
@@ -12,7 +13,7 @@ namespace Arcadia.App.Settings;
 /// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>); #43 adds
 /// the metadata providers. A key SteamGridDB turned down is a warning beside the category's name.
 /// </summary>
-public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
+public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, IDraggableRows
 {
     private readonly SteamGridDbKey _key;
     private readonly ArtworkService _artwork;
@@ -28,15 +29,37 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
     {
         _key = key;
         _artwork = artwork;
-        _keyRows = new SteamGridDbKeyRows(key, artwork, host, editor => Editor = editor, time, keyPersists);
+        _keyRows = new SteamGridDbKeyRows(
+            key, artwork, host, editor => Editor = editor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
         _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
         _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
         _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList);
         _key.Changed += OnChanged;
         _artwork.SearchChanged += OnChanged;
         _artwork.WaitingChanged += OnChanged;
+        FocusMoved += (_, _) => ShowL3Action();
         Show();
     }
+
+    /// <summary>L3 lifts a source of "Reihenfolge für Artwork" (#506); while one is lifted, ▲ ▼ move it and B puts it back.</summary>
+    public override bool Handle(UiAction action) => _sourceRows.Handle(action, FocusedRow);
+
+    public bool CanDrag(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel;
+
+    public bool IsInDragList(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel;
+
+    public void BeginDrag(SettingsRowViewModel row)
+    {
+        if (row is ArtworkSourceRowViewModel source)
+        {
+            Focus(source);
+            _sourceRows.Lift(source);
+        }
+    }
+
+    public void DragTo(int rowsAbove) => _sourceRows.DragTo(rowsAbove);
+
+    public void Drop() => _sourceRows.Drop();
 
     /// <summary>"Alle Artworks neu laden?": [A] reloads, [B] closes it.</summary>
     public override void HandleDialog(UiAction action)
@@ -47,8 +70,17 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         }
     }
 
-    /// <summary>B while the key is written drops it (the editor takes B itself); nothing else goes a level up here.</summary>
-    public override void Leave() => Editor?.Drop();
+    /// <summary>
+    /// B while the key is written drops it (the editor takes B itself); another category puts a lifted source back; nothing
+    /// else goes a level up here.
+    /// </summary>
+    public override void Leave()
+    {
+        Editor?.Drop();
+        _sourceRows.PutBack();
+    }
+
+    private void ShowL3Action() => L3ActionText = FocusedRow is ArtworkSourceRowViewModel ? AppTexts.Move : null;
 
     public override void Dispose()
     {
@@ -74,6 +106,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel
         _sourceRows.Refresh();
         _reloadRows.Refresh();
         _nameRows.Refresh();
+        IsReordering = _sourceRows.IsReordering;
         Marker = _key.State == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
             _nameRows.SeveralHitsRow, _nameRows.WaitingRow]);

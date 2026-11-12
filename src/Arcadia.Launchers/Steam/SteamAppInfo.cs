@@ -126,7 +126,18 @@ public static class SteamAppInfo
         var common = reader.Map().GetMap("appinfo")?.GetMap("common");
         return common?.GetString("type") is { Length: > 0 } type
             ? new SteamAppEntry(type, common.GetString("name") is { Length: > 0 } name ? name : null)
+            {
+                OnlyOnPlatforms = OnlyOnPlatformsOf(common),
+            }
             : null;
+    }
+
+    // Without an oslist the flag names no platform; such an app was never seen, so it stays rather than vanishing everywhere.
+    private static string[]? OnlyOnPlatformsOf(VdfMap common)
+    {
+        var flagged = common.GetInt("VisibleOnlyOnAvailablePlatforms") is 1 || common.GetString("VisibleOnlyOnAvailablePlatforms") is "1";
+        var platforms = common.GetString("oslist")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return flagged && platforms is { Length: > 0 } ? platforms : null;
     }
 
     private static string[] ReadStringTable(SafeFileHandle file, long offset, long length)
@@ -271,4 +282,20 @@ public static class SteamAppInfo
 }
 
 /// <summary>An app as <c>appinfo.vdf</c> knows it: Steam's type (e.g. <c>Game</c>) and its name, if it has one.</summary>
-public sealed record SteamAppEntry(string Type, string? Name);
+public sealed record SteamAppEntry(string Type, string? Name)
+{
+    /// <summary>
+    /// The platforms of an app Steam shows only there (<c>VisibleOnlyOnAvailablePlatforms</c> 1, platforms from
+    /// <c>oslist</c>: <c>windows</c>, <c>macos</c>, <c>linux</c>); null for an app Steam shows everywhere (#510).
+    /// </summary>
+    public IReadOnlyList<string>? OnlyOnPlatforms { get; init; }
+
+    /// <summary>
+    /// Whether Steam's library on <paramref name="platform"/> hides the app. On Linux Steam runs Windows apps through Proton,
+    /// so <c>windows</c> counts there too.
+    /// </summary>
+    public bool IsHiddenOn(string platform) =>
+        OnlyOnPlatforms is { } platforms
+        && !platforms.Contains(platform, StringComparer.OrdinalIgnoreCase)
+        && !(platform == "linux" && platforms.Contains("windows", StringComparer.OrdinalIgnoreCase));
+}

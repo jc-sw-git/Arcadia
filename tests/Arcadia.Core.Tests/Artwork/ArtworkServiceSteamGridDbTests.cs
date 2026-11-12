@@ -9,7 +9,7 @@ namespace Arcadia.Core.Tests.Artwork;
 
 /// <summary>
 /// #489: SteamGridDB as a second source of the artwork run: no request without a key, the order of the sources and
-/// "Zuschneiden erlaubt", a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23).
+/// "Zuschneiden erlaubt", a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23; T507-1).
 /// </summary>
 public sealed class ArtworkServiceSteamGridDbTests : IDisposable
 {
@@ -88,6 +88,13 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         await _service.WhenIdleAsync();
     }
 
+    /// <summary>"Jetzt suchen": a scan asks SteamGridDB only for new games (#506).</summary>
+    private async Task SearchAsync()
+    {
+        Assert.True(_service.SearchAgain(byPlayer: true));
+        await _service.WhenIdleAsync();
+    }
+
     private CachedArtwork? Cached(string id = Id) => new ArtworkCache(Path.Combine(_root, "artwork")).Read("steam:" + id);
 
     /// <summary>The launcher offers a cover and a hero to download, SteamGridDB a fitting one of each.</summary>
@@ -118,6 +125,21 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         Assert.Equal(0, _sgdb.Count);
         Assert.Equal(("steam-server", ArtworkSource.Launcher), (Cached()!.Hero!.Origin, Cached()!.Hero!.Source));
         Assert.Equal(new ArtworkSearchResult(0, 0, false, null), _service.Search.Result);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T507-1")]
+    public async Task A_launcher_host_that_cant_be_reached_leaves_steamgriddbs_image()
+    {
+        await WithKeyAsync();
+        _source.Cover = [new("steam-server", Download: new Uri(LauncherCover))];
+        _images.Unreachable(LauncherCover);
+        _sgdb.Cover("steam", Id, GridCover, 600, 900);
+        _images.Serve(GridCover, TestImages.Png(600, 900));
+
+        await ScanAsync();
+
+        Assert.Equal((ArtworkService.SteamGridDbOrigin, ArtworkSource.SteamGridDb), (Cached()!.Cover!.Origin, Cached()!.Cover!.Source));
     }
 
     [Fact]
@@ -273,11 +295,13 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         Assert.Equal(1, _sgdb.Count);
         Assert.Equal(SteamGridDbKeyState.Rejected, _key.State);
 
-        // A later scan sends nothing with that key; after a restart with it stored, at most one request again.
+        // A later scan sends nothing with that key; after a restart with it stored, a search sends at most one request again.
         await ScanAsync(GameOf("4000001"), GameOf("4000002"), GameOf("4000003"));
         Assert.Equal(1, _sgdb.Count);
         Restart();
         await ScanAsync(GameOf("4000001"), GameOf("4000002"), GameOf("4000003"));
+        Assert.Equal(1, _sgdb.Count);
+        await SearchAsync();
         Assert.Equal(2, _sgdb.Count);
         Assert.Equal(SteamGridDbKeyState.Rejected, _key.State);
     }
@@ -318,7 +342,7 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T489-21")]
-    public async Task No_connection_to_steamgriddb_skips_it_for_the_run_and_the_next_scan_tries_again()
+    public async Task No_connection_to_steamgriddb_skips_it_for_the_run_and_only_the_next_search_tries_again()
     {
         await WithKeyAsync();
         _sgdb.Offline = true;
@@ -330,6 +354,8 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         _sgdb.Cover("steam", "4000002", GridCover, 600, 900);
         _images.Serve(GridCover, TestImages.Png(600, 900));
         await ScanAsync(GameOf("4000001"), GameOf("4000002"));
+        Assert.Equal(1, _sgdb.Count);
+        await SearchAsync();
 
         Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached("4000002")!.Cover!.Origin);
         Assert.Equal(SteamGridDbKeyState.Valid, _key.State);

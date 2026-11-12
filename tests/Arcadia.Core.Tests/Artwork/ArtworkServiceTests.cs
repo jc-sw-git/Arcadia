@@ -388,23 +388,24 @@ public sealed class ArtworkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_game_leaving_the_library_loses_its_automatic_images_and_keeps_those_set_by_hand()
+    [Trait("TestCase", "T487-16")]
+    [Trait("TestCase", "T506-45")]
+    public async Task A_game_leaving_the_library_keeps_its_images_and_comes_back_with_them()
     {
         _source.Cover = [new("steam-cache", File: File("cover.jpg", TestImages.Jpeg(600, 900)))];
         _source.Hero = [new("steam-cache", File: File("hero.jpg", TestImages.Jpeg(1920, 620)))];
         await ScanAsync(GameOf("4000001"), GameOf("4000002"));
         var cache = Cache;
-        var handSet = cache.Read("steam:4000002")!;
-        cache.WriteMetadata(handSet with { Cover = handSet.Cover! with { SetByHand = true } });
+        var before = cache.Read("steam:4000001")!;
         Restart();
 
-        await ScanAsync(GameOf("4000003"));
+        await ScanAsync(GameOf("4000002"));
+        Assert.Equal(before, cache.Read("steam:4000001"));
 
-        Assert.False(Directory.Exists(cache.FolderOf("steam:4000001")));
-        Assert.Null(_service.Of("steam:4000001"));
-        var kept = cache.Read("steam:4000002")!;
-        Assert.True(kept.Cover!.SetByHand);
-        Assert.Null(kept.Hero);
+        await ScanAsync(GameOf("4000001"), GameOf("4000002"));
+        Assert.Equal(before, cache.Read("steam:4000001"));
+        Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+        Assert.NotNull(_service.Of("steam:4000001")!.Hero);
     }
 
     [Fact]

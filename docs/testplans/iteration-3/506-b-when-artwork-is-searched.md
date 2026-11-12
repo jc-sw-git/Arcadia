@@ -32,7 +32,8 @@ follow them.
   T506-46 or "Jetzt suchen" (Q1). · E2E: no (unit test)
 - [x] **T506-45** A launcher switched on with 200 games Arcadia never saw: each is new and searched once in the
   background, the library stays usable (T489-24's budgets). The same launcher switched off and on again: its games are
-  known, 0 requests. · E2E: no (view model test)
+  known, 0 requests, and come back with the images they had (a game leaving the library keeps all its images, set by
+  hand or not). · E2E: no (view model test)
 - [x] **T506-46** Given no key, when I enter a valid key (typed or pasted), then the toast reads "Schlüssel gespeichert.
   Fehlende Bilder werden gesucht." and one run over every game still missing a cover or background starts; the row
   shows "Suche läuft · n von N Spielen". The same from a rejected key to a valid one, and after "Schlüssel löschen" and

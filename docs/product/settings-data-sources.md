@@ -52,7 +52,7 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   source (also no launcher image to download); a launcher's local files are still read at every scan. A game
   arriving without a usable key or with SteamGridDB off counts as seen and waits for the first key or "Jetzt suchen".
   The first start with this version counts every game in the library as known; a game leaving and coming back is not
-  new. Closing Arcadia during such a run: the games it didn't reach are searched after the next start.
+  new and comes back with its images (they stay on disk while it is gone). Closing Arcadia during such a run: the games it didn't reach are searched after the next start.
 - The first usable key (none or a rejected one before, also when checked without network) searches once every game
   still missing images: "Schlüssel gespeichert. Fehlende Bilder werden gesucht." Replacing a working key starts nothing.
 - "Fehlende Cover und Hintergründe" counts the games still without ("N Spiele ohne Cover, M ohne Hintergrund"), and

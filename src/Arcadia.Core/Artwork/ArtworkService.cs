@@ -510,19 +510,6 @@ public sealed partial class ArtworkService : IDisposable
                         ShowSearch(run, new ArtworkRun(run.Searched, searched.Count, byPlayer, run.Reload), force: false);
                     }
                 }
-
-                if (library is { IsFound: true, ScanFailed: false })
-                {
-                    await _write.WaitAsync(cancel);
-                    try
-                    {
-                        RemoveLeftGames(library, changes);
-                    }
-                    finally
-                    {
-                        _write.Release();
-                    }
-                }
             }
         }
         catch (OperationCanceledException) when (!_shutdown.IsCancellationRequested)
@@ -1205,51 +1192,6 @@ public sealed partial class ArtworkService : IDisposable
 
         _checked[(key, kind)] = found;
         return found;
-    }
-
-    /// <summary>A game no longer in its launcher's library loses its automatic images; those set by hand stay for its return (#13).</summary>
-    private void RemoveLeftGames(Library.LauncherLibrary library, ChangeBatcher changes)
-    {
-        var launcherId = library.Launcher.Id;
-        var present = library.Games.Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
-        foreach (var (key, artwork) in _records.Where(r => Game.LauncherIdOf(r.Key) == launcherId && !present.Contains(r.Key)).ToList())
-        {
-            var kept = artwork;
-            foreach (var kind in Kinds)
-            {
-                if (kept.Of(kind) is { SetByHand: false })
-                {
-                    _cache.DeleteImage(key, kind);
-                    _checked.Remove((key, kind));
-                    kept = kept.With(kind, null);
-                }
-
-                if (kept.OffOf(kind) is not null)
-                {
-                    _cache.DeleteOffImage(key, kind);
-                    _checkedOff.Remove((key, kind));
-                    kept = kept.WithOff(kind, null);
-                }
-            }
-
-            if (kept == artwork)
-            {
-                continue;
-            }
-
-            _cache.WriteMetadata(kept);
-            if (kept.IsEmpty)
-            {
-                _records.Remove(key);
-            }
-            else
-            {
-                _records[key] = kept;
-            }
-
-            Show(kept, changes);
-            Log($"Artwork: {key} ist nicht mehr in der Bibliothek, seine automatischen Bilder sind gelöscht");
-        }
     }
 
     private void Show(CachedArtwork artwork, ChangeBatcher changes)

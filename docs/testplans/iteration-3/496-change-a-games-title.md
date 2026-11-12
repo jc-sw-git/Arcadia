@@ -101,11 +101,10 @@ Automated tests:
 | T496-6 (restart, rescan), -14 (absence) | `Arcadia.App.Tests/ChangeTitleTests.An_own_title_survives_a_restart_a_rescan_and_the_game_leaving_and_coming_back` |
 | T496-10 | `Arcadia.App.Tests/ChangeTitleTests.The_search_finds_a_renamed_game_by_both_titles_and_shows_the_own_one`, `Arcadia.Core.Tests/UserData/GameTitlesTests` |
 | T496-15 | `Arcadia.App.Tests/ChangeTitleTests.An_unreadable_file_is_a_status_message_and_greys_both_rows_with_the_reason`, `Arcadia.Core.Tests/UserData/UserDataStoreTests` |
+| T496-7 (waiting list), -8 (across pages), -12 (LB/RB) | `Arcadia.App.Tests/ChangeTitleAcrossTheAppTests` (quality engineer; red once each: the waiting list given the launcher's title, the line kept across pages, own titles left out of `GameTitles.Shown`) |
 | T496-4, -6 (automatic title changing later), -9 | `Arcadia.Core.Tests/UserData/GameTitlesTests` |
 | T496-14 (per key, temporary file, crash), -15 (failed write) | `Arcadia.Core.Tests/UserData/UserDataStoreTests` |
 
-T496-7's waiting list "Warten auf deine Auswahl" gets the shown title through `WaitingListViewModel`'s title function; it
-has no acceptance test of its own (the list needs SteamGridDB's name search), the quality engineer's run looks at it.
 "Alle Metadaten neu laden" (T496-6) touches only the metadata cache, not `user-data.json`.
 
 History:
@@ -114,3 +113,5 @@ History:
 |---|---|---|---|---|---|
 | All automated tests (`run-tests.sh 4`, window guards on) | 2026-11-12 | implementer | Release, Linux cloud container (Xvfb) | passed | — |
 | App look: Verwalten rows, dialog, changed title, R3 line, footer hint | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed after widening the field (it was 250 px) | field style moved after the general field styles |
+| QE review: all tests, `ChangeTitleAcrossTheAppTests` red once each | 2026-11-12 | quality engineer | Release, Linux cloud container | passed | — |
+| QE run T496-13, -16 (keys), -17, T496-15 status message | 2026-11-12 | quality engineer | Release, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | failed | two-line own title with the R3 line hides the button row behind the areas; "Titel ändern" opens in 380–560 ms (search with keyboard 20–90 ms); status line cut, "Zu den Einstellungen" lands on the SteamGridDB key; reset 40 ms, R3 ≤ 1 ms |

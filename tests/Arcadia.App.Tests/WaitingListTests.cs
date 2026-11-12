@@ -19,9 +19,9 @@ public sealed class WaitingListTests
 {
     private const string Key = FakeSteamGridDb.Key;
 
-    private static readonly LauncherInfo Other = new("other", "Anderer Launcher", "other", null);
+    internal static readonly LauncherInfo Other = new("other", "Anderer Launcher", "other", null);
 
-    private static Game GameOf(string id, string title) => new()
+    internal static Game GameOf(string id, string title) => new()
     {
         Id = id,
         LauncherId = Other.Id,
@@ -145,52 +145,27 @@ public sealed class WaitingListTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T491-14")]
-    public async Task Left_and_right_move_through_the_hits_up_and_down_through_the_games_round_at_the_ends()
-    {
-        using var arcadia = await StartAsync();
-        var list = OpenList(arcadia);
-
-        Assert.Equal(("Echo Drift", AppTexts.WaitingPosition(number: 1, count: 3)), (list.CurrentTitle, list.Position));
-        Assert.True(list.Hits[0].IsFocused);
-        arcadia.Press(UiAction.Right);
-        Assert.True(list.Hits[1].IsFocused);
-        arcadia.Press(UiAction.Right);
-        Assert.True(list.Hits[0].IsFocused);
-        arcadia.Press(UiAction.Left);
-        Assert.True(list.Hits[1].IsFocused);
-
-        arcadia.Press(UiAction.Up);
-        Assert.Equal("Iron Ember", list.CurrentTitle);
-        Assert.True(list.Hits[0].IsFocused);
-        arcadia.Press(UiAction.Down);
-        Assert.Equal("Echo Drift", list.CurrentTitle);
-        arcadia.Press(UiAction.Down);
-        Assert.Equal(("Golden Crown", true), (list.CurrentTitle, list.Games[1].IsCurrent));
-        Assert.Equal((string.Empty, false), (list.Hits[1].YearText, list.Hits[1].HasYear));
-    }
-
-    [AvaloniaFact]
     [Trait("TestCase", "T491-15")]
     [Trait("TestCase", "T491-16")]
     [Trait("TestCase", "T491-17")]
+    [Trait("TestCase", "T506-84")]
+    [Trait("TestCase", "T506-87")]
     public async Task A_takes_the_hit_Y_skips_and_after_the_last_game_B_comes_back_to_the_row()
     {
         using var arcadia = await StartAsync();
         var list = OpenList(arcadia);
 
-        arcadia.Press(UiAction.Right);
-        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
         await list.Loading;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(("Golden Crown", AppTexts.WaitingPosition(number: 1, count: 2)), (list.CurrentTitle, list.Position));
+        Assert.Equal(("Golden Crown", AppTexts.WaitingPosition(number: 1, count: 2), false), (list.Hits!.Title, list.Position, list.InHits));
         Assert.Equal("https://cdn.example/grid/502.png", CoverOrigin(arcadia, Games[0]));
 
         arcadia.Press(UiAction.Status);
-        Assert.Equal("Iron Ember", list.CurrentTitle);
+        Assert.Equal("Iron Ember", list.Hits!.Title);
         Assert.Null(CoverOrigin(arcadia, Games[1]));
-        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
         await list.Loading;
         Dispatcher.UIThread.RunJobs();
 
@@ -215,7 +190,7 @@ public sealed class WaitingListTests
 
         var again = arcadia.Main.WaitingList!;
         Assert.Equal(["Echo Drift", "Golden Crown", "Iron Ember"], again.Games.Select(g => g.Title));
-        Assert.Equal("Echo Drift", again.CurrentTitle);
+        Assert.Equal("Echo Drift", again.Hits!.Title);
         Assert.True(list != again);
     }
 
@@ -226,11 +201,30 @@ public sealed class WaitingListTests
         using var arcadia = await StartAsync();
         var list = OpenList(arcadia);
 
-        Assert.All(list.Hits, hit => Assert.Null(hit.Cover));
-        await list.Covers.WaitAsync(TimeSpan.FromSeconds(10));
-        Dispatcher.UIThread.RunJobs();
+        Assert.All(list.Hits!.Hits, hit => Assert.Null(hit.Image));
+        await ShownAsync(list);
 
-        Assert.All(list.Hits, hit => Assert.NotNull(hit.Cover));
+        Assert.All(list.Hits!.Hits, hit => Assert.NotNull(hit.Image));
+    }
+
+    /// <summary>Real time passes, with the UI thread's jobs run, until the condition holds; fails after 5 s.</summary>
+    internal static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var limit = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < limit, "Die Bedingung trat nicht innerhalb von 5 s ein.");
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>The focus rested on the current game: its hits checked and their tiles loaded.</summary>
+    internal static async Task ShownAsync(WaitingListViewModel list)
+    {
+        await list.Hits!.Ready.WaitAsync(TimeSpan.FromSeconds(10));
+        await list.Hits.Images.WaitAsync(TimeSpan.FromSeconds(10));
+        Dispatcher.UIThread.RunJobs();
     }
 
     [AvaloniaFact]
@@ -245,11 +239,12 @@ public sealed class WaitingListTests
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(["Golden Crown", "Iron Ember"], list.Games.Select(g => g.Title));
-        Assert.Equal("Golden Crown", list.CurrentTitle);
+        Assert.Equal("Golden Crown", list.Hits!.Title);
     }
 
     [AvaloniaFact]
     [Trait("TestCase", "T491-26")]
+    [Trait("TestCase", "T506-86")]
     public async Task The_whole_way_works_with_the_controller_alone_and_b_goes_back()
     {
         using var arcadia = await ArcadiaDriver.StartAsync([Launcher], Settings, imageServer: Images());
@@ -263,12 +258,13 @@ public sealed class WaitingListTests
         arcadia.FocusRow(ArtworkNameRows.WaitingKey);
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
-        arcadia.Press(UiAction.Right);
-        arcadia.Press(UiAction.Down);
-        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Accept);
         await list.Loading;
         Dispatcher.UIThread.RunJobs();
-        arcadia.Press(UiAction.Status);
+
+        // Y in the hits skips and comes back to the games list, as A does.
+        arcadia.Press(UiAction.Accept).Press(UiAction.Status);
+        Assert.False(list.InHits);
         arcadia.Press(UiAction.Back);
 
         Assert.Null(arcadia.Main.WaitingList);

@@ -58,6 +58,7 @@ public sealed class ArtworkSourceRows
                 Group = OrderGroup,
                 PanelTitle = NameOf(source).ToUpperInvariant(),
                 Info = InfoOf(source),
+                ValueInfos = [AppTexts.DataSourcesSourceOffInfo, AppTexts.DataSourcesSourceOnInfo],
             };
         }
 
@@ -81,11 +82,11 @@ public sealed class ArtworkSourceRows
         {
             Group = ArtworkGroup,
             Subtitle = AppTexts.DataSourcesCropSubtitle,
+            ValueInfos = [AppTexts.DataSourcesCropLittleInfo, AppTexts.DataSourcesCropNormalInfo, AppTexts.DataSourcesCropMuchInfo],
             Info =
             [
                 new InfoText(AppTexts.DataSourcesCropInfo),
                 new InfoText(AppTexts.DataSourcesCropInfoOrder),
-                new InfoSection(AppTexts.DataSourcesCropChoiceHeading, [new InfoText(AppTexts.DataSourcesCropChoice)]),
                 new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesCropWhen)]),
             ],
         };
@@ -326,7 +327,6 @@ public sealed class ArtworkSourceRows
         .. source == ArtworkSourceKind.SteamGridDb
             ? (IReadOnlyList<InfoBlock>)[new InfoText(AppTexts.DataSourcesSteamGridDbInfo)]
             : [new InfoText(AppTexts.DataSourcesLauncherImagesInfo), new InfoSection(AppTexts.DataSourcesWhoDeliversHeading, [new InfoText(AppTexts.DataSourcesWhoDelivers)])],
-        new InfoSection(AppTexts.DataSourcesSourceSwitchHeading, [new InfoText(AppTexts.DataSourcesSourceOffInfo)]),
         new InfoSection(AppTexts.DataSourcesOrderHeading, [new InfoText(AppTexts.DataSourcesOrderInfo), new InfoText(AppTexts.DataSourcesOrderMove)]),
         new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesOrderWhen)]),
     ];

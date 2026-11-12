@@ -1014,12 +1014,12 @@ public sealed partial class ArtworkService : IDisposable
             _unknownById[game.Key] = true;
         }
 
-        if (await MatchedGameAsync(game, run, cancel) is not { } gameId)
+        if (await MatchedGameAsync(game, kind, run, cancel) is not { } gameId)
         {
             return null;
         }
 
-        var byName = await steamGridDb.ImagesOfGameAsync(gameId, kind, cancel);
+        var byName = await ImagesOfMatchAsync(gameId, kind, cancel);
         run.SteamGridDbAsked++;
         return StopsSteamGridDb(byName.Outcome, run) ? null : byName;
     }

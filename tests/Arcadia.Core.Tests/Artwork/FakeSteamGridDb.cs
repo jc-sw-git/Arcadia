@@ -28,6 +28,11 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
     /// <summary>Every request waits until it is cancelled (no answer, the client's timeout).</summary>
     public bool Hangs { get; set; }
 
+    private int _hanging;
+
+    /// <summary>Requests hanging right now, until their caller cancels them.</summary>
+    public int Hanging => Volatile.Read(ref _hanging);
+
     /// <summary>Every answer comes this much later, in real time (a slow service for the speed tests).</summary>
     public TimeSpan Delay { get; set; }
 
@@ -36,6 +41,12 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
 
     /// <summary>Every request answers this status (e.g. 500); null: the normal answers.</summary>
     public HttpStatusCode? Failure { get; set; }
+
+    /// <summary>Requests to these paths (e.g. <c>grids/game/501</c>) answer with a server error, the others normally.</summary>
+    public HashSet<string> FailingPaths { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Requests to these paths answer this much later, in real time, so answers can arrive out of order.</summary>
+    public Dictionary<string, TimeSpan> SlowPaths { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Every answer's body, instead of the normal JSON; null: the normal answers.</summary>
     public string? Body { get; set; }
@@ -101,7 +112,15 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
 
         if (Hangs)
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            Interlocked.Increment(ref _hanging);
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _hanging);
+            }
         }
 
         if (Delay > TimeSpan.Zero)
@@ -128,6 +147,16 @@ internal sealed class FakeSteamGridDb : HttpMessageHandler
         if (Failure is { } failure)
         {
             return new HttpResponseMessage(failure);
+        }
+
+        if (SlowPaths.TryGetValue(request.RequestUri!.AbsolutePath.Replace("/api/v2/", string.Empty, StringComparison.Ordinal), out var slow))
+        {
+            await Task.Delay(slow, cancellationToken);
+        }
+
+        if (FailingPaths.Count > 0 && FailingPaths.Contains(request.RequestUri!.AbsolutePath.Replace("/api/v2/", string.Empty, StringComparison.Ordinal)))
+        {
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
         }
 
         if (Body is { } body)

@@ -63,6 +63,7 @@ public partial class MainWindow : Window
     private bool _draggingRow;
     private SearchViewModel? _search;
     private SettingsPageViewModel? _settingsPage;
+    private SettingsRowViewModel? _infoRow;
     private readonly TabStrip _tabs;
     private readonly TabStrip _categories;
 
@@ -247,8 +248,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // A text being written in the settings (#137): keys that type nothing act on it, the rest arrive as text.
-        if (_viewModel?.Settings?.Selected.Editor is { } editor)
+        // A text being written in the settings (#137) or the waiting list (#506): keys that type nothing act on it, the
+        // rest arrive as text.
+        if (_viewModel?.OpenTextEditor is { } editor)
         {
             if (editor.HandleKey(e.Key))
             {
@@ -332,8 +334,8 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// On the settings page Shift+Q/E switch the category as LB/RB do and Q/E the tabs inside one as LT/RT do, e.g. a
-    /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Shift+W/S (and Page Up/Down)
-    /// scroll the info panel as RS does.
+    /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Page Up/Down scroll the info panel
+    /// as RS does (Shift+W/S is RS everywhere, UiActionMap).
     /// </summary>
     private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
     {
@@ -341,8 +343,8 @@ public partial class MainWindow : Window
         (Key.E, KeyModifiers.Shift) => UiAction.NextTab,
         (Key.Q, KeyModifiers.None) => UiAction.PreviousPage,
         (Key.E, KeyModifiers.None) => UiAction.NextPage,
-        (Key.W, KeyModifiers.Shift) or (Key.PageUp, _) => UiAction.SecondaryUp,
-        (Key.S, KeyModifiers.Shift) or (Key.PageDown, _) => UiAction.SecondaryDown,
+        (Key.PageUp, _) => UiAction.SecondaryUp,
+        (Key.PageDown, _) => UiAction.SecondaryDown,
         _ => null,
     };
 
@@ -479,7 +481,7 @@ public partial class MainWindow : Window
 
     private void OnTextInput(object? sender, TextInputEventArgs e)
     {
-        if (_viewModel?.Settings?.Selected.Editor is { } editor && !string.IsNullOrEmpty(e.Text))
+        if (_viewModel?.OpenTextEditor is { } editor && !string.IsNullOrEmpty(e.Text))
         {
             editor.Type(e.Text);
             e.Handled = true;
@@ -682,6 +684,7 @@ public partial class MainWindow : Window
         }
 
         _settingsPage = page;
+        FollowInfoRow(page?.FocusedRow);
         if (page is not null)
         {
             page.FocusMoved += OnSettingsFocusMoved;
@@ -699,6 +702,7 @@ public partial class MainWindow : Window
         }
 
         _categories.Center(page.Selected);
+        FollowInfoRow(page.FocusedRow);
         InfoScroller.Offset = default;
         UpdateInfoOverflow();
         var byPointer = _focusedByPointer;
@@ -709,6 +713,33 @@ public partial class MainWindow : Window
             SettingsRowsFade.ScrollIntoView(container, row.StartsGroup ? new Thickness(0, SettingsGroupRoom, 0, 0) : default);
         }
     }, DispatcherPriority.Loaded);
+
+    /// <summary>The row the info panel explains: a change of its value or of its greying brings the panel to its top (#506).</summary>
+    private void FollowInfoRow(SettingsRowViewModel? row)
+    {
+        if (_infoRow is not null)
+        {
+            _infoRow.PropertyChanged -= OnInfoRowPropertyChanged;
+        }
+
+        _infoRow = row;
+        if (row is not null)
+        {
+            row.PropertyChanged += OnInfoRowPropertyChanged;
+        }
+    }
+
+    private void OnInfoRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is "ValueText" or nameof(SettingsRowViewModel.IsDimmed))
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                InfoScroller.Offset = default;
+                UpdateInfoOverflow();
+            }, DispatcherPriority.Loaded);
+        }
+    }
 
     private void OnInfoScrollRequested(object? sender, int direction)
     {

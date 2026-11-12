@@ -114,7 +114,7 @@ public sealed partial class DataSourcesTests
         var source = Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher));
         var crop = Row(arcadia, "artwork-crop");
         Assert.Contains(Texts(source.Info), text => text == AppTexts.DataSourcesOrderWhen);
-        Assert.Contains(Texts(source.Info), text => text == AppTexts.DataSourcesSourceOffInfo);
+        Assert.Equal([AppTexts.DataSourcesSourceOffInfo, AppTexts.DataSourcesSourceOnInfo], source.ValueBoxes.Select(box => box.Text));
         Assert.Contains(Texts(crop.Info), text => text == AppTexts.DataSourcesCropWhen);
         Assert.All(Texts([.. source.Info, .. crop.Info]), text => Assert.DoesNotContain("nächsten Suche", text, StringComparison.Ordinal));
     }

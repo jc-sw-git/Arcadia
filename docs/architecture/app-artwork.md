@@ -33,6 +33,9 @@ buffers (`MALLOC_MMAP_THRESHOLD_=131072` keeps it flat); no managed or native le
 page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and the warning toast.
 
 "Warten auf deine Auswahl" (#491): `Settings/ArtworkNameRows` ("Bei mehreren Treffern", the waiting row with its count)
-in "Datenquellen"; `ViewModels/WaitingListViewModel` (games, the current game's hits with their covers loading off the
-UI thread) over `ArtworkService.ByName`; `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens it over the
-settings; while open it takes every press before the settings.
+in "Datenquellen"; `ViewModels/WaitingListViewModel` (the games list and the two levels) and `WaitingHitsViewModel` (one
+game's hits: what is sought, the hit checks and tile images off the UI thread once the focus rests, "Eigener
+Suchbegriff" with the settings' on-screen keyboard) over `ArtworkService.ByName` (`CheckWaitingHitAsync`,
+`SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`); `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens
+it over the settings; while open it takes every press before the settings, and real keys go to its field
+(`MainViewModel.OpenTextEditor`).

@@ -22,6 +22,16 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
     : SettingsRowViewModel(key, title)
 {
     private string _subtitle = string.Empty;
+    private IReadOnlyList<ViewModels.ValueBox> _valueBoxes = [];
+
+    /// <summary>What "Aus" and "An" do, for a box each in the info panel while the row is a switch (#506).</summary>
+    public (string Off, string On) ValueInfos
+    {
+        init => _valueBoxes = [new(AppTexts.Off, value.Off), new(AppTexts.On, value.On)];
+    }
+
+    /// <summary>Only the switch has values; while the row installs or is unavailable, A is an action.</summary>
+    public override IReadOnlyList<ViewModels.ValueBox> ValueBoxes => IsSwitch ? _valueBoxes : [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSwitch), nameof(IsInstall))]
@@ -80,6 +90,9 @@ public partial class SetupSwitchRowViewModel(string key, string title, Action<bo
 
         Mode = mode;
         IsOn = isOn;
+        ViewModels.ValueBox.ShowCurrent(_valueBoxes, ValueText);
+        OnPropertyChanged(nameof(ValueBoxes));
+        OnPropertyChanged(nameof(HasValueBoxes));
         IsLocked = isLocked;
         IsDimmed = mode == SetupRowMode.Unavailable;
         Subtitle = mode == SetupRowMode.Unavailable ? unavailableText : status ?? _subtitle;

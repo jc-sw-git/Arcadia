@@ -74,7 +74,8 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
     its `Dialog`); `AboutSettingsViewModel`.
   - Rows (`SettingsRowViewModel`): `ChoiceRowViewModel`, `SwitchRowViewModel`, `ActionRowViewModel`,
     `InfoRowViewModel`, `TextRowViewModel` with `TextEditorViewModel` (a text written with the on-screen keyboard and
-    checked while typed). Each has its `Info` as `InfoBlock`s for the info panel, optionally a `Preview` box above it
+    checked while typed). Each has its `Info` (`InfoBlock`s) for the info panel, below its `ValueBoxes` (#506,
+    `Views/ValueBoxesView`) and a `DimmedNote` on top; optionally a `Preview` box above it
     and a `Lamp` beside the title.
   - `SettingsChanges` saves at once and reports a failed save.
   - `ControllerLayoutsViewModel`: the modal "Controller zuordnen" (#238), one `ControllerLayoutRowViewModel` per model.

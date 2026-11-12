@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
+             x:Class="Arcadia.App.Views.ValueBoxesView"
+             x:DataType="views:ValueBoxesView">
+
+  <!-- One box per value of a value row (#506), in the detail page's info box and the settings' info panel alike; the
+       current value's box is highlighted. Sizes and colours are styles in Theme.axaml (Border.valueBox). -->
+  <ItemsControl ItemsSource="{Binding $parent[views:ValueBoxesView].Boxes}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Spacing="10" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:ValueBox">
+        <Border Classes="valueBox" Classes.current="{Binding IsCurrent}">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="valueBoxTitle" Text="{Binding Title}" />
+            <TextBlock Classes="valueBoxText" ctl:ButtonTextBlock.Text="{Binding Text}" />
+          </StackPanel>
+        </Border>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

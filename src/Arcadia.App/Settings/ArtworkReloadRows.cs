@@ -47,12 +47,8 @@ public sealed class ArtworkReloadRows
         {
             Group = AppTexts.DataSourcesArtworkGroup,
             Subtitle = AppTexts.DataSourcesOverwriteSubtitle,
-            Info =
-            [
-                new InfoText(AppTexts.DataSourcesOverwriteInfo),
-                new InfoSection(AppTexts.DataSourcesOverwriteOffHeading, [new InfoText(AppTexts.DataSourcesOverwriteOff)]),
-                new InfoSection(AppTexts.DataSourcesOverwriteOnHeading, [new InfoText(AppTexts.DataSourcesOverwriteOn)]),
-            ],
+            ValueInfos = [AppTexts.DataSourcesOverwriteOff, AppTexts.DataSourcesOverwriteOn],
+            Info = [new InfoText(AppTexts.DataSourcesOverwriteInfo)],
         };
         Refresh();
     }

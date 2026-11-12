@@ -1,82 +1,38 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
+using Arcadia.App.Settings;
 using Arcadia.Core.Artwork;
-using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>One game on the waiting list, left: its initial, name, launcher and how many hits it has.</summary>
-public sealed partial class WaitingGameViewModel(WaitingGame waiting, Action<WaitingGameViewModel> pick) : ViewModelBase
-{
-    public WaitingGame Waiting { get; } = waiting;
-
-    public string Key => Waiting.Game.Key;
-
-    public string Title => Waiting.Game.Title;
-
-    public string Monogram => Formatting.Monogram(Waiting.Game.Title);
-
-    public string LauncherName => Waiting.LauncherName;
-
-    public string HitsText => AppTexts.WaitingHitCount(Waiting.Hits.Count);
-
-    [ObservableProperty]
-    public partial bool IsCurrent { get; set; }
-
-    /// <summary>A click makes it the current game.</summary>
-    [RelayCommand]
-    private void Pick() => pick(this);
-}
-
-/// <summary>One hit of the current game, right: its cover (a placeholder with its name until it is there), name and year.</summary>
-public sealed partial class WaitingHitViewModel(SteamGridDbHit hit, Action<WaitingHitViewModel> pick) : ViewModelBase
-{
-    public SteamGridDbHit Hit { get; } = hit;
-
-    public string Name => Hit.Name;
-
-    /// <summary>The year it came out; empty when SteamGridDB doesn't know it.</summary>
-    public string YearText => Hit.Year?.ToString(Formatting.Culture) ?? string.Empty;
-
-    public bool HasYear => Hit.Year is not null;
-
-    [ObservableProperty]
-    public partial ArtworkFile? Cover { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsFocused { get; set; }
-
-    /// <summary>A click focuses it; A takes it.</summary>
-    [RelayCommand]
-    private void Pick() => pick(this);
-}
-
 /// <summary>
-/// "Warten auf deine Auswahl" (#491, prototype in #13): the games SteamGridDB found only by name with several matching
-/// games, left, and the current game's hits, right. Left/right move through the hits, up/down change the game (D4), both
-/// round at the ends; A takes the focused hit and moves on to the next game, Y skips the game, B closes. The list follows
-/// the service: games found by a later search come at the end, a game that left the library goes.
+/// "Warten auf deine Auswahl" (#491, two levels since #506): the games SteamGridDB found only by name with several
+/// matching games, left, and the current game's hits, right (<see cref="WaitingHitsViewModel"/>). In the games list
+/// ▲ ▼ choose a game (round at the ends), A goes into its hits, B closes; in the hits the D-pad moves through the grid,
+/// A takes the hit and comes back to the games list on the next waiting game, B comes back without. Y skips the game in
+/// both. The list follows the service: games found by a later search come at the end, a game that left the library goes.
 /// </summary>
-/// <remarks>UI thread only. Hit covers load in the background for the game the focus rests on, all of its hits at once.</remarks>
+/// <remarks>
+/// UI thread only. Moving through the games only marks the game and shows the hits already known; nothing is asked or
+/// loaded until the focus rests on one (<see cref="WaitingHitsViewModel.Start"/>), so a held ▼ stays smooth.
+/// </remarks>
 public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 {
-    /// <summary>How long the focus rests on a game before its covers load.</summary>
-    private static readonly TimeSpan CoverDelay = TimeSpan.FromMilliseconds(150);
-
     private readonly ArtworkService _artwork;
+    private readonly WaitingKeyboard _keyboard;
     private readonly Action<WaitingListViewModel> _close;
-    private CancellationTokenSource? _coverLoad;
-    private int _focus;
     private bool _disposed;
 
-    /// <param name="close">B or the ✕: back to the row "Warten auf deine Auswahl".</param>
-    public WaitingListViewModel(ArtworkService artwork, Action<WaitingListViewModel> close)
+    /// <param name="keyboard">The settings' on-screen keyboard, for "Eigener Suchbegriff".</param>
+    /// <param name="close">B in the games list or the ✕: back to the row "Warten auf deine Auswahl".</param>
+    public WaitingListViewModel(ArtworkService artwork, WaitingKeyboard keyboard, Action<WaitingListViewModel> close)
     {
         _artwork = artwork;
+        _keyboard = keyboard;
         _close = close;
         _artwork.WaitingChanged += OnWaitingChanged;
         Refresh();
@@ -86,7 +42,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     {
         _disposed = true;
         _artwork.WaitingChanged -= OnWaitingChanged;
-        _coverLoad?.Cancel();
+        Hits?.Dispose();
     }
 
     public static string Title => AppTexts.WaitingTitle;
@@ -95,11 +51,18 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<WaitingGameViewModel> Games { get; } = [];
 
-    public ObservableCollection<WaitingHitViewModel> Hits { get; } = [];
-
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasGames), nameof(IsDone), nameof(Position), nameof(GamesHeading), nameof(CurrentTitle), nameof(Intro))]
+    [NotifyPropertyChangedFor(nameof(HasGames), nameof(IsDone), nameof(Position), nameof(GamesHeading))]
     public partial WaitingGameViewModel? CurrentGame { get; private set; }
+
+    /// <summary>The current game's hits; null after the last game.</summary>
+    [ObservableProperty]
+    public partial WaitingHitsViewModel? Hits { get; private set; }
+
+    /// <summary>The focus is in the hits (the second level), not in the games list.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ChooseHint), nameof(AcceptHint), nameof(BackHint))]
+    public partial bool InHits { get; private set; }
 
     public bool HasGames => CurrentGame is not null;
 
@@ -110,41 +73,47 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     public string GamesHeading => Games.Count == 1 ? AppTexts.WaitingGamesOne : AppTexts.WaitingGames(Games.Count);
 
-    public string CurrentTitle => CurrentGame?.Title ?? string.Empty;
+    public string ChooseHint => InHits ? AppTexts.WaitingChooseHitHint : AppTexts.WaitingChooseHint;
 
-    public string Intro => CurrentGame is null ? string.Empty : AppTexts.WaitingIntro(CurrentGame.Waiting.Hits.Count);
+    public string AcceptHint => !InHits ? AppTexts.WaitingOpenHitsHint
+        : Hits?.Zone == WaitingHitsFocus.Term ? AppTexts.WaitingSearchHint
+        : Hits?.Zone == WaitingHitsFocus.Reset ? AppTexts.WaitingReset
+        : AppTexts.WaitingTakeHint;
+
+    public string BackHint => InHits ? AppTexts.Back : AppTexts.Close;
 
     /// <summary>The last choice being made (its images loading); the tests wait for it.</summary>
     public Task Loading { get; private set; } = Task.CompletedTask;
 
-    /// <summary>The covers of the game shown being loaded; the tests wait for it.</summary>
-    public Task Covers { get; private set; } = Task.CompletedTask;
-
-    /// <summary>The focus moved: the view brings the current game into sight.</summary>
+    /// <summary>The focus moved in the games list: the view brings the current game into sight.</summary>
     public event EventHandler? FocusMoved;
 
-    /// <summary>A press while the list is open; it takes every one.</summary>
+    /// <summary>A press while the list is open; it takes every one. With the keyboard out, the keyboard takes it.</summary>
     public void Handle(UiAction action)
     {
+        if (Hits?.Editor is { } editor)
+        {
+            editor.Handle(action);
+            return;
+        }
+
         switch (action)
         {
-            case UiAction.Left when HasGames:
-                FocusHit(GridFocus.Step(_focus, Hits.Count, Hits.Count, Hits.Count, -1, 0, HeldPress.IsRepeat));
+            case UiAction.Up or UiAction.Down when HasGames && !InHits:
+                ShowGame(Games[GridFocus.Step(Games.IndexOf(CurrentGame!), Games.Count, Games.Count, 1, 0, action == UiAction.Up ? -1 : 1, HeldPress.IsRepeat)]);
                 break;
-            case UiAction.Right when HasGames:
-                FocusHit(GridFocus.Step(_focus, Hits.Count, Hits.Count, Hits.Count, 1, 0, HeldPress.IsRepeat));
+            case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right or UiAction.Accept when InHits:
+                Hits!.Handle(action);
+                OnPropertyChanged(nameof(AcceptHint));
                 break;
-            case UiAction.Up when HasGames:
-                ShowGame(Games[GridFocus.Step(Games.IndexOf(CurrentGame!), Games.Count, Games.Count, 1, 0, -1, HeldPress.IsRepeat)]);
-                break;
-            case UiAction.Down when HasGames:
-                ShowGame(Games[GridFocus.Step(Games.IndexOf(CurrentGame!), Games.Count, Games.Count, 1, 0, 1, HeldPress.IsRepeat)]);
-                break;
-            case UiAction.Accept:
-                Take();
+            case UiAction.Accept when HasGames:
+                EnterHits();
                 break;
             case UiAction.Status:
                 Skip();
+                break;
+            case UiAction.Back when InHits:
+                LeaveHits();
                 break;
             case UiAction.Back:
                 _close(this);
@@ -152,23 +121,14 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>A button let go: ends a held erase, shift or AltGr on the keyboard.</summary>
+    public void Release(UiAction action) => Hits?.Editor?.Release(action);
+
+    /// <summary>Drops held buttons, e.g. when the window loses focus.</summary>
+    public void CancelHeldButtons() => Hits?.Editor?.CancelHeldButtons();
+
     [RelayCommand]
     private void Close() => _close(this);
-
-    [RelayCommand]
-    private void Take()
-    {
-        if (CurrentGame is not { } game || _focus >= Hits.Count)
-        {
-            return;
-        }
-
-        // The choice is kept at once and the next game becomes current; the images come off the UI thread meanwhile.
-        var choosing = _artwork.ChooseAsync(game.Waiting.Game, Hits[_focus].Hit);
-        Refresh();
-        Loading = choosing;
-        choosing.Forget(AppTexts.ErrorContextWaitingList);
-    }
 
     [RelayCommand]
     private void Skip()
@@ -176,8 +136,43 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         if (CurrentGame is { } game)
         {
             _artwork.Skip(game.Waiting.Game);
+            InHits = false;
             Refresh();
         }
+    }
+
+    /// <summary>The A hint in the footer: what A does where the focus is.</summary>
+    [RelayCommand]
+    private void Accept() => Handle(UiAction.Accept);
+
+    private void EnterHits()
+    {
+        if (Hits is { } hits)
+        {
+            InHits = true;
+            hits.Enter();
+        }
+    }
+
+    private void LeaveHits()
+    {
+        InHits = false;
+        Hits?.Leave();
+    }
+
+    /// <summary>A or a click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>
+    private void Take(WaitingHitViewModel hit)
+    {
+        if (CurrentGame is not { } game || _disposed)
+        {
+            return;
+        }
+
+        var choosing = _artwork.ChooseAsync(game.Waiting.Game, hit.Hit);
+        InHits = false;
+        Refresh();
+        Loading = choosing;
+        choosing.Forget(AppTexts.ErrorContextWaitingList);
     }
 
     private void OnWaitingChanged(object? sender, EventArgs e) =>
@@ -190,8 +185,8 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         });
 
     /// <summary>
-    /// The games as the service has them now; the current one stays, or the one after it when it left. Only what changed
-    /// is removed, moved or added, so a press on a long list doesn't rebuild it (and the view keeps its rows).
+    /// The games as the service has them now; the current one stays, or the one after it when it left (the first after
+    /// the last). Only what changed is removed, moved or added, so a press on a long list doesn't rebuild it.
     /// </summary>
     private void Refresh()
     {
@@ -201,8 +196,11 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         var wanted = waiting.ToDictionary(w => w.Game.Key, StringComparer.Ordinal);
         for (var i = Games.Count - 1; i >= 0; i--)
         {
-            // Gone, or found again with other hits: it leaves, a new one takes its place below.
-            if (!wanted.TryGetValue(Games[i].Key, out var now) || !ReferenceEquals(now.Hits, Games[i].Waiting.Hits))
+            if (wanted.TryGetValue(Games[i].Key, out var now))
+            {
+                Games[i].Waiting = now;
+            }
+            else
             {
                 Games.RemoveAt(i);
             }
@@ -227,7 +225,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             }
         }
 
-        var next = Games.FirstOrDefault(g => g.Key == currentKey) ?? (Games.Count == 0 ? null : Games[Math.Min(currentIndex, Games.Count - 1)]);
+        var next = Games.FirstOrDefault(g => g.Key == currentKey) ?? (Games.Count == 0 ? null : Games[currentIndex < Games.Count ? currentIndex : 0]);
         if (next != CurrentGame)
         {
             ShowGame(next);
@@ -237,71 +235,25 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(GamesHeading));
     }
 
+    /// <summary>
+    /// The game the focus moves to: marked at once with the hits already known; checks and images wait until the focus
+    /// rests on it. A click on a game in the hits level brings the focus back to the games list.
+    /// </summary>
     private void ShowGame(WaitingGameViewModel? game)
     {
         if (game is not null && game == CurrentGame)
         {
+            LeaveHits();
             return;
         }
 
-        MarkCurrent(game);
-        _coverLoad?.Cancel();
-        Hits.Clear();
-        if (game is null)
-        {
-            return;
-        }
-
-        foreach (var hit in game.Waiting.Hits)
-        {
-            Hits.Add(new WaitingHitViewModel(hit, h => FocusHit(Hits.IndexOf(h))));
-        }
-
-        FocusHit(0);
-        _coverLoad = new CancellationTokenSource();
-        var covers = LoadCoversAsync(game, [.. Hits], _coverLoad.Token);
-        Covers = covers;
-        covers.Forget(AppTexts.ErrorContextWaitingList);
-    }
-
-    private void MarkCurrent(WaitingGameViewModel? game)
-    {
         CurrentGame?.IsCurrent = false;
         game?.IsCurrent = true;
         CurrentGame = game;
+        InHits = false;
+        Hits?.Dispose();
+        Hits = game is null ? null : new WaitingHitsViewModel(_artwork, game.Waiting, _keyboard, Take);
+        Hits?.Start();
         FocusMoved?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void FocusHit(int index)
-    {
-        _focus = Math.Clamp(index, 0, Math.Max(Hits.Count - 1, 0));
-        for (var i = 0; i < Hits.Count; i++)
-        {
-            Hits[i].IsFocused = i == _focus;
-        }
-    }
-
-    /// <summary>
-    /// The covers of the game shown, off the UI thread, once the focus rests on it: moving through many games with the
-    /// D-pad asks SteamGridDB only for the one it stops at. A game shown meanwhile cancels the rest.
-    /// </summary>
-    private async Task LoadCoversAsync(WaitingGameViewModel game, IReadOnlyList<WaitingHitViewModel> hits, CancellationToken cancel)
-    {
-        try
-        {
-            await Task.Delay(CoverDelay, cancel);
-            await Task.WhenAll(hits.Select(async hit =>
-            {
-                var cover = await Task.Run(() => _artwork.HitCoverAsync(game.Waiting.Game, hit.Hit, cancel), cancel);
-                if (!cancel.IsCancellationRequested)
-                {
-                    hit.Cover = cover;
-                }
-            }));
-        }
-        catch (OperationCanceledException) when (cancel.IsCancellationRequested)
-        {
-            // Another game is shown, or the list closed.
-        }
     }
 }

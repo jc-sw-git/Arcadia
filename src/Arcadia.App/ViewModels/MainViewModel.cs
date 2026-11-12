@@ -486,6 +486,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _repeats.Release(action);
         PanDialogs.Release(action);
         _actions.Release(action);
+        WaitingList?.Release(action);
         foreach (var page in OpenPages())
         {
             page.Release(action);
@@ -498,6 +499,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _repeats.Clear();
         PanDialogs.CancelHold();
         _actions.CancelHold();
+        WaitingList?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
             page.CancelHeldButtons();
@@ -649,7 +651,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Search is { } search)
         {
             var hit = Carousel.Find(search.Hits, key, 0);
-            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, focus);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus);
             return;
         }
 
@@ -661,7 +663,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), focus);
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus);
     }
 
     /// <summary>
@@ -1076,6 +1078,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
 
         _livePages = [];
+
+        // Closing with the waiting list open cancels its checks and own search instead of leaving them running.
+        WaitingList = null;
         AppErrors.Occurred -= OnAppError;
         PanDialogs.Dispose();
         ControllerMode.Dispose();

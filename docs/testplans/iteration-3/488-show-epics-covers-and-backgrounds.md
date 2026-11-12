@@ -1,6 +1,6 @@
 # #488 Show Epic's covers and backgrounds from its catalog
 
-**Status:** Automated: T488-1 to T488-15 · QE: app run with `--demo --demo-games 200` (Epic formats cropped, no distortion) · Owner: T488-16, T488-17 passed
+**Status:** Automated: T488-1 to T488-15 · QE: app run with `--demo --demo-games 200` (Epic formats cropped, no distortion) · Open for the owner: none (T488-16, T488-17 passed)
 
 Automated tests read a recreated `catcache.bin` (Base64 JSON) with made-up catalog ids, app names and image URLs and a
 fake image server; nothing reaches Epic's real servers. "Shown" means at all four places: library tile, preview, detail

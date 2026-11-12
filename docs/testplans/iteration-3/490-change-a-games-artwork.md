@@ -1,6 +1,6 @@
 # #490 Change a game's artwork in "Artwork ändern", with own files and images set by hand
 
-**Status:** Automated: T490-1 to -20, -23 to -26, -31 · QE: T490-33 · Moved to #489 (struck through here): T490-21, -22, -27 (in part), -28 to -30, -32 · Owner: T490-34, T490-35 passed
+**Status:** Automated: T490-1 to -20, -23 to -26, -31 · QE: T490-33 · Moved to #489 (struck through here): T490-21, -22, -27 (in part), -28 to -30, -32 · Open for the owner: none (T490-34, T490-35 passed)
 
 - [x] **T490-1** Given a game's detail page, when the player presses A on "Artwork ändern", then the modal "Artwork ändern" opens for that game ("<Name> · <Launcher>"), tab "Cover", focus on the tile in use. The same from the game menu (≡ in the library and in the search). "Not yet available" appears nowhere any more. · E2E: yes
 - [x] **T490-2** Layout as in the prototype: left "Vorschau auf der Detailseite" with cover and background of the game, the part being changed marked, below it "Quelle", for SteamGridDB "Bewertung", for an own file "Datei", "Größe" where known, and "Gesetzt" ("von Hand" / "automatisch (Standard)"); right the label ("COVER · 2:3" or "HINTERGRUND · 3,1 : 1 WIE DER KOPF DER DETAILSEITE", with a key " · n VORSCHLÄGE"), then the tiles: "Eigene Datei", the launcher image, the suggestions. A tick marks the tile in use, the focus ring the focused one; cover tiles 2 : 3, background tiles 3.1 : 1, images cropped centred, not stretched. Colours from `Theme.axaml`. · E2E: yes (window test: layout and pixels)

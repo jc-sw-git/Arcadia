@@ -1,6 +1,6 @@
 # #491 Find artwork by name and let the player pick when several games match
 
-**Status:** Automated: T491-1 to -26 · QE: T491-27, run 2026-11-12, findings fixed and checked again · Owner: T491-28, T491-29 passed
+**Status:** Automated: T491-1 to -26 · QE: T491-27, run 2026-11-12, findings fixed and checked again · Open for the owner: none (T491-28, T491-29 passed)
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. Decisions D1 to D7

@@ -1,6 +1,6 @@
 # #487 Show real Steam covers and backgrounds in the library, preview, detail page and search
 
-**Status:** Automated: T487-1 to -20, -22 (T487-5's 404 case waits for a review finding) · QE: T487-21 (Linux; Windows timings with T487-23) · Owner: T487-23, T487-24, T487-25 passed
+**Status:** Automated: T487-1 to -20, -22 (T487-5's 404 case waits for a review finding) · QE: T487-21 (Linux; Windows timings with T487-23) · Open for the owner: none (T487-23, T487-24, T487-25 passed)
 
 - [x] **T487-1** A Steam game with `library_600x900.jpg` and `library_hero.jpg` directly in `appcache/librarycache/<appid>/`, no network: after the scan its cover and background are shown; no request leaves Arcadia. · E2E: yes
 - [x] **T487-2** The same images in a hash-named subfolder of `librarycache/<appid>/` are found the same way; a folder with only one of the two shows that one and the placeholder for the other. · E2E: no (variant: unit test of the Steam source)

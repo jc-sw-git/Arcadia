@@ -9,7 +9,7 @@ namespace Arcadia.Core.Tests.Artwork;
 
 /// <summary>
 /// #487: the background run that brings covers and backgrounds into the cache: the fitting-format choice, downloads and
-/// their failures, the cache's failure cases (T487-4 to T487-6, T487-8, T487-10, T487-12 to T487-17).
+/// their failures, the cache's failure cases (T487-4 to T487-6, T487-8, T487-10, T487-12 to T487-17; T507-1, T507-2).
 /// </summary>
 public sealed class ArtworkServiceTests : IDisposable
 {
@@ -223,6 +223,50 @@ public sealed class ArtworkServiceTests : IDisposable
         Assert.Null(_service.Of("steam:4000001"));
         await SearchAsync();
         Assert.NotNull(_service.Of("steam:4000001")!.Cover);
+    }
+
+    [Fact]
+    public async Task A_steam_image_that_doesnt_answer_doesnt_keep_epics_catalog_images_away()
+    {
+        // The owner's log: a Steam cover the server doesn't have, then that game's background hangs; Epic's library comes after.
+        const string epicCover = "https://cdn1.epicgames.example/made-up/cover.jpg";
+        _server.Fail(CoverUrl, HttpStatusCode.NotFound);
+        _server.Hang(HeroUrl);
+        _server.Serve(epicCover, TestImages.Jpeg(600, 900));
+        _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
+        _source.Hero = [new("steam-server", Download: new Uri(HeroUrl))];
+        var epicSource = new TestSource { Cover = [new("epic-catalog", Download: new Uri(epicCover))] };
+        var epic = new LauncherInfo("epic", "Epic Games", "epic", null);
+        var epicGame = new Game { Id = "MadeUpApp", LauncherId = "epic", Title = "Made-up Epic Game", Launch = new LaunchTarget.ProtocolUri("com.epicgames.launcher://apps/MadeUpApp?action=launch") };
+
+        _service.Update([new LibraryArtwork(new LauncherLibrary(Steam, [GameOf("4000001")]), _source), new LibraryArtwork(new LauncherLibrary(epic, [epicGame]), epicSource)]);
+        await _server.Hanging.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        _time.Advance(TimeSpan.FromSeconds(10));
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Only the host that hung waits for the next scan; the log names it, though the game logged its missing cover first.
+        Assert.NotNull(_service.Of("epic:MadeUpApp")?.Cover);
+        Assert.Contains(_log, l => l.Contains("steam:4000001: images.example antwortet nicht in 10 s", StringComparison.Ordinal));
+        Assert.Contains(_log, l => l.Contains("keine Verbindung zu images.example, der Rest folgt", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_host_that_cant_be_reached_is_not_asked_again_in_the_run_but_another_host_is()
+    {
+        const string otherHost = "https://other-images.example/4000002/cover.jpg";
+        _server.Unreachable(CoverUrl);
+        _server.Serve(otherHost, TestImages.Jpeg(600, 900));
+        var sources = new PerGameSource(new()
+        {
+            ["4000001"] = new TestSource { Cover = [new("steam-server", Download: new Uri(CoverUrl))] },
+            ["4000002"] = new TestSource { Cover = [new("steam-server", Download: new Uri(CoverUrl + "?2")), new("steam-server", Download: new Uri(otherHost))] },
+        });
+
+        await ScanAsync(new LauncherLibrary(Steam, [GameOf("4000001"), GameOf("4000002")]), sources);
+
+        Assert.Equal([CoverUrl, otherHost], _server.Requests.Select(r => r.RequestUri!.AbsoluteUri));
+        Assert.NotNull(_service.Of("steam:4000002")!.Cover);
+        Assert.Single(_log, l => l.Contains("keine Verbindung zu images.example (ConnectionError)", StringComparison.Ordinal));
     }
 
     [Fact]

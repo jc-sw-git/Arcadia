@@ -9,7 +9,7 @@ namespace Arcadia.Core.Tests.Artwork;
 
 /// <summary>
 /// #489: SteamGridDB as a second source of the artwork run: no request without a key, the order of the sources and
-/// "Zuschneiden erlaubt", a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23).
+/// "Zuschneiden erlaubt", a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23; T507-1).
 /// </summary>
 public sealed class ArtworkServiceSteamGridDbTests : IDisposable
 {
@@ -125,6 +125,21 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         Assert.Equal(0, _sgdb.Count);
         Assert.Equal(("steam-server", ArtworkSource.Launcher), (Cached()!.Hero!.Origin, Cached()!.Hero!.Source));
         Assert.Equal(new ArtworkSearchResult(0, 0, false, null), _service.Search.Result);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T507-1")]
+    public async Task A_launcher_host_that_cant_be_reached_leaves_steamgriddbs_image()
+    {
+        await WithKeyAsync();
+        _source.Cover = [new("steam-server", Download: new Uri(LauncherCover))];
+        _images.Unreachable(LauncherCover);
+        _sgdb.Cover("steam", Id, GridCover, 600, 900);
+        _images.Serve(GridCover, TestImages.Png(600, 900));
+
+        await ScanAsync();
+
+        Assert.Equal((ArtworkService.SteamGridDbOrigin, ArtworkSource.SteamGridDb), (Cached()!.Cover!.Origin, Cached()!.Cover!.Source));
     }
 
     [Fact]

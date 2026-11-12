@@ -23,13 +23,13 @@ namespace Arcadia.Core.Artwork;
 /// (Arcadia closed) is simply taken up by the next. What the player does in "Artwork ändern" (#490, ArtworkService.ByHand.cs)
 /// waits for the game the run is at, never for the whole run: each game is written under one lock. <see cref="Of"/> may be called from any thread; <see cref="Changed"/> and
 /// <see cref="Failed"/> are raised on the run's thread. Failures of single images are logged and leave the placeholder; no
-/// download outlives <see cref="DownloadTimeout"/>, and after a timeout or with no network the run downloads nothing more;
+/// download outlives <see cref="DownloadTimeout"/>, and after a timeout or no connection the run downloads nothing more from that host, while other hosts (another launcher's images, SteamGridDB's) still load;
 /// a key SteamGridDB turns down, or no connection to it, ends its part of the run. <see cref="SearchChanged"/> is raised on
 /// the run's thread too.
 /// </remarks>
 public sealed partial class ArtworkService : IDisposable
 {
-    /// <summary>The longest a download may take (#13); then the image waits for the next scan.</summary>
+    /// <summary>The longest a download may take (#13); then the image waits for the next search (#506).</summary>
     public static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(10);
 
     private static readonly TimeSpan ChangeBatch = TimeSpan.FromMilliseconds(250);
@@ -542,7 +542,7 @@ public sealed partial class ArtworkService : IDisposable
         {
             Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
                 + (run.SteamGridDbAsked > 0 ? $"; SteamGridDB {run.SteamGridDbAsked} gefragt" : string.Empty)
-                + (run.Offline ? "; keine Verbindung, der Rest folgt bei der nächsten Suche" : string.Empty)
+                + (run.OfflineHosts.Count > 0 ? $"; keine Verbindung zu {string.Join(", ", run.OfflineHosts.Order(StringComparer.Ordinal))}, der Rest folgt bei der nächsten Suche" : string.Empty)
                 + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty));
         }
 
@@ -950,7 +950,7 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         // A scan goes online only for new games (#506, Q7): the launchers' images to download wait for a search too.
-        if (run.Offline || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
+        if (run.OfflineHosts.Contains(url.IdnHost) || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
         {
             return null;
         }
@@ -1078,7 +1078,7 @@ public sealed partial class ArtworkService : IDisposable
 
     /// <summary>
     /// The image at <paramref name="url"/>, at most <see cref="ImageCheck.MaxBytes"/>; null if there is none, it is too large,
-    /// or the network fails (the run then downloads nothing more).
+    /// or the connection fails (the run then downloads nothing more from that host).
     /// </summary>
     private async Task<byte[]?> DownloadAsync(Game game, ArtworkKind kind, Uri url, RunState run, CancellationToken cancel)
     {
@@ -1137,21 +1137,30 @@ public sealed partial class ArtworkService : IDisposable
         }
         catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
         {
-            LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: {url.Host} antwortet nicht in {DownloadTimeout.TotalSeconds:0} s");
-            GoOffline(run);
+            if (GoOffline(run, url))
+            {
+                Log($"Artwork: {Name(kind)} von {game.Key}: {url.Host} antwortet nicht in {DownloadTimeout.TotalSeconds:0} s");
+            }
+
             return null;
         }
         catch (HttpRequestException e)
         {
-            LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: keine Verbindung zu {url.Host} ({e.HttpRequestError})");
-            GoOffline(run);
+            if (GoOffline(run, url))
+            {
+                Log($"Artwork: {Name(kind)} von {game.Key}: keine Verbindung zu {url.Host} ({e.HttpRequestError})");
+            }
+
             return null;
         }
         catch (IOException e)
         {
             // The connection broke off during the answer.
-            LogOnce(game, run, $"Artwork: {Name(kind)} von {game.Key}: Verbindung zu {url.Host} abgebrochen ({e.GetType().Name})");
-            GoOffline(run);
+            if (GoOffline(run, url))
+            {
+                Log($"Artwork: {Name(kind)} von {game.Key}: Verbindung zu {url.Host} abgebrochen ({e.GetType().Name})");
+            }
+
             return null;
         }
     }
@@ -1165,11 +1174,12 @@ public sealed partial class ArtworkService : IDisposable
         }
     }
 
-    /// <summary>A failed connection is tried again at the next scan; this run downloads nothing more.</summary>
-    private static void GoOffline(RunState run)
-    {
-        run.Offline = true;
-    }
+    /// <summary>
+    /// A failed connection is tried again at the next search (#506); this run downloads nothing more from that host, so a host that
+    /// hangs costs one timeout, not one per game, and keeps no other host's images away. True the first time per host: its
+    /// line is written whatever the game logged before (e.g. its other image missing), so the log names the host that failed.
+    /// </summary>
+    private static bool GoOffline(RunState run, Uri url) => run.OfflineHosts.Add(url.IdnHost);
 
     /// <summary>The cached image's size if it is a whole image; checked once per session, unless the view found it broken.</summary>
     private ImageSize? CheckedSize(string key, ArtworkKind kind, CachedImage image)
@@ -1314,7 +1324,7 @@ public sealed partial class ArtworkService : IDisposable
             Tolerance = settings.Tolerance;
         }
 
-        /// <summary>Games searched by name in this run that SteamGridDB found nothing for: searched again at the next scan.</summary>
+        /// <summary>Games searched by name in this run that SteamGridDB found nothing for: searched again at the next search (#506).</summary>
         public HashSet<string> NoHits { get; } = new(StringComparer.Ordinal);
 
         /// <summary>A usable key at the start, and SteamGridDB hasn't failed in this run.</summary>
@@ -1340,7 +1350,8 @@ public sealed partial class ArtworkService : IDisposable
         // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
         public HashSet<Uri> Failed { get; } = [];
 
-        public bool Offline { get; set; }
+        /// <summary>Hosts a download couldn't reach in this run: asked again at the next search (#506).</summary>
+        public HashSet<string> OfflineHosts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public int Copied { get; set; }
 

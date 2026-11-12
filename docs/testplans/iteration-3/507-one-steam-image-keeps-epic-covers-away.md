@@ -10,6 +10,6 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T507-1 | 2026-11-12 | Claude | `ArtworkServiceTests` (Core), Linux cloud container, fake server and time | ❌ before the fix (no Epic cover), ✅ after | – |
+| T507-1 | 2026-11-12 | Claude | `ArtworkServiceTests`, `ArtworkServiceSteamGridDbTests` (SteamGridDB image after an unreachable launcher host) (Core), Linux cloud container, fake server and time | ❌ before the fix (no Epic cover), ✅ after | – |
 | T507-2 | 2026-11-12 | Claude | `ArtworkServiceTests` (Core), Linux cloud container, fake server; the next scan asking again: `Without_network_nothing_is_shown_and_the_next_scan_asks_again` | ❌ before the fix, ✅ after | – |
 | T507-3 | 2026-11-12 | owner | main after #505, real PC (before the fix) | ❌ no Epic game had an image | this issue |

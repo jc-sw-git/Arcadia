@@ -798,7 +798,7 @@ public sealed partial class ArtworkService : IDisposable
 
     /// <summary>
     /// The image at <paramref name="url"/>, at most <see cref="ImageCheck.MaxBytes"/>; null if there is none, it is too large,
-    /// or the network fails (the run then downloads nothing more).
+    /// or the connection fails (the run then downloads nothing more from that host).
     /// </summary>
     private async Task<byte[]?> DownloadAsync(Game game, ArtworkKind kind, Uri url, RunState run, CancellationToken cancel)
     {

@@ -37,6 +37,8 @@ internal static class GuardPages
         new("Detailseite", [typeof(GameDetailViewModel), typeof(GameDetailPageViewModel)], OpenDetail,
             arcadia => Down(arcadia, arcadia.Arcadia.Detail!.Current.Areas.Count)),
         new("Bestätigung", [typeof(ConfirmationViewModel)], OpenConfirmation, arcadia => Presses(arcadia, UiAction.Left)),
+        new("Übersicht anpassen", [typeof(CustomizeOverviewViewModel)], OpenCustomizeOverview,
+            arcadia => Presses(arcadia, UiAction.Down, UiAction.Down, UiAction.Down)),
         new("Suche", [typeof(SearchViewModel)], Pressing(UiAction.Search), Search, RingsAtLeast: 30,
             RingFinding: ("mit Treffern", "Der Rahmen des fokussierten Treffers in der ersten Reihe ist oben nur halb so hell (#518).")),
         new("Tastaturlayout der Suche", [typeof(LayoutMenuViewModel)], Pressing(UiAction.Search, UiAction.KeyboardLayout),
@@ -156,6 +158,14 @@ internal static class GuardPages
         arcadia.Arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Uninstall);
         arcadia.Press(UiAction.Accept);
         Assert.NotNull(arcadia.Arcadia.Main.Confirmation);
+    }
+
+    /// <summary>From the detail page's quick selection: into "Übersicht", up to "Übersicht anpassen", A.</summary>
+    private static async Task OpenCustomizeOverview(ArcadiaWindow arcadia)
+    {
+        await OpenDetail(arcadia);
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Arcadia.Main.CustomizeOverview);
     }
 
     private static Task OpenChangeArtwork(ArcadiaWindow arcadia)

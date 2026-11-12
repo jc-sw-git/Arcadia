@@ -3,7 +3,7 @@
 Part A of #506 (scenarios 1–5 and the failure case "info box changes while scrolled"). Part B (when artwork is
 searched) and part C (waiting list) have their own files; part A uses the IDs T506-1 to T506-39.
 
-**Status:** Automated: T506-1 to -9, -11 to -35 · QE: T506-36, -37 · Open for the owner: T506-38, T506-39
+**Status:** Automated: T506-1 to -9, -11 to -35 · QE: T506-36, -37 · Open for the owner: none (T506-38, T506-39 passed)
 
 Every case runs with the gamepad alone; keys follow `docs/product/controls.md` (WASD, Space = A, Esc = B, Q/E = LT/RT,
 Shift+W/S = RS). "A jump" is the animation of one carousel turn: the cover moving out of its stack, the background
@@ -139,11 +139,11 @@ otherwise; the cases follow the recommendation (the implementation follows all t
 
 **For the owner (own PC, real controllers and artwork)**
 
-- [ ] **T506-38** **Owner:** on the real PC with the Steam Controller and an Xbox pad, detail page of a real game: tap
+- [x] **T506-38** **Owner:** on the real PC with the Steam Controller and an Xbox pad, detail page of a real game: tap
   RT and LT quickly several times, then turn the mouse wheel quickly: the newest game is there at once, nothing jumps
   afterwards; a single press still turns smoothly; it feels instant (< 50 ms). · E2E: no (real controllers, feel on the
   owner's PC)
-- [ ] **T506-39** **Owner:** in "Controller" of a real game change "Steam-Controller-Modus" with ◀ ▶: chip and
+- [x] **T506-39** **Owner:** in "Controller" of a real game change "Steam-Controller-Modus" with ◀ ▶: chip and
   highlighted value box follow at once; switch the Steam Controller off: the blue note is at the top; scroll a long info
   box with the right stick of both controllers and change the value: back at the top. In the settings a category with
   value boxes looks the same. · E2E: no (real controllers and artwork)
@@ -174,3 +174,4 @@ History:
 | T506-36 | 2026-11-12 | QE | Debug, Xvfb 1920×1080 and 1280×720, `--demo`, keys only | detail page "Controller" of a game not installed: note on top, name, three boxes, chips; Shift+S scrolls, three quick E show the newest game at once; settings "Controller" and "Datenquellen" fine; in the rail the footer names RS (T506-30) | finding to the implementer |
 | T506-30 | 2026-11-12 | Implementation | Debug, Linux cloud container, .NET 10.0.115, headless (`InfoBoxWindowTests`, `InfoBoxViewTests` and the other #506 tests) | fixed: in the rail and the button row RS does nothing and the footer doesn't name it; the QE test, red before, passes | – |
 | T506-10 | 2026-11-12 | Implementation | Release, Xvfb 1920×1080, `--demo`, keys only: detail page, 10 × E then 10 × Q, 0.35 s apart; two runs each against `main` (`Bild:` lines in `arcadia.log`, last 16 presses) | PR: processing mean 6.7 / 7.8 ms, press to frame mean 51.8 / 47.3 ms, max 88 ms; `main`: 7.2 / 9.9 ms, 55.2 / 45.1 ms, max 126 ms. No regression; the frame time is the container's software rendering | budget on real hardware: T506-38 |
+| T506-38, T506-39 | 2026-11-12 | owner | main, owner's PC (Windows) with his library | ✅ | – |

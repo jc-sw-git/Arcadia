@@ -3,7 +3,7 @@
 Part C of #506 (scenarios 15–20 and their failure cases). Part A (detail page, info box) and part B (when artwork is
 searched) have their own files; part C uses the IDs T506-80 to T506-119.
 
-**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116, T506-117 · QE: T506-80, T506-82, T506-85, T506-98, T506-99, T506-102, T506-106 (own run of the app) · Open for the owner: T506-109, T506-112, T506-113, T506-114, T506-115
+**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116, T506-117 · QE: T506-80, T506-82, T506-85, T506-98, T506-99, T506-102, T506-106 (own run of the app) · Open for the owner: none (T506-109, T506-112 to T506-115 passed)
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request (search by
 name, the images per hit, the image downloads) and can answer slowly, throttle, fail or reject the key; nothing
@@ -121,7 +121,7 @@ otherwise; the cases follow the recommendation.
 - [x] **T506-108** Images load only for the game the focus rests on: holding ▼ through 50 games, the fake gets
   requests (check and image downloads) only for the game where the focus stops, none for the ones passed; requests of
   a game the focus left are cancelled. Tiles decode at tile size. · E2E: no (view model test with fake time)
-- [ ] **T506-109** **Owner:** Release build, made-up data, 100 waiting games with 8 hits and one with 25: opening the screen, every
+- [x] **T506-109** **Owner:** Release build, made-up data, 100 waiting games with 8 hits and one with 25: opening the screen, every
   step in the games list, held and fast, and every step in the grid < 50 ms from input to visible focus move (`Bild:`
   lines), no stutter while images arrive; measured on Windows, numbers in the PR. · E2E: no (real rendering, Release
   timings on Windows; the owner sends the `Bild:` lines from `arcadia.log`)
@@ -140,16 +140,16 @@ otherwise; the cases follow the recommendation.
 
 **For the owner (own PC, real SteamGridDB, own library, gamepad; on main with parts A and B)**
 
-- [ ] **T506-112** **Owner:** open "Warten auf deine Auswahl" with games waiting (if none wait: "Alle Artworks neu
+- [x] **T506-112** **Owner:** open "Warten auf deine Auswahl" with games waiting (if none wait: "Alle Artworks neu
   laden" first). Each game says what is sought, the tiles show that kind of image, no tile is empty; taking a hit
   gives the game the right cover or background. · E2E: no (real SteamGridDB, own library)
-- [ ] **T506-113** **Owner:** for a game whose hits don't contain the right one, change "Eigener Suchbegriff" with the
+- [x] **T506-113** **Owner:** for a game whose hits don't contain the right one, change "Eigener Suchbegriff" with the
   on-screen keyboard to a better name, take the right result; "Zurücksetzen" on another game brings its hits back.
   · E2E: no (real SteamGridDB, real names)
-- [ ] **T506-114** **Owner:** with the Steam Controller and an Xbox-style pad: hold and tap through the games list and
+- [x] **T506-114** **Owner:** with the Steam Controller and an Xbox-style pad: hold and tap through the games list and
   the grid quickly; the focus follows without stutter or lag, nothing replays after letting go, scroll bar and fade
   look like the settings rows. · E2E: no (real controllers, how it feels)
-- [ ] **T506-115** **Owner:** exploratory: switch between the two levels, skip, take, own search and close in any
+- [x] **T506-115** **Owner:** exploratory: switch between the two levels, skip, take, own search and close in any
   order; note anything that feels unclear. · E2E: no (exploratory)
 
 **Touches:** T491-13 (layout: two levels, "Gesucht: …", field above the grid), T491-14 (navigation, replaced by
@@ -185,3 +185,4 @@ History:
 | T506-109 (part) | 2026-11-12 | owner's PC, run by Claude | Release build of main, `--demo`, 908 games, two 40 s recordings with `dotnet-trace`, held and tapped ▲ ▼, own search before: 365 `Bild:` lines | ✅ games list at most 24 ms per step, no stutter; first opening of the on-screen keyboard 327 ms once | the stutter came with the Debug build only; grid steps and opening the screen still for the owner |
 | T506-117 | 2026-11-12 | Claude | follow-up branch, Linux container, .NET 10, Release; window and view model tests | ✅ | – |
 | T506-80, -82, -85, -98, -99, -102, -106 (QE's own run) | 2026-11-12 | Claude (QE) | Release app under Xvfb, `--demo`, 146 waiting games seeded in the name-match store, no SteamGridDB key, keyboard for the gamepad | ✅ | real tile images, background tiles and the frame time only by test or by the owner (T506-109) |
+| T506-109, T506-112, T506-113, T506-114, T506-115 | 2026-11-12 | owner | main, owner's PC (Windows) with his library | ✅ | – |

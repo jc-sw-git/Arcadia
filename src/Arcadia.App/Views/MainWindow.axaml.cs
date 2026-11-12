@@ -451,8 +451,10 @@ public partial class MainWindow : Window
         var above = 0;
         foreach (var other in category.Rows)
         {
+            // The row's button, not its container: the first row of a group carries the group's heading above it.
             if (other != row && rows.IsInDragList(other) && SettingsRows.ContainerFromItem(other) is { } container
-                && container.TranslatePoint(new Point(0, container.Bounds.Height / 2), SettingsRows) is { } middle && middle.Y < position.Y)
+                && (container.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("settingRow")) ?? (Visual)container) is { } button
+                && button.TranslatePoint(new Point(0, button.Bounds.Height / 2), SettingsRows) is { } middle && middle.Y < position.Y)
             {
                 above++;
             }

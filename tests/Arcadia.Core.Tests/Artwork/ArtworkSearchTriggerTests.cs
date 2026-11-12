@@ -249,6 +249,26 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T506-43")]
+    public async Task A_new_game_steamgriddb_doesnt_know_by_id_is_searched_by_name_in_the_same_run()
+    {
+        await WithKeyAsync();
+        var ids = Ids(2);
+        SteamGridDbHas(ids[0]);
+        _sgdb.Finds(GameOf(ids[1]).Title, (701, GameOf(ids[1]).Title, null));
+        _sgdb.Cover("game", "701", "https://cdn.example/grid/701.png", 600, 900);
+        _images.Serve("https://cdn.example/grid/701.png", TestImages.Png(600, 900));
+
+        await ScanAsync(ids);
+
+        Assert.Equal("https://cdn.example/grid/701.png", Cached(ids[1])!.Cover!.Stamp);
+        Assert.Single(LogLines(), line => line.StartsWith("Artwork-Suche gestartet", StringComparison.Ordinal));
+        ClearRequests();
+        await ScanAsync(ids);
+        Assert.Equal(0, _sgdb.Count);
+    }
+
+    [Fact]
     [Trait("TestCase", "T506-44")]
     public async Task A_game_arriving_without_a_key_or_with_steamgriddb_off_is_known_without_a_request()
     {

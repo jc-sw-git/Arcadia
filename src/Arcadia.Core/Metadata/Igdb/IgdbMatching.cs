@@ -27,7 +27,7 @@ public static class IgdbMatching
     {
         var main = results.Where(game => IgdbGameType.IsMainGame(game.Type)).ToList();
         var title = Fold(launcherTitle);
-        var equal = main.Where(game => Matches(title, Fold(game.Name))).ToList();
+        var equal = main.Where(game => Matches(title, FoldHit(game.Name))).ToList();
         return (equal.Count, main.Count) switch
         {
             (1, _) => new IgdbMatch(equal[0], []),
@@ -41,7 +41,11 @@ public static class IgdbMatching
     /// <summary>A launcher title with a <c>?</c> is doubtful: Epic's catalog writes every character beyond ASCII so (#43).</summary>
     public static bool IsDoubtful(string? title) => title?.Contains('?') == true;
 
-    /// <summary>The name in lower case of its letters, digits and <c>?</c> only.</summary>
+    // Stands in a hit's folded name for a character beyond ASCII that is no letter or digit (dash, ellipsis, curly quote,
+    // ™): Epic's title has a "?" there, or nothing when the character was left out.
+    private const char Sign = '\uE000';
+
+    /// <summary>The launcher's title in lower case of its letters, digits and <c>?</c> only.</summary>
     internal static string Fold(string name)
     {
         var folded = new StringBuilder(name.Length);
@@ -56,22 +60,57 @@ public static class IgdbMatching
         return folded.ToString();
     }
 
-    /// <summary>The launcher's folded title against a hit's: each <c>?</c> stands for exactly one character.</summary>
+    /// <summary>A hit's name in lower case of its letters and digits, each other character beyond ASCII as <see cref="Sign"/>.</summary>
+    internal static string FoldHit(string name)
+    {
+        var folded = new StringBuilder(name.Length);
+        foreach (var c in name.Normalize(NormalizationForm.FormC))
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                folded.Append(char.ToLowerInvariant(c));
+            }
+            else if (!char.IsAscii(c) && !char.IsWhiteSpace(c))
+            {
+                folded.Append(Sign);
+            }
+        }
+
+        return folded.ToString();
+    }
+
+    /// <summary>
+    /// The launcher's folded title against a hit's (<see cref="FoldHit"/>): each <c>?</c> stands for exactly one character
+    /// beyond ASCII (D5), since Epic writes only those so; a sign of the hit no <c>?</c> stands for is left out.
+    /// </summary>
     internal static bool Matches(string title, string hit)
     {
-        if (title.Length != hit.Length || title.Length == 0)
+        if (title.Length == 0)
         {
             return false;
         }
 
-        for (var i = 0; i < title.Length; i++)
+        // matched[j]: the title's first i characters match the hit's first j; one row per character of the title.
+        var matched = new bool[hit.Length + 1];
+        matched[0] = true;
+        for (var j = 1; j <= hit.Length && hit[j - 1] == Sign; j++)
         {
-            if (title[i] != '?' && title[i] != hit[i])
-            {
-                return false;
-            }
+            matched[j] = true;
         }
 
-        return true;
+        foreach (var t in title)
+        {
+            var next = new bool[hit.Length + 1];
+            for (var j = 1; j <= hit.Length; j++)
+            {
+                var h = hit[j - 1];
+                next[j] = (matched[j - 1] && (t == '?' ? !char.IsAscii(h) : t == h))
+                    || (h == Sign && next[j - 1]);
+            }
+
+            matched = next;
+        }
+
+        return matched[hit.Length];
     }
 }

@@ -216,7 +216,7 @@ public sealed class IgdbAccessRows
             Refresh();
         }
 
-        AppLog.Write($"IGDB: {(isSecret ? "Client-Secret" : "Client-ID")} …{IgdbClient.Ending(value)} {(pasted ? "eingefügt" : "eingegeben")}: {outcome?.ToString() ?? "Zugang unvollständig"}");
+        AppLog.Write($"IGDB: {(isSecret ? "Client-Secret" : "Client-ID …" + IgdbClient.Ending(value))} {(pasted ? "eingefügt" : "eingegeben")}: {outcome?.ToString() ?? "Zugang unvollständig"}");
         switch (outcome)
         {
             case null:

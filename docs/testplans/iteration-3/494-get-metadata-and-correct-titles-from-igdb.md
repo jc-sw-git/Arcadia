@@ -9,7 +9,7 @@ changed decision changes its case. #494 comes in two PRs: this one (access, matc
 list entries "Metadaten" (T494-16 to T494-20, struck here until that PR takes them up). The owner's cases are collected
 by the closing thread of #43.
 
-**Status:** Automated: T494-2 to T494-15, T494-21, T494-23, T494-24, T494-26 to T494-32 · QE checked: T494-1, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
+**Status:** Automated: T494-2 to T494-15, T494-21, T494-23, T494-24, T494-26 to T494-32 · QE: T494-1, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
 
 **IGDB access**
 
@@ -108,11 +108,11 @@ data and are asked once per session, `Several_hits_with_selbst_auswaehlen_keep_t
 - [x] **T494-24** IGDB switched off: its fields and corrected titles disappear everywhere at once (the doubtful launcher
   title is back), no request to IGDB; the cache stays, switching on brings them back without a request. Both sources
   off: no metadata, launcher titles. · E2E: no (view model test)
-- [ ] **T494-25** Scenario 2's title: Epic "K?ln" and IGDB's "Köln", with launcher data first and with IGDB first →
+- [ ] ~~**T494-25** Scenario 2's title: Epic "K?ln" and IGDB's "Köln", with launcher data first and with IGDB first →
   "Köln" in library, detail page, search (searching "Köln" finds it) and sorting; "K?ln" is listed only among the
-  sources in "Infos". A title without `?` stays the launcher's in both orders (D9). · E2E: yes (the title in "Infos" and
-  the merge in both orders are tested here; library, search and sorting take it through #496's `GameTitles`, wired by
-  whichever of the two PRs merges later, which ticks this case)
+  sources in "Infos". A title without `?` stays the launcher's in both orders (D9). · E2E: yes~~ (the title in "Infos"
+  and the merge in both orders are tested here; library, search and sorting take it through #496's `GameTitles`: #496's
+  PR wires `MetadataService.TitleOf` into it and takes this case up again)
 - [x] **T494-26** Scenario 2's fields: an Epic game with access shows IGDB's English description (no provider has a
   German one), genres on the German list, the year and the USK badge in the info line; "Infos" names "IGDB" as the
   source of each of these fields and "Epic" for the developer. · E2E: yes
@@ -176,3 +176,4 @@ History:
 | T494-31 (red once) | 2026-11-12 | QE (Claude) | branch of PR, Release, the editor's keyboard limited to letters on purpose | ❌ as expected, ✅ again | – |
 | T494-1, -22 | 2026-11-12 | QE (Claude) | branch of PR, Release, Linux Xvfb 1920 × 1080, `--demo --demo-games 1000`, keys and mouse | ✅ group IGDB without and with access (rows, last four characters, greyed rows focusable, info texts); IGDB dragged above the launcher data and switched off and on by click, `settings.json` follows | – |
 | T494-33 | 2026-11-12 | QE (Claude) | same, a local fake Twitch/IGDB over HTTPS answering every request after 2 s, 1,031 demo games | ✅ library usable throughout; 15 focus and page moves during the fetch 1.4–14 ms (`Bild:`); settings operable; idle CPU after the run 0 %; managed heap after a full GC 296 MB with and without IGDB (RSS under Xvfb not comparable) | – |
+| T494-15 (QE finding 1, red once) | 2026-11-12 | Claude | branch of PR, Debug, Linux container | ❌ "Nordwind ? Die R?ckkehr" against "Nordwind – Die Rückkehr" before the fix, ✅ after | – |

@@ -27,6 +27,7 @@ public sealed record MetadataSettings
     public bool IsOn(MetadataSourceKind source) => Off?.Contains(source) != true;
 
     /// <summary>The sources switched on, in their order.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public IReadOnlyList<MetadataSourceKind> OnInOrder => [.. Order.Where(IsOn)];
 
     /// <summary>A hand-edited or newer <c>settings.json</c> made usable: every known source once, a missing one at the end.</summary>

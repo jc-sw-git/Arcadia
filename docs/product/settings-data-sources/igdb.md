@@ -29,8 +29,8 @@ Index and the category's frame: [README.md](README.md). The merge and the order:
   data and no name search. Every other game by its shown launcher title without ™ ® ©, once per game and run.
 - Main games are IGDB's types main game, remake, remaster, expanded game, port and standalone expansion; DLC,
   expansions, bundles, mods, episodes, seasons, packs, updates and forks are dropped before hits are counted. A hit
-  whose name is the same (case, punctuation and ™ ® © ignored, each `?` one character) is taken when it is the only
-  one; one main game left of any name is taken too; two equal or several others are several hits (at most 8, IGDB's
+  whose name is the same (case, punctuation and ™ ® © ignored, each `?` one character beyond ASCII: a letter like "ö" or
+  a dash, ellipsis or curly quote) is taken when it is the only one; one main game left of any name is taken too; two equal or several others are several hits (at most 8, IGDB's
   order), handled by "Bei mehreren Treffern" (shared with the artwork, waiting list: #494 part 2); no hit: launcher
   data, searched again at the next scan. A game matched once is asked by its IGDB id from then on.
 - IGDB's fields: summary as description (English), genres onto the German list (Action from the theme "Action"),

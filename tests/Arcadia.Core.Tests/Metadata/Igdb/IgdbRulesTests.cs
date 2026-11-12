@@ -104,6 +104,15 @@ public sealed class IgdbRulesTests
 
     [Fact]
     [Trait("TestCase", "T494-15")]
+    public void A_question_mark_also_stands_for_a_dash_an_ellipsis_or_a_curly_quote_of_the_hit()
+    {
+        Assert.Equal(1, IgdbMatching.Of("Nordwind ? Die R?ckkehr", [Hit(2, "Nordwind"), Hit(1, "Nordwind – Die Rückkehr")]).Taken?.Id);
+        Assert.Equal(1, IgdbMatching.Of("Warte?", [Hit(2, "Warten"), Hit(1, "Warte…"), Hit(3, "Warte")]).Taken?.Id);
+        Assert.Equal(1, IgdbMatching.Of("Jonas? Reise", [Hit(2, "Jonas Reise 2"), Hit(1, "Jonas’ Reise")]).Taken?.Id);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T494-15")]
     public void One_main_game_of_any_name_is_taken_two_equal_or_several_others_are_several_hits_and_none_is_nothing()
     {
         Assert.Equal(5, IgdbMatching.Of("Nordwind", [Hit(5, "Ganz anders"), Hit(6, "Nordwind DLC", 1)]).Taken?.Id);

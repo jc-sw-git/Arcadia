@@ -150,6 +150,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSettingsOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial SettingsPageViewModel? Settings { get; private set; }
 
     public bool IsSettingsOpen => Settings is not null;
@@ -157,6 +158,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The first start's question which launchers Arcadia uses (#139), in place of the library until "Fertig".</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFirstRunShown))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial FirstRunViewModel? FirstRun { get; private set; }
 
     public bool IsFirstRunShown => FirstRun is not null;
@@ -189,18 +191,21 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsViewOptionsOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial ViewOptionsViewModel? ViewOptions { get; private set; }
 
     public bool IsViewOptionsOpen => ViewOptions is not null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsGameMenuOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial GameMenuViewModel? GameMenu { get; private set; }
 
     public bool IsGameMenuOpen => GameMenu is not null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsConfirmationOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial ConfirmationViewModel? Confirmation { get; private set; }
 
     public bool IsConfirmationOpen => Confirmation is not null;
@@ -208,6 +213,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The header's messages in a modal (#166), over the library or the detail page.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsStatusModalOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial StatusModalViewModel? StatusModal { get; private set; }
 
     public bool IsStatusModalOpen => StatusModal is not null;
@@ -215,6 +221,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>The selected tab's filter (#44), over the library.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFilterOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial FilterModalViewModel? FilterModal { get; private set; }
 
     public bool IsFilterOpen => FilterModal is not null;

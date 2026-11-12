@@ -14,6 +14,7 @@ public partial class MainViewModel : ICustomizeOverviewHost
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCustomizeOverviewOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial CustomizeOverviewViewModel? CustomizeOverview { get; private set; }
 
     public bool IsCustomizeOverviewOpen => CustomizeOverview is not null;

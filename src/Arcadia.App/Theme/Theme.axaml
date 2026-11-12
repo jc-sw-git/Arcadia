@@ -124,6 +124,7 @@
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
+    <BoxShadows x:Key="NoRing">0 0 0 0 #00000000</BoxShadows>
     <!-- Shadows paint in order: the drop shadow first, so it doesn't darken the ring's lower edge. -->
     <BoxShadows x:Key="FocusRingLifted">0 18 40 0 #A6000000, 0 0 0 3 #F2F5F8</BoxShadows>
     <BoxShadows x:Key="HoverRing">0 0 0 2 #5A6878</BoxShadows>
@@ -3563,5 +3564,9 @@
     <Setter Property="FontSize" Value="20" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <!-- The detail page under a dialog: no ring of its own, only the dialog's (T500-25). After the focused styles. -->
+  <Style Selector="Panel.detailCovered Button.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
 </Styles>

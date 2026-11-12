@@ -8,6 +8,7 @@ public partial class MainViewModel
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWaitingListOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial WaitingListViewModel? WaitingList { get; private set; }
 
     public bool IsWaitingListOpen => WaitingList is not null;

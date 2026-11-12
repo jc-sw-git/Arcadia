@@ -10,6 +10,7 @@ public partial class MainViewModel
     /// <summary>"Artwork ändern" (#490), over the library, the search or the detail page.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsChangeArtworkOpen))]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
     public partial ChangeArtworkViewModel? ChangeArtwork { get; private set; }
 
     public bool IsChangeArtworkOpen => ChangeArtwork is not null;

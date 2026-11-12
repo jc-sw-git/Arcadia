@@ -185,6 +185,56 @@ public sealed class QuickSelectionTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T500-6")]
+    public async Task An_installation_finishing_brings_Deinstallieren_alive_in_place_with_the_focus_on_it()
+    {
+        var bravo = TestGames.NotInstalled(KnownLaunchers.Gog, "Bravo");
+        var games = new List<Game> { TestGames.Installed(KnownLaunchers.Gog, "Alpha", DateTimeOffset.UnixEpoch), bravo };
+        using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, games.Count, Library: games, Running: [])]);
+        arcadia.FocusTile("Bravo");
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        Assert.True(FocusEntry(arcadia, GameActionKind.Uninstall).IsGreyed);
+
+        arcadia.Installs.Set(bravo, new InstallProgress(InstallPhase.Downloading, 0.5));
+        await arcadia.FollowInstallsAsync();
+        arcadia.Installs.Set(bravo, null);
+        await arcadia.FollowInstallsAsync();
+        games[1] = TestGames.Installed(KnownLaunchers.Gog, "Bravo", DateTimeOffset.UnixEpoch) with { Uninstall = new LaunchTarget.ProtocolUri("goggalaxy://uninstall/bravo") };
+        await arcadia.RescanAsync();
+
+        var page = arcadia.Detail!.Current;
+        Assert.Equal("Bravo", page.Tile.Title);
+        Assert.Equal((DetailZone.Rows, true, GameActionKind.Uninstall, false), (page.Zone, page.OpenArea.IsOverview, page.FocusedRow?.Kind, page.FocusedRow?.IsGreyed));
+        Assert.Null(page.QuickNote);
+    }
+
+    /// <summary>The window drops the page's focus ring under a dialog by <c>IsDialogOpen</c>, so it must say when it changes (T500-25).</summary>
+    [AvaloniaFact]
+    public async Task Opening_and_closing_a_dialog_over_the_page_reports_IsDialogOpen()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var reported = new List<bool>();
+        arcadia.Main.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.IsDialogOpen))
+            {
+                reported.Add(arcadia.Main.IsDialogOpen);
+            }
+        };
+
+        OpenCustomize(arcadia);
+        arcadia.Press(UiAction.Back);
+        arcadia.Press(UiAction.Up, times: 2);
+        Assert.Equal(GameActionKind.Artwork, arcadia.Detail!.Current.FocusedRow?.Kind);
+        arcadia.Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Main.ChangeArtwork);
+        arcadia.Press(UiAction.Back);
+
+        Assert.Equal([true, false, true, false], reported);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T500-7")]
     public async Task The_button_hints_follow_the_focus_in_the_quick_selection()
     {

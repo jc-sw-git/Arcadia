@@ -70,11 +70,11 @@ public sealed class ArtworkSourceRows
         {
             Group = ArtworkGroup,
             Subtitle = AppTexts.DataSourcesCropSubtitle,
+            ValueInfos = [AppTexts.DataSourcesCropLittleInfo, AppTexts.DataSourcesCropNormalInfo, AppTexts.DataSourcesCropMuchInfo],
             Info =
             [
                 new InfoText(AppTexts.DataSourcesCropInfo),
                 new InfoText(AppTexts.DataSourcesCropInfoOrder),
-                new InfoSection(AppTexts.DataSourcesCropChoiceHeading, [new InfoText(AppTexts.DataSourcesCropChoice)]),
                 new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesCropWhen)]),
             ],
         };

@@ -3,6 +3,7 @@
              xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
              xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
              x:Class="Arcadia.App.Views.GameDetailView"
              x:DataType="vm:GameDetailViewModel"
              ClipToBounds="True">
@@ -248,16 +249,24 @@
             </StackPanel>
             <Border Name="InfoBox" DockPanel.Dock="Right" Classes="detailInfoBox" Margin="24,0,0,0">
               <Panel>
+                <!-- RS (Shift+W/S) scrolls it (#506); the view brings it back to the top when the row, its value or the game changes. -->
                 <ScrollViewer Name="InfoScroller" VerticalScrollBarVisibility="Hidden" Padding="24,22">
                   <StackPanel Spacing="12">
+                    <!-- Why the row is greyed out, at the very top (#506), as the settings' blue note. -->
+                    <Border Classes="infoNote info" IsVisible="{Binding InfoRow?.HasNote, TargetNullValue=False}">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                        <Path Classes="statusIcon info" VerticalAlignment="Top" />
+                        <TextBlock Grid.Column="1" Classes="noteText" Text="{Binding InfoRow?.Note, TargetNullValue=''}" />
+                      </Grid>
+                    </Border>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <Path Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="20" Height="20" />
                       <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailInfoCaption}" FontSize="13" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{Binding InfoRow?.Title, TargetNullValue=''}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding InfoRow?.InfoText, TargetNullValue=''}" FontSize="17" LineHeight="25" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding InfoRow?.Note, TargetNullValue=''}" IsVisible="{Binding InfoRow?.HasNote, TargetNullValue=False}"
-                               FontSize="17" LineHeight="25" FontWeight="SemiBold" Foreground="{StaticResource AccentSoft}" TextWrapping="Wrap" />
+                    <views:ValueBoxesView Boxes="{Binding InfoRow?.ValueBoxes}" Classes.dimmed="{Binding InfoRow?.IsGreyed, TargetNullValue=False}" IsVisible="{Binding InfoRow?.HasValueBoxes, TargetNullValue=False}" />
+                    <TextBlock Text="{Binding InfoRow?.InfoText, TargetNullValue=''}" IsVisible="{Binding InfoRow?.HasInfoText, TargetNullValue=False}"
+                               FontSize="17" LineHeight="25" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                   </StackPanel>
                 </ScrollViewer>
                 <ctl:EdgeFade FadeColor="{StaticResource DetailInfoBoxColor}" Size="48" ScrollTarget="{Binding #InfoScroller}" />
@@ -274,11 +283,18 @@
                   <Button Classes="plain detailRow" Classes.focused="{Binding IsFocused}" Classes.greyed="{Binding IsGreyed}" Classes.danger="{Binding IsDanger}"
                           Command="{Binding ClickCommand}" PointerEntered="OnRowPointerEntered">
                     <DockPanel>
-                      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="16,0,0,0" IsVisible="{Binding IsChoice}">
-                        <Button Classes="plain rowArrow" Content="◀" Command="{Binding StepBackCommand}" />
-                        <TextBlock Classes="rowValue" Text="{Binding ValueText}" MaxWidth="260" />
-                        <Button Classes="plain rowArrow" Content="▶" Command="{Binding StepOnCommand}" />
-                      </StackPanel>
+                      <!-- The value in the settings' chip (#506). -->
+                      <Border DockPanel.Dock="Right" Classes="valuePill" VerticalAlignment="Center" Margin="16,0,0,0" IsVisible="{Binding IsChoice}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}">
+                            <Path Classes="chevronLeft" />
+                          </Button>
+                          <TextBlock Grid.Column="1" Classes="valueText" Text="{Binding ValueText}" />
+                          <Button Grid.Column="2" Classes="plain valueArrow" Command="{Binding StepOnCommand}">
+                            <Path Classes="chevronRight" />
+                          </Button>
+                        </Grid>
+                      </Border>
                       <StackPanel Spacing="2" VerticalAlignment="Center">
                         <TextBlock Classes="rowTitle" Text="{Binding Title}" />
                         <TextBlock Classes="rowSubtitle" Text="{Binding Subtitle}" />

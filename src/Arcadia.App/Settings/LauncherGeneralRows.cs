@@ -30,6 +30,7 @@ internal sealed class LauncherGeneralRows
         {
             Group = GeneralGroup,
             Subtitle = AppTexts.LauncherActiveSubtitle,
+            ValueInfos = [AppTexts.LauncherActiveOff, AppTexts.LauncherActiveInfo],
             PreviewTitle = LauncherTexts.OrderPreviewTitle,
             PreviewSubtitle = LauncherTexts.OrderPreviewSubtitle,
         };
@@ -81,7 +82,6 @@ internal sealed class LauncherGeneralRows
         ActiveRow.Preview = [tabBar];
         ActiveRow.Info =
         [
-            new InfoText(AppTexts.LauncherActiveInfo),
             .. isFound ? Array.Empty<InfoBlock>() : [new InfoNote(isActive
                 ? AppTexts.LauncherNotFoundAnymore(name)
                 : AppTexts.LauncherNotFoundCannotActivate(name))],

@@ -40,8 +40,23 @@ public sealed partial class DetailRowViewModel : ViewModelBase
     /// <summary>One line below the title; the info box adds the rest (`docs/product/ui-texts.md`).</summary>
     public string Subtitle { get; }
 
-    /// <summary>What the row does, for the info box.</summary>
+    /// <summary>What the row does, for the info box below <see cref="ValueBoxes"/>; empty when the boxes say it all.</summary>
     public string InfoText { get; }
+
+    public bool HasInfoText => InfoText.Length > 0;
+
+    /// <summary>One box per value below the row's name in the info box (#506), the current one highlighted; empty for an action.</summary>
+    public IReadOnlyList<ValueBox> ValueBoxes
+    {
+        get;
+        init
+        {
+            field = value;
+            ValueBox.ShowCurrent(value, ValueText);
+        }
+    } = [];
+
+    public bool HasValueBoxes => ValueBoxes.Count > 0;
 
     /// <summary>A value with ◀ ▶ beside it, not an action.</summary>
     public bool IsChoice { get; }
@@ -77,6 +92,7 @@ public sealed partial class DetailRowViewModel : ViewModelBase
         {
             _action.Step(delta);
             ValueText = _action.ButtonLabel;
+            ValueBox.ShowCurrent(ValueBoxes, ValueText);
         }
     }
 

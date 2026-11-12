@@ -122,7 +122,7 @@ public sealed class DetailPageViewTests
         // The mouse over the second row: focused, and the info box explains it.
         arcadia.MouseMove(arcadia.CentreOf(rows[1]));
         Assert.Equal(GameActionKind.MouseMode, page.FocusedRow?.Kind);
-        Assert.Single(arcadia.WithText(AppTexts.DetailMouseModeInfo));
+        Assert.Single(ValueBoxTexts(arcadia), text => text == AppTexts.DetailMouseModeAllowedInfo);
         arcadia.MouseMove(arcadia.CentreOf(rows[0]));
         Assert.Equal(GameActionKind.ControllerMode, page.FocusedRow?.Kind);
         Assert.Single(arcadia.WithText(AppTexts.DetailControllerModeInfo));
@@ -144,7 +144,7 @@ public sealed class DetailPageViewTests
         var page = arcadia.Arcadia.Detail!.Current;
         var mode = page.Row(GameActionKind.ControllerMode);
         Assert.False(mode.IsGreyed);
-        var arrows = Rows(arcadia)[0].GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("rowArrow")).ToList();
+        var arrows = Rows(arcadia)[0].GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("valueArrow")).ToList();
         Assert.Equal(2, arrows.Count);
 
         arcadia.Click(arrows[1]);
@@ -303,6 +303,10 @@ public sealed class DetailPageViewTests
     private static List<Button> RailButtons(ArcadiaWindow arcadia) => Visible<Button>(arcadia, "detailRail");
 
     private static List<Button> Rows(ArcadiaWindow arcadia) => Visible<Button>(arcadia, "detailRow");
+
+    /// <summary>What the value boxes of the info box say (#506); their texts may print buttons, so they are inlines.</summary>
+    private static List<string?> ValueBoxTexts(ArcadiaWindow arcadia) =>
+        [.. Visible<TextBlock>(arcadia, "valueBoxText").Select(text => text.Inlines?.Text)];
 
     /// <summary>The left stack, then the right one.</summary>
     private static List<Button> Stacks(ArcadiaWindow arcadia) => [.. Visible<Button>(arcadia, "detailStack").OrderBy(stack => arcadia.Bounds(stack).Left)];

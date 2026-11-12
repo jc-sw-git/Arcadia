@@ -198,7 +198,9 @@ public sealed class SettingsViewTests
         // The description, below it the box "So funktioniert es"; faded at the bottom, the footer names RS.
         var box = Assert.Single(arcadia.InfoPanel().GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("infoSection") && border.IsEffectivelyVisible);
         Assert.Equal(AppTexts.MouseModeHowItWorks, box.GetVisualDescendants().OfType<TextBlock>().First().Text);
-        Assert.StartsWith("Durch Halten von", arcadia.InfoPanel().GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("infoText")).Inlines!.Text, StringComparison.Ordinal);
+        var current = Assert.Single(arcadia.InfoPanel().GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("valueBox") && border.Classes.Contains("current"));
+        // Its buttons are printed as glyphs, so only the words before them are text.
+        Assert.StartsWith("Halten von", current.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Classes.Contains("valueBoxText")).Inlines!.Text, StringComparison.Ordinal);
         AssertInfoFades(arcadia, top: false, bottom: true);
         Assert.Contains("RS Infotext", arcadia.SettingsFooter());
 

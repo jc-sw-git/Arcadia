@@ -289,7 +289,8 @@ public sealed partial class ArtworkService : IDisposable
     }
 
     /// <summary>
-    /// The view couldn't decode the image (damaged inside): it counts as missing, the next scan loads it again. An image
+    /// The view couldn't decode the image (damaged inside): it counts as missing. The next scan copies a launcher's local file
+    /// again; an image to download comes back with the next search, as rescans go online for no game (#506). An image
     /// "Artwork ändern" only offers is no game's image: the offer just shows nothing.
     /// </summary>
     public void ReportBroken(ArtworkFile file)
@@ -300,7 +301,7 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         _broken[(file.GameKey, file.Kind)] = true;
-        Log($"Artwork: {Name(file.Kind)} von {file.GameKey} ist beschädigt, wird beim nächsten Einlesen neu geladen");
+        Log($"Artwork: {Name(file.Kind)} von {file.GameKey} ist beschädigt; eine Datei des Launchers wird beim nächsten Einlesen neu kopiert, ein Download bei der nächsten Suche");
     }
 
     public void Dispose() => _shutdown.Cancel();

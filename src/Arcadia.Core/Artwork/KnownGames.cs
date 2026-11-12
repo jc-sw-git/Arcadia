@@ -115,7 +115,15 @@ internal sealed class KnownGames(string path)
         {
             foreach (var leftover in Directory.EnumerateFiles(folder, Path.GetFileName(path) + ".*.tmp"))
             {
-                File.Delete(leftover);
+                try
+                {
+                    File.Delete(leftover);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    // A leftover that can't go now goes at a later start; the stored list is still read.
+                    Log($"Artwork: übrig gebliebene Datei der Liste bekannter Spiele nicht gelöscht ({e.GetType().Name})");
+                }
             }
         }
     }

@@ -1003,9 +1003,8 @@
   <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Was passend heißt, legt „Zuschneiden erlaubt“ fest.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] hebt eine Quelle an, ▲ ▼ verschieben sie, [L3] legt sie ab, [B] bricht ab. Mit der Maus ziehst du sie.</value></data>
   <data name="DataSourcesSourceSwitchHeading" xml:space="preserve"><value>AN ODER AUS</value></data>
-  <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>An: Arcadia fragt die Quelle an ihrem Platz in der Reihenfolge.</value></data>
-  <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Aus: Arcadia fragt die Quelle nicht und blendet ihre Bilder aus. Sie bleiben gespeichert und sind beim Einschalten sofort wieder da. Von Hand gesetzte Bilder bleiben immer.</value></data>
-  <data name="DataSourcesOrderWhen" xml:space="preserve"><value>Sofort für die Bilder, die schon da sind, und die Bilder der Launcher; eine Suche startet dadurch nicht. SteamGridDB wird bei neuen Spielen und beim nächsten „Jetzt suchen“ gefragt.</value></data>
+  <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Aus: Arcadia fragt die Quelle nicht und blendet ihre Bilder aus, bis du sie einschaltest. Von Hand gesetzte bleiben.</value></data>
+  <data name="DataSourcesOrderWhen" xml:space="preserve"><value>Sofort, ohne Suche. SteamGridDB wird bei neuen Spielen und bei „Jetzt suchen“ gefragt.</value></data>
   <data name="DataSourcesSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
   <data name="DataSourcesSteamGridDbSubtitle" xml:space="preserve"><value>Füllt die Lücken: Hochformate, Mods, eigene Einträge</value></data>
   <data name="DataSourcesSteamGridDbSkipped" xml:space="preserve"><value>Wird übersprungen, solange kein gültiger Schlüssel da ist</value></data>

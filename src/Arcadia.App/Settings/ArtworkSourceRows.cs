@@ -326,7 +326,7 @@ public sealed class ArtworkSourceRows
         .. source == ArtworkSourceKind.SteamGridDb
             ? (IReadOnlyList<InfoBlock>)[new InfoText(AppTexts.DataSourcesSteamGridDbInfo)]
             : [new InfoText(AppTexts.DataSourcesLauncherImagesInfo), new InfoSection(AppTexts.DataSourcesWhoDeliversHeading, [new InfoText(AppTexts.DataSourcesWhoDelivers)])],
-        new InfoSection(AppTexts.DataSourcesSourceSwitchHeading, [new InfoText(AppTexts.DataSourcesSourceOnInfo), new InfoText(AppTexts.DataSourcesSourceOffInfo)]),
+        new InfoSection(AppTexts.DataSourcesSourceSwitchHeading, [new InfoText(AppTexts.DataSourcesSourceOffInfo)]),
         new InfoSection(AppTexts.DataSourcesOrderHeading, [new InfoText(AppTexts.DataSourcesOrderInfo), new InfoText(AppTexts.DataSourcesOrderMove)]),
         new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesOrderWhen)]),
     ];

@@ -118,7 +118,7 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
         [
             (12100, "Grand Theft Auto III", 0, 0),
             (12230, "Grand Theft Auto III", 0, 0),
-            (12110, "Grand Theft Auto: Vice City", 91, 1_547_940_909),
+            (12110, "Grand Theft Auto: Vice City", 0, 0),
             (12240, "Grand Theft Auto: Vice City", 0, 0),
             (40, "Linux Game", 0, 0),
         ]);

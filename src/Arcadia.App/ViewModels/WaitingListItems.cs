@@ -9,9 +9,8 @@ namespace Arcadia.App.ViewModels;
 /// <summary>One game on the waiting list, left: its initial, name and launcher.</summary>
 public sealed partial class WaitingGameViewModel(WaitingGame waiting, Action<WaitingGameViewModel> pick) : ViewModelBase
 {
-    /// <summary>The game as the service has it now; its hits change when some are dropped for having no image (#506).</summary>
-    [ObservableProperty]
-    public partial WaitingGame Waiting { get; set; } = waiting;
+    /// <summary>The game as the service has it now; its hits change when some are dropped for having no image (#506). Nothing shown depends on the hits.</summary>
+    public WaitingGame Waiting { get; set; } = waiting;
 
     public string Key => Waiting.Game.Key;
 

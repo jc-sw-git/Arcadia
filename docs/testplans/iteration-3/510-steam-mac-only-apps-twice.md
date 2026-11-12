@@ -1,6 +1,6 @@
 # #510 Steam tab lists owned games twice when the account also owns their Mac-only app
 
-**Status:** Automated: T510-1, T510-2 · QE: T510-1, T510-2 · Owner: T510-3 passed
+**Status:** Automated: T510-1, T510-2 · QE: T510-1, T510-2 · Open for the owner: – (T510-3 passed)
 
 - [x] **T510-1** Given an account that owns a game for Windows and its Mac port under another id with the same name (in
   `appinfo.vdf`: `oslist` `macos`, `VisibleOnlyOnAvailablePlatforms` 1), when the Steam tab is scanned on Windows, then the

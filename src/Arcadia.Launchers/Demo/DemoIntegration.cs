@@ -32,6 +32,9 @@ public sealed class DemoIntegration : ILauncherIntegration
 
     public ILauncherArtwork? Artwork { get; }
 
+    /// <summary>Made-up metadata (#493), so the detail page and the budgets show it without a launcher.</summary>
+    public ILauncherMetadata? Metadata { get; } = new DemoMetadata();
+
     public LauncherInfo Launcher { get; }
 
     public ILauncherScanner Scanner { get; }

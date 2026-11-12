@@ -1,6 +1,6 @@
 # #491 Find artwork by name and let the player pick when several games match
 
-**Status:** Automated: T491-1 to -26 · QE: T491-27 · Open for the owner: T491-28, T491-29
+**Status:** Automated: T491-1 to -26 · QE: T491-27, run 2026-11-12, findings fixed and checked again · Open for the owner: T491-28, T491-29
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request; nothing
 reaches the real one. "Shown everywhere" means library tile, preview, detail page and search hit. Decisions D1 to D7
@@ -46,7 +46,7 @@ reaches the real one. "Shown everywhere" means library tile, preview, detail pag
 **Controller and performance**
 
 - [x] **T491-26** Controller only, B back: Settings → "Datenquellen" → "Bei mehreren Treffern" A twice → "Warten auf deine Auswahl" A → D-pad right and down → A → Y → B; no mouse or keyboard needed (acceptance criterion 1). · E2E: yes
-- [ ] **T491-27** Release build, made-up data: 100 games waiting with 8 hits each: opening the screen and every focus move < 50 ms (`Bild:` lines), the UI thread never blocked; a name search over 1,000 games without id, each answer taking 2 s, keeps the library usable (as T489-24). · E2E: no (real rendering, Release timings; quality engineer's run)
+- [x] **T491-27** Release build, made-up data: 100 games waiting with 8 hits each: opening the screen and every focus move < 50 ms (`Bild:` lines), the UI thread never blocked; a name search over 1,000 games without id, each answer taking 2 s, keeps the library usable (as T489-24). · E2E: no (real rendering, Release timings; quality engineer's run)
 
 **Owner** (real SteamGridDB, own library; together with T489-25 to T489-27, T490-34 and T490-35)
 
@@ -65,3 +65,6 @@ History:
 | T491-9, -13, -17, -20 | 2026-11-12 | Claude | PR branch, Debug, headless window, Linux cloud container | ✅ `Window/WaitingListViewTests` | – |
 | T491-9, -13, -14, -17 (look) | 2026-11-12 | Claude | PR branch, Debug, Xvfb, Linux cloud container, `--demo`, three made-up games waiting in `name-matches.json`, no key | ✅ row with badge "3" and info box, the screen with games, hits (placeholders), position, D-pad, Y up to "Alles erledigt."; a hit without a year sat lower than the others and the initial stood in a corner: fixed | hit covers from the real SteamGridDB: T491-29 |
 | T491-13, -27 (part) | 2026-11-12 | Claude | PR branch after the QE review, Release, Xvfb (software rendering), `--demo`, 107 made-up games waiting with 8 hits each, no key | ✅ 8 hits in two rows, the note and the hints in the modal; Y 9–11 ms processing, 58–68 ms press to frame (the first 217 ms); A 9–12 ms processing, 46–62 ms to frame (the first 450 ms); D-pad 27–29 ms. Before: the list rebuilt per press (QE: Y up to 3.2 s) | measure on the owner's PC (QE run) |
+| T491-1, -3, -10, -11, -22 | 2026-11-12 | QE (Claude) | PR branch, Release, Linux cloud container, recreated Epic files, fake SteamGridDB and image servers | ✅ `FindArtworkByNameAcceptanceTests` (App); each red once (see the commit) | – |
+| T491-27 | 2026-11-12 | QE (Claude) | 2fdb27e, Release; headless window with 100 games waiting × 8 hits and 1,000 games searched by name at 2 s per answer; Xvfb (software rendering), `--demo`, 146 games waiting × 8 hits | ❌ moves fine (hits 1 ms, games 14–27 ms), library during the search 0.8–4.2 ms; but Y 1.1–3.2 s and A about 1 s to the next frame, opening 225–630 ms; with 5–8 hits the second row ran out of the modal | B1, B2 fixed in 0a111af |
+| T491-27, -13 | 2026-11-12 | QE (Claude) | 0a111af, Release; same headless and Xvfb setups | ✅ headless: open 6–8 ms, moves max 10 ms, A max 12.5 ms, library during the search max 3 ms; Xvfb: open 35 ms (first 55), A 29–41 ms (first 76), Y 28–35 ms, D-pad 0.4–22 ms; 8 hits in two rows with the note and hints inside the modal. Only the first press after the start goes over 50 ms (warm-up) | first presses on the owner's PC: exploratory |

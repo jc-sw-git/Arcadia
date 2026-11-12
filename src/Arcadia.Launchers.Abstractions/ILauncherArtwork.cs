@@ -16,6 +16,21 @@ public enum ArtworkKind
 /// <param name="Download">An <c>https</c> address to download it from, without any account data; null for a file.</param>
 public sealed record ArtworkCandidate(string Origin, string? File = null, Uri? Download = null);
 
+/// <summary>
+/// A game's id in a store that image collections know it by (#489), e.g. its Steam AppID: SteamGridDB finds the game's
+/// images by it, without searching by name.
+/// </summary>
+/// <param name="Store">The store, one of the constants below.</param>
+/// <param name="Id">The game's id in that store, as the store writes it.</param>
+public sealed record ArtworkStoreId(string Store, string Id)
+{
+    /// <summary>Steam: the AppID.</summary>
+    public const string Steam = "steam";
+
+    /// <summary>The Epic Games Store.</summary>
+    public const string Epic = "egs";
+}
+
 /// <summary>The launcher's own images for its games (#13), in the order it prefers them; Arcadia picks by format among them.</summary>
 public interface ILauncherArtwork
 {
@@ -33,4 +48,7 @@ public interface IArtworkLookup
     /// Never throws for a game it can't name images for (a malformed id): it offers none.
     /// </summary>
     IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind);
+
+    /// <summary>The game's id in its store, for image collections (#489); null if the launcher can't name one.</summary>
+    ArtworkStoreId? StoreIdOf(Game game) => null;
 }

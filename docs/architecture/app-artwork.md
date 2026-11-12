@@ -5,6 +5,12 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 
 - `Services/ArtworkFolder`: the cache in `%LOCALAPPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
   its own that sends no cookies; `App.axaml.cs` passes it in through `ArcadiaParts.Artwork` (the tests' in their folder).
+  It also makes the `SteamGridDbKey`: DPAPI for the current user on Windows, memory only elsewhere.
+- Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` with `SteamGridDbKeyRows` (key, paste, key
+  page, test, delete), `ArtworkSourceRows` (order, missing images with progress, "Zuschneiden erlaubt") and
+  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); it reaches the
+  window through `IDataSourcesHost` (`MainViewModel.DataSources.cs`: toasts, keyboard, `IClipboardText` and
+  `IWebBrowser` from `Services/ExternalApps`). `StatusBarViewModel.WatchSteamGridDb` shows a rejected key in the chip.
 - `LibrarySession` hands every read library to the service; `MainViewModel` gives each new tile its `GameArtwork` (with
   the install and run state, `ShowStates`) and, on `Changed`, the shown tiles theirs. `GameTileViewModel.Cover`/`Hero`.
 - `Controls/ArtworkImage`: draws one image cropped centred with rounded corners. It loads only when it is drawn (a hidden

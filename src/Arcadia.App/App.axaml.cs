@@ -116,7 +116,7 @@ public partial class App : Application
                 new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)),
                 webPages)
             {
-                Artwork = ArtworkFolder.CreateService(time),
+                Artwork = ArtworkFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
             });
             var launchers = app.Launchers;
             var controllerSupport = app.ControllerSupport;
@@ -132,6 +132,7 @@ public partial class App : Application
             }
 
             var window = new MainWindow { DataContext = viewModel };
+            viewModel.Clipboard = new WindowClipboard(window);
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
             if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))
             {

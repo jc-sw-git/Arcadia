@@ -97,6 +97,9 @@ public sealed record AppSettings
     /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
     public bool SortsStatusByNewest { get; init; }
 
+    /// <summary>"Reihenfolge für Artwork" and "Zuschneiden erlaubt" in "Datenquellen" (#489).</summary>
+    public ArtworkSettings Artwork { get; init; } = new();
+
     /// <summary>
     /// "Von Hand gesetzte Artworks überschreiben" (#13, #490): "Alle Artworks neu laden" replaces images set by hand too
     /// (<c>ArtworkService.ReloadAll</c>). Off by default; its row is in the category "Datenquellen" (#489).
@@ -118,6 +121,7 @@ public sealed record AppSettings
     {
         MouseMode = (MouseMode ?? new MouseModeSettings()).WithValidValues(),
         ReturnWithView = (ReturnWithView ?? new ReturnWithViewSettings()).WithValidValues(),
+        Artwork = (Artwork ?? new ArtworkSettings()).WithValidValues(),
     };
 
     /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>

@@ -1,3 +1,4 @@
+using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Artwork;
@@ -53,8 +54,17 @@ public sealed partial class ArtworkService
     // Offers are downloaded a few at a time: the modal fills quickly without twenty requests at once.
     private const int ParallelOfferDownloads = 4;
 
-    /// <summary>The source of more images (#489); null without one: the modal then shows the notice.</summary>
-    public IArtworkSuggestions? Suggestions { get; init; }
+    private IArtworkSuggestions? _suggestions;
+
+    /// <summary>
+    /// The source of more images: SteamGridDB with the player's key (<see cref="SteamGridDb"/>, #489) unless another is
+    /// given; null without one: the modal then shows the notice.
+    /// </summary>
+    public IArtworkSuggestions? Suggestions
+    {
+        get => _suggestions ??= SteamGridDb is { } key ? new SteamGridDbSuggestions(key, StoreIdOf) : null;
+        init => _suggestions = value;
+    }
 
     /// <summary>
     /// What the modal shows for <paramref name="game"/>'s <paramref name="kind"/>: the image in use, the own file and the
@@ -86,7 +96,7 @@ public sealed partial class ArtworkService
             _write.Release();
         }
 
-        var run = new RunState();
+        var run = NewRunState();
         var offers = new List<ArtworkOffer>();
         if (await LauncherOfferAsync(game, kind, current, currentFile, currentSize, run, cancel) is { } launcher)
         {
@@ -258,7 +268,7 @@ public sealed partial class ArtworkService
     {
         var image = record.Of(kind);
         var size = image is null ? null : CheckedSize(game.Key, kind, image);
-        var run = new RunState();
+        var run = NewRunState();
         var pick = lookup is null ? null : await PickAsync(game, kind, lookup.For(game, kind), image, size, run, cancel);
         var restored = Apply(record with { Unreadable = false }, kind, pick ?? (size is null ? null : new Pick.Keep()), run);
         if (restored.IsEmpty)

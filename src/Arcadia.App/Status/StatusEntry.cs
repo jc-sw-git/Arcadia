@@ -22,6 +22,9 @@ public enum StatusTarget
 
     /// <summary>The Arcadia update: "Jetzt aktualisieren" in "Über Arcadia", or straight from the modal.</summary>
     ArcadiaUpdate,
+
+    /// <summary>SteamGridDB turned the key down (#489): "Schlüssel" in "Datenquellen"; no fix of its own.</summary>
+    SteamGridDbKey,
 }
 
 /// <summary>

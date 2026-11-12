@@ -41,6 +41,7 @@ its file.
 | [487](487-show-real-steam-covers-and-backgrounds.md) | #487 | Show real Steam covers and backgrounds in the library, preview, detail page and search | T487-1 to T487-25 |
 | [499](499-detail-page-new-layout.md) | #499 | Detail page: new layout with areas, carousel into depth and info box | T499-1 to T499-31 (owner: T499-30, T499-31) |
 | [488](488-show-epics-covers-and-backgrounds.md) | #488 | Show Epic's covers and backgrounds from its catalog | T488-1 to T488-17 (owner: T488-16, -17) |
+| [489](489-settings-category-data-sources.md) | #489 | Settings category "Datenquellen": SteamGridDB key, artwork order and search | T489-1 to T489-27, T490-21, -22, -27 to -30, -32 |
 | [490](490-change-a-games-artwork.md) | #490 | Change a game's artwork in "Artwork ändern", with own files and images set by hand | T490-1 to T490-35 |
 
 ## Release candidate tests (restart or installation)
@@ -86,5 +87,6 @@ Charter: –. Time box: –. Findings: –.
 | T487-19 | `Window/ArtworkViewTests`; the variants T487-2, -3, -5 to -10, -12 to -17 in `ArtworkServiceTests`, `ArtworkCacheTests`, `SteamArtworkTests`, `ArtworkFormatTests`, `ImageCheckTests` (Core) |
 | T488-1, -8, -13 | `EpicArtworkTests` |
 | T488-14, -15 | `Window/EpicArtworkWindowTests`; the variants T488-2 to -7, -9 to -12 in `EpicArtworkTests` (Core) |
+| T489-1, -2, -12, -13, -16, -19, T490-21, -22, -27, -29 | `DataSourcesTests` (#490's cases in `DataSourcesTests.ArtworkChanges`); T489-1 (layout) and -24 in `Window/DataSourcesViewTests`; the variants in `SteamGridDbKeyTests`, `SteamGridDbClientTests`, `ArtworkServiceSteamGridDbTests` (Core) |
 | T490-1, -3, -4, -6, -8, -10, -12 to -15, -23, -24, -27, -31 | `ChangeArtworkTests`; the variants T490-7, -9, -11, -16 to -20, -25, -26 in `ArtworkByHandTests` (Core) |
 | T490-2, -5 | `Window/ChangeArtworkViewTests` |

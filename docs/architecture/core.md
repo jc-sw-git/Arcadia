@@ -18,7 +18,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   launcher id (a-z, 0-9, `-`).
 - `LibraryTypeOption`: a launcher's switch for software, tools or soundtracks.
 - `ILauncherArtwork`: a launcher's own covers and backgrounds per game (`ArtworkCandidate`: a file or an `https`
-  address), best first (#487).
+  address), best first (#487); `IArtworkLookup.StoreIdOf` the game's id at a store SteamGridDB knows (`ArtworkStoreId`, #489).
 - `ILauncherAccount`: a sign-in to the launcher's online account for its uninstalled games, shown as group "Konto" on
   its page. `IWebPages`: Arcadia's own browser for a launcher's web pages (a sign-in on its own page), its cookies kept
   in Arcadia's data folder.
@@ -59,14 +59,20 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   as the real keyboard's keys, ISO or ANSI), `KeyboardPlacement` (the mouse mode keyboard's edge and size on a
   monitor).
 
-**Artwork** (`Artwork/`, #13, #487)
+**Artwork** (`Artwork/`, #13, #487, #489)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
   launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
   another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
   the run stops downloading at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
   what the views show (`GameArtwork`), `Changed` says for which games it changed. `ReloadAll` runs it over every image
-  again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben".
+  again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben". The order of the sources and the
+  tolerance come from `ArtworkSettings`; SteamGridDB is asked only where nothing cached fits, once per game and kind
+  and session (`SearchAgain` and `ReloadAll` ask again); `Search`/`SearchChanged`: the missing counts and the run's progress.
+- `SteamGridDb/`: `SteamGridDbClient` (API v2, the key only in the `Authorization` header, 10 s, waits on 429, checks
+  every answer), `SteamGridDbKey` (the key's shape, state None/Unchecked/Valid/Rejected, nothing sent without a
+  usable key), `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only) and
+  `SteamGridDbSuggestions` (the client as `IArtworkSuggestions` for "Artwork ändern").
 - `ArtworkService.ByHand.cs` ("Artwork ändern", #490): `ChoicesAsync` (image in use, own file, offers: the launcher's
   as a scan would choose it, then `IArtworkSuggestions`' up to 20, waiting in `artwork/.suggestions/`), `UseAsync`,
   `UseFileAsync` (own file, 20 MB), `UseOwnFileAsync`, `RestoreAsync`. All set by hand; one lock per game write with the run.

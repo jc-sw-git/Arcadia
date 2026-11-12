@@ -35,9 +35,7 @@ public partial class MainViewModel
     void IChangeArtworkHost.OpenDataSources(ChangeArtworkViewModel modal)
     {
         ((IChangeArtworkHost)this).Close(modal);
-
-        // The category "Datenquellen" comes with #489; until then the settings open on their first category.
-        ShowSettings(first: null);
+        OpenDataSources();
     }
 
     Task<string?> IChangeArtworkHost.PickImageAsync(string title) =>

@@ -63,6 +63,8 @@ public sealed class SteamArtwork(Func<SteamInstallation?> locate) : ILauncherArt
 
     private sealed class Lookup(Dictionary<string, string> grid, string? cache) : IArtworkLookup
     {
+        public ArtworkStoreId? StoreIdOf(Game game) => AppIdOf(game) is { } appId ? new ArtworkStoreId(ArtworkStoreId.Steam, appId) : null;
+
         public IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind)
         {
             if (AppIdOf(game) is not { } appId)

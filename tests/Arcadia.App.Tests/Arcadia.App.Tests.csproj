@@ -37,6 +37,7 @@
     <Compile Include="..\Arcadia.Core.Tests\FakeSteamWeb.cs" Link="Fixtures\FakeSteamWeb.cs" />
     <!-- Steam's image server and made-up images for the artwork (#487). -->
     <Compile Include="..\Arcadia.Core.Tests\Artwork\FakeImageServer.cs" Link="Fixtures\FakeImageServer.cs" />
+    <Compile Include="..\Arcadia.Core.Tests\Artwork\FakeSteamGridDb.cs" Link="Fixtures\FakeSteamGridDb.cs" />
     <Compile Include="..\Arcadia.Core.Tests\Artwork\TestImages.cs" Link="Fixtures\TestImages.cs" />
   </ItemGroup>
 

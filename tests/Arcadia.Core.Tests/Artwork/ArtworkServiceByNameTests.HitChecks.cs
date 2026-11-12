@@ -149,6 +149,20 @@ public sealed partial class ArtworkServiceByNameTests
 
     [Fact]
     [Trait("TestCase", "T506-96")]
+    public async Task Checks_finishing_at_the_same_time_keep_every_result()
+    {
+        int[] withCover = [501, 502, 503, 601, 602];
+        await OldWaitingListAsync([.. withCover, .. Enumerable.Range(900, 55)]);
+        var hits = Assert.Single(_service.Waiting).Hits;
+
+        await Task.WhenAll(hits.Select(hit => Task.Run(() => _service.CheckWaitingHitAsync(Echo, hit))));
+
+        Assert.Equal(withCover, Match().Hits.Select(h => h.Id));
+        Assert.Equal(withCover, Match().Checked.Order());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T506-96")]
     public async Task An_old_waiting_game_is_checked_only_when_shown_and_kept_checked()
     {
         await OldWaitingListAsync(501, 504, 502);

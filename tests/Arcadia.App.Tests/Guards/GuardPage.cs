@@ -48,7 +48,10 @@ internal sealed record GuardPage(
     /// <summary>The states of <see cref="Walk"/>, or only the opened one.</summary>
     public IEnumerable<string> States(ArcadiaWindow arcadia) => Walk?.Invoke(arcadia) ?? ["offen"];
 
-    /// <summary>The focused control as a player sees it, or null where nothing is focused or it is dimmed (not available here).</summary>
+    /// <summary>
+    /// The focused control as a player sees it, or null where it is dimmed (not available here) or the entry says
+    /// nothing on it takes the focus. Fails where the focus can't be found, so a state can't pass unchecked.
+    /// </summary>
     public Control? FocusedControl(ArcadiaWindow arcadia)
     {
         var focused = Focused is null ? FocusedButton(arcadia, this) : Focused(arcadia);
@@ -61,28 +64,39 @@ internal sealed record GuardPage(
     /// The one focused button besides the covers of the grid. Where a dialog lies over a page that keeps its own focus
     /// (a confirmation over the detail page), the one shown by a view model of <paramref name="page"/>.
     /// </summary>
-    private static Button? FocusedButton(ArcadiaWindow arcadia, GuardPage page)
+    private static Button FocusedButton(ArcadiaWindow arcadia, GuardPage page)
     {
-        var focused = arcadia.Window.GetVisualDescendants().OfType<Button>()
-            .Where(button => button.Classes.Contains("focused") && !button.Classes.Contains("tile") && RingGeometry.IsShown(arcadia.Window, button))
-            .ToList();
+        var focused = FocusedButtons(arcadia, kind: null);
         if (focused.Count > 1)
         {
             focused = [.. focused.Where(button => button.GetSelfAndVisualAncestors().OfType<Control>().Any(control => page.Shows.Contains(control.DataContext?.GetType())))];
         }
 
-        return focused switch
-        {
-            [var one] => one,
-            [] => null,
-            _ => throw new XunitException($"{focused.Count} Schaltflächen zugleich fokussiert: {string.Join(", ", focused.Select(button => string.Join('.', button.Classes)))}"),
-        };
+        return Single(focused);
     }
+
+    /// <summary>The one focused button of <paramref name="kind"/> (a style class), e.g. a layout menu's item over its keyboard.</summary>
+    public static Button FocusedButton(ArcadiaWindow arcadia, string kind) => Single(FocusedButtons(arcadia, kind));
+
+    private static List<Button> FocusedButtons(ArcadiaWindow arcadia, string? kind) => [.. arcadia.Window.GetVisualDescendants().OfType<Button>()
+        .Where(button => button.Classes.Contains("focused") && !button.Classes.Contains("tile") && (kind is null || button.Classes.Contains(kind))
+            && RingGeometry.IsShown(arcadia.Window, button))];
+
+    private static Button Single(List<Button> focused) => focused switch
+    {
+        [var one] => one,
+        [] => throw new XunitException("Keine fokussierte Schaltfläche gefunden"),
+        _ => throw new XunitException($"{focused.Count} Schaltflächen zugleich fokussiert: {string.Join(", ", focused.Select(button => string.Join('.', button.Classes)))}"),
+    };
 
     /// <summary>
     /// The part of <paramref name="control"/> that wears its focus ring (its chrome, or a frame inside it such as an
     /// artwork's) and the ring's shadows; null where the focus shows as a fill instead (a status entry's buttons).
     /// </summary>
+    /// <remarks>
+    /// The ring is taken as worn, not from a theme key per entry: the guard checks that it is drawn whole, not which of
+    /// the theme's rings a button wears.
+    /// </remarks>
     public static (Border Ringed, BoxShadows Ring)? RingOf(ArcadiaWindow arcadia, Control control)
     {
         arcadia.WaitForTransitions();

@@ -14,3 +14,4 @@ History:
 | `WINDOW_GUARDS=1 tools/ci/run-tests.sh 4` (main set: 703 App methods, branch merged with main) | 2026-11-12 | Claude | PR branch, Release, Linux cloud container | ✅ 4:06 min | – |
 | `GuardPageListTests` after merging #522 | 2026-11-12 | Claude | CI, Linux | ❌ red: `CustomizeOverviewViewModel` missing | Entry „Übersicht anpassen“ added |
 | Focus ring guard on the newly walked pages | 2026-11-12 | Claude | PR branch, Release, Linux cloud container | ❌ search: the focused hit in the first row has its ring only half as bright at the top | State left out in its entry (`RingFinding`); bug for the owner to decide |
+| Focus ring guard with the layout menu entry's `Focused` taken out (QE finding 1) | 2026-11-12 | Claude | PR branch, Release, Linux cloud container | ✅ red: „Tastaturlayout der Suche: Keine fokussierte Schaltfläche gefunden“ | – |

@@ -88,7 +88,12 @@ public sealed class ConsistentTextsViewTests
     [AvaloniaFact]
     [Trait("TestCase", "T339-14")]
     public Task No_page_dialog_or_settings_category_says_emuliert() =>
-        GuardWalk.EveryAsync(_ => true, (arcadia, _, state) => AssertNoEmulier(VisibleTexts(arcadia.WaitForTransitions()), state), walks: page => page.IsSettingsPage);
+        GuardWalk.EveryAsync(_ => true, (arcadia, _, state) =>
+        {
+            var texts = VisibleTexts(arcadia.WaitForTransitions());
+            Assert.True(texts.Count > 0, $"{state}: kein Text gezeichnet");
+            AssertNoEmulier(texts, state);
+        }, walks: page => page.IsSettingsPage);
 
     [AvaloniaFact]
     [Trait("TestCase", "T339-15")]

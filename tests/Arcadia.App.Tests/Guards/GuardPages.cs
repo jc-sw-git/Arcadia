@@ -42,7 +42,8 @@ internal static class GuardPages
         new("Suche", [typeof(SearchViewModel)], Pressing(UiAction.Search), Search, RingsAtLeast: 30,
             RingFinding: ("mit Treffern", "Der Rahmen des fokussierten Treffers in der ersten Reihe ist oben nur halb so hell (#518).")),
         new("Tastaturlayout der Suche", [typeof(LayoutMenuViewModel)], Pressing(UiAction.Search, UiAction.KeyboardLayout),
-            arcadia => Down(arcadia, arcadia.Arcadia.Search!.Keyboard.LayoutMenu.Items.Count)),
+            arcadia => Down(arcadia, arcadia.Arcadia.Search!.Keyboard.LayoutMenu.Items.Count),
+            Focused: arcadia => GuardPage.FocusedButton(arcadia, "layoutItem")),
         new("Einstellungen › Launcher", [typeof(SettingsPageViewModel), typeof(LauncherSettingsViewModel)], OpenCategoryAsync<LauncherSettingsViewModel>, Rows)
             { IsSettingsPage = true },
         new("Launcherseite", [], OpenLauncherPageAsync, Rows) { IsSettingsPage = true },

@@ -59,16 +59,19 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   as the real keyboard's keys, ISO or ANSI), `KeyboardPlacement` (the mouse mode keyboard's edge and size on a
   monitor).
 
-**Artwork** (`Artwork/`, #13, #487, #489, #491)
+**Artwork** (`Artwork/`, #13, #487, #489, #491, #506)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
   launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
   another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
   the run stops downloading at the first network failure; removes the automatic images of games that left a library read whole. `Of(key)` is
   what the views show (`GameArtwork`), `Changed` says for which games it changed. `ReloadAll` runs it over every image
-  again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben". The order of the sources and the
-  tolerance come from `ArtworkSettings`; SteamGridDB is asked only where nothing cached fits, once per game and kind
-  and session (`SearchAgain` and `ReloadAll` ask again); `Search`/`SearchChanged`: the missing counts and the run's progress.
+  again, set by hand ones too only with "Von Hand gesetzte Artworks überschreiben". Order, switches (`Off`) and
+  tolerance come from `ArtworkSettings`, followed per image during a run; `SettingsChanged` hides a switched-off
+  source's images at once (`Of` filters) and queues a run that searches nothing. SteamGridDB is asked only where nothing
+  cached fits: in a scan only for games new to the library (`KnownGames`, `artwork/known-games.json`; no list yet: all
+  known), else by `SearchAgain` (player or first key) and `ReloadAll`; `CancelSearch` stops a run that searches.
+  `Search`/`SearchChanged`: the missing counts and the progress of a run that searches (#506).
 - `SteamGridDb/`: `SteamGridDbClient` (API v2, the key only in the `Authorization` header, 10 s, waits on 429, checks
   every answer), `SteamGridDbKey` (the key's shape, state None/Unchecked/Valid/Rejected, nothing sent without a
   usable key), `SteamGridDbKeyStore` (encrypted file through injected protect/unprotect, else memory only) and
@@ -81,7 +84,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   Waiting (hits, position) in `artwork/name-matches.json`. `Waiting`/`WaitingChanged`, `ChooseAsync`, `Skip`,
   `TakeFirstForAllWaiting`, `HitCoverAsync` (a hit's cover for the waiting list, in `.suggestions/`).
 - `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), the own
-  files as `own-cover|own-hero.*`, every file through a temporary file and a rename; folder names from the key that never
+  files as `own-cover|own-hero.*`, the image of a source switched off renamed to `off-cover|off-hero.*` (one per kind)
+  and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never
   leave the cache; unreadable metadata makes the folder's images "set by hand". `ImageCheck`: a whole PNG, JPEG or WebP of at most 20 MB and 40 megapixels, and its size.
 
 **Settings and navigation**

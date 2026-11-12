@@ -168,8 +168,9 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         await _service.WhenIdleAsync();
         Assert.Null(Cached("other:solo"));
 
+        // The first usable key searches the games that came without one (#506).
         await WithKeyAsync();
-        _service.Update([new LibraryArtwork(new LauncherLibrary(Other, [solo]), Source: null)]);
+        Assert.True(_service.SearchAgain(byPlayer: false));
         await _service.WhenIdleAsync();
 
         Assert.Equal(Cover501, Cached("other:solo")!.Cover!.Stamp);
@@ -211,7 +212,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
     [InlineData("hangs")]
     [InlineData("server error")]
     [InlineData("broken json")]
-    public async Task A_failed_search_puts_nothing_on_the_list_and_asks_again_at_the_next_scan(string failure)
+    public async Task A_failed_search_puts_nothing_on_the_list_and_asks_again_at_the_next_search(string failure)
     {
         await WithKeyAsync();
         ThreeEchoes();
@@ -241,7 +242,10 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         Assert.Empty(_service.Waiting);
         (_sgdb.Offline, _sgdb.Hangs, _sgdb.Failure, _sgdb.Body) = (false, false, null, null);
 
+        // Not at the next scan, at the next "Jetzt suchen" (#506).
         await ScanAsync();
+        Assert.Empty(_service.Waiting);
+        await SearchAsync();
 
         Assert.Single(_service.Waiting);
     }
@@ -323,7 +327,10 @@ public sealed class ArtworkServiceByNameTests : IDisposable
 
         Assert.Equal(1, _service.TakeFirstForAllWaiting());
         await _service.WhenIdleAsync();
+
+        // Back in the library it isn't new (#506): its images come with the next "Jetzt suchen".
         await ScanAsync(Echo, gone);
+        await SearchAsync();
 
         Assert.Empty(_service.Waiting);
         Assert.Equal(Cover501, Cached("other:gone")!.Cover!.Stamp);
@@ -443,6 +450,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         await ScanAsync(GameOf("third", "Unrelated"));
         _sgdb.Requests.Clear();
         await ScanAsync(Echo, other);
+        await SearchAsync();
 
         Assert.Empty(Searches());
         Assert.Empty(_service.Waiting);
@@ -515,7 +523,7 @@ public sealed class ArtworkServiceByNameTests : IDisposable
         Assert.Empty(_service.Waiting);
 
         _images.Offline = false;
-        await ScanAsync();
+        await SearchAsync();
         Assert.Equal(Cover501, Cached()!.Cover!.Stamp);
     }
 
@@ -532,6 +540,13 @@ public sealed class ArtworkServiceByNameTests : IDisposable
 
         Assert.Equal([Cover501], (await _service.Suggestions!.FindAsync(Echo, ArtworkKind.Cover, default)).Select(s => s.Download.AbsoluteUri));
         Assert.Empty(Searches().Skip(1));
+    }
+
+    /// <summary>"Jetzt suchen": a scan asks SteamGridDB only for new games (#506).</summary>
+    private async Task SearchAsync()
+    {
+        Assert.True(_service.SearchAgain(byPlayer: true));
+        await _service.WhenIdleAsync();
     }
 
     /// <summary>A launcher with optional store ids per game key and images to download.</summary>

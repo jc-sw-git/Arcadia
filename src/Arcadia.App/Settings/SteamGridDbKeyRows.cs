@@ -23,6 +23,7 @@ public sealed class SteamGridDbKeyRows
     private readonly Action<TextEditorViewModel?> _showEditor;
     private readonly TimeProvider _time;
     private readonly bool _keyPersists;
+    private readonly Func<bool> _searchesSteamGridDb;
     private readonly TextRowViewModel _keyRow;
     private readonly ActionRowViewModel _paste;
     private readonly ActionRowViewModel _page;
@@ -33,8 +34,11 @@ public sealed class SteamGridDbKeyRows
 
     /// <param name="showEditor">Shows the editor of the key over the page (the category's), or null when it closes.</param>
     /// <param name="keyPersists">The key is kept across a restart (Windows); else only until Arcadia closes.</param>
-    public SteamGridDbKeyRows(SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, Action<TextEditorViewModel?> showEditor, TimeProvider time, bool keyPersists)
+    /// <param name="searchesSteamGridDb">SteamGridDB is switched on in "Reihenfolge für Artwork" (#506).</param>
+    public SteamGridDbKeyRows(
+        SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, Action<TextEditorViewModel?> showEditor, TimeProvider time, bool keyPersists, Func<bool> searchesSteamGridDb)
     {
+        _searchesSteamGridDb = searchesSteamGridDb;
         _key = key;
         _artwork = artwork;
         _host = host;
@@ -207,9 +211,13 @@ public sealed class SteamGridDbKeyRows
         await TakeAsync(key, pasted: true);
     }
 
-    /// <summary>Saves the key and checks it; a key that holds starts the search for what is missing at once.</summary>
+    /// <summary>
+    /// Saves the key and checks it; the first usable key (none or a rejected one before) starts the search for what is
+    /// missing at once, also when the check found no network (#506); replacing a working key starts nothing.
+    /// </summary>
     private async Task TakeAsync(string key, bool pasted)
     {
+        var first = !_key.IsUsable;
         _checking = true;
         Refresh();
         SteamGridDbOutcome outcome;
@@ -231,17 +239,28 @@ public sealed class SteamGridDbKeyRows
                 break;
             case SteamGridDbOutcome.NoConnection:
                 _host.Toast(HealthSeverity.Warning, AppTexts.DataSourcesKeyKeptNoConnection);
+                SearchIfFirst(first);
                 break;
             case SteamGridDbOutcome.Found or SteamGridDbOutcome.NotFound when !_key.IsStored:
                 _host.Toast(HealthSeverity.Warning, AppTexts.DataSourcesKeyNotStored);
-                _artwork.SearchAgain(byPlayer: false);
+                SearchIfFirst(first);
                 break;
             default:
-                _host.Toast(HealthSeverity.Info, pasted ? AppTexts.DataSourcesKeyPasted : AppTexts.DataSourcesKeySaved);
-                _artwork.SearchAgain(byPlayer: false);
+                var searches = SearchIfFirst(first);
+                _host.Toast(HealthSeverity.Info, (pasted, searches) switch
+                {
+                    (true, true) => AppTexts.DataSourcesKeyPastedSearching,
+                    (false, true) => AppTexts.DataSourcesKeySavedSearching,
+                    (true, false) => AppTexts.DataSourcesKeyPasted,
+                    _ => AppTexts.DataSourcesKeySaved,
+                });
                 break;
         }
     }
+
+    /// <summary>The first usable key searches every game still missing an image, unless SteamGridDB is switched off.</summary>
+    /// <returns>True if a search starts.</returns>
+    private bool SearchIfFirst(bool first) => first && _searchesSteamGridDb() && _artwork.SearchAgain(byPlayer: false);
 
     private async Task TestAsync()
     {

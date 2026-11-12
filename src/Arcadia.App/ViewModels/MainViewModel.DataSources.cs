@@ -31,11 +31,14 @@ public partial class MainViewModel : IDataSourcesHost
     private DataSourcesSettingsViewModel? CreateDataSources(SettingsChanges changes) =>
         _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(key, artwork, this, changes, _time, KeepsSteamGridDbKey) : null;
 
-    /// <summary>Opens "Datenquellen" on the key, e.g. from the status modal or "Artwork ändern" without a key (#490).</summary>
-    public void OpenDataSources()
+    /// <summary>
+    /// Opens "Datenquellen" on the key, e.g. from the status modal or "Artwork ändern" without a key (#490), or on another
+    /// row, e.g. a source switched off (#506).
+    /// </summary>
+    public void OpenDataSources(string rowKey = SteamGridDbKeyRows.KeyRowKey)
     {
         ShowSettings(typeof(DataSourcesSettingsViewModel));
-        Settings?.Selected?.FocusRow(SteamGridDbKeyRows.KeyRowKey);
+        Settings?.Selected?.FocusRow(rowKey);
     }
 
     /// <summary>The key's state and the search are followed from the start, for the header and the warning at a search's end.</summary>

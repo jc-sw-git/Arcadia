@@ -101,7 +101,8 @@ public sealed partial class ArtworkService
 
         if (libraries is not null)
         {
-            Update(libraries);
+            // Not new to the library: a scan alone wouldn't ask SteamGridDB for them (#506).
+            SearchFor(libraries, waiting.Select(e => e.Key));
         }
 
         return shown;
@@ -238,8 +239,6 @@ public sealed partial class ArtworkService
         await _write.WaitAsync(cancel);
         try
         {
-            _askedSteamGridDb.Remove((game.Key, ArtworkKind.Cover));
-            _askedSteamGridDb.Remove((game.Key, ArtworkKind.Hero));
             await UpdateGameAsync(game, lookup, NewRunState(SteamGridDb is { IsUsable: true }), changes, cancel);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

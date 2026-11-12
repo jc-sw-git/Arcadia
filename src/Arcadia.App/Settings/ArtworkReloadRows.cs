@@ -5,7 +5,8 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// "Alle Artworks neu laden" and "Von Hand gesetzte Artworks überschreiben" in the group "ARTWORK" of "Datenquellen" (#13,
 /// #490): the reload asks first, since images set by hand go too while the switch is on; it is greyed out while a search
-/// or a reload runs. Its progress shows in "Fehlende Cover und Hintergründe" (<see cref="ArtworkSourceRows"/>).
+/// runs, and while it runs itself it reads "Neu laden abbrechen" (#506). Its progress shows in "Fehlende Cover und
+/// Hintergründe" (<see cref="ArtworkSourceRows"/>).
 /// </summary>
 public sealed class ArtworkReloadRows
 {
@@ -28,7 +29,7 @@ public sealed class ArtworkReloadRows
         _artwork = artwork;
         _changes = changes;
         _ask = ask;
-        _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesReload, Ask)
+        _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesReload, AskOrCancel)
         {
             Group = AppTexts.DataSourcesArtworkGroup,
             ActionText = AppTexts.DataSourcesReloadAction,
@@ -68,17 +69,28 @@ public sealed class ArtworkReloadRows
             _reloadAsked = false;
         }
 
-        var running = _artwork.Search.Running is not null || _reloadAsked;
-        _reload.IsEnabled = !running;
-        _reload.IsDimmed = running;
+        var reloading = _artwork.Search.Running is { Reload: true } || _reloadAsked;
+        var searching = _artwork.Search.Running is { Reload: false };
+        _reload.IsEnabled = !searching;
+        _reload.IsDimmed = searching;
+        _reload.IsWorking = reloading;
+        _reload.ActionText = reloading ? AppTexts.DataSourcesReloadCancel : AppTexts.DataSourcesReloadAction;
         _reload.Subtitle = _changes.Current.OverwritesArtworkSetByHand ? AppTexts.DataSourcesReloadReplaces : AppTexts.DataSourcesReloadKeeps;
         _overwrite.Refresh();
     }
 
-    /// <summary>A on "Alle Artworks neu laden": the question first, its text following the switch.</summary>
-    private void Ask()
+    /// <summary>A on "Alle Artworks neu laden": the question first, its text following the switch; while it runs, it stops.</summary>
+    private void AskOrCancel()
     {
-        if (_artwork.Search.Running is not null || _reloadAsked)
+        if (_artwork.Search.Running is { Reload: true } || _reloadAsked)
+        {
+            _artwork.CancelSearch();
+            _reloadAsked = false;
+            Refresh();
+            return;
+        }
+
+        if (_artwork.Search.Running is not null)
         {
             return;
         }

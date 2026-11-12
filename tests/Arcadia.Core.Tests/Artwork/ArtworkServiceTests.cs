@@ -71,6 +71,13 @@ public sealed class ArtworkServiceTests : IDisposable
         await _service.WhenIdleAsync();
     }
 
+    /// <summary>"Jetzt suchen": a scan goes online only for new games (#506), a search for every game missing an image.</summary>
+    private async Task SearchAsync()
+    {
+        Assert.True(_service.SearchAgain(byPlayer: true));
+        await _service.WhenIdleAsync();
+    }
+
     private string File(string name, byte[] content)
     {
         var path = Path.Combine(_root, "launcher", name);
@@ -161,7 +168,7 @@ public sealed class ArtworkServiceTests : IDisposable
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.Gone)]
-    public async Task An_image_the_server_adds_later_comes_with_the_next_scan(HttpStatusCode status)
+    public async Task An_image_the_server_adds_later_comes_with_the_next_search_not_the_next_scan(HttpStatusCode status)
     {
         _server.Fail(CoverUrl, status);
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -169,13 +176,15 @@ public sealed class ArtworkServiceTests : IDisposable
 
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"));
+        Assert.Equal(1, RequestCount);
+        await SearchAsync();
 
         Assert.Equal(2, RequestCount);
         Assert.NotNull(_service.Of("steam:4000001")!.Cover);
     }
 
     [Fact]
-    public async Task Without_network_nothing_is_shown_and_the_next_scan_asks_again()
+    public async Task Without_network_nothing_is_shown_and_the_next_search_asks_again()
     {
         _server.Offline = true;
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -186,6 +195,8 @@ public sealed class ArtworkServiceTests : IDisposable
         _server.Offline = false;
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"), GameOf("4000002"));
+        Assert.Equal(asked, RequestCount);
+        await SearchAsync();
 
         // The first failed connection ends the run's downloads: no wait per game.
         Assert.Equal(1, asked);
@@ -193,7 +204,7 @@ public sealed class ArtworkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_download_that_doesnt_answer_in_10_seconds_waits_for_the_next_scan()
+    public async Task A_download_that_doesnt_answer_in_10_seconds_waits_for_the_next_search()
     {
         _server.Hang(CoverUrl);
         _source.Cover = [new("steam-server", Download: new Uri(CoverUrl))];
@@ -209,6 +220,8 @@ public sealed class ArtworkServiceTests : IDisposable
         Assert.Contains(_log, l => l.Contains("antwortet nicht in 10 s", StringComparison.Ordinal));
         _server.Serve(CoverUrl, TestImages.Jpeg(600, 900));
         await ScanAsync(GameOf("4000001"));
+        Assert.Null(_service.Of("steam:4000001"));
+        await SearchAsync();
         Assert.NotNull(_service.Of("steam:4000001")!.Cover);
     }
 

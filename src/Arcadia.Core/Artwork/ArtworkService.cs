@@ -9,12 +9,14 @@ namespace Arcadia.Core.Artwork;
 
 /// <summary>
 /// Brings every game's cover and background into the cache and says which games' images changed (#13, #487, #489). After
-/// each scan it runs once over the libraries in the background: for every image not set by hand it asks the sources in the
-/// order of "Reihenfolge für Artwork" (the launcher's images in their order, SteamGridDB's best rated) and keeps the first
-/// that fits the format within "Zuschneiden erlaubt", else the first image at all; an image already cached stays unless an
-/// earlier or changed file of the launcher replaces it, so a download happens only for what is missing. SteamGridDB is asked
-/// only with a usable key, by the game's store id, and only for an image the cache doesn't hold fitting; a game it answered
-/// for is not asked again in this session, unless the player searches again ("Jetzt suchen", a new key).
+/// each scan it runs once over the libraries in the background: for every image not set by hand it asks the sources switched
+/// on, in the order of "Reihenfolge für Artwork" (the launcher's images in their order, SteamGridDB's best rated) and keeps
+/// the first that fits the format within "Zuschneiden erlaubt", else the first image at all; an image already cached stays
+/// unless an earlier or changed file of the launcher replaces it, so a download happens only for what is missing.
+/// SteamGridDB is asked only with a usable key, by the game's store id, only for an image the cache doesn't hold fitting, and
+/// on its own only for a game new to the library (#506, <see cref="KnownGames"/>); every other game only when the player
+/// asks ("Jetzt suchen", "Alle Artworks neu laden") or the first usable key arrives. An image of a source switched off is
+/// kept aside, not shown, and in use again when the source is switched on.
 /// </summary>
 /// <remarks>
 /// One run at a time, off the UI thread; a scan during a run queues the newest libraries for the next run, so a run cut off
@@ -57,16 +59,21 @@ public sealed partial class ArtworkService : IDisposable
     private readonly Dictionary<(string Key, ArtworkKind Kind), long> _versions = [];
     private bool _indexed;
 
-    // Games SteamGridDB answered for in this session (found or not): not asked again until the player searches again.
-    private readonly HashSet<(string Key, ArtworkKind Kind)> _askedSteamGridDb = [];
+    // The sizes of images kept for a source switched off, as _checked holds those in use.
+    private readonly Dictionary<(string Key, ArtworkKind Kind), ImageSize> _checkedOff = [];
+
+    // Where each shown automatic image came from, so one of a source switched off disappears at once (#506).
+    private readonly ConcurrentDictionary<string, (ArtworkSource? Cover, ArtworkSource? Hero)> _shownFrom = new(StringComparer.Ordinal);
+    private IReadOnlySet<ArtworkSource> _offNow = new HashSet<ArtworkSource>();
+
+    private KnownGames? _known;
 
     // Games SteamGridDB doesn't know by their launcher's id in this session: found by name (#491); read by "Artwork ändern" too.
     private readonly ConcurrentDictionary<string, bool> _unknownById = new(StringComparer.Ordinal);
 
     private PendingRun? _pending;
-    private bool _pendingByPlayer;
-    private bool _pendingSearchAgain;
-    private bool _searchingAgain;
+    private RunTrigger? _running;
+    private CancellationTokenSource? _runCancel;
     private Task _runner = Task.CompletedTask;
     private ArtworkSearch _search = ArtworkSearch.NotYet;
     private long _searchShownAt;
@@ -126,17 +133,89 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>A run ended with an unexpected error, with its stack trace; the next scan starts a new run.</summary>
     public event EventHandler<Exception>? Failed;
 
-    /// <summary>The game's cached images; null while it has none (or the cache isn't read yet).</summary>
-    public GameArtwork? Of(string gameKey) => _shown.GetValueOrDefault(gameKey);
+    /// <summary>
+    /// The game's cached images; null while it has none (or the cache isn't read yet). An automatic image of a source
+    /// switched off isn't shown, from the moment it is switched off (#506).
+    /// </summary>
+    public GameArtwork? Of(string gameKey)
+    {
+        if (_shown.GetValueOrDefault(gameKey) is not { } shown)
+        {
+            return null;
+        }
+
+        var off = Volatile.Read(ref _offNow);
+        if (off.Count == 0 || !_shownFrom.TryGetValue(gameKey, out var from))
+        {
+            return shown;
+        }
+
+        var cover = from.Cover is { } coverFrom && off.Contains(coverFrom) ? null : shown.Cover;
+        var hero = from.Hero is { } heroFrom && off.Contains(heroFrom) ? null : shown.Hero;
+        return (cover, hero) switch
+        {
+            (null, null) => null,
+            _ when cover == shown.Cover && hero == shown.Hero => shown,
+            _ => new GameArtwork(cover, hero),
+        };
+    }
 
     /// <summary>Reads what the cache holds, in the background, so the covers show before the first scan ends.</summary>
-    public void Open() => Start(null);
+    public void Open()
+    {
+        Volatile.Write(ref _offNow, OffSources(Settings().WithValidValues()));
+        Start(null);
+    }
 
     /// <summary>
     /// The libraries were read (again): brings their images into the cache in the background, and removes the automatic
-    /// images of games no longer in a library that was read whole.
+    /// images of games no longer in a library that was read whole. SteamGridDB is asked only for games new to the library.
     /// </summary>
-    public void Update(IReadOnlyList<LibraryArtwork> libraries) => Start(new PendingRun(libraries, Reload: false, Overwrite: false));
+    public void Update(IReadOnlyList<LibraryArtwork> libraries) => Start(new PendingRun(libraries, RunTrigger.Rescan));
+
+    /// <summary>
+    /// "Zuschneiden erlaubt", the order or a source's switch changed (#506): images of a source switched off disappear at
+    /// once, and a run picks again among the images on disk and the launchers' own; it searches nothing.
+    /// </summary>
+    public void SettingsChanged()
+    {
+        Volatile.Write(ref _offNow, OffSources(Settings().WithValidValues()));
+        Changed?.Invoke(this, [.. _shown.Keys]);
+        IReadOnlyList<LibraryArtwork>? libraries;
+        lock (_gate)
+        {
+            libraries = _lastLibraries;
+        }
+
+        if (libraries is not null)
+        {
+            Update(libraries);
+        }
+    }
+
+    /// <summary>
+    /// "Suche abbrechen" (#506): the search going on stops after the request in flight; what it found stays, the games it
+    /// didn't reach wait for the next "Jetzt suchen". False when no search runs.
+    /// </summary>
+    public bool CancelSearch()
+    {
+        lock (_gate)
+        {
+            if (_runCancel is not { } running || Search.Running is null)
+            {
+                return false;
+            }
+
+            // A search queued behind it goes too; the libraries still get their launchers' images.
+            if (_pending is { } queued)
+            {
+                _pending = queued with { Trigger = RunTrigger.Rescan };
+            }
+
+            running.Cancel();
+            return true;
+        }
+    }
 
     /// <summary>
     /// "Alle Artworks neu laden" (#13, #490): takes every game's images from their sources again, also those already cached.
@@ -158,14 +237,14 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         Log($"Artwork: alle neu laden{(overwriteSetByHand ? ", auch von Hand gesetzte" : string.Empty)}");
-        Start(new PendingRun(libraries, Reload: true, Overwrite: overwriteSetByHand));
+        Start(new PendingRun(libraries, RunTrigger.Reload, Overwrite: overwriteSetByHand));
         return true;
     }
 
     /// <summary>
-    /// Searches the last libraries again at once, SteamGridDB also for games it already answered for in this session:
-    /// "Jetzt suchen" (<paramref name="byPlayer"/>, its result is <see cref="ArtworkSearch.Result"/>) or a new key. Nothing
-    /// before the first scan; while a run goes, after it.
+    /// Searches every game of the last libraries still missing an image at once, SteamGridDB also for games it answered
+    /// for before: "Jetzt suchen" (<paramref name="byPlayer"/>, its result is <see cref="ArtworkSearch.Result"/>) or the first
+    /// usable key (#506). Nothing before the first scan; while a run goes, after it.
     /// </summary>
     /// <returns>False before the first scan: there is nothing to search yet.</returns>
     public bool SearchAgain(bool byPlayer)
@@ -179,20 +258,26 @@ public sealed partial class ArtworkService : IDisposable
             }
 
             last = _lastLibraries;
-            if (_pendingSearchAgain || _searchingAgain)
+            if (_pending is { Trigger: RunTrigger.FirstKey or RunTrigger.Player } queued)
             {
-                // Pressed again while that search waits or goes: it asks no game twice.
-                _pendingByPlayer |= byPlayer && _pendingSearchAgain;
+                // Pressed again while that search waits: it asks no game twice.
+                _pending = byPlayer ? queued with { Trigger = RunTrigger.Player } : queued;
                 return true;
             }
 
-            _pendingSearchAgain = true;
-            _pendingByPlayer |= byPlayer;
+            if (_running is RunTrigger.FirstKey or RunTrigger.Player && _pending is null)
+            {
+                return true;
+            }
         }
 
-        Start(new PendingRun(last, Reload: false, Overwrite: false));
+        Start(new PendingRun(last, byPlayer ? RunTrigger.Player : RunTrigger.FirstKey));
         return true;
     }
+
+    /// <summary>These games are asked at SteamGridDB in the next run, e.g. after their SteamGridDB game was chosen (#491).</summary>
+    internal void SearchFor(IReadOnlyList<LibraryArtwork> libraries, IEnumerable<string> gameKeys) =>
+        Start(new PendingRun(libraries, RunTrigger.Rescan) { AskAlso = gameKeys.ToHashSet(StringComparer.Ordinal) });
 
     /// <summary>The run going on now and those queued behind it; for the tests.</summary>
     public Task WhenIdleAsync()
@@ -226,9 +311,14 @@ public sealed partial class ArtworkService : IDisposable
         {
             if (run is not null)
             {
-                // A reload queued stays one when a scan comes after it; the newest libraries go.
+                // A search or reload queued stays one when a scan comes after it; the newest libraries go.
                 _pending = _pending is { } queued
-                    ? run with { Reload = run.Reload || queued.Reload, Overwrite = run.Overwrite || queued.Overwrite }
+                    ? run with
+                    {
+                        Trigger = (RunTrigger)Math.Max((int)run.Trigger, (int)queued.Trigger),
+                        Overwrite = run.Overwrite || queued.Overwrite,
+                        AskAlso = run.AskAlso.Union(queued.AskAlso).ToHashSet(StringComparer.Ordinal),
+                    }
                     : run;
                 _lastLibraries = run.Libraries;
                 foreach (var (library, source) in run.Libraries)
@@ -274,30 +364,39 @@ public sealed partial class ArtworkService : IDisposable
                 }
 
                 PendingRun? pending;
-                bool byPlayer;
+                CancellationTokenSource? cancel = null;
                 lock (_gate)
                 {
                     pending = _pending;
-                    byPlayer = _pendingByPlayer;
                     _pending = null;
-                    _pendingByPlayer = false;
-                    _searchingAgain = _pendingSearchAgain;
-                    if (_pendingSearchAgain || pending is { Reload: true })
+                    _running = pending?.Trigger;
+                    if (pending is not null)
                     {
-                        _pendingSearchAgain = false;
-                        _askedSteamGridDb.Clear();
+                        cancel = _runCancel = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
                     }
                 }
 
-                if (pending is not null)
+                try
                 {
-                    await UpdateAsync(pending, byPlayer, changes, _shutdown.Token);
+                    if (pending is not null)
+                    {
+                        await UpdateAsync(pending, changes, cancel!.Token);
+                    }
+                }
+                finally
+                {
+                    lock (_gate)
+                    {
+                        _running = null;
+                        _runCancel = null;
+                    }
+
+                    cancel?.Dispose();
                 }
 
                 changes.Flush();
                 lock (_gate)
                 {
-                    _searchingAgain = false;
                     if (_pending is null)
                     {
                         _runner = Task.CompletedTask;
@@ -325,8 +424,6 @@ public sealed partial class ArtworkService : IDisposable
         lock (_gate)
         {
             _pending = null;
-            _pendingByPlayer = false;
-            _searchingAgain = false;
             _runner = Task.CompletedTask;
             _search = _search with { Running = null };
         }
@@ -360,58 +457,87 @@ public sealed partial class ArtworkService : IDisposable
         Log($"Artwork: {_records.Count} Spiele im Cache, in {watch.ElapsedMilliseconds} ms gelesen");
     }
 
-    private async Task UpdateAsync(PendingRun pending, bool byPlayer, ChangeBatcher changes, CancellationToken cancel)
+    private async Task UpdateAsync(PendingRun pending, ChangeBatcher changes, CancellationToken cancel)
     {
         var watch = Stopwatch.StartNew();
-        var run = NewRunState(SteamGridDb is { IsUsable: true }) with { Reload = pending.Reload, Overwrite = pending.Overwrite };
+        var trigger = pending.Trigger;
+        var byPlayer = trigger == RunTrigger.Player;
+        var settings = Settings().WithValidValues();
+        Volatile.Write(ref _offNow, OffSources(settings));
+        var run = NewRunState(SteamGridDb is { IsUsable: true }) with { Reload = trigger == RunTrigger.Reload, Overwrite = pending.Overwrite };
         var libraries = pending.Libraries;
-        var searched = libraries.Where(l => IsSearched(l.Source, run)).SelectMany(l => l.Library.Games).Where(g => run.Reload || IsMissingAny(g.Key)).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
-        ShowSearch(new ArtworkRun(0, searched.Count, byPlayer, run.Reload), force: true);
-        foreach (var (library, source) in libraries)
+        var keys = libraries.SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
+        var newGames = Known.NewOf(keys);
+
+        // A scan asks SteamGridDB only for games new to the library (#506); a search the player or a first key started, all.
+        run.Asks = trigger == RunTrigger.Rescan ? newGames.Union(pending.AskAlso).ToHashSet(StringComparer.Ordinal) : null;
+        var searched = (trigger switch
         {
-            if (!IsSearched(source, run))
-            {
-                continue;
-            }
+            RunTrigger.Rescan when !run.AsksSteamGridDb => [],
+            RunTrigger.Rescan => keys.Where(run.Asks!.Contains),
+            RunTrigger.Reload => keys,
+            _ => keys.Where(IsMissingAny),
+        }).ToHashSet(StringComparer.Ordinal);
+        run.ShowsProgress = trigger != RunTrigger.Rescan || searched.Count > 0;
+        if (run.ShowsProgress)
+        {
+            Log($"Artwork-Suche gestartet ({NameOf(trigger)}): {searched.Count} Spiele");
+            ShowSearch(run, new ArtworkRun(0, searched.Count, byPlayer, run.Reload), force: true);
+        }
 
-            var lookup = source?.Look() ?? NoImages;
-            foreach (var game in library.Games)
+        var cancelled = false;
+        try
+        {
+            foreach (var (library, source) in libraries)
             {
-                cancel.ThrowIfCancellationRequested();
-                await _write.WaitAsync(cancel);
-                try
+                var lookup = source?.Look() ?? NoImages;
+                foreach (var game in library.Games)
                 {
-                    await UpdateGameAsync(game, lookup, run, changes, cancel);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    // One game's images can't be written now (a full disk, a locked file): it keeps what it shows.
-                    Log($"Artwork: {game.Key} nicht gespeichert: {e.GetType().Name}: {e.Message}");
-                }
-                finally
-                {
-                    _write.Release();
+                    cancel.ThrowIfCancellationRequested();
+                    if (IsVisited(source, game.Key, run))
+                    {
+                        await UpdateGameLockedAsync(game, lookup, run, changes, cancel);
+                    }
+
+                    if (newGames.Contains(game.Key))
+                    {
+                        Known.Add(game.Key);
+                    }
+
+                    if (searched.Contains(game.Key))
+                    {
+                        run.Searched++;
+                        ShowSearch(run, new ArtworkRun(run.Searched, searched.Count, byPlayer, run.Reload), force: false);
+                    }
                 }
 
-                if (searched.Contains(game.Key))
+                if (library is { IsFound: true, ScanFailed: false })
                 {
-                    run.Searched++;
-                    ShowSearch(new ArtworkRun(run.Searched, searched.Count, byPlayer, run.Reload), force: false);
+                    await _write.WaitAsync(cancel);
+                    try
+                    {
+                        RemoveLeftGames(library, changes);
+                    }
+                    finally
+                    {
+                        _write.Release();
+                    }
                 }
             }
-
-            if (library is { IsFound: true, ScanFailed: false })
+        }
+        catch (OperationCanceledException) when (!_shutdown.IsCancellationRequested)
+        {
+            // "Suche abbrechen": the new games it didn't reach wait for "Jetzt suchen", like every other game.
+            cancelled = true;
+            foreach (var key in newGames)
             {
-                await _write.WaitAsync(cancel);
-                try
-                {
-                    RemoveLeftGames(library, changes);
-                }
-                finally
-                {
-                    _write.Release();
-                }
+                Known.Add(key);
             }
+        }
+        finally
+        {
+            // Closing Arcadia saves only the games the run reached: the others are still new at the next start.
+            Known.Save();
         }
 
         if (run.Copied + run.Downloaded > ManyImages)
@@ -419,26 +545,73 @@ public sealed partial class ArtworkService : IDisposable
             ReleaseGarbage();
         }
 
-        Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
-            + (run.SteamGridDbAsked > 0 ? $"; SteamGridDB {run.SteamGridDbAsked} gefragt" : string.Empty)
-            + (run.Offline ? "; keine Verbindung, der Rest folgt beim nächsten Einlesen" : string.Empty)
-            + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty));
-        EndSearch(libraries, run, byPlayer);
+        if (run.ShowsProgress)
+        {
+            Log($"Artwork-Suche {(cancelled ? "abgebrochen" : "beendet")} ({NameOf(trigger)}): {run.Searched} von {searched.Count} Spielen, {run.FoundCovers} Cover, {run.FoundHeroes} Hintergründe");
+        }
+
+        if (run.ShowsProgress || run.Copied + run.Downloaded > 0)
+        {
+            Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
+                + (run.SteamGridDbAsked > 0 ? $"; SteamGridDB {run.SteamGridDbAsked} gefragt" : string.Empty)
+                + (run.Offline ? "; keine Verbindung, der Rest folgt bei der nächsten Suche" : string.Empty)
+                + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty));
+        }
+
+        EndSearch(libraries, run, byPlayer && !cancelled, cancelled);
     }
 
+    /// <summary>One game under <see cref="_write"/>; one whose images can't be written now keeps what it shows.</summary>
+    private async Task UpdateGameLockedAsync(Game game, IArtworkLookup lookup, RunState run, ChangeBatcher changes, CancellationToken cancel)
+    {
+        await _write.WaitAsync(cancel);
+        try
+        {
+            await UpdateGameAsync(game, lookup, run, changes, cancel);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A full disk, a locked file.
+            Log($"Artwork: {game.Key} nicht gespeichert: {e.GetType().Name}: {e.Message}");
+        }
+        finally
+        {
+            _write.Release();
+        }
+    }
+
+    private KnownGames Known => _known ??= new KnownGames(Path.Combine(_cache.Root, KnownGames.FileName)) { Log = Log };
+
+    private static string NameOf(RunTrigger trigger) => trigger switch
+    {
+        RunTrigger.FirstKey => "erster Schlüssel", // not a UI text (logged)
+        RunTrigger.Player => "Jetzt suchen", // not a UI text (logged)
+        RunTrigger.Reload => "Neu laden", // not a UI text (logged)
+        _ => "neue Spiele", // not a UI text (logged)
+    };
+
     /// <summary>
-    /// A launcher without images of its own is searched only for SteamGridDB, by name (#491): with a usable key, so a run
-    /// without one doesn't read the cache for every game of it.
+    /// A game is looked at when its launcher has images, SteamGridDB may be asked, or the cache holds images of it (a source
+    /// switched off may have to be put aside); so a run without a key doesn't read the cache for every game of a launcher
+    /// without images of its own (#491).
     /// </summary>
-    private static bool IsSearched(ILauncherArtwork? source, RunState run) => source is not null || run.SteamGridDbUsable;
+    private bool IsVisited(ILauncherArtwork? source, string key, RunState run) => source is not null || run.AsksSteamGridDb || _records.ContainsKey(key);
 
     private static readonly IArtworkLookup NoImages = new FixedCandidates([]);
 
-    private bool IsMissingAny(string key) => _shown.GetValueOrDefault(key) is not { Cover: not null, Hero: not null };
+    private bool IsMissingAny(string key) => Of(key) is not { Cover: not null, Hero: not null };
 
-    /// <summary>The run's progress; while it goes, at most every <see cref="ChangeBatch"/>.</summary>
-    private void ShowSearch(ArtworkRun running, bool force)
+    private static IReadOnlySet<ArtworkSource> OffSources(ArtworkSettings settings) =>
+        settings.Off.Select(source => source == ArtworkSourceKind.SteamGridDb ? ArtworkSource.SteamGridDb : ArtworkSource.Launcher).ToHashSet();
+
+    /// <summary>The progress of a run that searches; while it goes, at most every <see cref="ChangeBatch"/>.</summary>
+    private void ShowSearch(RunState run, ArtworkRun running, bool force)
     {
+        if (!run.ShowsProgress)
+        {
+            return;
+        }
+
         if (!force && Stopwatch.GetElapsedTime(_searchShownAt) < ChangeBatch && running.Done < running.Total)
         {
             return;
@@ -453,19 +626,22 @@ public sealed partial class ArtworkService : IDisposable
         SearchChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>The counts after the run, over every game of the libraries; a run the player started keeps its result.</summary>
-    private void EndSearch(IReadOnlyList<LibraryArtwork> libraries, RunState run, bool byPlayer)
+    /// <summary>
+    /// The counts after the run, over every game of the libraries; a run the player started keeps its result, a cancelled
+    /// one shows the counts.
+    /// </summary>
+    private void EndSearch(IReadOnlyList<LibraryArtwork> libraries, RunState run, bool byPlayer, bool cancelled)
     {
         var games = libraries.SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
-        var missingCovers = games.Count(key => _shown.GetValueOrDefault(key)?.Cover is null);
-        var missingHeroes = games.Count(key => _shown.GetValueOrDefault(key)?.Hero is null);
+        var missingCovers = games.Count(key => Of(key)?.Cover is null);
+        var missingHeroes = games.Count(key => Of(key)?.Hero is null);
         lock (_gate)
         {
             _search = new ArtworkSearch(
                 missingCovers,
                 missingHeroes,
                 null,
-                byPlayer ? new ArtworkSearchResult(run.FoundCovers, run.FoundHeroes, run.WithSteamGridDb, run.SteamGridDbStop) : _search.Result);
+                byPlayer ? new ArtworkSearchResult(run.FoundCovers, run.FoundHeroes, run.WithSteamGridDb, run.SteamGridDbStop) : cancelled ? null : _search.Result);
         }
 
         SearchChanged?.Invoke(this, EventArgs.Empty);
@@ -492,52 +668,108 @@ public sealed partial class ArtworkService : IDisposable
 
         var artwork = before with { Unreadable = false };
         var written = false;
-        foreach (var kind in Kinds)
+        try
         {
-            var image = artwork.Of(kind);
-            var size = image is null ? null : CheckedSize(key, kind, image);
-            if (image is not null && size is null)
+            foreach (var kind in Kinds)
             {
-                // Broken or gone: missing, also when it was set by hand (nothing the player chose can be lost, T487-14).
-                artwork = artwork.With(kind, null);
-                image = null;
-            }
+                // A source switched off during the run isn't asked from here on.
+                run.Follow(Settings().WithValidValues());
+                var image = artwork.Of(kind);
+                var size = image is null ? null : CheckedSize(key, kind, image);
+                if (image is not null && size is null)
+                {
+                    // Broken or gone: missing, also when it was set by hand (nothing the player chose can be lost, T487-14).
+                    artwork = artwork.With(kind, null);
+                    image = null;
+                }
 
-            if (image is { SetByHand: true } && run.Overwrite)
+                if (image is { SetByHand: true } && run.Overwrite)
+                {
+                    // "Von Hand gesetzte Artworks überschreiben": Arcadia chooses again; an own file stays offered, not in use.
+                    image = image.Source == ArtworkSource.File ? null : image with { SetByHand = false };
+                    size = image is null ? null : size;
+                    artwork = artwork.With(kind, image);
+                }
+
+                if (image is { SetByHand: true })
+                {
+                    continue;
+                }
+
+                var off = artwork.OffOf(kind);
+                var offSize = off is null ? null : CheckedOffSize(key, kind, off);
+                if (off is not null && offSize is null)
+                {
+                    artwork = artwork.WithOff(kind, null);
+                    off = null;
+                }
+
+                // Its source is switched off (#506): the slot is free for the pick. The image stays in use until the pick
+                // is known, so an image kept for a source switched on swaps with it instead of being lost.
+                var switchedOff = image is not null && !run.IsOn(image.Source) ? image : null;
+                var pickedSize = switchedOff is null ? size : null;
+                var pick = run.Reload
+                    ? await PickAsync(game, kind, lookup, null, null, null, null, run, cancel) ?? (pickedSize is null ? null : new Pick.Keep())
+                    : await PickAsync(game, kind, lookup, switchedOff is null ? image : null, pickedSize, off, offSize, run, cancel);
+                written |= pick is Pick.Take or Pick.SetOn;
+                artwork = Apply(artwork, kind, pick, run);
+                if (switchedOff is not null && artwork.Of(kind) == switchedOff)
+                {
+                    // Nothing took its place: kept aside for when its source is switched on.
+                    artwork = SetOff(artwork, kind, switchedOff, size!.Value);
+                    written = true;
+                }
+            }
+        }
+        finally
+        {
+            // Also when the search is cancelled between the cover and the background: the metadata names what is on disk.
+            // The same original copied again (its copy was broken) leaves the metadata alike but the file new.
+            if (written || artwork != before)
             {
-                // "Von Hand gesetzte Artworks überschreiben": Arcadia chooses again; an own file stays offered, not in use.
-                image = image.Source == ArtworkSource.File ? null : image with { SetByHand = false };
-                size = image is null ? null : size;
-                artwork = artwork.With(kind, image);
-            }
+                if (artwork.IsEmpty)
+                {
+                    _records.Remove(key);
+                }
+                else
+                {
+                    _records[key] = artwork;
+                }
 
-            if (image is { SetByHand: true })
-            {
-                continue;
+                _cache.WriteMetadata(artwork);
+                Show(artwork, changes);
             }
+        }
+    }
 
-            var pick = run.Reload
-                ? await PickAsync(game, kind, lookup, null, null, run, cancel) ?? (size is null ? null : new Pick.Keep())
-                : await PickAsync(game, kind, lookup, image, size, run, cancel);
-            written |= pick is Pick.Take;
-            artwork = Apply(artwork, kind, pick, run);
+    /// <summary>An automatic image of another source than <paramref name="next"/>'s: kept aside when it gives way (#506).</summary>
+    private static bool IsKeptAside(CachedImage image, ArtworkSource next) => !image.SetByHand && image.Source != ArtworkSource.File && image.Source != next;
+
+    /// <summary>Puts the image in use aside (its source switched off, or it gave way); an image kept before for the kind goes.</summary>
+    private CachedArtwork SetOff(CachedArtwork artwork, ArtworkKind kind, CachedImage image, ImageSize size)
+    {
+        var kept = _cache.SetOff(artwork.GameKey, kind, image);
+        _checked.Remove((artwork.GameKey, kind));
+        _checkedOff[(artwork.GameKey, kind)] = size;
+        Log($"Artwork: {Name(kind)} von {artwork.GameKey} zurückgelegt");
+        return artwork.With(kind, null).WithOff(kind, kept);
+    }
+
+    /// <summary>The size of an image kept for a source switched off; checked once per session.</summary>
+    private ImageSize? CheckedOffSize(string key, ArtworkKind kind, CachedImage image)
+    {
+        if (_checkedOff.TryGetValue((key, kind), out var size))
+        {
+            return size;
         }
 
-        // The same original copied again (its copy was broken) leaves the metadata alike but the file new.
-        if (written || artwork != before)
+        if (ImageCheck.OfFile(_cache.PathOf(key, image)) is not { } found)
         {
-            if (artwork.IsEmpty)
-            {
-                _records.Remove(key);
-            }
-            else
-            {
-                _records[key] = artwork;
-            }
-
-            _cache.WriteMetadata(artwork);
-            Show(artwork, changes);
+            return null;
         }
+
+        _checkedOff[(key, kind)] = found;
+        return found;
     }
 
     private static readonly ArtworkKind[] Kinds = [ArtworkKind.Cover, ArtworkKind.Hero];
@@ -548,7 +780,40 @@ public sealed partial class ArtworkService : IDisposable
         {
             case Pick.Keep:
                 return artwork;
+            case Pick.SetOn on:
+            {
+                // Back in use without a copy or download (#506); an automatic image of another source in use is kept aside.
+                var key = artwork.GameKey;
+                var inUse = artwork.Of(kind);
+                var inUseSize = _checked.TryGetValue((key, kind), out var held) ? held : (ImageSize?)null;
+                _checkedOff.Remove((key, kind));
+                _checked[(key, kind)] = on.Size;
+                _versions[(key, kind)] = _versions.GetValueOrDefault((key, kind)) + 1;
+                if (inUse is not null && IsKeptAside(inUse, on.Off.Source) && inUseSize is { } size)
+                {
+                    var (restored, kept) = _cache.Swap(key, kind, inUse, on.Off);
+                    _checkedOff[(key, kind)] = size;
+                    return artwork.With(kind, restored).WithOff(kind, kept);
+                }
+
+                return artwork.With(kind, _cache.SetOn(key, kind, on.Off)).WithOff(kind, null);
+            }
+
             case Pick.Take take:
+                if (artwork.OffOf(kind) is { } stale && stale.Source == take.Source)
+                {
+                    // The source's newer image replaces the one kept for it.
+                    _cache.DeleteOffImage(artwork.GameKey, kind);
+                    _checkedOff.Remove((artwork.GameKey, kind));
+                    artwork = artwork.WithOff(kind, null);
+                }
+
+                if (artwork.Of(kind) is { } replaced && IsKeptAside(replaced, take.Source) && _checked.TryGetValue((artwork.GameKey, kind), out var replacedSize))
+                {
+                    // Another source's image gives way (a changed order or tolerance): kept, so changing back needs no download.
+                    artwork = SetOff(artwork, kind, replaced, replacedSize);
+                }
+
                 var file = _cache.WriteImage(artwork.GameKey, kind, take.Content, ArtworkCache.ExtensionOf(take.Content)!);
                 _checked[(artwork.GameKey, kind)] = take.Size;
                 _versions[(artwork.GameKey, kind)] = _versions.GetValueOrDefault((artwork.GameKey, kind)) + 1;
@@ -585,23 +850,40 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>The launcher's image as a scan would choose it, without SteamGridDB ("Artwork ändern", #490).</summary>
     private Task<Pick?> PickAsync(
         Game game, ArtworkKind kind, IReadOnlyList<ArtworkCandidate> candidates, CachedImage? cached, ImageSize? cachedSize, RunState run, CancellationToken cancel) =>
-        PickAsync(game, kind, new FixedCandidates(candidates), cached, cachedSize, run with { Order = [ArtworkSourceKind.Launcher] }, cancel);
+        PickAsync(game, kind, new FixedCandidates(candidates), cached, cachedSize, null, null, run with { Order = [ArtworkSourceKind.Launcher] }, cancel);
 
     /// <summary>
-    /// The image to show: the sources in their order, the first candidate that fits, else the first image at all; the cached
-    /// image wherever it stands for a candidate (same original) or would be downloaded again.
+    /// The image to show: the sources switched on in their order, the first candidate that fits, else the first image at
+    /// all; the cached image wherever it stands for a candidate (same original) or would be downloaded again, and the image
+    /// kept for a source switched off (<paramref name="off"/>, #506) the same way once its source is on again.
     /// </summary>
     private async Task<Pick?> PickAsync(
-        Game game, ArtworkKind kind, IArtworkLookup lookup, CachedImage? cached, ImageSize? cachedSize, RunState run, CancellationToken cancel)
+        Game game, ArtworkKind kind, IArtworkLookup lookup, CachedImage? cached, ImageSize? cachedSize, CachedImage? off, ImageSize? offSize,
+        RunState run, CancellationToken cancel)
     {
         Pick? fallback = null;
         foreach (var source in run.Order)
         {
-            if (source == ArtworkSourceKind.SteamGridDb && cached?.Origin == SteamGridDbOrigin
-                && cachedSize is { } fromSteamGridDb && ArtworkFormat.Fits(fromSteamGridDb, kind, run.Tolerance))
+            if (source == ArtworkSourceKind.SteamGridDb)
             {
-                // SteamGridDB isn't asked again for an image it gave, so its place in the order is held by the cached one.
-                return new Pick.Keep();
+                // SteamGridDB isn't asked again for an image it gave, so its place in the order is held by the one on disk;
+                // where it isn't asked for the game now, that one stands as its image also when it no longer fits.
+                var held = cached?.Origin == SteamGridDbOrigin && cachedSize is { } inUse ? (new Pick.Keep(), inUse)
+                    : off?.Origin == SteamGridDbOrigin && offSize is { } kept ? (new Pick.SetOn(off, kept), kept)
+                    : ((Pick, ImageSize)?)null;
+                if (held is var (option, size))
+                {
+                    if (ArtworkFormat.Fits(size, kind, run.Tolerance))
+                    {
+                        return option;
+                    }
+
+                    if (!run.AsksSteamGridDbFor(game.Key))
+                    {
+                        fallback ??= option;
+                        continue;
+                    }
+                }
             }
 
             var (candidates, from) = source == ArtworkSourceKind.SteamGridDb
@@ -610,6 +892,17 @@ public sealed partial class ArtworkService : IDisposable
             var replaced = IsReplaced(cached, candidates);
             foreach (var candidate in candidates)
             {
+                if (off is not null && offSize is { } offFits && off.Source == from && IsSameOriginal(off, candidate))
+                {
+                    if (ArtworkFormat.Fits(offFits, kind, run.Tolerance))
+                    {
+                        return new Pick.SetOn(off, offFits);
+                    }
+
+                    fallback ??= new Pick.SetOn(off, offFits);
+                    continue;
+                }
+
                 if (await OptionOfAsync(game, kind, candidate, from, replaced, cached, cachedSize, run, cancel) is not var (option, size))
                 {
                     continue;
@@ -626,6 +919,11 @@ public sealed partial class ArtworkService : IDisposable
 
         return fallback ?? (cachedSize is not null ? new Pick.Keep() : null);
     }
+
+    /// <summary>The candidate is the original <paramref name="image"/> was copied or downloaded from, unchanged.</summary>
+    private static bool IsSameOriginal(CachedImage image, ArtworkCandidate candidate) =>
+        image.Origin == candidate.Origin
+        && (candidate.File is { } path ? LocalStamp(path) == image.Stamp : candidate.Download?.AbsoluteUri == image.Stamp);
 
     /// <summary>What a candidate offers and its size; null if it offers nothing now (gone, unreadable, not downloadable).</summary>
     private async Task<(Pick Option, ImageSize Size)?> OptionOfAsync(
@@ -663,7 +961,8 @@ public sealed partial class ArtworkService : IDisposable
             return (new Pick.Keep(), held);
         }
 
-        if (run.Offline || run.Failed.Contains(url))
+        // A scan goes online only for new games (#506, Q7): the launchers' images to download wait for a search too.
+        if (run.Offline || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
         {
             return null;
         }
@@ -673,12 +972,7 @@ public sealed partial class ArtworkService : IDisposable
             return (new Pick.Take(candidate, from, downloadedContent, downloaded, url.AbsoluteUri), downloaded);
         }
 
-        // SteamGridDB answered but its image didn't come: it is asked again at the next scan (#13: retried then).
-        if (from == ArtworkSource.SteamGridDb)
-        {
-            _askedSteamGridDb.Remove((game.Key, kind));
-        }
-
+        // SteamGridDB answered but its image didn't come: asked again at the next "Jetzt suchen" (#506), not on its own.
         run.Failed.Add(url);
         return null;
     }
@@ -686,15 +980,14 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>
     /// SteamGridDB's image for the game (#489): its best rated that fits by the size SteamGridDB names, else its best rated
     /// at all, so only one is downloaded. Asked by the store id, else by the game it matched by name (#491,
-    /// ArtworkService.ByName.cs). None without a usable key, while the cache holds a fitting image, for a game it answered
-    /// for in this session, or once SteamGridDB failed in this run.
+    /// ArtworkService.ByName.cs). None without a usable key, with SteamGridDB switched off, while the cache holds a fitting
+    /// image, for a game this run doesn't search (#506), or once SteamGridDB failed in this run.
     /// </summary>
     private async Task<IReadOnlyList<ArtworkCandidate>> SteamGridDbCandidatesAsync(
         Game game, ArtworkKind kind, IArtworkLookup lookup, ImageSize? cachedSize, RunState run, CancellationToken cancel)
     {
-        if (SteamGridDb is null || !run.SteamGridDbUsable
-            || cachedSize is { } held && ArtworkFormat.Fits(held, kind, run.Tolerance)
-            || _askedSteamGridDb.Contains((game.Key, kind)))
+        if (SteamGridDb is null || !run.AsksSteamGridDbFor(game.Key)
+            || cachedSize is { } held && ArtworkFormat.Fits(held, kind, run.Tolerance))
         {
             return [];
         }
@@ -704,7 +997,6 @@ public sealed partial class ArtworkService : IDisposable
             return [];
         }
 
-        _askedSteamGridDb.Add((game.Key, kind));
         var best = answer.Images.FirstOrDefault(i => ArtworkFormat.Fits(new ImageSize(i.Width, i.Height), kind, run.Tolerance)) ?? answer.Images.FirstOrDefault();
         return best is null ? [] : [new ArtworkCandidate(SteamGridDbOrigin, Download: best.Url)];
     }
@@ -929,10 +1221,14 @@ public sealed partial class ArtworkService : IDisposable
                 {
                     _cache.DeleteImage(key, kind);
                     _checked.Remove((key, kind));
-
-                    // Back in the library, it is asked again for what it lost (a SteamGridDB image included).
-                    _askedSteamGridDb.Remove((key, kind));
                     kept = kept.With(kind, null);
+                }
+
+                if (kept.OffOf(kind) is not null)
+                {
+                    _cache.DeleteOffImage(key, kind);
+                    _checkedOff.Remove((key, kind));
+                    kept = kept.WithOff(kind, null);
                 }
             }
 
@@ -963,13 +1259,17 @@ public sealed partial class ArtworkService : IDisposable
                 ? new ArtworkFile(artwork.GameKey, kind, _cache.PathOf(artwork.GameKey, image), size, _versions.GetValueOrDefault((artwork.GameKey, kind)))
                 : null;
 
+        ArtworkSource? AutomaticFrom(CachedImage? image) => image is { SetByHand: false } ? image.Source : null;
+
         var shown = new GameArtwork(FileOf(ArtworkKind.Cover), FileOf(ArtworkKind.Hero));
         if (shown is { Cover: null, Hero: null })
         {
             _shown.TryRemove(artwork.GameKey, out _);
+            _shownFrom.TryRemove(artwork.GameKey, out _);
         }
         else
         {
+            _shownFrom[artwork.GameKey] = (AutomaticFrom(artwork.Cover), AutomaticFrom(artwork.Hero));
             _shown[artwork.GameKey] = shown;
         }
 
@@ -983,6 +1283,9 @@ public sealed partial class ArtworkService : IDisposable
         public sealed record Keep : Pick;
 
         public sealed record Take(ArtworkCandidate Candidate, ArtworkSource Source, byte[] Content, ImageSize Size, string Stamp) : Pick;
+
+        /// <summary>The image kept for its source while it was off is in use again.</summary>
+        public sealed record SetOn(CachedImage Off, ImageSize Size) : Pick;
     }
 
     /// <summary>Candidates already known, as a lookup.</summary>
@@ -991,21 +1294,36 @@ public sealed partial class ArtworkService : IDisposable
         public IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind) => candidates;
     }
 
-    /// <summary>The libraries a run goes over, and whether it is "Alle Artworks neu laden" (#490).</summary>
-    private sealed record PendingRun(IReadOnlyList<LibraryArtwork> Libraries, bool Reload, bool Overwrite);
+    /// <summary>
+    /// What started a run (#506), weakest first: a queued run takes the strongest of those that wait. A scan asks SteamGridDB
+    /// only for new games; the others for every game missing an image ("Alle Artworks neu laden": every game).
+    /// </summary>
+    private enum RunTrigger
+    {
+        Rescan,
+        FirstKey,
+        Player,
+        Reload,
+    }
 
-    /// <summary>A run's state with the order and tolerance as set now (#489).</summary>
+    /// <summary>The libraries a run goes over and what started it; <see cref="AskAlso"/>: games SteamGridDB is asked for in a scan.</summary>
+    private sealed record PendingRun(IReadOnlyList<LibraryArtwork> Libraries, RunTrigger Trigger, bool Overwrite = false)
+    {
+        public IReadOnlySet<string> AskAlso { get; init; } = new HashSet<string>();
+    }
+
+    /// <summary>A run's state with the order, switches and tolerance as set now (#489, #506).</summary>
     private RunState NewRunState(bool steamGridDbUsable = false)
     {
         var settings = Settings().WithValidValues();
-        return new RunState
+        var run = new RunState
         {
-            Order = settings.Order,
-            Tolerance = settings.Tolerance,
             SeveralHits = settings.SeveralHits,
             SteamGridDbUsable = steamGridDbUsable,
-            WithSteamGridDb = steamGridDbUsable,
         };
+        run.Follow(settings);
+        run.WithSteamGridDb = run.AsksSteamGridDb;
+        return run;
     }
 
     private sealed record RunState
@@ -1016,12 +1334,42 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>Images set by hand give way too.</summary>
         public bool Overwrite { get; init; }
 
-        public IReadOnlyList<ArtworkSourceKind> Order { get; init; } = ArtworkSettings.DefaultOrder;
+        /// <summary>The sources switched on, in their order; followed during the run (<see cref="Follow"/>).</summary>
+        public IReadOnlyList<ArtworkSourceKind> Order { get; set; } = ArtworkSettings.DefaultOrder;
 
-        public double Tolerance { get; init; } = ArtworkFormat.NormalTolerance;
+        public double Tolerance { get; set; } = ArtworkFormat.NormalTolerance;
 
         /// <summary>"Bei mehreren Treffern" (#491).</summary>
         public SeveralHits SeveralHits { get; init; }
+
+        /// <summary>The games the run may go online for (SteamGridDB, a launcher's download); null: every game (#506).</summary>
+        public IReadOnlySet<string>? Asks { get; set; }
+
+        /// <summary>A run that searches shows its progress; a scan without new games doesn't (#506).</summary>
+        public bool ShowsProgress { get; set; }
+
+        /// <summary>SteamGridDB may be asked at all: a usable key, switched on, and it hasn't failed in this run.</summary>
+        public bool AsksSteamGridDb => SteamGridDbUsable && Order.Contains(ArtworkSourceKind.SteamGridDb);
+
+        public bool AsksSteamGridDbFor(string gameKey) => AsksSteamGridDb && GoesOnlineFor(gameKey);
+
+        /// <summary>Any request to the network for the game, a launcher's image to download included (#506).</summary>
+        public bool GoesOnlineFor(string gameKey) => Asks is null || Asks.Contains(gameKey);
+
+        /// <summary>The automatic images of <paramref name="source"/> may be in use; an own file always.</summary>
+        public bool IsOn(ArtworkSource source) => source switch
+        {
+            ArtworkSource.Launcher => Order.Contains(ArtworkSourceKind.Launcher),
+            ArtworkSource.SteamGridDb => Order.Contains(ArtworkSourceKind.SteamGridDb),
+            _ => true,
+        };
+
+        /// <summary>The settings as they are now: a source switched off during the run isn't asked from the next game on.</summary>
+        public void Follow(ArtworkSettings settings)
+        {
+            Order = settings.OnInOrder;
+            Tolerance = settings.Tolerance;
+        }
 
         /// <summary>Games searched by name in this run that SteamGridDB found nothing for: searched again at the next scan.</summary>
         public HashSet<string> NoHits { get; } = new(StringComparer.Ordinal);
@@ -1032,7 +1380,7 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>Why SteamGridDB was left out for the rest of the run; null while it wasn't.</summary>
         public SteamGridDbOutcome? SteamGridDbStop { get; set; }
 
-        public bool WithSteamGridDb { get; init; }
+        public bool WithSteamGridDb { get; set; }
 
         public int SteamGridDbAsked { get; set; }
 

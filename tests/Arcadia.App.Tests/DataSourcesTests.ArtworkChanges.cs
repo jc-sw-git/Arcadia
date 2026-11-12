@@ -138,7 +138,8 @@ public sealed partial class DataSourcesTests
         Assert.Null(arcadia.Main.Settings.Selected.Dialog);
         await arcadia.WaitUntilAsync(() => arcadia.Artwork.Search.Running is { Reload: true }, "Neu laden läuft");
         await arcadia.WaitUntilAsync(() => { Dispatcher.UIThread.RunJobs(); return Row(arcadia, ArtworkSourceRows.MissingKey).Subtitle == AppTexts.DataSourcesReloadRunning(done: 0, total: 1); }, "Fortschritt");
-        Assert.False(Row(arcadia, ArtworkReloadRows.ReloadKey).CanActivate);
+        var reloadRow = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkReloadRows.ReloadKey));
+        Assert.Equal((AppTexts.DataSourcesReloadCancel, true), (reloadRow.ActionText, reloadRow.CanActivate));
         Assert.False(Row(arcadia, ArtworkSourceRows.MissingKey).CanActivate);
 
         using var restarted = await arcadia.RestartAsync();

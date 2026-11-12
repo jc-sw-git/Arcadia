@@ -50,6 +50,16 @@ public sealed record ArtworkSettings
 
     public IReadOnlyList<ArtworkSourceKind> Order { get; init; } = DefaultOrder;
 
+    /// <summary>
+    /// The sources switched off in "Reihenfolge für Artwork" (#506): never asked, their images not shown (kept on disk).
+    /// </summary>
+    public IReadOnlyList<ArtworkSourceKind> Off { get; init; } = [];
+
+    /// <summary>The sources switched on, in their order.</summary>
+    public IReadOnlyList<ArtworkSourceKind> OnInOrder => [.. Order.Where(IsOn)];
+
+    public bool IsOn(ArtworkSourceKind source) => Off?.Contains(source) != true;
+
     public CropAllowance Crop { get; init; } = CropAllowance.Normal;
 
     public SeveralHits SeveralHits { get; init; } = SeveralHits.Ask;
@@ -66,15 +76,17 @@ public sealed record ArtworkSettings
 
     /// <summary>
     /// What a hand-edited or newer <c>settings.json</c> may hold, made usable: every known source once, in the saved order,
-    /// a missing one at the end; an unknown tolerance is "Normal", an unknown "Bei mehreren Treffern" "Selbst auswählen".
+    /// a missing one at the end, an unknown source switched off left out; an unknown tolerance is "Normal", an unknown "Bei mehreren Treffern" "Selbst auswählen".
     /// </summary>
     public ArtworkSettings WithValidValues()
     {
         var order = (Order ?? DefaultOrder).Where(Enum.IsDefined).Distinct().ToList();
         order.AddRange(DefaultOrder.Except(order));
+        var off = (Off ?? []).Where(Enum.IsDefined).Distinct().ToList();
         return this with
         {
             Order = order.SequenceEqual(Order ?? []) ? Order! : order,
+            Off = off.SequenceEqual(Off ?? []) ? Off! : off,
             Crop = Enum.IsDefined(Crop) ? Crop : CropAllowance.Normal,
             SeveralHits = Enum.IsDefined(SeveralHits) ? SeveralHits : SeveralHits.Ask,
         };

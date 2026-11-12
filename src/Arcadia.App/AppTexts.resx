@@ -959,6 +959,8 @@
   <data name="DataSourcesKeyProblem" xml:space="preserve"><value>Ein Schlüssel hat 32 Buchstaben und Ziffern</value></data>
   <data name="DataSourcesKeySaved" xml:space="preserve"><value>Schlüssel gespeichert und geprüft: verbunden.</value></data>
   <data name="DataSourcesKeyPasted" xml:space="preserve"><value>Schlüssel eingefügt und geprüft: verbunden.</value></data>
+  <data name="DataSourcesKeySavedSearching" xml:space="preserve"><value>Schlüssel gespeichert. Fehlende Bilder werden gesucht.</value></data>
+  <data name="DataSourcesKeyPastedSearching" xml:space="preserve"><value>Schlüssel eingefügt. Fehlende Bilder werden gesucht.</value></data>
   <data name="DataSourcesKeyRejectedToast" xml:space="preserve"><value>SteamGridDB lehnt den Schlüssel ab. Bis er gilt, nimmt Arcadia nur die Bilder der Launcher.</value></data>
   <data name="DataSourcesKeyKeptNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Der Schlüssel ist gespeichert, Arcadia prüft ihn bei der nächsten Suche.</value></data>
   <data name="DataSourcesKeyDelete" xml:space="preserve"><value>Schlüssel löschen</value></data>
@@ -999,11 +1001,16 @@
   <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam liefert Cover und Hintergrund. Epic Games liefert für die meisten Spiele ein Cover, als Hintergrund aber nur ein Querformat in 16:9, das nicht zum flachen Kopf der Detailseite passt. Die übrigen Launcher liefern keine Bilder.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>REIHENFOLGE</value></data>
   <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Was passend heißt, legt „Zuschneiden erlaubt“ fest.</value></data>
+  <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] hebt eine Quelle an, ▲ ▼ verschieben sie, [L3] legt sie ab, [B] bricht ab. Mit der Maus ziehst du sie.</value></data>
+  <data name="DataSourcesSourceSwitchHeading" xml:space="preserve"><value>AN ODER AUS</value></data>
+  <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>An: Arcadia fragt die Quelle an ihrem Platz in der Reihenfolge.</value></data>
+  <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Aus: Arcadia fragt die Quelle nicht und blendet ihre Bilder aus. Sie bleiben gespeichert und sind beim Einschalten sofort wieder da. Von Hand gesetzte Bilder bleiben immer.</value></data>
+  <data name="DataSourcesOrderWhen" xml:space="preserve"><value>Sofort für die Bilder, die schon da sind, und die Bilder der Launcher; eine Suche startet dadurch nicht. SteamGridDB wird bei neuen Spielen und beim nächsten „Jetzt suchen“ gefragt.</value></data>
   <data name="DataSourcesSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
   <data name="DataSourcesSteamGridDbSubtitle" xml:space="preserve"><value>Füllt die Lücken: Hochformate, Mods, eigene Einträge</value></data>
   <data name="DataSourcesSteamGridDbSkipped" xml:space="preserve"><value>Wird übersprungen, solange kein gültiger Schlüssel da ist</value></data>
+  <data name="DataSourcesSourceOffSubtitle" xml:space="preserve"><value>Aus · wird nicht gefragt, ihre Bilder sind ausgeblendet</value></data>
   <data name="DataSourcesSteamGridDbInfo" xml:space="preserve"><value>Eine Sammlung von Bildern, die Spieler hochladen und bewerten. Arcadia nimmt das am besten bewertete Bild.</value></data>
-  <data name="DataSourcesMove" xml:space="preserve"><value>Verschieben ⇅</value></data>
   <data name="DataSourcesOrderPlace" xml:space="preserve"><value>{place}. {source}</value></data>
   <data name="DataSourcesMissing" xml:space="preserve"><value>Fehlende Cover und Hintergründe</value></data>
   <data name="DataSourcesMissingCounts" xml:space="preserve"><value>{covers} Spiele ohne Cover, {heroes} ohne Hintergrund</value></data>
@@ -1014,10 +1021,13 @@
   <data name="DataSourcesSearchLauncherOnly" xml:space="preserve"><value>Fertig: ohne Schlüssel nur Launcher-Bilder geprüft</value></data>
   <data name="DataSourcesSearchNow" xml:space="preserve"><value>Jetzt suchen</value></data>
   <data name="DataSourcesSearchBusy" xml:space="preserve"><value>Läuft …</value></data>
-  <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Nach jedem Einlesen sucht Arcadia im Hintergrund Bilder für Spiele, die noch keine haben oder deren Bild nur zugeschnitten aushilft.</value></data>
-  <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ startet dieselbe Suche sofort.</value></data>
-  <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Arcadia versucht es beim nächsten Einlesen wieder.</value></data>
+  <data name="DataSourcesSearchCancel" xml:space="preserve"><value>Suche abbrechen</value></data>
+  <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Von selbst sucht Arcadia nur für Spiele, die neu in die Bibliothek kommen, und einmal für alle, sobald ein gültiger Schlüssel da ist. Beim erneuten Einlesen, nach einem Spiel oder einer Installation sucht Arcadia nicht.</value></data>
+  <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ sucht für alle Spiele, denen ein Bild fehlt oder deren Bild nur zugeschnitten aushilft. „Suche abbrechen“ hält die Suche an; was gefunden ist, bleibt.</value></data>
+  <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet, deshalb gibt es nichts zu suchen. Unter „Reihenfolge für Artwork“ schaltest du es wieder an.</value></data>
+  <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Arcadia versucht es bei der nächsten Suche wieder.</value></data>
   <data name="DataSourcesReload" xml:space="preserve"><value>Alle Artworks neu laden</value></data>
+  <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Neu laden abbrechen</value></data>
   <data name="DataSourcesReloadKeeps" xml:space="preserve"><value>Von Hand gesetzte Bilder bleiben</value></data>
   <data name="DataSourcesReloadReplaces" xml:space="preserve"><value>Auch von Hand gesetzte Bilder werden ersetzt</value></data>
   <data name="DataSourcesReloadAction" xml:space="preserve"><value>Neu laden</value></data>
@@ -1049,10 +1059,12 @@
   <data name="DataSourcesWaitingMore" xml:space="preserve"><value>und {count} weitere</value></data>
   <data name="DataSourcesWaitingNone" xml:space="preserve"><value>Kein Spiel wartet</value></data>
   <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Nur bei „Selbst auswählen“</value></data>
+  <data name="DataSourcesWaitingSteamGridDbOff" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet</value></data>
   <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Auswählen</value></data>
   <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB hat diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. A öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es.</value></data>
   <data name="DataSourcesWaitingInfoNone" xml:space="preserve"><value>Gerade wartet kein Spiel. Findet die nächste Suche ein Spiel nur über den Namen und passen mehrere, erscheint es hier.</value></data>
   <data name="DataSourcesWaitingInfoOff" xml:space="preserve"><value>Die Warteliste gibt es nur, wenn bei „Bei mehreren Treffern“ „Selbst auswählen“ eingestellt ist. Mit „Ersten nehmen“ wählt Arcadia sofort selbst.</value></data>
+  <data name="DataSourcesWaitingInfoSteamGridDbOff" xml:space="preserve"><value>Solange SteamGridDB aus ist, sucht Arcadia nicht nach Namen. Die wartenden Spiele bleiben auf der Liste und sind beim Einschalten wieder da.</value></data>
   <data name="WaitingGames" xml:space="preserve"><value>{count} SPIELE</value></data>
   <data name="WaitingGamesOne" xml:space="preserve"><value>1 SPIEL</value></data>
   <data name="WaitingHits" xml:space="preserve"><value>{launcher} · {count} Treffer</value></data>
@@ -1077,7 +1089,7 @@
   <data name="DataSourcesCropChoiceHeading" xml:space="preserve"><value>WENIG ODER VIEL</value></data>
   <data name="DataSourcesCropChoice" xml:space="preserve"><value>Mit „Wenig“ bleiben Bilder fast vollständig, dafür kommen sie öfter von einer Quelle weiter unten. Mit „Viel“ bleibt Arcadia öfter bei der ersten Quelle, schneidet aber auch Schrift oder Figuren am Rand ab.</value></data>
   <data name="DataSourcesWhenHeading" xml:space="preserve"><value>WANN ES GILT</value></data>
-  <data name="DataSourcesCropWhen" xml:space="preserve"><value>Bei der nächsten Suche. Bilder, die schon passen, und von Hand gesetzte Bilder bleiben, wie sie sind.</value></data>
+  <data name="DataSourcesCropWhen" xml:space="preserve"><value>Sofort für die Bilder, die schon da sind, und die Bilder der Launcher; eine Suche startet dadurch nicht. SteamGridDB wird mit dem neuen Wert bei neuen Spielen und beim nächsten „Jetzt suchen“ gefragt. Von Hand gesetzte Bilder bleiben, wie sie sind.</value></data>
   <data name="DataSourcesKeyStatus" xml:space="preserve"><value>SteamGridDB-Schlüssel ungültig</value></data>
   <data name="DataSourcesKeyStatusShort" xml:space="preserve"><value>SteamGridDB wird übersprungen, bis ein gültiger Schlüssel da ist</value></data>
   <data name="ErrorContextSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
@@ -1108,6 +1120,12 @@
   <data name="ArtworkNoKeyText" xml:space="preserve"><value>Mit einem kostenlosen Schlüssel zeigt Arcadia hier bis zu 20 Bilder je Spiel. Du trägst ihn in den Einstellungen unter „Datenquellen“ ein.</value></data>
   <data name="ArtworkBadKeyTitle" xml:space="preserve"><value>Der SteamGridDB-Schlüssel gilt nicht</value></data>
   <data name="ArtworkBadKeyText" xml:space="preserve"><value>Bis er wieder gilt, gibt es hier nur das Bild des Launchers und eigene Dateien. In den Datenquellen trägst du einen neuen ein.</value></data>
+  <data name="ArtworkSteamGridDbOffTitle" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet</value></data>
+  <data name="ArtworkSteamGridDbOffText" xml:space="preserve"><value>Solange es aus ist, zeigt Arcadia hier keine Bilder von SteamGridDB. Unter „Datenquellen“ schaltest du es wieder an.</value></data>
+  <data name="ArtworkLauncherImagesOffTitle" xml:space="preserve"><value>Die Launcher-Bilder sind ausgeschaltet</value></data>
+  <data name="ArtworkLauncherImagesOffText" xml:space="preserve"><value>Solange sie aus sind, zeigt Arcadia hier kein Bild des Launchers. Unter „Datenquellen“ schaltest du sie wieder an.</value></data>
+  <data name="ArtworkSourcesOffTitle" xml:space="preserve"><value>Launcher-Bilder und SteamGridDB sind ausgeschaltet</value></data>
+  <data name="ArtworkSourcesOffText" xml:space="preserve"><value>Hier gibt es nur eigene Dateien, bis du unter „Datenquellen“ eine Quelle wieder anschaltest.</value></data>
   <data name="ArtworkToDataSources" xml:space="preserve"><value>Zu den Datenquellen ›</value></data>
   <data name="ArtworkTabsHint" xml:space="preserve"><value>Cover / Hintergrund</value></data>
   <data name="ArtworkChooseHint" xml:space="preserve"><value>Bild wählen</value></data>

@@ -35,7 +35,7 @@ public partial class MainViewModel
     void IChangeArtworkHost.OpenDataSources(ChangeArtworkViewModel modal)
     {
         ((IChangeArtworkHost)this).Close(modal);
-        OpenDataSources();
+        OpenDataSources(modal.Notice.RowKey);
     }
 
     Task<string?> IChangeArtworkHost.PickImageAsync(string title) =>

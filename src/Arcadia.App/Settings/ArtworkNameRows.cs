@@ -59,7 +59,7 @@ public sealed class ArtworkNameRows
         };
         _waiting = new ActionRowViewModel(WaitingKey, AppTexts.DataSourcesWaiting, () =>
         {
-            if (IsAsking && _artwork.Waiting.Count > 0)
+            if (IsAsking && SteamGridDbOn && _artwork.Waiting.Count > 0)
             {
                 openWaitingList();
             }
@@ -78,17 +78,23 @@ public sealed class ArtworkNameRows
 
     private bool IsAsking => _changes.Current.Artwork.WithValidValues().SeveralHits == SeveralHits.Ask;
 
+    // Switched off, SteamGridDB is searched by name for no game; the waiting games keep their place (#506).
+    private bool SteamGridDbOn => _changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb);
+
     /// <summary>The choice or the waiting list changed; UI thread.</summary>
     public void Refresh()
     {
         _severalHits.Refresh();
         var waiting = IsAsking ? _artwork.Waiting : [];
-        var open = waiting.Count > 0;
+        var open = waiting.Count > 0 && SteamGridDbOn;
         _waiting.IsEnabled = open;
         _waiting.IsDimmed = !open;
-        _waiting.CountBadge = open ? waiting.Count.ToString(Services.Formatting.Culture) : null;
-        _waiting.Subtitle = !IsAsking ? AppTexts.DataSourcesWaitingOnlyAsk : open ? AppTexts.DataSourcesWaitingSubtitle : AppTexts.DataSourcesWaitingNone;
+        _waiting.CountBadge = waiting.Count > 0 ? waiting.Count.ToString(Services.Formatting.Culture) : null;
+        _waiting.Subtitle = !IsAsking ? AppTexts.DataSourcesWaitingOnlyAsk
+            : !SteamGridDbOn ? AppTexts.DataSourcesWaitingSteamGridDbOff
+            : open ? AppTexts.DataSourcesWaitingSubtitle : AppTexts.DataSourcesWaitingNone;
         _waiting.Info = !IsAsking ? [new InfoText(AppTexts.DataSourcesWaitingInfoOff)]
+            : !SteamGridDbOn ? [new InfoText(AppTexts.DataSourcesWaitingInfoSteamGridDbOff)]
             : !open ? [new InfoText(AppTexts.DataSourcesWaitingInfoNone)]
             :
             [

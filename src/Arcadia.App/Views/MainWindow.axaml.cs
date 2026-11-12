@@ -57,10 +57,10 @@ public partial class MainWindow : Window
     /// <summary>The mouse focused the row: it is under the pointer already, so the rows don't scroll to it.</summary>
     private bool _focusedByPointer;
 
-    /// <summary>A launcher row the left button went down on (#136); moved far enough, it is dragged.</summary>
-    private LauncherRowViewModel? _pressedLauncher;
-    private Point _launcherPressPoint;
-    private bool _draggingLauncher;
+    /// <summary>A row the left button went down on that can be moved (#136, #506); moved far enough, it is dragged.</summary>
+    private SettingsRowViewModel? _pressedRow;
+    private Point _rowPressPoint;
+    private bool _draggingRow;
     private SearchViewModel? _search;
     private SettingsPageViewModel? _settingsPage;
     private readonly TabStrip _tabs;
@@ -116,10 +116,10 @@ public partial class MainWindow : Window
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
         SettingsRows.AddHandler(PointerMovedEvent, OnSettingsRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
 
-        // Launchers are moved by dragging them (#136). Tunnel: the row's button captures the pointer on its press.
-        SettingsRows.AddHandler(PointerPressedEvent, OnLauncherRowPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
-        SettingsRows.AddHandler(PointerMovedEvent, OnLauncherRowDragged, RoutingStrategies.Tunnel, handledEventsToo: true);
-        SettingsRows.AddHandler(PointerReleasedEvent, OnLauncherRowReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+        // Launchers and artwork sources are moved by dragging them (#136, #506). Tunnel: the row's button captures the pointer on its press.
+        SettingsRows.AddHandler(PointerPressedEvent, OnRowPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SettingsRows.AddHandler(PointerMovedEvent, OnRowDragged, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SettingsRows.AddHandler(PointerReleasedEvent, OnRowReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // Ends a held click on a cover, wherever the mouse is let go.
         AddHandler(PointerReleasedEvent, (_, _) => _viewModel?.ReleasePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -411,67 +411,68 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnLauncherRowPressed(object? sender, PointerPressedEventArgs e)
+    private void OnRowPressed(object? sender, PointerPressedEventArgs e)
     {
-        _pressedLauncher = null;
-        _draggingLauncher = false;
+        _pressedRow = null;
+        _draggingRow = false;
         var source = e.Source as Control;
         if (!e.GetCurrentPoint(SettingsRows).Properties.IsLeftButtonPressed
-            || source?.DataContext is not LauncherRowViewModel { CanMove: true } row
+            || _settingsPage?.Selected is not IDraggableRows rows
+            || source?.DataContext is not SettingsRowViewModel row || !rows.CanDrag(row)
             || source.FindAncestorOfType<Button>(includeSelf: true) is { } button && (button.Classes.Contains("valueArrow") || button.Classes.Contains("valueToggle")))
         {
             return;
         }
 
-        _pressedLauncher = row;
-        _launcherPressPoint = e.GetPosition(SettingsRows);
+        _pressedRow = row;
+        _rowPressPoint = e.GetPosition(SettingsRows);
     }
 
-    /// <summary>The dragged launcher stands below the rows whose middle is above the pointer.</summary>
-    private void OnLauncherRowDragged(object? sender, PointerEventArgs e)
+    /// <summary>The dragged row stands below the rows of its list whose middle is above the pointer.</summary>
+    private void OnRowDragged(object? sender, PointerEventArgs e)
     {
-        if (_pressedLauncher is not { } row || _settingsPage?.Selected is not LauncherSettingsViewModel launchers)
+        if (_pressedRow is not { } row || _settingsPage?.Selected is not (SettingsCategoryViewModel category and IDraggableRows rows))
         {
             return;
         }
 
         var position = e.GetPosition(SettingsRows);
-        if (!_draggingLauncher)
+        if (!_draggingRow)
         {
-            if (Math.Abs(position.Y - _launcherPressPoint.Y) + Math.Abs(position.X - _launcherPressPoint.X) <= PointerMoveThreshold)
+            if (Math.Abs(position.Y - _rowPressPoint.Y) + Math.Abs(position.X - _rowPressPoint.X) <= PointerMoveThreshold)
             {
                 return;
             }
 
-            _draggingLauncher = true;
-            launchers.BeginDrag(row);
+            _draggingRow = true;
+            rows.BeginDrag(row);
         }
 
         var above = 0;
-        foreach (var other in launchers.Rows)
+        foreach (var other in category.Rows)
         {
-            if (other is LauncherRowViewModel && other != row && SettingsRows.ContainerFromItem(other) is { } container
+            if (other != row && rows.IsInDragList(other) && SettingsRows.ContainerFromItem(other) is { } container
                 && container.TranslatePoint(new Point(0, container.Bounds.Height / 2), SettingsRows) is { } middle && middle.Y < position.Y)
             {
                 above++;
             }
         }
 
-        launchers.DragTo(above);
+        rows.DragTo(above);
     }
 
-    private void OnLauncherRowReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnRowReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (_draggingLauncher && _settingsPage?.Selected is LauncherSettingsViewModel launchers)
+        if (_draggingRow && _settingsPage?.Selected is IDraggableRows rows)
         {
-            launchers.Drop();
+            rows.Drop();
 
-            // A drag ends where it began often enough; the row's click would then switch the launcher.
+            // A drag ends where it began often enough; the row's click would then switch it.
             e.Handled = true;
         }
 
-        _pressedLauncher = null;
-        _draggingLauncher = false;
+        _pressedRow = null;
+        _draggingRow = false;
     }
 
     private void OnTextInput(object? sender, TextInputEventArgs e)

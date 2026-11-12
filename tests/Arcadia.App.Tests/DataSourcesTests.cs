@@ -139,7 +139,7 @@ public sealed partial class DataSourcesTests
 
         var key = Assert.IsType<TextRowViewModel>(Row(arcadia, SteamGridDbKeyRows.KeyRowKey));
         Assert.Equal((AppTexts.DataSourcesKeyConnected("cdef"), AppTexts.Edit, "…cdef"), (key.Subtitle, key.ActivateText, key.ValueText));
-        Assert.Equal(AppTexts.DataSourcesKeySaved, arcadia.Main.Toast.Text);
+        Assert.Equal(AppTexts.DataSourcesKeySavedSearching, arcadia.Main.Toast.Text);
         Assert.Equal(SteamGridDbKeyState.Valid, arcadia.Artwork.SteamGridDb!.State);
         Assert.Equal(AppTexts.DataSourcesSteamGridDbSubtitle, Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb)).Subtitle);
 
@@ -331,29 +331,71 @@ public sealed partial class DataSourcesTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T489-14")]
-    public async Task A_on_a_source_swaps_the_order_keeps_the_focus_on_it_and_the_order_stays_after_a_restart()
+    [Trait("TestCase", "T506-64")]
+    public async Task L3_lifts_a_source_up_down_move_it_L3_drops_it_and_B_puts_it_back_and_the_order_stays_after_a_restart()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
         OpenDataSources(arcadia);
         var steamGridDb = ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb);
+        var settings = arcadia.Main.Settings!;
 
         arcadia.FocusRow(steamGridDb);
-        arcadia.Press(UiAction.Accept);
+        Assert.Equal(AppTexts.Move, settings.Selected.L3ActionText);
+        arcadia.Press(UiAction.ViewOptions);
+        Assert.True(settings.Selected.IsReordering);
+        Assert.True(Row(arcadia, steamGridDb).IsLifted);
 
-        Assert.Equal(steamGridDb, arcadia.Main.Settings!.FocusedRow?.Key);
-        Assert.Equal([ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher], arcadia.Settings.Current.Artwork.Order);
+        // ▲ moves it, a second ▲ at the top stays there (no wrap), ◀ ▶ switch nothing while it is lifted.
+        arcadia.Press(UiAction.Up);
+        arcadia.Press(UiAction.Up);
+        arcadia.Press(UiAction.Left);
         Assert.Equal("1. SteamGridDB", Row(arcadia, steamGridDb).Title);
+        Assert.Equal(ArtworkSettings.DefaultOrder, arcadia.Settings.Current.Artwork.Order);
+        Assert.Empty(arcadia.Settings.Current.Artwork.Off);
+        arcadia.Press(UiAction.ViewOptions);
+
+        Assert.False(settings.Selected.IsReordering);
+        Assert.Equal(steamGridDb, settings.FocusedRow?.Key);
+        Assert.Equal([ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher], arcadia.Settings.Current.Artwork.Order);
         Assert.Contains("\"SteamGridDb\"", File.ReadAllText(arcadia.SettingsPath), StringComparison.Ordinal);
+
+        // B while lifted: back where it was, nothing saved, still on the page.
+        arcadia.Press(UiAction.ViewOptions);
+        arcadia.Press(UiAction.Down);
+        arcadia.Press(UiAction.Back);
+        Assert.True(arcadia.Main.IsSettingsOpen);
+        Assert.False(settings.Selected.IsReordering);
+        Assert.Equal("1. SteamGridDB", Row(arcadia, steamGridDb).Title);
+        Assert.Equal([ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher], arcadia.Settings.Current.Artwork.Order);
 
         using var restarted = await arcadia.RestartAsync();
         OpenDataSources(restarted);
         Assert.Equal(steamGridDb, restarted.Main.Settings!.Selected.Rows[5].Key);
+    }
 
-        restarted.FocusRow(steamGridDb);
-        restarted.Press(UiAction.Accept);
-        Assert.Equal(ArtworkSettings.DefaultOrder, restarted.Settings.Current.Artwork.Order);
+    [AvaloniaFact]
+    [Trait("TestCase", "T506-59")]
+    public async Task Left_and_right_switch_a_source_on_and_off_and_it_stays_after_a_restart()
+    {
+        var (arcadia, _) = await StartAsync();
+        using var _ = arcadia;
+        OpenDataSources(arcadia);
+        var launcher = Assert.IsType<ArtworkSourceRowViewModel>(arcadia.FocusRow(ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher)));
+        Assert.True(launcher.IsOn);
+
+        arcadia.Press(UiAction.Right);
+        Assert.False(launcher.IsOn);
+        Assert.Equal(AppTexts.DataSourcesSourceOffSubtitle, launcher.Subtitle);
+        Assert.Equal([ArtworkSourceKind.Launcher], arcadia.Settings.Current.Artwork.Off);
+
+        using var restarted = await arcadia.RestartAsync();
+        OpenDataSources(restarted);
+        var again = Assert.IsType<ArtworkSourceRowViewModel>(restarted.FocusRow(ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher)));
+        Assert.False(again.IsOn);
+        restarted.Press(UiAction.Left);
+        Assert.True(again.IsOn);
+        Assert.Empty(restarted.Settings.Current.Artwork.Off);
     }
 
     [AvaloniaFact]
@@ -399,15 +441,14 @@ public sealed partial class DataSourcesTests
         var missing = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(ArtworkSourceRows.MissingKey));
         arcadia.SteamGridDb.Hangs = true;
         arcadia.Press(UiAction.Accept);
-        Assert.Equal((AppTexts.DataSourcesSearchBusy, false), (missing.ActionText, missing.CanActivate));
+        Assert.Equal((AppTexts.DataSourcesSearchCancel, true), (missing.ActionText, missing.CanActivate));
         await arcadia.WaitUntilAsync(() => missing.Subtitle == AppTexts.DataSourcesSearchRunning(done: 0, total: 1), "Suche läuft");
         Assert.True(missing.HasProgress);
-        arcadia.Press(UiAction.Accept);
         arcadia.SteamGridDb.Hangs = false;
         arcadia.Time.Advance(SteamGridDbClient.Timeout);
         await SettledAsync(arcadia);
 
-        // That run had no connection: a warning, as the player started it; the second A asked nothing again.
+        // That run had no connection: a warning, as the player started it.
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesSearchNoConnection, "Warnung");
         Assert.Equal(1, arcadia.SteamGridDb.Asked().Count(path => path == "grids/steam/" + GameId) - 1);
         Assert.Equal(AppTexts.DataSourcesSearchFound(covers: 0, heroes: 0), missing.Subtitle);

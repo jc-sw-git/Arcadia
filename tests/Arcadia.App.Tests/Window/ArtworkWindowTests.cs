@@ -246,7 +246,9 @@ public sealed class ArtworkWindowTests : IDisposable
         // The second opening of the search, without a run going: what it must stay at (#477).
         var withoutImages = OpenSearchTwice(window);
 
+        // The games are known from the start: a search, not the scan, downloads their images (#506).
         arcadia.Artwork.Update([library]);
+        Assert.True(arcadia.Artwork.SearchAgain(byPlayer: false));
         await server.Asked.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(arcadia.Artwork.WhenIdleAsync().IsCompleted, "Der Lauf ist schon fertig; er soll während der Messung laden.");
 

@@ -11,7 +11,7 @@ namespace Arcadia.Core.Tests.UserData;
 /// #496: the shown title (own above automatic above the launcher's), what a typed title keeps, and how the shown title
 /// sorts and searches (T496-4, T496-6, T496-9, T496-10).
 /// </summary>
-public sealed class GameTitlesTests : IDisposable
+public sealed class GameTitlesTests : IAsyncDisposable
 {
     private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
 
@@ -24,7 +24,12 @@ public sealed class GameTitlesTests : IDisposable
         _store.Open();
     }
 
-    public void Dispose() => Directory.Delete(_folder, recursive: true);
+    // A change writes in the background; Windows can't delete the folder while that write holds its temporary file.
+    public async ValueTask DisposeAsync()
+    {
+        await _store.WhenWrittenAsync();
+        Directory.Delete(_folder, recursive: true);
+    }
 
     [Theory]
     [InlineData("  Aal  ", "Zebra", "Aal")]

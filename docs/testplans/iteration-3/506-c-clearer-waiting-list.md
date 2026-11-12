@@ -171,6 +171,15 @@ T506-88), T491-26 (controller path, replaced by T506-111). SteamGridDB off greys
   one hit left is shown, not taken, because the player is looking.
 - **Q7** B on the keyboard keeps the term that was there before; only ↵ searches.
 
+Automated tests:
+
+| Test cases | Tests |
+|---|---|
+| T506-80 to -83, -85, -95 to -97, -99 to -102, -104, -105, -107, -108, -110, -111 | `WaitingListLevelsTests` |
+| T506-84, -86, -87, -117 | `WaitingListTests` |
+| T506-80, -82, -88, -98, -106, -116, -117 | `Window/WaitingListViewTests`; T506-89 also `Window/WaitingListSoughtViewTests`, T506-93 also `WaitingListImageCheckTests` |
+| T506-89 to -97, -100, -103, -104 | `ArtworkServiceByNameTests.HitChecks` (Core), T506-90 also `ArtworkServiceByNameTests` |
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

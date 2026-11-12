@@ -107,6 +107,7 @@ public sealed class WaitingListTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T491-9")]
+    [Trait("TestCase", "T506-117")]
     public async Task The_rows_show_how_many_games_wait_and_grey_out_with_ersten_nehmen()
     {
         using var arcadia = await StartAsync();

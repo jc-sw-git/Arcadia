@@ -68,6 +68,7 @@ public sealed class WaitingListViewTests
     [Trait("TestCase", "T506-80")]
     [Trait("TestCase", "T506-82")]
     [Trait("TestCase", "T506-98")]
+    [Trait("TestCase", "T506-117")]
     public async Task The_screen_shows_two_levels_what_is_sought_and_the_own_term_with_the_ring_where_the_focus_is()
     {
         var (window, list) = await OpenAsync();

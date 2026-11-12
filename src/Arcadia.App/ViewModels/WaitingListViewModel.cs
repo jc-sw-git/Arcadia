@@ -190,9 +190,6 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     /// </summary>
     private void Refresh()
     {
-        var dbgWatch = System.Diagnostics.Stopwatch.StartNew(); // [DEBUG-stall]
-        try { // [DEBUG-stall]
-
         var waiting = _artwork.Waiting;
         var currentKey = CurrentGame?.Key;
         var currentIndex = CurrentGame is null ? 0 : Games.IndexOf(CurrentGame);
@@ -236,8 +233,6 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(Position));
         OnPropertyChanged(nameof(GamesHeading));
-    
-        } finally { if (dbgWatch.Elapsed.TotalMilliseconds > 3) System.IO.File.AppendAllText("/tmp/claude-0/shots/dbg.txt", $"Refresh {dbgWatch.Elapsed.TotalMilliseconds:0.0}\n"); } // [DEBUG-stall]
     }
 
     /// <summary>

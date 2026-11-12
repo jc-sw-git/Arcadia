@@ -3,7 +3,7 @@
 Part C of #506 (scenarios 15–20 and their failure cases). Part A (detail page, info box) and part B (when artwork is
 searched) have their own files; part C uses the IDs T506-80 to T506-119.
 
-**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116 · QE: T506-80, T506-82, T506-85, T506-98, T506-99, T506-102, T506-106 (own run of the app) · Open for the owner: T506-109, T506-112, T506-113, T506-114, T506-115
+**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116, T506-117 · QE: T506-80, T506-82, T506-85, T506-98, T506-99, T506-102, T506-106 (own run of the app) · Open for the owner: T506-109, T506-112, T506-113, T506-114, T506-115
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request (search by
 name, the images per hit, the image downloads) and can answer slowly, throttle, fail or reject the key; nothing
@@ -125,6 +125,9 @@ otherwise; the cases follow the recommendation.
   step in the games list, held and fast, and every step in the grid < 50 ms from input to visible focus move (`Bild:`
   lines), no stutter while images arrive; measured on Windows, numbers in the PR. · E2E: no (real rendering, Release
   timings on Windows; the owner sends the `Bild:` lines from `arcadia.log`)
+- [x] **T506-117** No hit count before the hits are checked: the games list shows each game's name and launcher only,
+  and the info box of "Warten auf deine Auswahl" shows name and launcher, never "k Treffer" (an unchecked count was
+  often 8 where 2 or 3 have an image). · E2E: no (window and view model tests)
 
 **Failure cases, controller only**
 
@@ -178,4 +181,7 @@ History:
 | T506-96 (red once) | 2026-11-12 | Claude | CI ubuntu-latest on this PR, then the container: 60 hits of one game checked at the same time | ❌ then ✅ | a kept check could bring back a hit another check had just dropped; fixed in this PR (one lock around each change of the entry) |
 | T491-12, T506-94, T506-95 (red once) | 2026-11-12 | Claude | branch of this PR, Linux container, Core tests | ❌ as intended, then ✅ | QE finding: "Ersten nehmen" took an unchecked first hit and failed on a game with no hits left; it now takes the first hit with an image and searches a game without one again |
 | T506-89, T506-93 (acceptance tests added by QE, red once) | 2026-11-12 | Claude (QE) | branch of this PR, Linux container, .NET 10, Debug; window and driver tests | ❌ as intended, then ✅ | red with `SoughtOf` always seeking both, and with the scan keeping hits without images |
+| T506-109 (part) | 2026-11-12 | owner's PC, run by Claude | Debug build (Avalonia developer tools attached), `--demo`, 908 games, Pan on: held ▲ ▼ in the games list | ❌ frames up to 1.3 s late, several steps at once; the library in the same build at most 42 ms | measured again in Release |
+| T506-109 (part) | 2026-11-12 | owner's PC, run by Claude | Release build of main, `--demo`, 908 games, two 40 s recordings with `dotnet-trace`, held and tapped ▲ ▼, own search before: 365 `Bild:` lines | ✅ games list at most 24 ms per step, no stutter; first opening of the on-screen keyboard 327 ms once | the stutter came with the Debug build only; grid steps and opening the screen still for the owner |
+| T506-117 | 2026-11-12 | Claude | follow-up branch, Linux container, .NET 10, Release; window and view model tests | ✅ | – |
 | T506-80, -82, -85, -98, -99, -102, -106 (QE's own run) | 2026-11-12 | Claude (QE) | Release app under Xvfb, `--demo`, 146 waiting games seeded in the name-match store, no SteamGridDB key, keyboard for the gamepad | ✅ | real tile images, background tiles and the frame time only by test or by the owner (T506-109) |

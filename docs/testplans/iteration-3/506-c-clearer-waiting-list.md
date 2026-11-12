@@ -3,8 +3,7 @@
 Part C of #506 (scenarios 15–20 and their failure cases). Part A (detail page, info box) and part B (when artwork is
 searched) have their own files; part C uses the IDs T506-80 to T506-119.
 
-**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116 · QE: – (T506-109 on Windows) · Open for the
-owner: T506-112, T506-113, T506-114, T506-115
+**Status:** Automated: T506-80 to T506-108, T506-110, T506-111, T506-116 · QE: – (T506-109 on Windows) · Open for the owner: T506-112, T506-113, T506-114, T506-115
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request (search by
 name, the images per hit, the image downloads) and can answer slowly, throttle, fail or reject the key; nothing

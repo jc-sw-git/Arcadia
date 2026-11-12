@@ -607,6 +607,21 @@
   <data name="DetailAreaOverview" xml:space="preserve"><value>Übersicht</value></data>
   <data name="DetailAreaController" xml:space="preserve"><value>Controller</value></data>
   <data name="DetailAreaManage" xml:space="preserve"><value>Verwalten</value></data>
+  <data name="DetailAreaInfos" xml:space="preserve"><value>Infos</value></data>
+  <data name="DetailInfosNone" xml:space="preserve"><value>Noch keine Infos</value></data>
+  <data name="DetailInfosNoneText" xml:space="preserve"><value>Zu diesem Spiel hat Arcadia noch keine Infos: keine Beschreibung, keine Genres, keinen Entwickler.</value></data>
+  <data name="DetailInfoSeparator" xml:space="preserve"><value> · </value></data>
+  <data name="DetailListSeparator" xml:space="preserve"><value>, </value></data>
+  <data name="DetailMoreTags" xml:space="preserve"><value>+{count}</value></data>
+  <data name="DetailAgeRating" xml:space="preserve"><value>{board} {rating}</value></data>
+  <data name="DetailSourceByStore" xml:space="preserve"><value>laut {source}</value></data>
+  <data name="DetailDescriptionCaption" xml:space="preserve"><value>BESCHREIBUNG</value></data>
+  <data name="DetailGenresCaption" xml:space="preserve"><value>GENRES</value></data>
+  <data name="DetailDevelopersCaption" xml:space="preserve"><value>ENTWICKLER</value></data>
+  <data name="DetailPublishersCaption" xml:space="preserve"><value>PUBLISHER</value></data>
+  <data name="DetailReleasedCaption" xml:space="preserve"><value>ERSCHIENEN</value></data>
+  <data name="DetailAgeRatingCaption" xml:space="preserve"><value>ALTERSFREIGABE</value></data>
+  <data name="DetailTagsCaption" xml:space="preserve"><value>TAGS DER QUELLEN</value></data>
   <data name="DetailOverviewLine" xml:space="preserve"><value>{lastPlayed} · {playtime}</value></data>
   <data name="DetailControllerLine" xml:space="preserve"><value>Modus „{mode}“</value></data>
   <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Deinstallieren</value></data>

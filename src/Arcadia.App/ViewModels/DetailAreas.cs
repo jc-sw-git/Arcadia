@@ -16,6 +16,8 @@ public static class DetailAreas
     /// <summary>Line icons on a 24 × 24 grid, from the design (RD6Mischung).</summary>
     public const string OverviewIcon = "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z";
 
+    public const string InfosIcon = "M5 6h14M5 11h14M5 16h9";
+
     public const string ControllerIcon = "M8.5 7h7a5.5 5.5 0 0 1 0 11h-7a5.5 5.5 0 0 1 0-11zM8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01";
 
     public const string ManageIcon = "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4";

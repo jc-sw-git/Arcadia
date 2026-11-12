@@ -90,7 +90,7 @@ public sealed class QuickSelectionTests
         arcadia.Press(UiAction.Right);
         Assert.Equal(ControllerModes.Arcadia, mode.ValueText);
         Assert.Equal(ControllerModes.Arcadia, page.Row(GameActionKind.ControllerMode).ValueText);
-        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Arcadia), page.Areas[1].ValueLine);
+        Assert.Equal(AppTexts.DetailControllerLine(ControllerModes.Arcadia), page.Area(DetailAreaViewModel.ControllerKey).ValueLine);
         Assert.True(arcadia.ControllerSupport.ChoiceFor(game));
         arcadia.Press(UiAction.Left, times: 2);
         Assert.Equal(ControllerModes.Steam, mode.ValueText);

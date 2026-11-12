@@ -16,7 +16,7 @@ saved as `src/Arcadia.Launchers/Steam/steam-tags-german.json` (no request beside
 Metadaten neu laden" runs, the old data stays visible until the new one is there. A5 with no game missing, the
 progress row reads "Alle Metadaten geladen" (greyed).
 
-**Status:** Automated: T493-1 to -31, T493-41 · QE: T493-32 to -36 · Open for the owner: T493-37, T493-38, T493-39, T493-40
+**Status:** Automated: T493-1 to -11, T493-14 to -31, T493-41 · QE: T493-12, T493-13, T493-32 to -36 · Open for the owner: T493-37, T493-38, T493-39, T493-40
 
 **Steam data from `appinfo.vdf` and the store page**
 
@@ -149,7 +149,14 @@ Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| T493-1 to -31 | named by the implementation PR |
+| T493-3, -4 | `Arcadia.Core.Tests/Metadata/SteamAppMetadataTests` |
+| T493-5, -15 | `Arcadia.Core.Tests/Metadata/SteamAppDetailsTests` |
+| T493-5 to -9, -36 (text) | `Arcadia.Core.Tests/Metadata/MetadataRulesTests` |
+| T493-10 (catalog) | `Arcadia.Core.Tests/Metadata/EpicMetadataTests` |
+| T493-16 to -19, -21 to -23, -25 to -27, -29 | `Arcadia.Core.Tests/Metadata/MetadataServiceTests` |
+| T493-24 to -28 | `Arcadia.App.Tests/MetadataSettingsTests` |
+| T493-1, -2, -10, -11, -14, -20, -28, -30, -41 | `Arcadia.App.Tests/DetailMetadataTests` |
+| T493-31 | `Arcadia.Core.Tests/ArchitectureTests` (launcher folders, Core and UI without launcher special cases) |
 
 History:
 

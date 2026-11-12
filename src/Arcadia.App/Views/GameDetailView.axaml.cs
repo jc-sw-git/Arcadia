@@ -45,6 +45,7 @@ public partial class GameDetailView : UserControl
         Heading.RenderTransform = new TranslateTransform();
         AreaContent.RenderTransform = new TranslateTransform();
         InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
+        InfosScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -85,9 +86,11 @@ public partial class GameDetailView : UserControl
         }
 
         e.Handled = true;
-        if (_viewModel.InfoOverflows && e.Source is Visual source && InfoBox.IsVisualAncestorOf(source))
+        if (e.Source is Visual source && ((_viewModel.InfoOverflows && InfoBox.IsVisualAncestorOf(source))
+            || (ScrollsOver(InfosScroller) && InfosScroller.IsVisualAncestorOf(source))))
         {
-            // Over an info box with more than it shows the wheel is its scroll bar (#506), not a turn.
+            // Over an info box or the text of "Infos" with more than it shows the wheel is its scroll bar (#506, #493),
+            // not a turn.
             return;
         }
 
@@ -140,6 +143,11 @@ public partial class GameDetailView : UserControl
         {
             UpdateInfoOverflow();
         }
+        else if (e.PropertyName is nameof(GameDetailPageViewModel.OpenArea) or nameof(GameDetailPageViewModel.Metadata))
+        {
+            // Another area, or the text of "Infos" arrived: it starts at its top.
+            ShowInfosTop();
+        }
     }
 
     private void OnInfoRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -165,6 +173,7 @@ public partial class GameDetailView : UserControl
         }
 
         FollowInfoRow();
+        ShowInfosTop();
     }
 
     /// <summary>Another row explained (the focus moved, or the rows were built again as a row greyed): from its top.</summary>
@@ -191,19 +200,35 @@ public partial class GameDetailView : UserControl
         UpdateInfoOverflow();
     }, DispatcherPriority.Loaded);
 
-    /// <summary>RS or Shift+W/S: the info box one step up (-1) or down (1); a box that fits stays.</summary>
+    private void ShowInfosTop() => Dispatcher.UIThread.Post(() =>
+    {
+        InfosScroller.Offset = default;
+        UpdateInfoOverflow();
+    }, DispatcherPriority.Loaded);
+
+    /// <summary>
+    /// RS or Shift+W/S: the info box one step up (-1) or down (1); in "Infos" also ▲ ▼, its text (#493). A box that fits
+    /// stays.
+    /// </summary>
     private void OnInfoScrollRequested(int direction)
     {
-        var max = Math.Max(0, InfoScroller.Extent.Height - InfoScroller.Viewport.Height);
-        InfoScroller.Offset = new Vector(0, Math.Clamp(InfoScroller.Offset.Y + (direction * InfoScrollStep), 0, max));
+        var scroller = ShownScroller;
+        var max = Math.Max(0, scroller.Extent.Height - scroller.Viewport.Height);
+        scroller.Offset = new Vector(0, Math.Clamp(scroller.Offset.Y + (direction * InfoScrollStep), 0, max));
     }
 
-    /// <summary>While the focus is on a row whose info box can scroll, RS scrolls it and the footer names RS.</summary>
+    /// <summary>While the focus is on a row whose info box can scroll, or in a longer "Infos", RS scrolls it and the footer names RS.</summary>
     private void UpdateInfoOverflow()
     {
         if (_viewModel is not null)
         {
-            _viewModel.InfoOverflows = _page is { IsInRows: true } && InfoScroller.Extent.Height - InfoScroller.Viewport.Height > 1;
+            _viewModel.InfoOverflows = _page is { IsInRows: true } && ScrollsOver(ShownScroller);
         }
     }
+
+    /// <summary>"Infos" scrolls its text; every other area its info box.</summary>
+    private ScrollViewer ShownScroller => _page?.OpenArea.IsInfos == true ? InfosScroller : InfoScroller;
+
+    private static bool ScrollsOver(ScrollViewer scroller) =>
+        scroller.IsEffectivelyVisible && scroller.Extent.Height - scroller.Viewport.Height > 1;
 }

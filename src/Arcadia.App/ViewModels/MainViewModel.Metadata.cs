@@ -19,7 +19,11 @@ public partial class MainViewModel
     /// </summary>
     private void WatchMetadata(MetadataService metadata)
     {
-        metadata.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => MetadataChanged?.Invoke(this, keys));
+        metadata.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            Detail?.ShowMetadata(keys);
+            MetadataChanged?.Invoke(this, keys);
+        });
         metadata.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextMetadata));
         metadata.ReloadFailed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.DataSourcesMetadataReloadNoConnection));
         metadata.Open();

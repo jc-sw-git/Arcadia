@@ -58,6 +58,7 @@ internal sealed class FakeStoreServer(TimeProvider time) : HttpMessageHandler
 {
     private readonly Dictionary<string, Queue<Func<CancellationToken, Task<HttpResponseMessage>>>> _once = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<CancellationToken, Task<HttpResponseMessage>>> _answers = new(StringComparer.Ordinal);
+    private Func<CancellationToken, Task<HttpResponseMessage>>? _fallback;
 
     public List<(HttpRequestMessage Request, DateTimeOffset At)> Requests { get; } = [];
 
@@ -92,6 +93,13 @@ internal sealed class FakeStoreServer(TimeProvider time) : HttpMessageHandler
         System.Text.RegularExpressions.Regex.Match(address.Query, @"[?&]appids=([^&]*)") is { Success: true } appIds ? appIds.Groups[1].Value : address.Segments[^1];
 
     public void Serve(string id, string answer) => _answers[id] = _ => Task.FromResult(Ok(answer));
+
+    /// <summary>Every game without an answer of its own gets <paramref name="answer"/>, each after <paramref name="delay"/> of real time.</summary>
+    public void ServeEverySlowly(string answer, TimeSpan delay) => _fallback = async cancel =>
+    {
+        await Task.Delay(delay, cancel);
+        return Ok(answer);
+    };
 
     public void Fail(string id, HttpStatusCode status) => _answers[id] = _ => Task.FromResult(new HttpResponseMessage(status));
 
@@ -144,6 +152,8 @@ internal sealed class FakeStoreServer(TimeProvider time) : HttpMessageHandler
             return queue.Dequeue()(cancellationToken);
         }
 
-        return _answers.TryGetValue(id, out var answer) ? answer(cancellationToken) : Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        return _answers.TryGetValue(id, out var answer) ? answer(cancellationToken)
+            : _fallback is { } fallback ? fallback(cancellationToken)
+            : Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
     }
 }

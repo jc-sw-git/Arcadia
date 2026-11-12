@@ -673,7 +673,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Search is { } search)
         {
             var hit = Carousel.Find(search.Hits, key, 0);
-            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus, MetadataOf);
             return;
         }
 
@@ -685,7 +685,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus);
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, MetadataOf);
     }
 
     /// <summary>

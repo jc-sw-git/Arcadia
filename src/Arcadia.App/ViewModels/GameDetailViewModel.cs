@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.Core.Library;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Navigation;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,6 +23,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private readonly IPageHost _host;
     private readonly LauncherTabsViewModel _tabs;
     private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
+    private readonly Func<string, MergedMetadata> _metadataOf;
 
     // A held LT/RT turns only the covers; the page follows on release (#499).
     private bool _pageBehind;
@@ -29,6 +31,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// <param name="tabName">Null when the page was opened from the search; then it has no sort order either.</param>
     /// <param name="createViewOptions">The library's "Ansicht" dialog for L3; null from the search, whose hits keep their order.</param>
     /// <param name="focus">The focus of the page this one replaces (another tab, #499); null starts on "Spielen".</param>
+    /// <param name="metadataOf">The metadata of a game by its key (#493); none without it.</param>
     public GameDetailViewModel(
         string? tabName,
         IReadOnlyList<Game> games,
@@ -40,8 +43,10 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         LauncherTabsViewModel tabs,
         Func<ViewOptionsViewModel?>? createViewOptions,
         TimeProvider time,
-        DetailFocus? focus = null)
+        DetailFocus? focus = null,
+        Func<string, MergedMetadata>? metadataOf = null)
     {
+        _metadataOf = metadataOf ?? (_ => MergedMetadata.None);
         TabName = tabName;
         _jump = new TurnJump(time, JumpTime);
         _createTile = createTile;
@@ -67,7 +72,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// </summary>
     public event Action<CancellationToken>? Jumped;
 
-    /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506).</summary>
+    /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506); in "Infos" ▲ ▼ too, its text (#493).</summary>
     public event Action<int>? InfoScrollRequested;
 
     /// <summary>
@@ -265,6 +270,16 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         return true;
     }
 
+    /// <summary>The metadata of <paramref name="keys"/> changed (#493): the shown game's shows at once.</summary>
+    public void ShowMetadata(IReadOnlyCollection<string> keys)
+    {
+        var key = Current.Tile.Game.Key;
+        if (keys.Contains(key))
+        {
+            Current.ShowMetadata(new DetailMetadata(_metadataOf(key)));
+        }
+    }
+
     /// <summary>The buttons and rows depend on whether the Steam Controller mode and the mouse mode apply.</summary>
     public void RebuildActions() => Current.RebuildActions();
 
@@ -307,10 +322,15 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         if (Current is { } shown)
         {
             shown.Detach();
+            shown.ReadScrollRequested -= OnReadScrollRequested;
         }
 
-        Current = new GameDetailPageViewModel(front, _actions, focus);
+        var page = new GameDetailPageViewModel(front, _actions, focus, new DetailMetadata(_metadataOf(front.Game.Key)));
+        page.ReadScrollRequested += OnReadScrollRequested;
+        Current = page;
     }
+
+    private void OnReadScrollRequested(int direction) => InfoScrollRequested?.Invoke(direction);
 
     private GameTileViewModel? Neighbour(int side) =>
         Games.Count < 2 ? null : Covers.FirstOrDefault(c => c.Offset == side)?.Tile;

@@ -9,6 +9,9 @@ internal static class DetailSteps
     public static DetailRowViewModel Row(this GameDetailPageViewModel page, GameActionKind kind) =>
         page.Areas.Where(area => !area.IsOverview).SelectMany(area => area.Rows).Single(row => row.Kind == kind);
 
+    /// <summary>The area of this key, e.g. <see cref="DetailAreaViewModel.InfosKey"/>.</summary>
+    public static DetailAreaViewModel Area(this GameDetailPageViewModel page, string key) => page.Areas.Single(area => area.Key == key);
+
     /// <summary>The quick selection's entries in "Übersicht" (#500), by kind.</summary>
     public static IEnumerable<GameActionKind> QuickKinds(this GameDetailPageViewModel page) => page.Overview.Rows.Select(row => row.Kind);
 

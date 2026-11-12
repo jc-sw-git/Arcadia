@@ -46,6 +46,7 @@ its file.
 | [491](491-find-artwork-by-name.md) | #491 | Find artwork by name and let the player pick when several games match | T491-1 to T491-29 (owner: T491-28, -29) |
 | [506-a](506-a-detail-page-and-info-box.md) | #506 | Part A: detail page and info box: fast turning, value chips, one box per value, note on top, scrolling | T506-1 to T506-39 (owner: T506-38, -39) |
 | [506-c](506-c-clearer-waiting-list.md) | #506 | Part C: "Warten auf deine Auswahl" in two levels, what is sought, only hits with images, own search term | T506-80 to T506-115 (owner: T506-112 to -115) |
+| [507](507-one-steam-image-keeps-epic-covers-away.md) | #507 | One Steam image that doesn't answer keeps all Epic covers away | T507-1 to T507-3 (owner: T507-3) |
 
 ## Release candidate tests (restart or installation)
 

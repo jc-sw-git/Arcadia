@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
+using Arcadia.Core.Artwork;
+using Arcadia.Core.Metadata.Igdb;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Metadata;
@@ -10,8 +13,10 @@ namespace Arcadia.Core.Metadata;
 /// asks each launcher's store for the games it hasn't answered for yet, one request at a time within the store's limit,
 /// 10 s each, waiting on HTTP 429. No network, a timeout or a server error skip the game silently until the next scan.
 /// "Alle Metadaten neu laden" (<see cref="ReloadAll"/>) asks again for every game; the old data stays until replaced.
+/// With a usable IGDB access IGDB is asked after the stores (#494, <c>MetadataService.Igdb.cs</c>); the fields are merged
+/// in the order of "Reihenfolge für Metadaten", again from the cache whenever it changes (<see cref="SettingsChanged"/>).
 /// </summary>
-public sealed class MetadataService : IDisposable
+public sealed partial class MetadataService : IDisposable
 {
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 
@@ -32,8 +37,14 @@ public sealed class MetadataService : IDisposable
     // What the views show, readable from any thread.
     private readonly ConcurrentDictionary<string, MergedMetadata> _shown = new(StringComparer.Ordinal);
 
+    // Written only by the run; read by the merge, which may run beside it (a changed order).
+    private readonly ConcurrentDictionary<string, CachedMetadata> _records = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _launcherTitles = new(StringComparer.Ordinal);
+
+    // One merge at a time, each from the newest record, so a merge beside the run never shows older data.
+    private readonly object _showGate = new();
+
     // The run's own state: only the run touches it.
-    private readonly Dictionary<string, CachedMetadata> _records = new(StringComparer.Ordinal);
     private readonly HashSet<string> _reloadLeft = new(StringComparer.Ordinal);
     private readonly Dictionary<string, DateTimeOffset> _nextRequest = new(StringComparer.Ordinal);
     private bool _indexed;
@@ -61,6 +72,15 @@ public sealed class MetadataService : IDisposable
 
     public Action<string> Log { get; init; } = _ => { };
 
+    /// <summary>"Reihenfolge für Metadaten" (#494), read at every merge.</summary>
+    public Func<MetadataSettings> Settings { get; init; } = () => new MetadataSettings();
+
+    /// <summary>"Bei mehreren Treffern", shared with the artwork (#491, #494), read for each game found by name.</summary>
+    public Func<SeveralHits> SeveralHits { get; init; } = () => Arcadia.Core.Settings.SeveralHits.Ask;
+
+    /// <summary>IGDB with the player's access (#494); null: launcher data only.</summary>
+    public IgdbAccess? Igdb { get; init; }
+
     /// <summary>The metadata of these games changed (any thread).</summary>
     public event EventHandler<IReadOnlyCollection<string>>? Changed;
 
@@ -84,14 +104,16 @@ public sealed class MetadataService : IDisposable
         }
     }
 
-    /// <summary>The games of the last libraries a store is asked for, e.g. for "Alle Metadaten neu laden?"; 0 before the first scan.</summary>
+    /// <summary>The games of the last libraries a store or IGDB is asked for, e.g. for "Alle Metadaten neu laden?"; 0 before the first scan.</summary>
     public int GameCount
     {
         get
         {
             lock (_gate)
             {
-                return _lastLibraries?.Where(l => l.Source?.Store is not null).Sum(l => l.Library.Games.Count) ?? 0;
+                return _lastLibraries is { } libraries
+                    ? StoreGames(libraries).Select(g => g.Game.Key).Union(IgdbGames(libraries).Select(g => g.Game.Key), StringComparer.Ordinal).Count()
+                    : 0;
             }
         }
     }
@@ -110,6 +132,38 @@ public sealed class MetadataService : IDisposable
 
     /// <summary>What the detail page shows of the game; <see cref="MergedMetadata.None"/> while nothing is known.</summary>
     public MergedMetadata Of(string gameKey) => _shown.GetValueOrDefault(gameKey) ?? MergedMetadata.None;
+
+    /// <summary>
+    /// The title from metadata that replaces the game's doubtful launcher title (#494): IGDB's, while IGDB is on; null when
+    /// the launcher's title stands. Any thread.
+    /// </summary>
+    public string? TitleOf(string gameKey) => _shown.GetValueOrDefault(gameKey)?.Title?.Value;
+
+    /// <summary>
+    /// "Reihenfolge für Metadaten" changed: every game is merged again from the cache, in the background, without a request;
+    /// <see cref="Changed"/> names the games whose fields or title changed.
+    /// </summary>
+    public void SettingsChanged() => Task.Run(() =>
+    {
+        try
+        {
+            var changed = new List<string>();
+            foreach (var key in _records.Keys)
+            {
+                Show(key, changed);
+            }
+
+            if (changed.Count > 0)
+            {
+                Changed?.Invoke(this, changed);
+            }
+        }
+        catch (Exception e)
+        {
+            Log($"Metadaten: neu zusammenführen fehlgeschlagen: {e}");
+            Failed?.Invoke(this, e);
+        }
+    });
 
     /// <summary>Reads the cache in the background; nothing is fetched before the first scan.</summary>
     public void Open() => Start(null);
@@ -185,10 +239,19 @@ public sealed class MetadataService : IDisposable
                     {
                         _reloadLeft.Add(game.Game.Key);
                     }
+
+                    foreach (var game in IgdbGames(pending.Libraries))
+                    {
+                        _igdbReloadLeft.Add(game.Game.Key);
+                    }
                 }
 
                 ReadLocal(pending.Libraries);
-                await FetchAsync(pending.Libraries, pending.Reload, _shutdown.Token);
+                var storesReached = await FetchAsync(pending.Libraries, pending.Reload, _shutdown.Token);
+                if (!HasPending())
+                {
+                    await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, _shutdown.Token);
+                }
             }
         }
         catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
@@ -248,7 +311,7 @@ public sealed class MetadataService : IDisposable
         foreach (var cached in _cache.ReadAll(Log))
         {
             _records[cached.GameKey] = cached;
-            Show(cached, changed);
+            Show(cached.GameKey, changed);
         }
 
         Changed?.Invoke(this, changed);
@@ -262,6 +325,16 @@ public sealed class MetadataService : IDisposable
         {
             if (source is null || library.Games.Count == 0)
             {
+                // Launchers without metadata of their own have titles IGDB may correct (#494).
+                foreach (var game in library.Games)
+                {
+                    if (_launcherTitles.GetValueOrDefault(game.Key) != game.Title)
+                    {
+                        _launcherTitles[game.Key] = game.Title;
+                        Show(game.Key, changed);
+                    }
+                }
+
                 continue;
             }
 
@@ -278,10 +351,17 @@ public sealed class MetadataService : IDisposable
 
             foreach (var game in library.Games)
             {
+                var titleChanged = _launcherTitles.GetValueOrDefault(game.Key) != game.Title;
+                _launcherTitles[game.Key] = game.Title;
                 var local = Local(lookup, game);
                 var known = _records.GetValueOrDefault(game.Key);
                 if (known is not null && Same(known.Local, local) && known.Source == library.Launcher.DisplayName)
                 {
+                    if (titleChanged)
+                    {
+                        Show(game.Key, changed);
+                    }
+
                     continue;
                 }
 
@@ -296,7 +376,7 @@ public sealed class MetadataService : IDisposable
                     Local = local,
                 };
                 Keep(updated);
-                Show(updated, changed);
+                Show(updated.GameKey, changed);
             }
         }
 
@@ -332,15 +412,16 @@ public sealed class MetadataService : IDisposable
     /// Asks the stores for every game still missing an answer, in library order. Stops for a newer scan (which then asks
     /// for the rest, none twice) and at the first failed connection (no network: the next scan tries again).
     /// </summary>
-    private async Task FetchAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, CancellationToken cancel)
+    /// <returns>Whether a store answered; null when none was asked. For "Alle Metadaten neu laden"'s warning.</returns>
+    private async Task<bool?> FetchAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, CancellationToken cancel)
     {
         var all = StoreGames(libraries).ToList();
         var queue = all.Where(g => IsMissing(g.Game)).ToList();
         var run = new FetchRun(all.Count, queue.Count, _time.GetUtcNow(), reload || _reloadLeft.Count > 0);
-        Report(run, all);
+        Report(libraries, run, null);
         if (queue.Count == 0)
         {
-            return;
+            return null;
         }
 
         foreach (var (game, store, source) in queue)
@@ -357,7 +438,7 @@ public sealed class MetadataService : IDisposable
                 _reloadLeft.Remove(game.Key);
             }
 
-            Report(run, all);
+            Report(libraries, run, null);
             if (outcome == Outcome.Offline)
             {
                 break;
@@ -365,10 +446,7 @@ public sealed class MetadataService : IDisposable
         }
 
         run.LogSummary(Log);
-        if (reload && run.Answered == 0 && run.Offline)
-        {
-            ReloadFailed?.Invoke(this, EventArgs.Empty);
-        }
+        return run.Answered > 0 || !run.Offline;
     }
 
     private async Task<Outcome> FetchGameAsync(Game game, IMetadataStore store, string source, FetchRun run, CancellationToken cancel)
@@ -415,7 +493,7 @@ public sealed class MetadataService : IDisposable
             var updated = known with { Source = source, Store = MetadataCheck.Checked(parsed), StoreAt = _time.GetUtcNow() };
             Keep(updated);
             var changed = new List<string>();
-            Show(updated, changed);
+            Show(updated.GameKey, changed);
             if (changed.Count > 0)
             {
                 Changed?.Invoke(this, changed);
@@ -542,24 +620,54 @@ public sealed class MetadataService : IDisposable
         }
     }
 
-    private void Show(CachedMetadata cached, List<string> changed)
+    /// <summary>Merges the game's newest record in the order of "Reihenfolge für Metadaten"; adds its key if what shows changed.</summary>
+    private void Show(string gameKey, List<string> changed)
     {
-        var merged = MergedMetadata.Of([new ProviderMetadata(cached.Source, cached.Data)]);
-        if (_shown.TryGetValue(cached.GameKey, out var shown) && shown == merged)
+        lock (_showGate)
         {
-            return;
+            var merged = _records.TryGetValue(gameKey, out var cached) ? Merge(cached, _launcherTitles.GetValueOrDefault(gameKey)) : MergedMetadata.None;
+            if (_shown.TryGetValue(gameKey, out var shown) ? shown == merged : merged.IsEmpty)
+            {
+                return;
+            }
+
+            if (merged.IsEmpty)
+            {
+                _shown.TryRemove(gameKey, out _);
+            }
+            else
+            {
+                _shown[gameKey] = merged;
+            }
+
+            changed.Add(gameKey);
+        }
+    }
+
+    /// <summary>
+    /// The providers switched on, in their order, merged per field; a doubtful launcher title is replaced by IGDB's
+    /// regardless of the order, a title without <c>?</c> stays the launcher's (#494, D9).
+    /// </summary>
+    private MergedMetadata Merge(CachedMetadata cached, string? launcherTitle)
+    {
+        var settings = (Settings() ?? new MetadataSettings()).WithValidValues();
+        var providers = new List<ProviderMetadata>();
+        foreach (var source in settings.OnInOrder)
+        {
+            if (source == MetadataSourceKind.Launcher)
+            {
+                providers.Add(new ProviderMetadata(cached.Source, cached.Data));
+            }
+            else if (source == MetadataSourceKind.Igdb && cached.Igdb is { } igdb)
+            {
+                providers.Add(new ProviderMetadata(IgdbName, igdb.Data));
+            }
         }
 
-        if (merged.IsEmpty)
-        {
-            _shown.TryRemove(cached.GameKey, out _);
-        }
-        else
-        {
-            _shown[cached.GameKey] = merged;
-        }
-
-        changed.Add(cached.GameKey);
+        var merged = MergedMetadata.Of(providers);
+        return settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
+            ? merged with { Title = new Sourced<string>(title, IgdbName), LauncherTitle = new Sourced<string>(launcherTitle!, cached.Source) }
+            : merged;
     }
 
     private static bool Same(GameMetadata? a, GameMetadata? b) =>
@@ -567,12 +675,28 @@ public sealed class MetadataService : IDisposable
             && a.Genres.SequenceEqual(b.Genres) && a.Developers.SequenceEqual(b.Developers) && a.Publishers.SequenceEqual(b.Publishers)
             && a.ReleaseDate == b.ReleaseDate && a.Tags.SequenceEqual(b.Tags) && a.AgeRatings.SequenceEqual(b.AgeRatings));
 
-    private void Report(FetchRun run, IReadOnlyList<(Game Game, IMetadataStore Store, string Source)> all)
+    /// <summary>
+    /// "Fehlende Metadaten": the games still missing a store's or IGDB's answer, of all games either is asked for; the time
+    /// left from the phase running now (its rate seen) and the other's limit.
+    /// </summary>
+    private void Report(IReadOnlyList<LibraryMetadata> libraries, FetchRun? storeRun, FetchRun? igdbRun)
     {
-        var missing = all.Count(g => IsMissing(g.Game));
+        var store = StoreGames(libraries).ToList();
+        var igdb = IgdbGames(libraries).ToList();
+        var storeMissing = store.Where(g => IsMissing(g.Game)).Select(g => g.Game.Key).ToList();
+        var igdbMissing = igdb.Where(g => IsIgdbMissing(g.Game.Key)).Select(g => g.Game.Key).ToList();
+        var total = store.Select(g => g.Game.Key).Union(igdb.Select(g => g.Game.Key), StringComparer.Ordinal).Count();
+        var missing = storeMissing.Union(igdbMissing, StringComparer.Ordinal).Count();
+        var run = storeRun ?? igdbRun;
+        var running = missing > 0 && run is { Left: > 0 };
+        var now = _time.GetUtcNow();
+        var storeLimit = store.FirstOrDefault().Store?.Limit;
+        var remaining = !running ? (TimeSpan?)null
+            : (storeRun?.Remaining(now, storeLimit, storeMissing.Count) ?? TimeSpan.Zero)
+                + (igdbRun?.Remaining(now, IgdbClient.Limit, igdbMissing.Count) ?? (IgdbIsAsked ? IgdbClient.Limit.Gap * igdbMissing.Count : TimeSpan.Zero));
         lock (_gate)
         {
-            _progress = new MetadataProgress(missing, all.Count, missing > 0 && run.Left > 0, run.Reload && run.Left > 0, missing > 0 && run.Left > 0 ? run.Remaining(_time.GetUtcNow(), all.FirstOrDefault().Store?.Limit, missing) : null);
+            _progress = new MetadataProgress(missing, total, running, (run?.Reload ?? false) && running, remaining);
         }
 
         ProgressChanged?.Invoke(this, EventArgs.Empty);

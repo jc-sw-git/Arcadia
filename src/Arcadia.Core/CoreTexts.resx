@@ -39,4 +39,5 @@
   <data name="GenreVisualNovel" xml:space="preserve"><value>Visual Novel</value></data>
   <data name="GenreCardAndBoard" xml:space="preserve"><value>Karten- und Brettspiel</value></data>
   <data name="GenreTactics" xml:space="preserve"><value>Taktik</value></data>
+  <data name="MetadataSourceIgdb" xml:space="preserve"><value>IGDB</value></data>
 </root>

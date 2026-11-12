@@ -1,13 +1,18 @@
+using System.ComponentModel;
 using Arcadia.App.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Views;
 
-/// <summary>"Warten auf deine Auswahl" (#491): keeps the current game in sight when the list is taller than the modal.</summary>
+/// <summary>
+/// "Warten auf deine Auswahl" (#491, #506): keeps the current game and the focused hit in sight and out of the edge
+/// fades when the list or the grid is taller than its place.
+/// </summary>
 public partial class WaitingListView : UserControl
 {
     private WaitingListViewModel? _viewModel;
+    private WaitingHitsViewModel? _hits;
 
     public WaitingListView()
     {
@@ -19,22 +24,66 @@ public partial class WaitingListView : UserControl
         base.OnDataContextChanged(e);
         if (_viewModel is not null)
         {
-            _viewModel.FocusMoved -= OnFocusMoved;
+            _viewModel.FocusMoved -= OnGameFocusMoved;
+            _viewModel.PropertyChanged -= OnListChanged;
         }
 
         _viewModel = DataContext as WaitingListViewModel;
         if (_viewModel is not null)
         {
-            _viewModel.FocusMoved += OnFocusMoved;
+            _viewModel.FocusMoved += OnGameFocusMoved;
+            _viewModel.PropertyChanged += OnListChanged;
+        }
+
+        FollowHits();
+    }
+
+    private void OnListChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WaitingListViewModel.Hits))
+        {
+            FollowHits();
         }
     }
 
-    private void OnFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    private void FollowHits()
     {
-        if (_viewModel?.CurrentGame is { } current && _viewModel.Games.IndexOf(current) is var index and >= 0)
+        _hits?.FocusMoved -= OnHitFocusMoved;
+        _hits = _viewModel?.Hits;
+        _hits?.FocusMoved += OnHitFocusMoved;
+    }
+
+    private void OnGameFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    {
+        if (_viewModel?.CurrentGame is not { } current || _viewModel.Games.IndexOf(current) is not (var index and >= 0))
         {
-            // By index: with the virtualised list the current game may have no row yet.
-            GameList.ScrollIntoView(index);
+            return;
+        }
+
+        // By index first: with the virtualised list the current game may have no row yet; then out of the fade.
+        GameList.ScrollIntoView(index);
+        if (GameList.ContainerFromIndex(index) is { } row)
+        {
+            GameFade.ScrollIntoView(row);
+        }
+    }, DispatcherPriority.Loaded);
+
+    private void OnHitFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    {
+        if (_hits is not { IsActive: true } hits)
+        {
+            return;
+        }
+
+        var focused = hits.Hits.Select((hit, index) => (hit, index)).FirstOrDefault(e => e.hit.IsFocused);
+        if (focused.hit is not null && HitGrid.ContainerFromIndex(focused.index) is { } tile)
+        {
+            HitFade.ScrollIntoView(tile);
+        }
+        else if (!hits.Hits.Any(h => h.IsFocused))
+        {
+            // The field's row is above the grid: the grid goes back to its top.
+            HitScroller.Offset = default;
         }
     }, DispatcherPriority.Loaded);
 }

@@ -248,8 +248,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // A text being written in the settings (#137): keys that type nothing act on it, the rest arrive as text.
-        if (_viewModel?.Settings?.Selected.Editor is { } editor)
+        // A text being written in the settings (#137) or the waiting list (#506): keys that type nothing act on it, the
+        // rest arrive as text.
+        if (_viewModel?.OpenTextEditor is { } editor)
         {
             if (editor.HandleKey(e.Key))
             {
@@ -477,7 +478,7 @@ public partial class MainWindow : Window
 
     private void OnTextInput(object? sender, TextInputEventArgs e)
     {
-        if (_viewModel?.Settings?.Selected.Editor is { } editor && !string.IsNullOrEmpty(e.Text))
+        if (_viewModel?.OpenTextEditor is { } editor && !string.IsNullOrEmpty(e.Text))
         {
             editor.Type(e.Text);
             e.Handled = true;

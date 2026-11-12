@@ -1074,7 +1074,23 @@
   <data name="WaitingTitle" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
   <data name="WaitingQuestion" xml:space="preserve"><value>Welches Spiel ist gemeint?</value></data>
   <data name="WaitingPosition" xml:space="preserve"><value>Spiel {number} von {count}</value></data>
-  <data name="WaitingIntro" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen. Nach deiner Wahl lädt Arcadia Cover und Hintergrund dieses Spiels.</value></data>
+  <data name="WaitingIntro" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen. Nach deiner Wahl lädt Arcadia {loads} dieses Spiels.</value></data>
+  <data name="WaitingIntroOwnTerm" xml:space="preserve"><value>SteamGridDB findet {count} Spiele mit Bild zu deinem Suchbegriff. Nach deiner Wahl lädt Arcadia {loads} dieses Spiels.</value></data>
+  <data name="WaitingLoadsBoth" xml:space="preserve"><value>Cover und Hintergrund</value></data>
+  <data name="WaitingLoadsCover" xml:space="preserve"><value>das Cover</value></data>
+  <data name="WaitingLoadsHero" xml:space="preserve"><value>den Hintergrund</value></data>
+  <data name="WaitingSoughtBoth" xml:space="preserve"><value>Gesucht: Cover und Hintergrund</value></data>
+  <data name="WaitingSoughtCover" xml:space="preserve"><value>Gesucht: Cover</value></data>
+  <data name="WaitingSoughtHero" xml:space="preserve"><value>Gesucht: Hintergrund</value></data>
+  <data name="WaitingChecking" xml:space="preserve"><value>Treffer werden geprüft …</value></data>
+  <data name="WaitingNoHits" xml:space="preserve"><value>Keine Treffer</value></data>
+  <data name="WaitingUnreachable" xml:space="preserve"><value>SteamGridDB nicht erreichbar</value></data>
+  <data name="WaitingTerm" xml:space="preserve"><value>Eigener Suchbegriff</value></data>
+  <data name="WaitingReset" xml:space="preserve"><value>Zurücksetzen</value></data>
+  <data name="WaitingTermTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
+  <data name="WaitingOpenHitsHint" xml:space="preserve"><value>Treffer ansehen</value></data>
+  <data name="WaitingChooseHitHint" xml:space="preserve"><value>Treffer wählen</value></data>
+  <data name="WaitingSearchHint" xml:space="preserve"><value>Suchbegriff ändern</value></data>
   <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
   <data name="WaitingDoneTitle" xml:space="preserve"><value>Alles erledigt.</value></data>
   <data name="WaitingDoneText" xml:space="preserve"><value>Kein Spiel wartet mehr auf deine Auswahl.</value></data>

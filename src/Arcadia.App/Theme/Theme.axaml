@@ -981,6 +981,25 @@
   </Style>
 
   <!-- The rail of areas: each with its icon, name and value line; the open one lighter, the focused one ringed. -->
+  <!-- The arrows under the detail page's stacks (#530): LT/RT inside, the way the carousel turns. -->
+  <Style Selector="Path.turnArrow">
+    <Setter Property="Fill" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Stroke" Value="{StaticResource Line}" />
+    <Setter Property="StrokeThickness" Value="1" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+  </Style>
+  <Style Selector="Button.detailStack:pointerover Path.turnArrow">
+    <Setter Property="Fill" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="Stroke" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Path.turnChevron">
+    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
+    <Setter Property="StrokeThickness" Value="2.4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
   <Style Selector="Button.detailRail">
     <Setter Property="MinHeight" Value="62" />
     <Setter Property="CornerRadius" Value="14" />

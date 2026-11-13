@@ -83,26 +83,40 @@
     </ItemsControl>
 
     <!-- The stacks: a click turns the carousel to the game before or after. Over the covers, which let clicks through. -->
-    <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Top="380" Width="240" Height="340" IsVisible="{Binding HasNeighbours}"
+    <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Top="380" Width="240" Height="408" IsVisible="{Binding HasNeighbours}"
             Command="{Binding PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousGameTip}">
       <DockPanel>
-        <ctl:KeyHint DockPanel.Dock="Top" Pad="LT" Keys="Q" HorizontalAlignment="Center" />
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
           <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailBefore}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
+          <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
+            <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" />
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="14,0,0,0">
+              <ctl:KeyHint Pad="LT" Keys="Q" />
+              <Path Classes="turnChevron" Data="M8,0 L0,7 L8,14" />
+            </StackPanel>
+          </Panel>
         </StackPanel>
         <Panel />
       </DockPanel>
     </Button>
-    <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Left="1680" Canvas.Top="380" Width="240" Height="340" IsVisible="{Binding HasNeighbours}"
+    <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Left="1680" Canvas.Top="380" Width="240" Height="408" IsVisible="{Binding HasNeighbours}"
             Command="{Binding NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextGameTip}">
       <DockPanel>
-        <ctl:KeyHint DockPanel.Dock="Top" Pad="RT" Keys="E" HorizontalAlignment="Center" />
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
           <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailAfter}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
+          <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
+            <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" RenderTransform="scaleX(-1)" />
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,14,0">
+              <ctl:KeyHint Pad="RT" Keys="E" />
+              <Path Classes="turnChevron" Data="M0,0 L8,7 L0,14" />
+            </StackPanel>
+          </Panel>
         </StackPanel>
         <Panel />
       </DockPanel>

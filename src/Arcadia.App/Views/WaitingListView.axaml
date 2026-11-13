@@ -106,7 +106,7 @@
               </StackPanel>
 
               <Border DockPanel.Dock="Bottom" Classes="waitingNote">
-                <TextBlock Text="{Binding Note}" />
+                <TextBlock ctl:ButtonTextBlock.Text="{Binding Note}" />
               </Border>
 
               <Panel>

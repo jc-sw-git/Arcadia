@@ -11,7 +11,7 @@ namespace Arcadia.Launchers.Abstractions.Texts;
 /// plugin can bring its own resource file and fill it the same way.
 /// <para>
 /// It never throws: a placeholder without a value stays visible as written (<c>{game}</c>), a format the value doesn't
-/// know is left out, a missing text shows its key. A text can break like this only after a change slipped past the tests, e.g. in a later translation, so each
+/// know is left out, a text missing in a translation shows in English, a text missing altogether shows its key. A text can break like this only after a change slipped past the tests, e.g. in a later translation, so each
 /// break is logged once per run, with the key and the placeholder's name but never the values, which can be game
 /// names, paths or account names.
 /// </para>
@@ -20,22 +20,25 @@ public static class UiText
 {
     private static readonly ConcurrentDictionary<string, bool> Reported = new(StringComparer.Ordinal);
 
+    /// <summary>The language a text missing in a translation falls back to.</summary>
+    public static CultureInfo English { get; } = CultureInfo.GetCultureInfo("en");
+
     /// <summary>Where a broken text is reported; the App points it at <c>arcadia.log</c>.</summary>
     public static Action<string>? Log { get; set; }
 
     /// <summary>The text <paramref name="key"/> of <paramref name="resources"/>, or the key when there is none.</summary>
     public static string Get(ResourceManager resources, string key)
     {
-        string? text;
-        try
+        var culture = CultureInfo.CurrentUICulture;
+        var text = TextsOf(resources, culture)?.GetString(key);
+        if (text is null && culture.TwoLetterISOLanguageName != English.TwoLetterISOLanguageName)
         {
-            text = resources.GetString(key, CultureInfo.CurrentUICulture);
-        }
-        catch (Exception ex) when (ex is MissingManifestResourceException or MissingSatelliteAssemblyException or InvalidOperationException)
-        {
-            text = null;
+            // A text a translation lacks shows in English, the language every player is most likely to read.
+            text = TextsOf(resources, English)?.GetString(key);
         }
 
+        // Last the plain lookup, which also serves a ResourceManager that brings its texts its own way (a test's).
+        text ??= GetString(resources, key, culture);
         if (text is not null)
         {
             return text;
@@ -88,6 +91,37 @@ public static class UiText
         }
 
         return filled.ToString();
+    }
+
+    // The texts of the UI language: its translation (fr-FR → fr), or the neutral German texts for German or a language
+    // without one. ResourceManager caches what it finds per culture, so this costs a lookup after the first call.
+    private static ResourceSet? TextsOf(ResourceManager resources, CultureInfo culture)
+    {
+        if (string.IsNullOrEmpty(resources.BaseName))
+        {
+            return null;
+        }
+
+        try
+        {
+            return resources.GetResourceSet(culture, createIfNotExists: true, tryParents: true);
+        }
+        catch (Exception ex) when (ex is MissingManifestResourceException or MissingSatelliteAssemblyException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private static string? GetString(ResourceManager resources, string key, CultureInfo culture)
+    {
+        try
+        {
+            return resources.GetString(key, culture);
+        }
+        catch (Exception ex) when (ex is MissingManifestResourceException or MissingSatelliteAssemblyException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static bool TryFind(ReadOnlySpan<(string Name, object? Value)> values, ReadOnlySpan<char> name, out object? value)

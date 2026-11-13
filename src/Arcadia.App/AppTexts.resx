@@ -1206,8 +1206,8 @@
   <data name="WaitingOpenHitsHint" xml:space="preserve"><value>Treffer ansehen</value></data>
   <data name="WaitingChooseHitHint" xml:space="preserve"><value>Treffer wählen</value></data>
   <data name="WaitingSearchHint" xml:space="preserve"><value>Suchbegriff ändern</value></data>
-  <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
-  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält die Daten des Launchers und wird bei IGDB nicht mehr nach dem Namen gesucht.</value></data>
+  <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit [Y] überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
+  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Keins davon passt? Mit [Y] überspringst du das Spiel. Es behält die Daten des Launchers und wird bei IGDB nicht mehr nach dem Namen gesucht.</value></data>
   <data name="WaitingDoneTitle" xml:space="preserve"><value>Alles erledigt.</value></data>
   <data name="WaitingDoneText" xml:space="preserve"><value>Kein Spiel wartet mehr auf deine Auswahl.</value></data>
   <data name="WaitingChooseHint" xml:space="preserve"><value>Spiel wählen</value></data>

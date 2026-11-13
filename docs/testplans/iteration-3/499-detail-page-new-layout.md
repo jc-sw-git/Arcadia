@@ -9,7 +9,7 @@ Replaces T11-7 (three rows of buttons) and the layout parts of T11-1 and T11-8; 
 over" no longer holds for the rows of an area (T499-14). The owner's cases are collected for the owner's test at the
 end of the detail page work.
 
-**Status:** Automated: T499-1 to -26 · QE: T499-27 to -29 · Open for the owner: T499-30, T499-31
+**Status:** Automated: T499-1 to -26 · QE: T499-27 to -29 · Owner (passed): T499-30, T499-31
 
 Page and button row
 
@@ -125,12 +125,12 @@ Look (QE run of the app, visual checklist of #498)
 
 For the owner
 
-- [ ] **T499-30** **Owner:** On the real PC with the Steam Controller and an Xbox pad: open a few real games, walk button row,
+- [x] **T499-30** **Owner:** On the real PC with the Steam Controller and an Xbox pad: open a few real games, walk button row,
       rail and rows with the controller alone, change "Steam-Controller-Modus" and start the game (the mode holds),
       switch the Steam Controller off and on while "Controller" is open (row greys and comes back, focus stays). Turn
       the carousel single and held: it feels quick, nothing jumps, text is readable on your real artwork. · E2E: no
       (real controllers and artwork)
-- [ ] **T499-31** **Owner:** Release build on the real PC: a carousel turn and ▲ ▼ in the rows feel instant (< 50 ms); if the
+- [x] **T499-31** **Owner:** Release build on the real PC: a carousel turn and ▲ ▼ in the rows feel instant (< 50 ms); if the
       blend stutters, the PR says it fell back to a plain cross-fade. · E2E: no (budget on the owner's PC)
 
 Decided with the implementation (as proposed): A on "Übersicht" does nothing (T499-7); LB/RB, X/B, L3 and Y keep the
@@ -156,3 +156,4 @@ History:
 | T499-1, -5, -6, -14, -15, -18, -27 (look) | 2026-11-11 | Claude (QE) | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ button row, rail, both areas with greyed rows and reasons, info box, RT keeping "Verwalten" and its row, one ring at a time; ⚠️ the front cover of a game not installed and without artwork has no visible edge on its backdrop (finding 2) | 1280 × 720 and 200 % not looked at; motion judged from single frames |
 | T499-23 | 2026-11-11 | Claude | PR branch, Debug, headless window, Linux cloud container | ✅ `DetailPageViewTests.The_arrows_beside_a_value_change_it_both_ways_and_the_rail_shows_the_new_value` green after the fix (the area's value line follows every change of a row's value) | QE finding 1 fixed |
 | T499-26, -28 | 2026-11-11 | Claude | Release, Xvfb 1280 × 720, `--demo` | ⚠️ then ✅ nothing cut or overlapping at 1280 × 720 (the page scales as one in its `Viewbox`, so 200 % draws the same); the title's line height (68 at 66 px) cut the descenders of "Broken Odyssey" | fixed: the title keeps the font's own line spacing; `A_long_title_…` now checks it (red with the old line height) |
+| T499-30, -31 | 2026-11-13 | Owner | Release build, real PC, Steam Controller and Xbox pad | ✅ | – |

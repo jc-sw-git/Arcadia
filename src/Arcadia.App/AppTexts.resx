@@ -7,6 +7,7 @@
   <data name="PanJournalUnreadable" xml:space="preserve"><value>Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\Arcadia\Pan</value></data>
   <data name="ErrorContextUi" xml:space="preserve"><value>Oberfläche</value></data>
   <data name="ErrorContextArtwork" xml:space="preserve"><value>Cover und Hintergründe</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>Bild ansehen</value></data>
   <data name="ErrorContextControllerWatch" xml:space="preserve"><value>Controller-Überwachung</value></data>
   <data name="ErrorContextXboxPadForGames" xml:space="preserve"><value>Xbox-Pad für Spiele</value></data>
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Installationen prüfen</value></data>
@@ -1124,7 +1125,7 @@
   <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>WER WAS LIEFERT</value></data>
   <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam liefert Cover und Hintergrund. Epic Games liefert für die meisten Spiele ein Cover und einen Hintergrund in 16:9. Die übrigen Launcher liefern keine Bilder.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>REIHENFOLGE</value></data>
-  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Passend heißt: Schneidet Arcadia das Bild mittig auf sein Format zu, fallen höchstens 15 % weg. Cover haben das Hochformat 2:3, Hintergründe 16:9 wie die Detailseite oder das flache Format von Steam und SteamGridDB. Passt bei keiner Quelle ein Bild, nimmt Arcadia das der ersten Quelle, die überhaupt eins hat.</value></data>
+  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Ein Cover passt, wenn beim mittigen Zuschneiden auf das Hochformat 2:3 höchstens 15 % wegfallen. Ein Hintergrund passt in 16:9 wie die Detailseite oder im flachen Format von Steam und SteamGridDB; gezeigt wird jeder Hintergrund fast vollständig. Passt bei keiner Quelle ein Bild, nimmt Arcadia das der ersten Quelle, die überhaupt eins hat.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] hebt eine Quelle an, ▲ ▼ verschieben sie, [L3] legt sie ab, [B] bricht ab. Mit der Maus ziehst du sie.</value></data>
   <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Arcadia fragt die Quelle nicht und blendet ihre Bilder aus, bis du sie einschaltest. Von Hand gesetzte bleiben.</value></data>
   <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>Arcadia fragt die Quelle an ihrem Platz in der Reihenfolge.</value></data>

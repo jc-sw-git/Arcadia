@@ -172,18 +172,25 @@
       <GradientStop Offset="0.8" Color="#270B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
-    <LinearGradientBrush x:Key="DetailScrimSide" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Offset="0" Color="#D10B0F14" />
-      <GradientStop Offset="0.45" Color="#800B0F14" />
-      <GradientStop Offset="1" Color="#260B0F14" />
-    </LinearGradientBrush>
+    <!-- The detail page's scrims (#565): only behind title and buttons, the header's tabs and the footer's hints, so the
+         background shows almost uncovered. The title's is an ellipse around title and buttons in the top 440 px. -->
+    <RadialGradientBrush x:Key="DetailScrimTitle" GradientOrigin="42.7%,56.8%" Center="42.7%,56.8%" RadiusX="46.9%" RadiusY="68.2%">
+      <GradientStop Offset="0" Color="#8C0B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </RadialGradientBrush>
     <LinearGradientBrush x:Key="DetailScrimTop" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#E60B0F14" />
+      <GradientStop Offset="0" Color="#B30B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="DetailScrimBottom" StartPoint="0%,100%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="#FF0B0F14" />
-      <GradientStop Offset="0.25" Color="#FF0B0F14" />
+      <GradientStop Offset="0" Color="#D90B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </LinearGradientBrush>
+    <!-- Over the blurred copy of a background around its sharp image (#565), so the image stands out from it. -->
+    <SolidColorBrush x:Key="ArtworkBlurShade" Color="#8C0B0F14" />
+    <!-- "Bild ansehen" (#565): behind the shown game's title, bottom left. -->
+    <LinearGradientBrush x:Key="ImageShowTitleScrim" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="#B30B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
     <!-- A raised button's label (#531): light text casts a small dark shadow, dark text on blue a light edge below,
@@ -538,6 +545,56 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
+  </Style>
+
+  <Style Selector="ctl|ArtworkImage">
+    <Setter Property="BlurShade" Value="{StaticResource ArtworkBlurShade}" />
+  </Style>
+
+  <!-- "Bild ansehen" (#565): the page fades out under it in a second and back in when it ends; leaving the front it goes at
+       once. Its two image layers blend into each other. Unseen it takes no input. -->
+  <Style Selector="Panel.imageShow">
+    <Setter Property="Background" Value="{StaticResource Bg}" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:1" Easing="SineEaseInOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Panel.imageShow.shown">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="True" />
+  </Style>
+  <Style Selector="Panel.imageShow.atOnce">
+    <Setter Property="Transitions" Value="{x:Null}" />
+  </Style>
+  <!-- The layer behind stays whole; the one in front blends in over it only once its image is decoded, so a cross-fade
+       never passes through the page colour. Its transition comes with it, so it drops to 0 at once when it turns to front. -->
+  <Style Selector="ctl|ArtworkImage.imageShowLayer">
+    <Setter Property="ZIndex" Value="0" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front">
+    <Setter Property="ZIndex" Value="1" />
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front[IsShowing=True]">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:1.5" Easing="SineEaseInOut" />
+      </Transitions>
+    </Setter>
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="TextBlock.imageShowTitle">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="80,0,0,44" />
   </Style>
 
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->

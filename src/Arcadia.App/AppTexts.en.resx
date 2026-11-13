@@ -1230,18 +1230,7 @@
   <data name="WaitingNotChosen" xml:space="preserve"><value>Not chosen yet</value></data>
   <data name="WaitingChosenCover" xml:space="preserve"><value>YOUR COVER</value></data>
   <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB has no further details on this game.</value></data>
-  <data name="DataSourcesCrop" xml:space="preserve"><value>Cropping allowed</value></data>
-  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>How much of a cover may be cut off so it fits the format</value></data>
-  <data name="DataSourcesCropLittle" xml:space="preserve"><value>Little · up to 5 %</value></data>
-  <data name="DataSourcesCropNormal" xml:space="preserve"><value>Normal · up to 15 %</value></data>
-  <data name="DataSourcesCropMuch" xml:space="preserve"><value>Much · up to 30 %</value></data>
-  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Covers stay almost whole but come more often from a source further down.</value></data>
-  <data name="DataSourcesCropNormalInfo" xml:space="preserve"><value>A middle way: Arcadia crops a little before it asks the next source.</value></data>
-  <data name="DataSourcesCropMuchInfo" xml:space="preserve"><value>Arcadia stays with the first source more often, but also cuts off text or figures at the edge.</value></data>
-  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Covers are 2:3 portrait. If a cover doesn’t fit exactly, Arcadia crops it around the center. Here you set how much may be cut off at most. Backgrounds fit in 16:9 like the detail page, or in the flat format of Steam and SteamGridDB, which Arcadia crops to 16:9 around the center.</value></data>
-  <data name="DataSourcesCropInfoOrder" xml:space="preserve"><value>The order of the sources always applies: if more would have to be cut off at one source, Arcadia asks the next. If no source has a fitting image, Arcadia crops the image of the first source that has one at all. Only without any image does the placeholder stay.</value></data>
   <data name="DataSourcesWhenHeading" xml:space="preserve"><value>WHEN IT APPLIES</value></data>
-  <data name="DataSourcesCropWhen" xml:space="preserve"><value>At once for the images already there and the launchers’ images; this doesn’t start a search. SteamGridDB is asked with the new value for new games and on the next “Search now”. Images set by hand stay as they are.</value></data>
   <data name="DataSourcesKeyStatus" xml:space="preserve"><value>SteamGridDB key invalid</value></data>
   <data name="DataSourcesKeyStatusShort" xml:space="preserve"><value>SteamGridDB is skipped until there is a valid key</value></data>
   <data name="ErrorContextSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>

@@ -1186,7 +1186,7 @@
                 <Button.IsVisible>
                   <MultiBinding Converter="{x:Static BoolConverters.And}">
                     <Binding Path="Input.ShowsCloseButtons" />
-                    <Binding Path="!Settings.IsFirstRun" FallbackValue="{x:True}" />
+                    <Binding Path="Settings?.CanClose" FallbackValue="{x:False}" TargetNullValue="{x:False}" />
                   </MultiBinding>
                 </Button.IsVisible>
                 <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />

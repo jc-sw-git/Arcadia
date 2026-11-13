@@ -39,6 +39,9 @@ public sealed partial class SettingsPageViewModel : ViewModelBase, IPage, IDispo
     /// </summary>
     public bool IsFirstRun { get; init; }
 
+    /// <summary>✕ closes the page; not on the first start's step, which its last row ends.</summary>
+    public bool CanClose => !IsFirstRun;
+
     /// <summary>The header's name of the page.</summary>
     public string Title => IsFirstRun ? AppTexts.Setup : AppTexts.Settings;
 

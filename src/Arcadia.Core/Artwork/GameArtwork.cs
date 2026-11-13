@@ -13,4 +13,5 @@ public sealed record GameArtwork(ArtworkFile? Cover, ArtworkFile? Hero)
 }
 
 /// <summary>A launcher's library and the launcher's own images (null if it has none), for <see cref="ArtworkService.Update"/>.</summary>
-public sealed record LibraryArtwork(Library.LauncherLibrary Library, ILauncherArtwork? Source);
+/// <param name="MadeUp">Demo games (<see cref="ILauncherIntegration.HasMadeUpGames"/>): SteamGridDB is never asked for them.</param>
+public sealed record LibraryArtwork(Library.LauncherLibrary Library, ILauncherArtwork? Source, bool MadeUp = false);

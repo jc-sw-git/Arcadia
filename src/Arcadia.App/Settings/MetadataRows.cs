@@ -4,9 +4,9 @@ using Arcadia.Core.Metadata;
 namespace Arcadia.App.Settings;
 
 /// <summary>
-/// The group "METADATEN" of "Datenquellen" (#493): a row per launcher that delivers metadata, saying what it delivers
-/// and, in its info text, where it comes from, the store's limit and what the store learns; "Fehlende Metadaten" with
-/// the run's progress and its time left; "Alle Metadaten neu laden", which asks first and starts no second run.
+/// The group "METADATEN" of the tab "Metadaten" (#493): "Fehlende Metadaten" with the run's progress and its time left,
+/// and "Jetzt suchen", which asks for what is missing without a scan (#538); "Alle Metadaten neu laden", which asks first
+/// and starts no second run. What each launcher delivers is in the info box of "Launcher-Daten" (<see cref="MetadataSourceRows"/>).
 /// </summary>
 public sealed class MetadataRows
 {
@@ -16,19 +16,22 @@ public sealed class MetadataRows
 
     private readonly MetadataService _metadata;
     private readonly Action<SettingsQuestionViewModel?> _ask;
-    private readonly InfoRowViewModel _missing;
+    private readonly ActionRowViewModel _missing;
     private readonly ActionRowViewModel _reload;
-    private readonly Dictionary<string, InfoRowViewModel> _providers = new(StringComparer.Ordinal);
+
+    // "Jetzt suchen" was pressed and the run's progress hasn't changed since: the row says it works at once.
+    private MetadataProgress? _progressAtAsk;
 
     /// <param name="ask">Shows the question over the page (the category's dialog), or null to close it.</param>
     public MetadataRows(MetadataService metadata, Action<SettingsQuestionViewModel?> ask)
     {
         _metadata = metadata;
         _ask = ask;
-        _missing = new InfoRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing)
+        _missing = new ActionRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing, SearchNow)
         {
             Group = AppTexts.DataSourcesMetadataGroup,
-            Info = [new InfoText(AppTexts.DataSourcesMetadataMissingInfo)],
+            ActionText = AppTexts.DataSourcesSearchNow,
+            Info = [new InfoText(AppTexts.DataSourcesMetadataMissingInfo), new InfoText(AppTexts.DataSourcesMetadataMissingInfoNow)],
         };
         _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesMetadataReload, Ask)
         {
@@ -40,15 +43,22 @@ public sealed class MetadataRows
         Refresh();
     }
 
-    /// <summary>The group's rows; none while no launcher of the libraries delivers metadata.</summary>
-    public IReadOnlyList<SettingsRowViewModel> Rows => ProviderRows().ToList() is { Count: > 0 } providers ? [.. providers, _missing, _reload] : [];
+    public IReadOnlyList<SettingsRowViewModel> Rows => [_missing, _reload];
 
     /// <summary>A run or the libraries changed; UI thread.</summary>
     public void Refresh()
     {
         var progress = _metadata.Progress;
+        if (!ReferenceEquals(progress, _progressAtAsk))
+        {
+            _progressAtAsk = null;
+        }
+
+        var searching = progress.Running || _progressAtAsk is not null;
         _missing.Subtitle = MissingText(progress);
-        _missing.IsDimmed = progress is { Missing: 0, Total: > 0 };
+        _missing.IsEnabled = !searching && progress.Total > 0;
+        _missing.IsDimmed = !_missing.IsEnabled;
+        _missing.IsWorking = searching;
         _missing.Progress = progress is { Running: true, Total: > 0 } ? 100.0 * (progress.Total - progress.Missing) / progress.Total : null;
 
         var reloading = progress.Reload;
@@ -69,23 +79,20 @@ public sealed class MetadataRows
         _ => AppTexts.DataSourcesMetadataMissingCount(missing: Formatting.Count(progress.Missing), total: Formatting.Count(progress.Total)),
     };
 
-    private IEnumerable<SettingsRowViewModel> ProviderRows()
+    /// <summary>
+    /// A on "Fehlende Metadaten": the stores and IGDB are asked for what is missing now, as after a scan; a game that failed
+    /// for want of a network is asked again. Nothing starts before the first scan or while a run goes.
+    /// </summary>
+    private void SearchNow()
     {
-        foreach (var (launcher, source) in _metadata.Providers)
+        var progress = _metadata.Progress;
+        if (progress.Running || _progressAtAsk is not null || !_metadata.FetchMissing())
         {
-            if (!_providers.TryGetValue(launcher.Id, out var row))
-            {
-                _providers[launcher.Id] = row = new InfoRowViewModel("metadata-provider-" + launcher.Id, launcher.DisplayName)
-                {
-                    Group = AppTexts.DataSourcesMetadataGroup,
-                };
-            }
-
-            row.Title = launcher.DisplayName;
-            row.Subtitle = source.Summary;
-            row.Info = [new InfoText(source.About)];
-            yield return row;
+            return;
         }
+
+        _progressAtAsk = progress;
+        Refresh();
     }
 
     /// <summary>A on "Alle Metadaten neu laden": the question first; [A] starts the run, [B] or "Abbrechen" sends nothing.</summary>

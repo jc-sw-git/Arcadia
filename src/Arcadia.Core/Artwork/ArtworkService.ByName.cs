@@ -63,6 +63,7 @@ public sealed partial class ArtworkService
             return libraries is null
                 ? []
                 : libraries
+                    .Where(l => !l.MadeUp)
                     .SelectMany(l => l.Library.Games.Select(g => (Game: g, Launcher: l.Library.Launcher.DisplayName)))
                     .DistinctBy(e => e.Game.Key, StringComparer.Ordinal)
                     .Select(e => (e.Game, e.Launcher, Match: matches.GetValueOrDefault(e.Game.Key)))

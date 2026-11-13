@@ -59,4 +59,10 @@ public interface ILauncherIntegration
 
     /// <summary>The launcher's own metadata of its games (#43): local files, optionally a store page; null if it has none.</summary>
     ILauncherMetadata? Metadata => null;
+
+    /// <summary>
+    /// The games are made up (demo data): no online data source (SteamGridDB, IGDB) is asked for them and none of them
+    /// waits for a choice; the launcher's own <see cref="Artwork"/> and <see cref="Metadata"/> still show.
+    /// </summary>
+    bool HasMadeUpGames => false;
 }

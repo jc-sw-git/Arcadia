@@ -14,4 +14,5 @@ public sealed record MetadataProgress(int Missing, int Total, bool Running, bool
 }
 
 /// <summary>A launcher's library and its metadata provider for a run; null when the launcher has none.</summary>
-public sealed record LibraryMetadata(Library.LauncherLibrary Library, global::Arcadia.Launchers.Abstractions.ILauncherMetadata? Source);
+/// <param name="MadeUp">Demo games: IGDB is never asked for them; their launcher's own data still shows.</param>
+public sealed record LibraryMetadata(Library.LauncherLibrary Library, global::Arcadia.Launchers.Abstractions.ILauncherMetadata? Source, bool MadeUp = false);

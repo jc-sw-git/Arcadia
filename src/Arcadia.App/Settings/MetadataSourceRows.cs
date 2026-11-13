@@ -1,4 +1,6 @@
 using Arcadia.App.Input;
+using Arcadia.App.Services;
+using Arcadia.Launchers.Abstractions;
 using Arcadia.Core.Metadata;
 using Arcadia.Core.Metadata.Igdb;
 using Arcadia.Core.Settings;
@@ -13,9 +15,10 @@ public sealed class MetadataSourceRowViewModel(string key, string title, Metadat
 }
 
 /// <summary>
-/// The group "REIHENFOLGE FÜR METADATEN" of "Datenquellen" (#494): "Launcher-Daten" and "IGDB" in their order, each
+/// The group "REIHENFOLGE FÜR METADATEN" of the tab "Metadaten" (#494): "Launcher-Daten" and "IGDB" in their order, each
 /// switched on or off, moved as the artwork's sources (<see cref="SourceOrder{TSource}"/>). A change applies at once: the
-/// fields are merged again from the cache, without a request.
+/// fields are merged again from the cache, without a request. The info box of "Launcher-Daten" has a box per launcher
+/// that delivers metadata, with its logo, name and what it delivers (#538).
 /// </summary>
 public sealed class MetadataSourceRows
 {
@@ -24,11 +27,15 @@ public sealed class MetadataSourceRows
     private readonly SettingsChanges _changes;
     private readonly SourceOrder<MetadataSourceKind> _order;
     private readonly Dictionary<MetadataSourceKind, MetadataSourceRowViewModel> _sources = [];
+    private readonly Func<LauncherInfo, LauncherBadge> _badgeOf;
+    private IReadOnlyList<(LauncherInfo Launcher, ILauncherMetadata Source)> _shownProviders = [];
 
     /// <param name="orderChanged">The order or a lift changed: the category puts the rows anew.</param>
-    public MetadataSourceRows(MetadataService metadata, SettingsChanges changes, Action orderChanged)
+    /// <param name="badgeOf">A launcher's logo as its tab shows it.</param>
+    public MetadataSourceRows(MetadataService metadata, SettingsChanges changes, Action orderChanged, Func<LauncherInfo, LauncherBadge> badgeOf)
     {
         _metadata = metadata;
+        _badgeOf = badgeOf;
         _igdb = metadata.Igdb;
         _changes = changes;
         _order = new SourceOrder<MetadataSourceKind>(
@@ -45,12 +52,7 @@ public sealed class MetadataSourceRows
             {
                 Group = AppTexts.DataSourcesMetadataOrderGroup,
                 PanelTitle = NameOf(source).ToUpperInvariant(),
-                Info =
-                [
-                    new InfoText(source == MetadataSourceKind.Igdb ? AppTexts.DataSourcesIgdbSourceInfo : AppTexts.DataSourcesLauncherDataInfo),
-                    new InfoSection(AppTexts.DataSourcesOrderHeading, [new InfoText(AppTexts.DataSourcesMetadataOrderInfo), new InfoText(AppTexts.DataSourcesOrderMove)]),
-                    new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesMetadataOrderWhen)]),
-                ],
+                Info = InfoOf(source, []),
                 ValueInfos = [AppTexts.DataSourcesMetadataSourceOffInfo, AppTexts.DataSourcesSourceOnInfo],
             };
         }
@@ -80,6 +82,7 @@ public sealed class MetadataSourceRows
         }
 
         var launcher = _sources[MetadataSourceKind.Launcher];
+        ShowProviders(launcher);
         launcher.IsDimmed = !Settings.IsOn(MetadataSourceKind.Launcher);
         launcher.Subtitle = launcher.IsDimmed ? AppTexts.DataSourcesMetadataSourceOffSubtitle : AppTexts.DataSourcesLauncherDataSubtitle;
         var igdb = _sources[MetadataSourceKind.Igdb];
@@ -118,6 +121,27 @@ public sealed class MetadataSourceRows
         _changes.Apply(s => s with { Metadata = change(s.Metadata.WithValidValues()) }, what);
         _metadata.SettingsChanged();
     }
+
+    /// <summary>The launchers that deliver metadata changed (a scan): "Launcher-Daten" shows a box for each.</summary>
+    private void ShowProviders(MetadataSourceRowViewModel launcher)
+    {
+        var providers = _metadata.Providers;
+        if (providers.Select(p => p.Launcher).SequenceEqual(_shownProviders.Select(p => p.Launcher)))
+        {
+            return;
+        }
+
+        _shownProviders = providers;
+        launcher.Info = InfoOf(MetadataSourceKind.Launcher, providers);
+    }
+
+    private IReadOnlyList<InfoBlock> InfoOf(MetadataSourceKind source, IReadOnlyList<(LauncherInfo Launcher, ILauncherMetadata Source)> providers) =>
+    [
+        new InfoText(source == MetadataSourceKind.Igdb ? AppTexts.DataSourcesIgdbSourceInfo : AppTexts.DataSourcesLauncherDataInfo),
+        .. providers.Select(p => new InfoLauncherBox(p.Launcher.DisplayName, _badgeOf(p.Launcher), [new InfoText(p.Source.Summary), new InfoText(p.Source.About)])),
+        new InfoSection(AppTexts.DataSourcesOrderHeading, [new InfoText(AppTexts.DataSourcesMetadataOrderInfo), new InfoText(AppTexts.DataSourcesOrderMove)]),
+        new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesMetadataOrderWhen)]),
+    ];
 
     private static string NameOf(MetadataSourceKind source) => source == MetadataSourceKind.Igdb ? AppTexts.DataSourcesIgdb : AppTexts.DataSourcesLauncherData;
 }

@@ -175,6 +175,32 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T538-8")]
+    public async Task Demo_games_are_never_asked_never_wait_and_show_no_igdb_data_cached_before()
+    {
+        await GrantAccessAsync();
+        _igdb.ServeName("Nordwind", FakeIgdb.Game(1, "Nordwind", extra: Summary("Made-up English text.")));
+        _igdb.ServeName("Echo", FakeIgdb.Game(2, "Echo"), FakeIgdb.Game(3, "Echo"));
+        _epicSource.Local["e1"] = new GameMetadata { Developers = ["Made-up Studio"] };
+        var key = Game.KeyOf(Epicish.Id, "e1");
+        Scan(epic: [GameOf(Epicish, "e1", "Nordwind")]);
+        await RunToIdleAsync();
+        Assert.Equal("Made-up English text.", _service.Of(key).Description?.Value);
+        var asked = _igdb.ApiRequests;
+
+        // The same library as demo data: nothing asked, nothing waits, only the launcher's data shows.
+        _service.Update([new LibraryMetadata(new LauncherLibrary(Epicish, [GameOf(Epicish, "e1", "Nordwind"), GameOf(Epicish, "e2", "Echo")]), _epicSource, MadeUp: true)]);
+        await RunToIdleAsync();
+        _service.ReloadAll();
+        await RunToIdleAsync();
+
+        Assert.Equal(asked, _igdb.ApiRequests);
+        Assert.Empty(_service.Waiting);
+        Assert.Null(_service.Of(key).Description);
+        Assert.Equal("Made-up Studio", Assert.Single(_service.Of(key).Developers!.Value));
+    }
+
+    [Fact]
     [Trait("TestCase", "T494-15")]
     public async Task No_hit_keeps_the_launcher_data_and_searches_again_at_the_next_scan()
     {

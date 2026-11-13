@@ -48,6 +48,7 @@ public sealed class SteamGridDbKeyRows
         _keyRow = new TextRowViewModel(KeyRowKey, AppTexts.DataSourcesKey, () => key.Ending is { } ending ? "…" + ending : string.Empty, _ => Edit())
         {
             Group = Group,
+            TintsSubtitle = true,
             ActionLabel = () => _key.State == SteamGridDbKeyState.None ? AppTexts.DataSourcesKeyEnter : AppTexts.Edit,
         };
         _paste = new ActionRowViewModel("steamgriddb-paste", AppTexts.DataSourcesPaste, () => PasteAsync().Forget(AppTexts.ErrorContextSteamGridDb))
@@ -89,18 +90,25 @@ public sealed class SteamGridDbKeyRows
     public void Refresh()
     {
         var state = _key.State;
-        var ending = _key.Ending ?? string.Empty;
+
+        // The field beside it shows the key's end, so the subtitle says only the state, in the lamp's colour (#538).
         _keyRow.Subtitle = _checking
             ? AppTexts.DataSourcesKeyChecking
             : state switch
             {
                 SteamGridDbKeyState.None => AppTexts.DataSourcesKeyNone,
-                SteamGridDbKeyState.Valid => AppTexts.DataSourcesKeyConnected(ending),
+                SteamGridDbKeyState.Valid => AppTexts.DataSourcesKeyConnected,
                 SteamGridDbKeyState.Rejected => AppTexts.DataSourcesKeyRejected,
-                _ => AppTexts.DataSourcesKeyUnchecked(ending),
+                _ => AppTexts.DataSourcesKeyUnchecked,
             };
         _keyRow.Severity = state == SteamGridDbKeyState.Rejected ? HealthSeverity.Warning : null;
-        _keyRow.ShowLamp(state == SteamGridDbKeyState.Valid ? RowLamp.Working : null);
+        _keyRow.ShowLamp(_checking ? RowLamp.Resting : state switch
+        {
+            SteamGridDbKeyState.None => null,
+            SteamGridDbKeyState.Valid => RowLamp.Working,
+            SteamGridDbKeyState.Rejected => RowLamp.Problem,
+            _ => RowLamp.Resting,
+        });
         _keyRow.Info =
         [
             new InfoText(AppTexts.DataSourcesKeyInfo),

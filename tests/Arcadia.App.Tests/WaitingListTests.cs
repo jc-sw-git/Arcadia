@@ -98,7 +98,7 @@ public sealed class WaitingListTests
     internal static WaitingListViewModel OpenList(ArcadiaDriver arcadia)
     {
         OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.WaitingKey);
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Artwork));
         arcadia.Press(UiAction.Accept);
         return arcadia.Main.WaitingList ?? throw new InvalidOperationException("Die Warteliste ist nicht offen.");
     }
@@ -113,13 +113,13 @@ public sealed class WaitingListTests
         using var arcadia = await StartAsync();
         OpenDataSources(arcadia);
 
-        var several = Assert.IsType<ChoiceRowViewModel>(Row(arcadia, ArtworkNameRows.SeveralHitsKey));
-        var waiting = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkNameRows.WaitingKey));
+        var several = Assert.IsType<ChoiceRowViewModel>(Row(arcadia, SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork)));
+        var waiting = Assert.IsType<ActionRowViewModel>(Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Artwork)));
         Assert.Equal((AppTexts.DataSourcesSeveralHitsAsk, AppTexts.DataSourcesSeveralHitsSubtitle), (several.ValueText, several.Subtitle));
         Assert.Equal(("3", AppTexts.DataSourcesWaitingSubtitle, true, false, 1), (waiting.CountBadge, waiting.Subtitle, waiting.CanActivate, waiting.IsDimmed, waiting.Indent));
         var facts = Assert.Single(waiting.Info.OfType<InfoFacts>());
         Assert.Equal(AppTexts.WaitingGames(3), facts.Title);
-        Assert.Equal(("Echo Drift", "Anderer Launcher · Artwork"), (facts.Facts[0].Label, facts.Facts[0].Value));
+        Assert.Equal(("Echo Drift", "Anderer Launcher"), (facts.Facts[0].Label, facts.Facts[0].Value));
     }
 
     [AvaloniaFact]
@@ -128,13 +128,13 @@ public sealed class WaitingListTests
     {
         using var arcadia = await StartAsync();
         OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.SeveralHitsKey);
+        arcadia.FocusRow(SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork));
 
         arcadia.Press(UiAction.Accept);
         await SettledAsync(arcadia);
 
         Assert.Equal(AppTexts.DataSourcesTookFirstHits(3), arcadia.Main.Toast.Text);
-        var waiting = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkNameRows.WaitingKey));
+        var waiting = Assert.IsType<ActionRowViewModel>(Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Artwork)));
         Assert.Equal((null, AppTexts.DataSourcesWaitingOnlyAsk, true, false), (waiting.CountBadge, waiting.Subtitle, waiting.IsDimmed, waiting.CanActivate));
         Assert.Equal("https://cdn.example/grid/501.png", CoverOrigin(arcadia, Games[0]));
 
@@ -142,7 +142,7 @@ public sealed class WaitingListTests
         arcadia.Press(UiAction.Accept);
         Dispatcher.UIThread.RunJobs();
         Assert.Empty(arcadia.Artwork.Waiting);
-        Assert.Equal(AppTexts.DataSourcesWaitingNone, Row(arcadia, ArtworkNameRows.WaitingKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesWaitingNone, Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Artwork)).Subtitle);
     }
 
     [AvaloniaFact]
@@ -174,7 +174,7 @@ public sealed class WaitingListTests
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.WaitingList);
         var row = arcadia.Main.Settings!.Selected.Rows.Single(r => r.IsFocused);
-        Assert.Equal((ArtworkNameRows.WaitingKey, AppTexts.DataSourcesWaitingNone, true), (row.Key, row.Subtitle, row.IsDimmed));
+        Assert.Equal((SeveralHitsRows.WaitingKey(WaitingKind.Artwork), AppTexts.DataSourcesWaitingNone, true), (row.Key, row.Subtitle, row.IsDimmed));
     }
 
     [AvaloniaFact]
@@ -250,13 +250,13 @@ public sealed class WaitingListTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync([Launcher], Settings, imageServer: Images());
         OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.SeveralHitsKey);
+        arcadia.FocusRow(SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork));
         arcadia.Press(UiAction.Accept);
         arcadia.Press(UiAction.Accept);
         Assert.Equal(SeveralHits.Ask, arcadia.Settings.Current.Artwork.SeveralHits);
         await FindNamesakesAsync(arcadia);
 
-        arcadia.FocusRow(ArtworkNameRows.WaitingKey);
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Artwork));
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Accept);

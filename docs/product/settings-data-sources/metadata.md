@@ -28,11 +28,14 @@ Index and the category's frame: [README.md](README.md). The specification is #43
   network, a timeout or a server error skip the game silently until the next scan. Nothing is fetched before the first
   scan; what is cached shows at once and offline. No toast.
 
-## Rows in group "METADATEN" (#493)
+## Rows in group "METADATEN" (#493, #538)
 
-- A row per launcher that delivers metadata: subtitle what it delivers, info text where it comes from, the store's
-  limit and what the store learns (Steam: only the AppID).
-- "Fehlende Metadaten": while a run goes "412 von 1.000, noch etwa 20 Minuten" ("noch etwa 1 Minute", "weniger als
+- What each launcher delivers is no row: the info box of "Launcher-Daten" has a box per launcher of the libraries that
+  delivers metadata, its logo and name at the top, then what it delivers, where it comes from, the store's limit and
+  what the store learns (Steam: only the AppID).
+- "Fehlende Metadaten" with "Jetzt suchen" (A): asks the stores and IGDB at once for every game still missing their
+  answer, as after a scan, also one skipped for want of a network; greyed out before the first scan and while a run
+  goes. While a run goes "412 von 1.000, noch etwa 20 Minuten" ("noch etwa 1 Minute", "weniger als
   eine Minute") with a bar; else the counts; none missing "Alle Metadaten geladen", greyed; before the first scan
   "Arcadia lädt nach dem Einlesen von selbst". The estimate is the longer of the store's gap and the rate seen.
 - "Alle Metadaten neu laden" asks first ([B] or "Abbrechen" sends nothing); the old data stays until replaced; own

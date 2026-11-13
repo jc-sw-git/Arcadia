@@ -21,11 +21,15 @@ public sealed partial class MetadataService
     /// <summary>IGDB is asked at all: there is a usable access and IGDB is switched on.</summary>
     private bool IgdbIsAsked => Igdb is { IsUsable: true } && (Settings() ?? new MetadataSettings()).WithValidValues().IsOn(MetadataSourceKind.Igdb);
 
-    /// <summary>The games IGDB is asked for: games (no software or tools) of every library, each once; none while IGDB isn't asked.</summary>
+    /// <summary>
+    /// The games IGDB is asked for: games (no software or tools) of every library but the demo ones, each once; none while
+    /// IGDB isn't asked.
+    /// </summary>
     private IEnumerable<(Game Game, ArtworkStoreId? StoreId, string Source)> IgdbGames(IReadOnlyList<LibraryMetadata> libraries) =>
         !IgdbIsAsked
             ? []
             : libraries
+                .Where(l => !l.MadeUp)
                 .SelectMany(l => l.Library.Games.Where(g => g.Type == GameType.Game).Select(g => (g, SafeStoreIdOf(l.Source, g), l.Library.Launcher.DisplayName)))
                 .DistinctBy(g => g.g.Key, StringComparer.Ordinal);
 

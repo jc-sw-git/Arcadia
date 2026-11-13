@@ -52,6 +52,7 @@ public sealed class MetadataSettingsTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>≡, RB to "Datenquellen", RT to its tab "Metadaten".</summary>
     private static DataSourcesSettingsViewModel OpenDataSources(ArcadiaDriver arcadia)
     {
         arcadia.Press(UiAction.Settings);
@@ -60,7 +61,10 @@ public sealed class MetadataSettingsTests
             arcadia.Press(UiAction.NextTab);
         }
 
-        return Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        var category = Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        arcadia.Press(UiAction.NextPage);
+        Assert.IsType<MetadataSourcesTab>(category.ShownTab);
+        return category;
     }
 
     private static SettingsRowViewModel Row(ArcadiaDriver arcadia, string key) => arcadia.Main.Settings!.Selected.Rows.Single(row => row.Key == key);
@@ -82,16 +86,40 @@ public sealed class MetadataSettingsTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T493-24")]
-    public async Task The_launchers_row_names_what_it_delivers_and_its_info_text_the_limit_and_what_the_store_learns()
+    [Trait("TestCase", "T538-5")]
+    public async Task Launcher_daten_has_a_box_per_launcher_with_what_it_delivers_and_no_row_of_its_own()
     {
         using var arcadia = await StartAsync(["4000001"], "4000001");
         await RunToIdleAsync(arcadia);
-        OpenDataSources(arcadia);
+        var category = OpenDataSources(arcadia);
 
-        var row = Row(arcadia, "metadata-provider-" + Store.Id);
-        Assert.Equal((Store.DisplayName, "Made-up summary", AppTexts.DataSourcesMetadataGroup), (row.Title, row.Subtitle, row.Group));
+        Assert.DoesNotContain(category.Rows, row => row.Key.StartsWith("metadata-provider-", StringComparison.Ordinal));
+        var launcherData = arcadia.FocusRow(MetadataSourceRows.SourceKey(MetadataSourceKind.Launcher));
+        var box = Assert.Single(launcherData.Info.OfType<InfoLauncherBox>());
+        Assert.Equal(Store.DisplayName, box.Name);
+        Assert.Equal(["Made-up summary", "Made-up about"], box.Blocks.OfType<InfoText>().Select(t => t.Text));
         Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, Row(arcadia, MetadataRows.MissingKey).Subtitle);
-        Assert.True(Row(arcadia, MetadataRows.MissingKey).IsDimmed);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T538-4")]
+    public async Task Jetzt_suchen_asks_at_once_for_what_is_missing_without_a_scan()
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002"], "4000001");
+        await RunToIdleAsync(arcadia);
+        OpenDataSources(arcadia);
+        var missing = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.MissingKey));
+        Assert.Equal((AppTexts.DataSourcesMetadataMissingCount(missing: "1", total: "2"), AppTexts.DataSourcesSearchNow, true), (missing.Subtitle, missing.ActivateText, missing.CanActivate));
+
+        arcadia.MetadataStore.Serve("4000002", "Beschreibung von 4000002, die dir gefällt und nicht zu lang ist.");
+        arcadia.Press(UiAction.Accept);
+        Assert.True(missing.IsWorking);
+        Assert.False(missing.CanActivate);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, missing.Subtitle);
+        Assert.False(missing.IsWorking);
+        Assert.NotNull(arcadia.Metadata.Of(Store.Id + ":4000002").Description);
     }
 
     [AvaloniaFact]

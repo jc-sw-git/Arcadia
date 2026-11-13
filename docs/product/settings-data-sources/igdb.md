@@ -6,8 +6,9 @@ Index and the category's frame: [README.md](README.md). The merge and the order:
 
 - Group "IGDB": "Client-ID" and "Client-Secret" (A "Eingeben"/"Bearbeiten": the on-screen keyboard, the field starts
   empty; an empty field or B changes nothing), each with an indented "Aus der Zwischenablage einfügen", then "Zugang
-  anlegen", "Verbindung testen", "Zugang löschen" (greyed out without access, still focusable). The rows show only the
-  values' last four characters.
+  anlegen", "Verbindung testen", "Zugang löschen" (greyed out without access, still focusable). The fields show only the
+  values' last four characters; each subtitle only the access's state, coloured like the SteamGridDB key's (#538):
+  "Verbunden", "Noch nicht geprüft", "Client-Secret fehlt", "Hinterlegt · noch nicht geprüft", the rejected access.
 - Each value is 20 to 64 letters and digits after trimming; anything else is refused before any request. The access
   counts only with both; it is checked (one token request to Twitch) as soon as both are there and after each change;
   "Verbindung testen" checks again, 10 s at most. No answer or no network keeps the access, without a warning.

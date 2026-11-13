@@ -331,6 +331,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         L3ActionText = null;
         XActionText = null;
         Head = _head;
+        TurnText = AppTexts.Launcher;
         Refresh();
         Focus(_general.ActiveRow);
     }
@@ -341,6 +342,7 @@ public sealed class LauncherSettingsViewModel : SettingsCategoryViewModel, ILaun
         _account.PageAccount?.CancelSignIn();
         _page = null;
         Head = null;
+        TurnText = null;
         XActionText = ListXAction;
         Refresh();
         ShowL3Action();

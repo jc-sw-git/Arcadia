@@ -67,6 +67,10 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     public partial string? XActionText { get; protected set; }
 
+    /// <summary>What LT/RT (Q/E) turn to inside the category, for the footer, e.g. "Launcher" on a launcher's page; null: nothing.</summary>
+    [ObservableProperty]
+    public partial string? TurnText { get; protected set; }
+
     /// <summary>Above the rows, e.g. a launcher's logo and name on its page (#137); null shows nothing.</summary>
     [ObservableProperty]
     public partial object? Head { get; protected set; }
@@ -119,7 +123,7 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     public virtual bool Back() => false;
 
     /// <summary>Puts the focus on the row with this key, if the category shows it now (e.g. the row that says why Pan doesn't run).</summary>
-    public void FocusRow(string key)
+    public virtual void FocusRow(string key)
     {
         if (Rows.FirstOrDefault(r => r.Key == key) is { } row)
         {

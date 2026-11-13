@@ -41,6 +41,7 @@ public sealed partial class MetadataService
             return libraries is null
                 ? []
                 : libraries
+                    .Where(l => !l.MadeUp)
                     .SelectMany(l => l.Library.Games.Where(g => g.Type == GameType.Game).Select(g => (Game: g, Launcher: l.Library.Launcher.DisplayName)))
                     .DistinctBy(e => e.Game.Key, StringComparer.Ordinal)
                     .Select(e => (e.Game, e.Launcher, Match: _records.GetValueOrDefault(e.Game.Key)?.IgdbByName))

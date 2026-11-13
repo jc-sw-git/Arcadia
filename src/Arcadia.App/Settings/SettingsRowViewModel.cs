@@ -40,6 +40,9 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle) && !HasProblem;
 
+    /// <summary>The subtitle on its lamp's colour (<see cref="TintsSubtitle"/>).</summary>
+    public bool HasTintedSubtitle => TintsSubtitle && Lamp is not null;
+
     /// <summary>A count line before the subtitle, e.g. the entries of a launcher on "Neu einlesen" (#141); null shows none.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasCounts))]
@@ -59,7 +62,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     /// 2026-10-22 and 2026-10-24); null shows none.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampWorking), nameof(IsLampProblem), nameof(IsLampFailure))]
+    [NotifyPropertyChangedFor(nameof(HasLamp), nameof(IsLampWorking), nameof(IsLampProblem), nameof(IsLampFailure), nameof(IsLampResting), nameof(HasTintedSubtitle))]
     public partial RowLamp? Lamp { get; protected set; }
 
     public bool HasLamp => Lamp is not null;
@@ -69,6 +72,14 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public bool IsLampProblem => Lamp == RowLamp.Problem;
 
     public bool IsLampFailure => Lamp == RowLamp.Failure;
+
+    /// <summary>
+    /// The subtitle stands on a background in the lamp's colour, e.g. the state of the SteamGridDB key (#538); without a
+    /// lamp it stands plain.
+    /// </summary>
+    public bool TintsSubtitle { get; init; }
+
+    public bool IsLampResting => Lamp == RowLamp.Resting;
 
     /// <summary>A count beside the title that asks for the player, e.g. the games waiting for a choice (#491); null shows none.</summary>
     [ObservableProperty]

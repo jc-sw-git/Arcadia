@@ -132,6 +132,24 @@ public sealed partial class ArtworkServiceByNameTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T538-8")]
+    public async Task Demo_games_are_never_searched_never_wait_and_count_neither_as_missing_nor_searched()
+    {
+        await WithKeyAsync();
+        ThreeEchoes();
+        var demo = new LibraryArtwork(new LauncherLibrary(Other, [Echo]), Source: null, MadeUp: true);
+
+        _service.Update([demo]);
+        await _service.WhenIdleAsync();
+        Assert.True(_service.SearchAgain(byPlayer: true));
+        await _service.WhenIdleAsync();
+
+        Assert.Empty(_sgdb.Asked());
+        Assert.Empty(_service.Waiting);
+        Assert.Equal((0, 0, 0), (_service.Search.MissingCovers, _service.Search.MissingHeroes, _service.GameCount));
+    }
+
+    [Fact]
     [Trait("TestCase", "T491-3")]
     public async Task A_game_without_an_id_and_one_matching_game_takes_its_images_without_a_question()
     {

@@ -86,6 +86,8 @@ public partial class MainViewModel : IDataSourcesHost
 
     void IDataSourcesHost.Toast(HealthSeverity level, string text) => Toast.Show(level, text);
 
+    LauncherBadge IDataSourcesHost.BadgeOf(Arcadia.Launchers.Abstractions.LauncherInfo launcher) => _logos.BadgeOf(launcher);
+
     OnScreenKeyboardViewModel IDataSourcesHost.TakeKeyboard(IKeyboardTarget editor) => SettingsKeyboard.Take(editor, Input.UsesController);
 
     void IDataSourcesHost.GiveBackKeyboard(IKeyboardTarget editor) => SettingsKeyboard.GiveBack(editor);

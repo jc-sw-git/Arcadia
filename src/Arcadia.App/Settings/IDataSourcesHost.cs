@@ -3,7 +3,7 @@ using Arcadia.ControllerSupport;
 
 namespace Arcadia.App.Settings;
 
-/// <summary>What the category "Datenquellen" (#489) needs of the App around it.</summary>
+/// <summary>What the category "Datenquellen" (#489, #538) needs of the App around it.</summary>
 public interface IDataSourcesHost
 {
     void Toast(HealthSeverity level, string text);
@@ -25,9 +25,12 @@ public interface IDataSourcesHost
     /// <param name="failed">The error toast when it didn't.</param>
     Task OpenPageAsync(Uri page, string opening, string failed);
 
-    /// <summary>"Warten auf deine Auswahl" (#491): the waiting list over the settings; B there comes back to the row.</summary>
-    void OpenWaitingList();
+    /// <summary>"Warten auf deine Auswahl" (#491) of one kind (#538): the waiting list over the settings; B there comes back to the row.</summary>
+    void OpenWaitingList(WaitingKind kind);
 
     /// <summary>"Eigene Tags" (#495): the tag list over the settings.</summary>
     void OpenOwnTags();
+
+    /// <summary>A launcher's logo as its tab shows it, for the info box of "Launcher-Daten" (#538).</summary>
+    Services.LauncherBadge BadgeOf(Arcadia.Launchers.Abstractions.LauncherInfo launcher);
 }

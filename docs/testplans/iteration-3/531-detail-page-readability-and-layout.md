@@ -13,10 +13,12 @@ Every case runs on the detail page with the gamepad alone unless it says otherwi
   note beside the buttons ("Die Installation wird in … geöffnet"), "Original-Titel: …" (⧉) and the names under
   "Davor"/"Danach" each have a soft dark shadow and read clearly; text on a surface (chips, panel) has none.
   · E2E: no (window: the shadow is drawn)
-- [ ] **T531-2** **Owner:** The buttons on the artwork ("Spielen"/"Installieren", "Zu Favoriten", "In … öffnen") look
-  raised: lighter at the top, a lit upper and a darker lower edge, a shadow beneath; they stand out from a bright and a
-  dark artwork. A greyed button lies flat. The focus ring with its gap sits around the raised button.
-  · E2E: no (look and feel; the owner approves the design)
+- [ ] **T531-2** **Owner:** Every button that acts when pressed looks raised: lighter at the top, a lit upper and a darker
+  lower edge, a shadow beneath, its label set in (white text with a dark shadow, dark text on blue or white with a light
+  edge below). Look at the detail page's buttons over a bright and a dark artwork, "Spielen"/"Optionen" in the library,
+  a dialog ("Deinstallieren?", "Steam beenden?"), "Fertig" at the first start, Pan's held buttons and "Für alle Spiele
+  übernehmen". A greyed button, rows, tabs, chips and value pills stay flat; the focus ring sits around the raised
+  button. · E2E: no (look and feel; the owner approves the design)
 - [ ] **T531-3** A title too long for one line shrinks (down to half the size) until it fits one line; one still too long
   at half the size wraps into two lines and is cut with "…". With a short, a shrunk and a two-line title the button row
   stays at the same height. Rename a game with "Titel ändern" to try it. · E2E: no (window: the measured text; the

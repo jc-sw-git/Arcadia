@@ -30,7 +30,9 @@ Decisions that hold across areas; the files beside this one hold the decisions p
   comparable products with a similar library and feature set, RAM not higher. Measured in #109 once artwork and metadata exist;
   a measurement that loses to a comparable product becomes a follow-up issue.
 - **Look.** As in the designs: Figtree for every text (Inter only for symbols it lacks), covers in 2 : 3, symbols no
-  embedded font has drawn as theme icons, so nothing depends on fonts installed on the PC.
+  embedded font has drawn as theme icons, so nothing depends on fonts installed on the PC. Every button that acts when
+  pressed looks raised (lit from above, a shadow beneath, its label set into it); rows, tabs, chips, value pills and a
+  greyed button stay flat (#531). Text lying straight on a game's artwork has a dark shadow.
 - **Plugins, later.** Third-party plugins come later: themes that can change the design fundamentally, and features
   on top. Core functions can't be changed by a plugin, at most read or interacted with through a small versioned
   interface. .NET has no sandbox, so in-process vs out-of-process (IPC) is decided in spike #71 before any plugin

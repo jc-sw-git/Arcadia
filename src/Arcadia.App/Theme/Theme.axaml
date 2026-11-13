@@ -122,6 +122,18 @@
       <GradientStop Offset="0" Color="#F2414D5C" />
       <GradientStop Offset="1" Color="#F21E2630" />
     </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedSurface" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#2D3745" />
+      <GradientStop Offset="1" Color="#19202A" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedSurfaceHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#3A4554" />
+      <GradientStop Offset="1" Color="#232B36" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedLight" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#FFFFFF" />
+      <GradientStop Offset="1" Color="#D9E0E7" />
+    </LinearGradientBrush>
     <LinearGradientBrush x:Key="RaisedAccent" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Offset="0" Color="#6CB9FF" />
       <GradientStop Offset="1" Color="#2A88E8" />
@@ -154,7 +166,7 @@
          read over a bright image too. -->
     <!-- A raised button's label (#531): light text casts a small dark shadow, dark text on blue a light edge below,
          so the label looks pressed into the raised surface. -->
-    <DropShadowEffect x:Key="RaisedLabelShadow" OffsetX="0" OffsetY="1.5" BlurRadius="3" Color="#000000" Opacity="0.75" />
+    <DropShadowEffect x:Key="RaisedLabelShadow" OffsetX="0" OffsetY="2" BlurRadius="1.5" Color="#000000" Opacity="0.95" />
     <DropShadowEffect x:Key="RaisedLabelShadowOnAccent" OffsetX="0" OffsetY="1.2" BlurRadius="1" Color="#FFFFFF" Opacity="0.45" />
     <DropShadowEffect x:Key="TextOnArtShadow" OffsetX="0" OffsetY="2" BlurRadius="14" Color="#000000" Opacity="0.95" />
 
@@ -174,6 +186,9 @@
     <!-- A raised button's edges and shadow (#531); with the focus the ring with its gap comes on top. -->
     <BoxShadows x:Key="RaisedEdges">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000</BoxShadows>
     <BoxShadows x:Key="RaisedEdgesFocused">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000, 0 0 0 7 #F2F5F8, 0 0 0 4 #121820</BoxShadows>
+    <!-- A focused status button turns white as its focus: whole to its edge, only the shadow beneath stays. -->
+    <BoxShadows x:Key="RaisedShadowOnly">0 6 14 0 #8C000000</BoxShadows>
+    <BoxShadows x:Key="RaisedEdgesFocusRing">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000, 0 0 0 3 #F2F5F8</BoxShadows>
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
@@ -650,13 +665,13 @@
     <Setter Property="CornerRadius" Value="30" />
     <!-- Keeps the label clear of the rounded ends, also when it shrinks to fit. -->
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="20" />
     <Setter Property="FontWeight" Value="ExtraBold" />
   </Style>
   <Style Selector="Button.primary:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccentHover}" />
   </Style>
   <!-- "Installieren" while the launcher can't install (#83: Steam runs with another account): greyed like a disabled action. -->
   <Style Selector="Button.primary.blocked">
@@ -668,13 +683,13 @@
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.secondary:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
 
   <!-- Options in the "Ansicht" dialog. -->
@@ -726,24 +741,24 @@
   <Style Selector="Button.settingRow:pointerover">
     <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
   </Style>
-  <Style Selector="Button.settingRow.focused /template/ Border#Chrome, Button.action.focused /template/ Border#Chrome">
+  <Style Selector="Button.settingRow.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
   </Style>
   <Style Selector="Button.action">
     <Setter Property="Height" Value="48" />
     <Setter Property="CornerRadius" Value="24" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource Text}" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="HorizontalAlignment" Value="Left" />
   </Style>
   <Style Selector="Button.action:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
   <Style Selector="Button.action.primaryAction">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
   </Style>
   <!-- Greyed out, e.g. "Nach Updates suchen" while a check runs. -->
@@ -754,13 +769,19 @@
   <Style Selector="Button.action.danger">
     <Setter Property="Foreground" Value="{StaticResource Danger}" />
   </Style>
+  <Style Selector="Button.action /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
+  <Style Selector="Button.action.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
+  </Style>
 
   <!-- Buttons that act only when held (#242, Pan's dialogs and its settings row): the fill runs over the hold time and
        the button acts once it is full; letting go earlier empties it. Each fill needs its own <ScaleTransform ScaleX="0" />. -->
   <Style Selector="Button.hold">
     <Setter Property="Height" Value="56" />
     <Setter Property="CornerRadius" Value="28" />
-    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="BorderBrush" Value="{StaticResource PromptBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
@@ -781,12 +802,12 @@
   </Style>
   <!-- The answer that is safe to give, light as the focused tab. -->
   <Style Selector="Button.hold.light">
-    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Background" Value="{StaticResource RaisedLight}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
   </Style>
   <Style Selector="Button.hold.raised">
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="BorderThickness" Value="0" />
   </Style>
   <!-- Shown, but it can't act yet (Steam still tries the update). -->
@@ -800,7 +821,7 @@
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
   </Style>
   <Style Selector="Button.hold.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
   </Style>
   <Style Selector=".hold Border.holdClip">
     <Setter Property="ClipToBounds" Value="True" />
@@ -908,18 +929,6 @@
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
-  <Style Selector="Button.detailAction /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
-  </Style>
-  <Style Selector="Button.detailAction /template/ ContentPresenter">
-    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
-  </Style>
-  <Style Selector="Button.detailAction.primary /template/ ContentPresenter">
-    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
-  </Style>
-  <Style Selector="Button.detailAction:disabled /template/ ContentPresenter">
-    <Setter Property="Effect" Value="{x:Null}" />
-  </Style>
   <Style Selector="Button.detailAction:pointerover">
     <Setter Property="Background" Value="{StaticResource RaisedOnArtHover}" />
   </Style>
@@ -939,9 +948,6 @@
   <Style Selector="Button.detailAction:disabled">
     <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-  </Style>
-  <Style Selector="Button.detailAction:disabled /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
   <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
@@ -1324,25 +1330,25 @@
     <Setter Property="Height" Value="48" />
     <Setter Property="CornerRadius" Value="24" />
     <Setter Property="Padding" Value="22,0" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.quickAllButton:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
   <Style Selector="Button.quickAllButton.primary">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="Button.quickAllButton.primary:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccentHover}" />
   </Style>
   <Style Selector="Button.quickAllButton.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
   </Style>
 
   <!-- One box per value of a value row in an info box (#506), the current one highlighted; same everywhere. -->
@@ -2612,13 +2618,13 @@
     <Setter Property="CornerRadius" Value="32" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="20" />
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
   <Style Selector="Button.finish:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccentHover}" />
   </Style>
   <Style Selector="Button.finish:disabled">
     <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
@@ -2870,7 +2876,7 @@
     <Setter Property="Height" Value="44" />
     <Setter Property="CornerRadius" Value="22" />
     <Setter Property="Padding" Value="22,0" />
-    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="Bold" />
@@ -2880,7 +2886,7 @@
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
   <Style Selector="Button.statusButton:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
   <Style Selector="Button.statusButton.focused, Button.statusButton.focused:pointerover">
     <Setter Property="Background" Value="{StaticResource TextStrong}" />
@@ -3641,11 +3647,11 @@
     <Setter Property="CornerRadius" Value="23" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
   </Style>
   <Style Selector="Button.artworkNoticeButton.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
   </Style>
   <Style Selector="Border.artworkFooter">
     <Setter Property="Height" Value="76" />
@@ -3886,5 +3892,44 @@
   <!-- A hint whose button has nothing to act on now, e.g. Y on "Neuer Tag". -->
   <Style Selector="Button.tagHint.off">
     <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- Raised buttons (#531): every button that does something when pressed stands out from its surface, lit from above
+       with a shadow beneath, its label set into it; on a light or blue button the label gets a light edge below instead.
+       Rows, tabs, chips and value pills stay flat, and so does a greyed button: nothing to press. Each class's own
+       style sets the raised background and, with the focus, the raised edges with its ring. -->
+  <Style Selector="Button.detailAction /template/ Border#Chrome, Button.primary /template/ Border#Chrome, Button.secondary /template/ Border#Chrome,
+                   Button.hold /template/ Border#Chrome, Button.finish /template/ Border#Chrome, Button.statusButton /template/ Border#Chrome,
+                   Button.quickAllButton /template/ Border#Chrome, Button.artworkNoticeButton /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
+  <Style Selector="Button.detailAction.focused /template/ Border#Chrome, Button.hold.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
+  </Style>
+  <Style Selector="Button.action.focused /template/ Border#Chrome, Button.quickAllButton.focused /template/ Border#Chrome,
+                   Button.artworkNoticeButton.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
+  </Style>
+  <Style Selector="Button.statusButton.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedShadowOnly}" />
+  </Style>
+  <Style Selector="Button.detailAction /template/ ContentPresenter, Button.secondary /template/ ContentPresenter, Button.action /template/ ContentPresenter,
+                   Button.statusButton /template/ ContentPresenter, Button.quickAllButton /template/ ContentPresenter,
+                   Button.artworkNoticeButton /template/ ContentPresenter, Button.hold TextBlock">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
+  </Style>
+  <Style Selector="Button.detailAction.primary /template/ ContentPresenter, Button.primary /template/ ContentPresenter, Button.finish /template/ ContentPresenter,
+                   Button.action.primaryAction /template/ ContentPresenter, Button.statusButton.focused /template/ ContentPresenter,
+                   Button.hold.light TextBlock, Button.hold.holding TextBlock">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
+  </Style>
+  <Style Selector="Button.detailAction:disabled /template/ Border#Chrome, Button.secondary:disabled /template/ Border#Chrome, Button.action:disabled /template/ Border#Chrome,
+                   Button.finish:disabled /template/ Border#Chrome, Button.quickAllButton:disabled /template/ Border#Chrome,
+                   Button.artworkNoticeButton:disabled /template/ Border#Chrome, Button.statusButton:disabled /template/ Border#Chrome,
+                   Button.primary:disabled /template/ Border#Chrome, Button.primary.blocked /template/ Border#Chrome, Button.hold.locked /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter, Button.primary.blocked /template/ ContentPresenter, Button.hold.locked TextBlock">
+    <Setter Property="Effect" Value="{x:Null}" />
   </Style>
 </Styles>

@@ -32,7 +32,6 @@ public sealed class ImageShowTests
 
         _time.Advance(TimeSpan.FromSeconds(1));
         Assert.True(show.IsShowing);
-        Assert.True(show.IsShowingNow);
         Assert.Equal("own", show.Shown?.GameKey);
     }
 
@@ -79,6 +78,50 @@ public sealed class ImageShowTests
         _time.Advance(ImageShowViewModel.FadeTime);
         Assert.False(show.IsPresent);
         Assert.Null(show.Shown);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T565-8")]
+    public void A_click_or_the_wheel_while_the_page_fades_back_in_does_nothing_either()
+    {
+        using var show = Create();
+        show.TakeInput();
+        _time.Advance(Idle);
+
+        // The mouse moved: the show ends and the page fades back in under the image.
+        Assert.True(show.TakeInput());
+        Assert.True(show.TakePointerInput());
+        Assert.False(show.IsShowing);
+
+        _time.Advance(ImageShowViewModel.FadeTime);
+        Assert.False(show.TakePointerInput());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T565-14")]
+    public void The_next_image_goes_into_an_emptied_layer_so_the_view_blends_it_in_only_once_it_is_decoded()
+    {
+        _scene = new(Image("own"), [Image("a"), Image("b")]);
+        using var show = Create();
+        show.TakeInput();
+        _time.Advance(Idle);
+        _time.Advance(Idle);
+        var inSecond = show.SecondImage!.GameKey;
+        _time.Advance(Idle);
+
+        // The round starts again with the image the second layer still holds: it is emptied first, so it loads anew.
+        var changes = new List<string?>();
+        show.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ImageShowViewModel.SecondImage))
+            {
+                changes.Add(show.SecondImage?.GameKey);
+            }
+        };
+        _time.Advance(Idle);
+
+        Assert.Equal(inSecond, show.Shown?.GameKey);
+        Assert.Equal([null, inSecond], changes);
     }
 
     [Fact]

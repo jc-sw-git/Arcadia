@@ -2188,8 +2188,8 @@
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
         <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding !ShowsFirst}" Fit="Whole" File="{Binding SecondImage?.File}"
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-        <Border Height="120" VerticalAlignment="Bottom" Background="{StaticResource ImageShowTitleScrim}" />
-        <TextBlock Name="ImageShowTitle" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
+        <Border Height="120" VerticalAlignment="Bottom" ZIndex="2" Background="{StaticResource ImageShowTitleScrim}" />
+        <TextBlock Name="ImageShowTitle" ZIndex="2" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
       </Panel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->

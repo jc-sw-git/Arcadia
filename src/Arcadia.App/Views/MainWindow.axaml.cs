@@ -334,7 +334,7 @@ public partial class MainWindow : Window
 
     private void OnPointerInputForImageShow(object? sender, PointerEventArgs e)
     {
-        if (_viewModel?.TakeInputForImageShow() == true)
+        if (_viewModel?.TakePointerInputForImageShow() == true)
         {
             e.Handled = true;
         }

@@ -561,15 +561,22 @@
   <Style Selector="Panel.imageShow.atOnce">
     <Setter Property="Transitions" Value="{x:Null}" />
   </Style>
+  <!-- The layer behind stays whole; the one in front blends in over it only once its image is decoded, so a cross-fade
+       never passes through the page colour. Its transition comes with it, so it drops to 0 at once when it turns to front. -->
   <Style Selector="ctl|ArtworkImage.imageShowLayer">
+    <Setter Property="ZIndex" Value="0" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front">
+    <Setter Property="ZIndex" Value="1" />
     <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front[IsShowing=True]">
     <Setter Property="Transitions">
       <Transitions>
         <DoubleTransition Property="Opacity" Duration="0:0:1.5" Easing="SineEaseInOut" />
       </Transitions>
     </Setter>
-  </Style>
-  <Style Selector="ctl|ArtworkImage.imageShowLayer.front">
     <Setter Property="Opacity" Value="1" />
   </Style>
   <Style Selector="TextBlock.imageShowTitle">

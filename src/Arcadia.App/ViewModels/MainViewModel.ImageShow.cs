@@ -24,6 +24,9 @@ public partial class MainViewModel
     /// </summary>
     public bool TakeInputForImageShow() => ImageShow.TakeInput();
 
+    /// <summary>A click or the wheel: true also while the page is still fading back in, so it hits nothing under the image.</summary>
+    public bool TakePointerInputForImageShow() => ImageShow.TakePointerInput();
+
     /// <summary>Arcadia's window came to the front or left it (#565: no timer and no animation in the background).</summary>
     public void SetInFront(bool inFront) => ImageShow.SetInFront(inFront);
 

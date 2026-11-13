@@ -30,9 +30,6 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     // Counts the shows, so a next image still being checked when the show ended or restarted is dropped.
     private int _run;
 
-    // Read from the controller's thread (GamepadRouting), so a press can be swallowed before it is mapped.
-    private volatile bool _isShowing;
-
     /// <param name="mayRun">The show may run now: the detail page is on top and no dialog is open. Asked on every input, so it must be cheap.</param>
     /// <param name="scene">The games to show, asked only when the show starts or turns to the next image.</param>
     /// <param name="canShow">Whether an image can be decoded; one that can't is skipped.</param>
@@ -81,9 +78,6 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     /// <summary>The image in front, whose title shows bottom left.</summary>
     public ShownImage? Shown => ShowsFirst ? FirstImage : SecondImage;
 
-    /// <summary>The show covers the window now; safe to read from any thread.</summary>
-    public bool IsShowingNow => _isShowing;
-
     /// <summary>
     /// The player did something (a button, a key, the mouse): a running show ends, fading back to the page, and true
     /// says the window must swallow the input; otherwise the wait starts anew.
@@ -98,6 +92,16 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
 
         Arm();
         return wasShowing;
+    }
+
+    /// <summary>
+    /// A click or the wheel: like <see cref="TakeInput"/>, but swallowed also while the page is still fading back in, so a
+    /// click right after the mouse moved doesn't hit a button under the fading image.
+    /// </summary>
+    public bool TakePointerInput()
+    {
+        var wasPresent = IsPresent;
+        return TakeInput() || wasPresent;
     }
 
     /// <summary>The page on top or a dialog changed: the wait starts anew, or stops where the show can't start.</summary>
@@ -167,7 +171,7 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
         (FirstImage, SecondImage, ShowsFirst) = (image, null, true);
         OnPropertyChanged(nameof(Shown));
         EndsAtOnce = false;
-        IsShowing = _isShowing = true;
+        IsShowing = true;
         AppLog.Write($"Bild ansehen: {image.Title}");
         _timer.Change(IdleTime, Timeout.InfiniteTimeSpan);
     }
@@ -190,13 +194,16 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
 
         if (next is not null)
         {
-            // Into the layer behind, which then blends in front.
+            // Into the layer behind, which then comes in front and blends in once it is decoded (the view's style), so the
+            // image before stays until then. Emptied first, so a layer that still holds this image loads it anew and fades.
             if (ShowsFirst)
             {
+                SecondImage = null;
                 SecondImage = next;
             }
             else
             {
+                FirstImage = null;
                 FirstImage = next;
             }
 
@@ -231,7 +238,7 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     {
         _run++;
         EndsAtOnce = atOnce;
-        IsShowing = _isShowing = false;
+        IsShowing = false;
         AppLog.Write(atOnce ? "Bild ansehen: beendet (Arcadia im Hintergrund)" : "Bild ansehen: beendet (Eingabe)");
 
         // The images go once the page is back, so their bitmaps don't stay in memory under it.

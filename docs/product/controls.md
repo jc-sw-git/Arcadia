@@ -76,4 +76,4 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 
 Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
 (`InputInUseViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has no "Schließen"
-button besides.
+button besides; the exception and the other design rules: `design.md`.

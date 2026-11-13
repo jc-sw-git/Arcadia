@@ -6,12 +6,9 @@ detail lives there, not here. The look (fonts, covers, raised buttons): `README.
 
 ## Buttons and texts
 
-- **Glyphs follow the controller in use.** Every button symbol (footer, hints, glyphs inside a text) shows the
-  buttons of the controller used last and switches as soon as another one is used; after a key or a click the
-  keyboard's keys (`controls.md` → Button hints).
-- **Presses are glyphs in texts.** A text that names a button or key shows its glyph, framed as in the footer
-  (`ButtonTextBlock`), never its name spelled out ("[A] Spielen", not "A drücken"); `ButtonGlyphTextTests` guards it
-  (`controls.md` → Button hints and texts).
+- **Glyphs follow the controller in use**, and switch as soon as another controller, the keyboard or the mouse is
+  used (`controls.md` → Button hints and texts).
+- **Presses are glyphs in texts**, never spelled out (`controls.md` → Button hints and texts).
 - **The footer names only what works now.** It lists the buttons that act on the focused element in this moment; a
   greyed row, an action that does nothing here or a list that can't scroll gets no hint (e.g. RS only while an info box
   overflows, `controls.md`).
@@ -37,11 +34,11 @@ detail lives there, not here. The look (fonts, covers, raised buttons): `README.
 
 ## Dialogs
 
-- **A dismissable dialog shows an ✕ in its top right corner while mouse or keyboard is in use**; with the controller
-  B closes it (`controls.md` → Dialogs, `InputInUseViewModel.ShowsCloseButtons`).
-- **No separate "Schließen" button** where B and the ✕ already close. A dialog gets one only where it must not be
-  dismissed by accident: Pan's firmware notice is not clicked away and closes only through its own buttons
-  (`controllers-in-games.md`).
+- **✕ for the mouse, B for the controller, no separate "Schließen" button**: `controls.md` → Dialogs. A dialog gets
+  a "Schließen" button only where a click beside it must not dismiss it, such as Pan's firmware notice, which
+  [B] or its own buttons close (`controllers-in-games.md`). Also with one: the failed driver installation
+  ("Schließen", A or B, `settings-controller-install.md`) and the controller settings' notice that a game is running ("Erneut
+  versuchen" | "Schließen"), where "Schließen" is one of two answers.
 
 ## Sizes
 

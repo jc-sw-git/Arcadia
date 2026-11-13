@@ -246,7 +246,7 @@
                   </ContentControl>
                   </ScrollViewer>
                   <!-- A long description fades into the box where more follows (docs/product/design.md → Scrolling). -->
-                  <ctl:EdgeFade Name="FactsFade" Size="32" FadeColor="{StaticResource DetailInfoBoxColor}" ScrollTarget="{Binding #FactsScroller}" />
+                  <ctl:EdgeFade Name="FactsFade" Size="32" FadeColor="{StaticResource SurfaceSunkenColor}" ScrollTarget="{Binding #FactsScroller}" />
                   </Panel>
                 </Border>
               </Grid>

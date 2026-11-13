@@ -1923,6 +1923,22 @@
         </ContentControl.DataTemplates>
       </ContentControl>
 
+      <!-- Own tags (#495): a game's tag window over the detail page or the library, the tag list over the settings. -->
+      <ContentControl Grid.RowSpan="4" Content="{Binding TagWindow}" IsVisible="{Binding IsTagWindowOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:TagWindowViewModel">
+            <views:TagWindowView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+      <ContentControl Grid.RowSpan="4" Content="{Binding TagList}" IsVisible="{Binding IsTagListOpen}">
+        <ContentControl.DataTemplates>
+          <DataTemplate x:DataType="vm:TagListViewModel">
+            <views:TagListView />
+          </DataTemplate>
+        </ContentControl.DataTemplates>
+      </ContentControl>
+
       <!-- The first start's question which launchers Arcadia uses (#139): over everything but the toast until "Fertig". -->
       <Panel Grid.RowSpan="4" IsVisible="{Binding IsFirstRunShown}">
         <views:FirstRunView DataContext="{Binding FirstRun}" />

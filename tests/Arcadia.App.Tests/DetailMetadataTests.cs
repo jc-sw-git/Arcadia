@@ -92,7 +92,7 @@ public sealed class DetailMetadataTests
         Assert.Equal("Action, Abenteuer · Nordkai Studio · 2021", page.GameInfo.InfoLine);
         Assert.Null(page.GameInfo.Badge);
         Assert.Null(page.GameInfo.ShortDescription);
-        Assert.Equal(["Open World", "Atmosphärisch", "Erkundung"], page.GameInfo.OverviewTags);
+        Assert.Equal(["Open World", "Atmosphärisch", "Erkundung"], page.GameInfo.OverviewTags.Select(tag => tag.Name));
         Assert.Equal("+2", page.GameInfo.MoreTags);
         Assert.Equal("Action · 2021", page.Area(DetailAreaViewModel.InfosKey).ValueLine);
 

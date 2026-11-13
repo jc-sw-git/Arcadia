@@ -1,3 +1,4 @@
+using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.Core.Settings;
 using Avalonia.Media;
@@ -24,6 +25,9 @@ public static class DetailAreas
 
     public const string ResetTitleIcon = "M4 9h11a5 5 0 0 1 0 10H8M8 5L4 9l4 4";
 
+    /// <summary>A tag's label, from the design.</summary>
+    public const string TagsIcon = "M3 12V4h8l9 9-8 8zM7.5 7.5h.01";
+
     public const string ManageIcon = "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4";
 
     /// <summary>
@@ -31,7 +35,10 @@ public static class DetailAreas
     /// reaches only such games, and only while no selection was applied to all games.
     /// </summary>
     public static IReadOnlyList<string> QuickDefaults { get; } =
-        [QuickIdOf(GameActionKind.ControllerMode), QuickIdOf(GameActionKind.MouseMode), QuickIdOf(GameActionKind.Artwork), QuickIdOf(GameActionKind.Uninstall)];
+        [
+            QuickIdOf(GameActionKind.ControllerMode), QuickIdOf(GameActionKind.MouseMode), QuickIdOf(GameActionKind.Artwork), QuickIdOf(GameActionKind.Tags),
+            QuickIdOf(GameActionKind.Uninstall),
+        ];
 
     /// <summary>
     /// The id a row is stored by in <c>settings.json</c>: written out, not the enum's number, so a renamed or reordered kind
@@ -42,6 +49,7 @@ public static class DetailAreas
         GameActionKind.ControllerMode => "controller-mode",
         GameActionKind.MouseMode => "mouse-mode",
         GameActionKind.Artwork => "artwork",
+        GameActionKind.Tags => "tags",
         GameActionKind.ChangeTitle => "change-title",
         GameActionKind.ResetTitle => "reset-title",
         GameActionKind.Uninstall => "uninstall",
@@ -56,6 +64,7 @@ public static class DetailAreas
         [GameActionKind.ControllerMode] = StreamGeometry.Parse(ControllerIcon),
         [GameActionKind.MouseMode] = StreamGeometry.Parse("M6 3.5l12.5 7-5.5 1.8-1.8 5.7z"),
         [GameActionKind.Artwork] = StreamGeometry.Parse("M3.5 4.5h17v15h-17zM20.5 16l-5-5-8 8.5M9 10h.01"),
+        [GameActionKind.Tags] = StreamGeometry.Parse(TagsIcon),
         [GameActionKind.ChangeTitle] = StreamGeometry.Parse(ChangeTitleIcon),
         [GameActionKind.ResetTitle] = StreamGeometry.Parse(ResetTitleIcon),
         [GameActionKind.Uninstall] = StreamGeometry.Parse("M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"),
@@ -103,10 +112,12 @@ public static class DetailAreas
     }
 
     public static IReadOnlyList<DetailRowViewModel> ManageRows(
-        GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, Action<DetailRowViewModel> point) =>
+        GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, IGameActionHost host, Action<DetailRowViewModel> point) =>
     [
         new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
             Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
+        new(GameActionKind.Tags, AppTexts.ActionTags, AppTexts.DetailTagsSubtitle, AppTexts.DetailTagsInfo,
+            Find(actions, GameActionKind.Tags), greyedReason: null, value: TagsLine(host.OwnTagsOf(tile.Game).Count), point),
         new(GameActionKind.ChangeTitle, AppTexts.ActionChangeTitle, AppTexts.DetailChangeTitleSubtitle, AppTexts.DetailChangeTitleInfo,
             Find(actions, GameActionKind.ChangeTitle), greyedReason: null, value: null, point),
         new(GameActionKind.ResetTitle, AppTexts.ActionResetTitle, AppTexts.DetailResetTitleSubtitle, AppTexts.DetailResetTitleInfo,
@@ -114,6 +125,10 @@ public static class DetailAreas
         new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.DetailUninstallSubtitle(tile.LauncherName), AppTexts.DetailUninstallInfo(tile.LauncherName),
             Find(actions, GameActionKind.Uninstall), AppTexts.NotInstalled, value: null, point),
     ];
+
+    /// <summary>The value of the row "Tags" (#495): "Keine", "1 Tag", "3 Tags".</summary>
+    public static string TagsLine(int count) =>
+        count switch { 0 => AppTexts.DetailTagsNone, 1 => AppTexts.DetailTagsOne, _ => AppTexts.DetailTagsMany(Formatting.Count(count)) };
 
     /// <summary>"Gestern · 38 Std.", or only when it was last played while the launcher reports no playtime.</summary>
     public static string OverviewLine(GameTileViewModel tile) =>

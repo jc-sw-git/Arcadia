@@ -27,4 +27,7 @@ public interface IDataSourcesHost
 
     /// <summary>"Warten auf deine Auswahl" (#491): the waiting list over the settings; B there comes back to the row.</summary>
     void OpenWaitingList();
+
+    /// <summary>"Eigene Tags" (#495): the tag list over the settings.</summary>
+    void OpenOwnTags();
 }

@@ -51,6 +51,12 @@ public interface IGameActionsOwner
     /// <summary>"Übersicht anpassen" (#500): the dialog over the detail page.</summary>
     void CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices);
 
+    /// <summary>"Tags" (#495): the window with the own tags over the page.</summary>
+    void EditTags(GameTileViewModel tile);
+
+    /// <summary>The names of the game's own tags, alphabetically (#495).</summary>
+    IReadOnlyList<string> OwnTagsOf(Game game);
+
     /// <summary>"Titel ändern" (#496): the on-screen keyboard over the page.</summary>
     void ChangeTitle(GameTileViewModel tile);
 
@@ -494,6 +500,10 @@ public sealed class GameActions : IGameActionHost
     IReadOnlyList<string> IGameActionHost.QuickSelectionOf(Game game) => _settings.Current.QuickSelection.Of(game.Key, DetailAreas.QuickDefaults);
 
     void IGameActionHost.CustomizeOverview(GameTileViewModel tile, IReadOnlyList<QuickChoice> choices) => _owner.CustomizeOverview(tile, choices);
+
+    void IGameActionHost.EditTags(GameTileViewModel tile) => _owner.EditTags(tile);
+
+    IReadOnlyList<string> IGameActionHost.OwnTagsOf(Game game) => _owner.OwnTagsOf(game);
 
     void IGameActionHost.ChangeTitle(GameTileViewModel tile) => _owner.ChangeTitle(tile);
 

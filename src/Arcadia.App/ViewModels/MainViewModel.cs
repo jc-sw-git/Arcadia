@@ -14,6 +14,7 @@ using Arcadia.Core.Artwork;
 using Arcadia.Core.Metadata;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
+using Arcadia.Core.UserData;
 using Arcadia.Core.Search;
 using Arcadia.Core.Settings;
 using Arcadia.Input;
@@ -88,6 +89,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata, titles);
         WatchUserData(Session.Titles.UserData);
+        Tags = new OwnTags(Session.Titles.UserData, Formatting.Culture);
+        WatchOwnTags();
         if (artwork is not null)
         {
             artwork.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateArtwork(keys));
@@ -238,7 +241,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsCustomizeOverviewOpen || IsChangeTitleOpen || IsWaitingListOpen;
+        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsCustomizeOverviewOpen || IsChangeTitleOpen || IsWaitingListOpen
+        || IsTagWindowOpen || IsTagListOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -382,7 +386,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private ShownLayer ShownLayer()
     {
         var page = OpenPages().First();
-        object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
+        object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null) ?? (object?)TagDialog
             ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? (object?)CustomizeOverview ?? (object?)ChangeTitle ?? WaitingList;
         return new ShownLayer(page.GetType(), dialog, page.Layout);
     }
@@ -405,6 +409,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (WaitingList is { } waiting)
         {
             waiting.Handle(action);
+            return;
+        }
+
+        // Over the detail page, the library or the settings, with its own questions and keyboard (#495).
+        if (TagDialog is { } tags)
+        {
+            tags.Handle(action);
             return;
         }
 
@@ -516,6 +527,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs.Release(action);
         _actions.Release(action);
         WaitingList?.Release(action);
+        TagDialog?.Release(action);
         ChangeTitle?.Release(action);
         foreach (var page in OpenPages())
         {
@@ -530,6 +542,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs.CancelHold();
         _actions.CancelHold();
         WaitingList?.CancelHeldButtons();
+        TagDialog?.CancelHeldButtons();
         ChangeTitle?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
@@ -623,6 +636,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Library.ShowTabs();
         UpdateDetail();
         RefreshLauncherSettings();
+
+        // The counts and games of a tag cover the library as read now (D5).
+        TagList?.Refresh();
+        _tagListBehindDetail?.Refresh();
     }
 
     /// <summary>
@@ -664,7 +681,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Search is { } search)
         {
             var hit = Carousel.Find(search.Hits, key, 0);
-            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus, MetadataOf);
+            Detail = hit < 0 ? null : new GameDetailViewModel(null, search.Hits, hit, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus, DetailInfoOf);
             return;
         }
 
@@ -676,7 +693,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, MetadataOf);
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, DetailInfoOf);
     }
 
     /// <summary>
@@ -686,6 +703,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [RelayCommand]
     private void CloseDetail()
     {
+        if (ReturnToTagList())
+        {
+            return;
+        }
+
         if (Detail is { IsFromSearch: true } fromSearch)
         {
             Detail = null;
@@ -836,6 +858,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (DetailBehindSearch is { } detail)
         {
             DetailBehindSearch = null;
+            if (ReturnFromSearchToTagGame(detail))
+            {
+                return;
+            }
+
             if (LauncherTabs.SelectedTab is { } tab && detail.Update(Library.ShownGames(tab), Library.SortLabel))
             {
                 Detail = detail;
@@ -1112,6 +1139,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // Closing with the waiting list open cancels its checks and own search instead of leaving them running.
         WaitingList = null;
         ChangeTitle = null;
+        TagWindow = null;
+        TagList = null;
+        _tagListBehindDetail?.Dispose();
 
         // A title just changed is on disk before Arcadia ends (#496); the write takes milliseconds, a stuck disk doesn't hold the exit.
         Session.Titles.UserData?.WhenWrittenAsync().Wait(UserDataWriteLimit);

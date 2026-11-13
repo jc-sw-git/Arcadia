@@ -271,12 +271,12 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
             .SelectMany(kind => actions.Where(a => a.Kind == kind))];
         var onCustomize = IsOnCustomize;
         Area(DetailAreaViewModel.ControllerKey).Rows = Watched(DetailAreas.ControllerRows(Tile, actions, _host, Point));
-        Area(DetailAreaViewModel.ManageKey).Rows = Watched(DetailAreas.ManageRows(Tile, actions, Point));
+        Area(DetailAreaViewModel.ManageKey).Rows = Watched(DetailAreas.ManageRows(Tile, actions, _host, Point));
         // The entries are rows of their own on the same actions, so a value changed in one shows in the other at once.
         var quick = Area(DetailAreaViewModel.OverviewKey);
         quick.Rows = Watched(DetailAreas.QuickRows(
             _host.QuickSelectionOf(Tile.Game),
-            [.. DetailAreas.ControllerRows(Tile, actions, _host, Point), .. DetailAreas.ManageRows(Tile, actions, Point)]));
+            [.. DetailAreas.ControllerRows(Tile, actions, _host, Point), .. DetailAreas.ManageRows(Tile, actions, _host, Point)]));
         if (OpenArea == quick)
         {
             _row = QuickRow(_row, onCustomize);

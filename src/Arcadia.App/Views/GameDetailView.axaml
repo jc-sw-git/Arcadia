@@ -247,6 +247,7 @@
                             <Path Classes="chevronRight" />
                           </Button>
                         </StackPanel>
+                        <TextBlock DockPanel.Dock="Right" Classes="quickValue" Margin="12,0,0,0" Text="{Binding ValueText}" IsVisible="{Binding HasActionValue}" />
                         <TextBlock Classes="quickTitle" Text="{Binding Title}" />
                       </DockPanel>
                     </Button>
@@ -271,8 +272,8 @@
             </StackPanel>
 
             <DockPanel Grid.Column="1">
-            <!-- The first tags and "+n" (#493), at the foot of the column as in the artboard. -->
-            <StackPanel Name="OverviewTags" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,16,0,0" ClipToBounds="True" IsVisible="{Binding GameInfo.HasTags}">
+            <!-- The first tags, own ones first (#495), and "+n" (#493), at the foot of the column as in the artboard. -->
+            <StackPanel Name="OverviewTags" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,16,0,0" ClipToBounds="True" IsVisible="{Binding GameInfo.HasOverviewTags}">
               <ItemsControl ItemsSource="{Binding GameInfo.OverviewTags}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -280,9 +281,9 @@
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="x:String">
-                    <Border Classes="metadataTag">
-                      <TextBlock Text="{Binding}" MaxWidth="118" />
+                  <DataTemplate x:DataType="vm:DetailTag">
+                    <Border Classes="metadataTag" Classes.own="{Binding IsOwn}">
+                      <TextBlock Text="{Binding Name}" MaxWidth="118" />
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -371,6 +372,24 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- The player's own tags (#495), before the providers'. -->
+                    <StackPanel Spacing="10" IsVisible="{Binding GameInfo.HasOwnTags}">
+                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" FontSize="13" />
+                      <ItemsControl ItemsSource="{Binding GameInfo.OwnTags}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <WrapPanel ItemSpacing="8" LineSpacing="8" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <Border Classes="metadataTag own">
+                              <TextBlock Text="{Binding}" MaxWidth="460" />
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
                     <StackPanel Spacing="10" IsVisible="{Binding GameInfo.HasTags}">
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailTagsCaption}" FontSize="13" VerticalAlignment="Center" />
@@ -453,6 +472,7 @@
                           </Button>
                         </Grid>
                       </Border>
+                      <TextBlock DockPanel.Dock="Right" Classes="actionValue" Margin="16,0,0,0" Text="{Binding ValueText}" IsVisible="{Binding HasActionValue}" />
                       <StackPanel Spacing="2" VerticalAlignment="Center">
                         <TextBlock Classes="rowTitle" Text="{Binding Title}" />
                         <TextBlock Classes="rowSubtitle" Text="{Binding Subtitle}" />

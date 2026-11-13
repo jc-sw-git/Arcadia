@@ -31,7 +31,7 @@ public partial class MainViewModel : IDataSourcesHost
     /// <summary>"Datenquellen" exists only with artwork and SteamGridDB wired (the App does both).</summary>
     private DataSourcesSettingsViewModel? CreateDataSources(SettingsChanges changes) =>
         _artwork is { SteamGridDb: { } key } artwork ? new DataSourcesSettingsViewModel(
-            key, artwork, this, changes, _time, KeepsSteamGridDbKey, _metadata, Session.Titles.UserData?.IsUnreadable == true)
+            key, artwork, this, changes, _time, KeepsSteamGridDbKey, _metadata, Session.Titles.UserData?.IsUnreadable == true, Tags)
         : null;
 
     /// <summary>

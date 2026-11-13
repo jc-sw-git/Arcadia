@@ -47,7 +47,7 @@ public sealed class ChangeTitleTests
         // "Verwalten": both rows beside "Artwork ändern"; without an own title the reset is greyed but takes the focus.
         var change = arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.ChangeTitle);
         var manage = arcadia.Detail.Current.OpenArea.Rows.Select(row => row.Kind).ToList();
-        Assert.Equal([GameActionKind.Artwork, GameActionKind.ChangeTitle, GameActionKind.ResetTitle], manage.Take(3));
+        Assert.Equal([GameActionKind.Artwork, GameActionKind.Tags, GameActionKind.ChangeTitle, GameActionKind.ResetTitle], manage.Take(4));
         Assert.False(change.IsGreyed);
         arcadia.Press(UiAction.Down);
         var reset = arcadia.Detail.Current.FocusedRow!;
@@ -80,7 +80,7 @@ public sealed class ChangeTitleTests
         Assert.False(page.ShowsOriginalTitle);
 
         // "Artwork ändern" names it so.
-        arcadia.Press(UiAction.Up);
+        arcadia.Press(UiAction.Up, times: 2);
         Assert.Equal(GameActionKind.Artwork, page.FocusedRow?.Kind);
         arcadia.Press(UiAction.Accept);
         Assert.StartsWith("Aal", arcadia.Main.ChangeArtwork!.GameLine);
@@ -199,7 +199,7 @@ public sealed class ChangeTitleTests
 
         Assert.Equal(["Alpha", "Mitte", "Zebra"], restarted.Main.Library.PageGames.Select(tile => tile.Title));
         var entry = Assert.Single(restarted.Main.Status.Entries, e => e.Id == "user-data");
-        Assert.Equal("Eigene Titel nicht lesbar", entry.Title);
+        Assert.Equal("Eigene Titel und Tags nicht lesbar", entry.Title);
         Assert.True(File.Exists(restarted.UserData.FilePath + UserDataStore.CopySuffix));
 
         // "Zu den Einstellungen" opens the row that says why and what to do.
@@ -212,7 +212,7 @@ public sealed class ChangeTitleTests
         restarted.Hold(UiAction.Accept, PastHoldTime);
         var change = restarted.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.ChangeTitle);
         Assert.True(change.IsGreyed);
-        Assert.StartsWith("Die Datei mit deinen eigenen Titeln (user-data.json) ist nicht lesbar.", change.Note);
+        Assert.Equal(AppTexts.UserDataUnreadable, change.Note);
         Assert.True(restarted.Detail!.Current.Row(GameActionKind.ResetTitle).IsGreyed);
         restarted.Press(UiAction.Accept);
         Assert.Null(restarted.Main.ChangeTitle);

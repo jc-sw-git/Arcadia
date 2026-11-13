@@ -62,12 +62,15 @@ rows in "Datenquellen": `app-artwork.md`; the product rules: `docs/product/setti
 - `SecretFile` (`Settings/`): a player's secret (SteamGridDB key, IGDB access) encrypted through injected
   protect/unprotect, else memory only.
 
-**Own data** (`UserData/`, #43, #496)
-- `UserDataStore`: what the player set per game key (`GameUserData`: own title; own tags come with #495) in
-  `%APPDATA%\Arcadia\user-data.json`, kept for games absent from the library. `Change` holds at once; the file is
+**Own data** (`UserData/`, #43, #496, #495)
+- `UserDataStore`: what the player set per game key (`GameUserData`: own title) and the own tags (`OwnTag`: name and
+  game keys, `TagsChanged`) in `%APPDATA%\Arcadia\user-data.json`, kept for games absent from the library. Read values
+  are checked (`CheckedTags`: names of at most 40 characters without control characters, equal ignoring case merged). `Change` holds at once; the file is
   written in the background through a temporary file and a rename; a failed write puts the stored data back and raises
   `WriteFailed`. A file unreadable at the start (`IsUnreadable`) is copied to `user-data.json.broken`, never written,
   and nothing changes until Arcadia starts again.
 - `GameTitles` (`Library/`): the shown title, own above the automatic one (`MetadataService.TitleOf`, #494, else the
   launcher's); `Shown` lays it over a launcher's game, `OwnTitleFrom` (trimmed; empty or the automatic title is none),
   `Change`, `Reset`, `Changed`. `LibrarySession` shows the libraries with it; providers and artwork keep the launcher's title.
+- `OwnTags`: the tags over the store, alphabetically (`GameSorter.TitleComparer`): `Create`, `Set`, `Delete`, `Rename`
+  (`TagRename.NeedsMerge` for another tag's name), `Merge`, `Of(gameKey)`; names through `NameFrom` (trimmed, ≤ 40).

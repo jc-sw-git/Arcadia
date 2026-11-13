@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
+             x:Class="Arcadia.App.Views.TagDialogPartsView"
+             x:DataType="vm:OwnTagsDialogViewModel">
+
+  <!-- What the tag window and the tag list share (#495): a name written with the settings' keyboard, and the question
+       before a delete or a merge, both over the dialog. -->
+  <Panel>
+    <Panel IsVisible="{Binding IsEditing}">
+      <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              Command="{Binding DropNameCommand}" />
+      <Border Classes="prompt changeTitleDialog tagNameDialog" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <StackPanel Spacing="18">
+          <TextBlock Text="{Binding EditorHeading}" FontSize="34" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <Border Name="NameField" Classes="textField editing changeTitleField" Classes.problem="{Binding Editor?.HasProblem, TargetNullValue=False}">
+              <StackPanel Orientation="Horizontal" ClipToBounds="True">
+                <TextBlock Classes="fieldText" Text="{Binding Editor?.TextBeforeCaret, TargetNullValue=''}" />
+                <Border Classes="caret fieldCaret" />
+                <TextBlock Classes="fieldText" Text="{Binding Editor?.TextAfterCaret, TargetNullValue=''}" />
+              </StackPanel>
+            </Border>
+            <Button Grid.Column="1" Classes="plain artworkNoticeButton" Content="{x:Static app:AppTexts.ChangeTitleTake}" Command="{Binding TakeNameCommand}" />
+          </Grid>
+          <TextBlock Classes="rowProblem" Text="{Binding Editor?.Problem, TargetNullValue=''}" IsVisible="{Binding Editor?.HasProblem, TargetNullValue=False}" />
+          <TextBlock Classes="changeTitleNote" Text="{x:Static vm:OwnTagsDialogViewModel.NameNote}" />
+        </StackPanel>
+      </Border>
+    </Panel>
+
+    <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsEditing}" VerticalAlignment="Bottom" IsVisible="{Binding IsEditing}">
+      <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
+        <views:OnScreenKeyboardView DataContext="{Binding Editor?.Keyboard}" HorizontalAlignment="Center" />
+      </Border>
+    </ctl:RevealPanel>
+
+    <!-- "„Couch-Koop“ löschen?" or "Mit „Zu zweit“ zusammenführen?": the confirmation dialog, "Abbrechen" focused first. -->
+    <Panel IsVisible="{Binding IsAsking}">
+      <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              Command="{Binding Question?.CancelCommand, TargetNullValue={x:Null}}" />
+      <Border Width="680" Background="{StaticResource Surface}" CornerRadius="20" Padding="48,40,48,32"
+              HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="{StaticResource DialogShadow}">
+        <StackPanel Spacing="28" DataContext="{Binding Question}" x:DataType="vm:ConfirmationViewModel">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="ExtraBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Message}" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button Classes="plain action danger" Classes.focused="{Binding IsConfirmFocused}" Content="{Binding ConfirmLabel}" Command="{Binding ConfirmAndCloseCommand}" />
+            <Button Classes="plain action" Classes.focused="{Binding IsCancelFocused}" Content="{x:Static app:AppTexts.Cancel}" Command="{Binding CancelCommand}" />
+          </StackPanel>
+          <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+              <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
+              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
+              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+    </Panel>
+  </Panel>
+</UserControl>

@@ -119,6 +119,7 @@ public sealed partial class DataSourcesTests
                 ("igdb-delete", AppTexts.DataSourcesIgdbGroup, 0),
                 (MetadataSourceRows.SourceKey(MetadataSourceKind.Launcher), AppTexts.DataSourcesMetadataOrderGroup, 0),
                 (MetadataSourceRows.SourceKey(MetadataSourceKind.Igdb), AppTexts.DataSourcesMetadataOrderGroup, 0),
+                (DataSourcesSettingsViewModel.OwnTagsRowKey, AppTexts.DataSourcesUserDataGroup, 0),
             ],
             category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
 

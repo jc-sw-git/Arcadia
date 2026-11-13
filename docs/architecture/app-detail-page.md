@@ -18,6 +18,11 @@ The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-p
   `MainViewModel.Titles.cs`, which also follows `user-data.json` (status message, failed write) and keeps the library's
   focus on a game renamed from its menu.
   `GameDetailPageViewModel.OriginalTitle`/`ShowsOriginalTitle`: R3 in `GameDetailViewModel`.
+- Own tags (#495): `TagWindowViewModel` ("Tags" of one game) and `TagListViewModel` ("Eigene Tags" in "Datenquellen",
+  with `TagGamesViewModel` for a tag's games) share `OwnTagsDialogViewModel` (rows, name on the settings' keyboard,
+  questions), drawn by `Views/TagWindowView`, `Views/TagListView`, `Views/TagDialogPartsView`. `MainViewModel.OwnTags.cs`
+  hosts both (`IOwnTagsHost`), refreshes every page on `OwnTags.Changed`, and keeps the tag list behind a detail page
+  opened from it for B. `DetailMetadata` puts own tags (`DetailTag.IsOwn`) before the providers'.
 - While any dialog is open (`MainViewModel.IsDialogOpen`) the page behind draws no focus ring.
 - Metadata (#493): `DetailMetadata` turns Core's `MergedMetadata` (`MainViewModel.MetadataOf`) into the info line,
   "Übersicht"'s description and tags and the facts of "Infos" (`DetailAreaViewModel.InfosKey`, no rows).

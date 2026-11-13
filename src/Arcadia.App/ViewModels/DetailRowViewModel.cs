@@ -70,6 +70,9 @@ public sealed partial class DetailRowViewModel : ViewModelBase
 
     public bool IsAction => !IsChoice;
 
+    /// <summary>An action that names a value beside its title, e.g. "2 Tags" (#495); A still starts the action.</summary>
+    public bool HasActionValue => IsAction && ValueText.Length > 0;
+
     [ObservableProperty]
     public partial string ValueText { get; private set; }
 

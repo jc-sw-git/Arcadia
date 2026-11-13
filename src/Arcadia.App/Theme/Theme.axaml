@@ -58,6 +58,9 @@
     <SolidColorBrush x:Key="SurfaceHover" Color="#1A212B" />
     <SolidColorBrush x:Key="SurfaceDisabled" Color="#11161D" />
     <SolidColorBrush x:Key="TextDisabled" Color="#4A5563" />
+    <!-- The player's own tags (#495), set apart from the providers' on the detail page (design RD6Mischung). -->
+    <SolidColorBrush x:Key="OwnTag" Color="#1F3A5C" />
+    <SolidColorBrush x:Key="OnOwnTag" Color="#BFDDFF" />
     <!-- Backdrop behind dialogs, and the shade over covers of games that aren't installed. -->
     <SolidColorBrush x:Key="Scrim" Color="#C705080C" />
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
@@ -950,6 +953,12 @@
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
+  <Style Selector="Border.metadataTag.own">
+    <Setter Property="Background" Value="{StaticResource OwnTag}" />
+  </Style>
+  <Style Selector="Border.metadataTag.own > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource OnOwnTag}" />
+  </Style>
   <Style Selector="Border.metadataFact">
     <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
@@ -1053,6 +1062,18 @@
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
   <Style Selector="Button.detailRow.greyed TextBlock.rowValue">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <!-- An action naming a value beside its title, e.g. "2 Tags" (#495): quieter than a value's chip, no arrows. -->
+  <Style Selector="TextBlock.actionValue">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="MaxWidth" Value="200" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.greyed TextBlock.actionValue">
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
   <Style Selector="Button.detailRow.greyed TextBlock.rowSubtitle">
@@ -3631,5 +3652,52 @@
   <!-- The detail page under a dialog: no ring of its own, only the dialog's (T500-25). After the focused styles. -->
   <Style Selector="Panel.detailCovered Button.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
+  <!-- Own tags (#495): the tag window of a game and the tag list in "Datenquellen", rows as the filter's checkboxes. -->
+  <Style Selector="Border.tagDialog">
+    <Setter Property="Width" Value="760" />
+    <Setter Property="Padding" Value="48,44,48,28" />
+  </Style>
+  <Style Selector="Border.tagDialog.tagList">
+    <Setter Property="Width" Value="1040" />
+    <Setter Property="Height" Value="880" />
+  </Style>
+  <Style Selector="TextBlock.tagDialogHeading">
+    <Setter Property="FontSize" Value="34" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.tagDialogSubtitle">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Button.tagRow">
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+  <Style Selector="Button.tagRow.newTag TextBlock.filterValueLabel">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="Path.tagNewIcon, Path.tagIcon">
+    <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
+    <Setter Property="StrokeThickness" Value="2" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Stretch" Value="None" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Path.tagNewIcon">
+    <Setter Property="Data" Value="M12 5v14M5 12h14" />
+  </Style>
+  <Style Selector="Path.tagIcon">
+    <Setter Property="Data" Value="M3 12V4h8l9 9-8 8zM7.5 7.5h.01" />
+    <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
+  </Style>
+  <!-- A hint whose button has nothing to act on now, e.g. Y on "Neuer Tag". -->
+  <Style Selector="Button.tagHint.off">
+    <Setter Property="Opacity" Value="0.4" />
   </Style>
 </Styles>

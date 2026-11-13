@@ -62,7 +62,7 @@ public partial class MainViewModel
     string? IGameActionsOwner.OriginalTitleOf(Game game) =>
         Session.Titles.OwnTitleOf(game.Key) is null ? null : Session.AutomaticTitleOf(game.Key);
 
-    string? IGameActionsOwner.TitleBlockedReason => Session.Titles.CanChange ? null : AppTexts.DetailTitleUnreadable;
+    string? IGameActionsOwner.TitleBlockedReason => Session.Titles.CanChange ? null : AppTexts.UserDataUnreadable;
 
     /// <summary>
     /// Follows the file of own titles from the start: unreadable, it is a status message; a write that fails is logged with

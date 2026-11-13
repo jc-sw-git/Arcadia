@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
+             x:Class="Arcadia.App.Views.TagListView"
+             x:DataType="vm:TagListViewModel">
+
+  <!-- "Eigene Tags" in "Datenquellen" (#495): the tags with the number of their games, or the games of one tag. -->
+  <Panel>
+    <Panel IsVisible="{Binding !IsEditing}">
+      <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              Command="{Binding GoBackCommand}" />
+      <Border Classes="prompt tagDialog tagList" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Panel>
+          <Button Classes="plain dialogClose" Margin="0,-24,-28,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
+                  IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding GoBackCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,40,24">
+              <TextBlock Classes="tagDialogHeading" Text="{x:Static vm:TagListViewModel.Title}" />
+              <TextBlock Classes="tagDialogSubtitle" Text="{Binding Subtitle}" />
+            </StackPanel>
+            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" Margin="0,22,0,0">
+              <Panel>
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" IsVisible="{Binding ShowsTags}">
+                  <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" />
+                  <Button Classes="plain" Command="{Binding GoBackCommand}">
+                    <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+                  </Button>
+                  <Button Classes="plain tagHint" Classes.off="{Binding IsNewFocused}" Command="{Binding DeleteCommand}">
+                    <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.TagsHintDelete}" />
+                  </Button>
+                  <Button Classes="plain tagHint" Classes.off="{Binding IsNewFocused}" Command="{Binding RenameFocusedCommand}">
+                    <ctl:KeyHint Pad="X" Keys="F" Text="{x:Static app:AppTexts.TagsHintRename}" />
+                  </Button>
+                  <Button Classes="plain" Command="{Binding AcceptCommand}">
+                    <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptHint}" />
+                  </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" IsVisible="{Binding ShowsGames}">
+                  <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" IsVisible="{Binding Games?.HasGames, TargetNullValue=False}" />
+                  <Button Classes="plain" Command="{Binding GoBackCommand}">
+                    <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+                  </Button>
+                  <Button Classes="plain" Command="{Binding AcceptCommand}" IsVisible="{Binding Games?.HasGames, TargetNullValue=False}">
+                    <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.ActionShowDetails}" />
+                  </Button>
+                </StackPanel>
+              </Panel>
+            </Border>
+            <Panel>
+              <!-- The tags. -->
+              <Panel IsVisible="{Binding ShowsTags}">
+                <ScrollViewer Name="TagScroller" Classes="waitingScroller" Padding="4">
+                  <ItemsControl Name="TagRows" ItemsSource="{Binding Entries}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TagEntryViewModel">
+                        <Button Classes="plain filterValue tagRow" Classes.focused="{Binding IsFocused}" Classes.newTag="{Binding IsNew}"
+                                Command="{Binding ClickCommand}" ToolTip.Tip="{Binding Text}">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Path Classes="tagNewIcon" IsVisible="{Binding IsNew}" />
+                            <Path Classes="tagIcon" IsVisible="{Binding IsTag}" />
+                            <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Text}" />
+                            <TextBlock Grid.Column="2" Classes="filterValueCount" Text="{Binding CountText, TargetNullValue=''}" />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <ctl:EdgeFade Name="TagFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #TagScroller}" />
+              </Panel>
+
+              <!-- The games of one tag, alphabetically, each with its launcher. -->
+              <Panel IsVisible="{Binding ShowsGames}">
+                <ScrollViewer Name="GameScroller" Classes="waitingScroller" Padding="4">
+                  <ItemsControl Name="GameRows" ItemsSource="{Binding Games?.Items, TargetNullValue={x:Null}}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TagGameViewModel">
+                        <Button Classes="plain filterValue tagRow" Classes.focused="{Binding IsFocused}" Command="{Binding ClickCommand}" ToolTip.Tip="{Binding Title}">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                            <TextBlock Classes="filterValueLabel" Text="{Binding Title}" />
+                            <TextBlock Grid.Column="1" Classes="filterValueCount" Text="{Binding LauncherName}" />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <ctl:EdgeFade Name="GameFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #GameScroller}" />
+                <TextBlock Classes="waitingStatus" Text="{x:Static vm:TagGamesViewModel.EmptyText}" IsVisible="{Binding Games?.IsEmpty, TargetNullValue=False}" />
+              </Panel>
+            </Panel>
+          </DockPanel>
+        </Panel>
+      </Border>
+    </Panel>
+
+    <views:TagDialogPartsView />
+  </Panel>
+</UserControl>

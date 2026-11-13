@@ -85,3 +85,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T497-1 to T497-12 | 2026-11-12 | Claude | PR branch, Linux container, headless acceptance tests (no window) | ✅ | – |
+| T497-1 to T497-12 | 2026-11-13 | Claude (QE) | PR branch 93ea8eb, Linux container, `tools/ci/run-tests.sh 4` (Release), 710 App tests; two mutations (no launcher limit on the step, no switch record) turn 3 tests red | ✅ | – |
+| T497-13 | 2026-11-13 | Claude (QE) | PR branch 93ea8eb, Release, Xvfb 1920×1080 and window 1280×720, `--demo --first-run` and a fresh first start without `--demo`, keys and mouse | ❌ | Fresh step fine (rows, info panel, hints, texts, clicks on a row, "Einfügen", wrap to "Überspringen"). After a restart on the step the list doesn't follow the focus: "Überspringen" focused but out of sight (the window never follows a settings page set before it binds); back to the architect |

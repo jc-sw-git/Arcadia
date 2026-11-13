@@ -1,4 +1,4 @@
-using Arcadia.App.Input;
+﻿using Arcadia.App.Input;
 using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Metadata.Igdb;
@@ -168,12 +168,21 @@ public sealed class WaitingListMetadataTests
         using var arcadia = await StartAsync();
         WaitingListTests.OpenDataSources(arcadia);
         arcadia.FocusRow(ArtworkNameRows.SeveralHitsKey);
+        // Collected as shown: the fake time running to idle can outlast the toast's four seconds, most on a slow runner.
+        var toasts = new List<string>();
+        arcadia.Main.Toast.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(arcadia.Main.Toast.Text) && arcadia.Main.Toast.Text is { } text)
+            {
+                toasts.Add(text);
+            }
+        };
 
         arcadia.Press(UiAction.Accept);
         await WaitingListTests.SettledAsync(arcadia);
         await RunToIdleAsync(arcadia);
 
-        Assert.Equal(AppTexts.DataSourcesTookFirstHits(2), arcadia.Main.Toast.Text);
+        Assert.Equal([AppTexts.DataSourcesTookFirstHits(2)], toasts);
         Assert.Empty(arcadia.Artwork.Waiting);
         Assert.Empty(arcadia.Metadata.Waiting);
         Assert.Equal("First Köln.", arcadia.Metadata.Of(Koeln.Key).Description?.Value);

@@ -2,14 +2,14 @@
 
 **Status:** Automated: T565-1 to T565-11, T565-13 (layout rule, timer, order, input) · QE: T565-1 to T565-5, T565-12, T565-14 (the look in the running app) · Open for the owner: T565-15
 
-- [ ] **T565-1** A game with a flat (3.1 : 1) background focused in the library: the preview card shows it with at most
+- [x] **T565-1** A game with a flat (3.1 : 1) background focused in the library: the preview card shows it with at most
   10 % cut at the sides and a narrow blurred margin above and below. · E2E: no (window: layout)
-- [ ] **T565-2** The same with a 16 : 9 background: at most 10 % cut above and below, narrow blurred margins at the sides.
+- [x] **T565-2** The same with a 16 : 9 background: at most 10 % cut above and below, narrow blurred margins at the sides.
   · E2E: no (window: layout)
-- [ ] **T565-3** The detail page of a game with a flat background: the image spans the full width uncut at the top and
+- [x] **T565-3** The detail page of a game with a flat background: the image spans the full width uncut at the top and
   fades softly into its blurred copy below; title, tabs and footer stay readable. · E2E: no (window: layout)
-- [ ] **T565-4** The detail page of a game with a 16 : 9 background: the image fills the screen uncut. · E2E: no (window: layout)
-- [ ] **T565-5** Another format (21 : 9, 4 : 3, between 16 : 9 and flat): at most 10 % cut and blurred margins, on the
+- [x] **T565-4** The detail page of a game with a 16 : 9 background: the image fills the screen uncut. · E2E: no (window: layout)
+- [x] **T565-5** Another format (21 : 9, 4 : 3, between 16 : 9 and flat): at most 10 % cut and blurred margins, on the
   card and the detail page, never stretched. · E2E: no (window: layout)
 - [x] **T565-6** "Bild ansehen" starts: the detail page with nothing open, no input for 10 s: the page fades out, the
   game's background shows whole and centred, its title bottom left. · E2E: yes
@@ -47,3 +47,5 @@ History:
 |---|---|---|---|---|---|
 | T565-6 to -11, -13 | 2026-11-13 | Claude | branch, Linux, headless tests | ✅ | – |
 | T565-1 to -4, -6 to -8, -14 | 2026-11-13 | Claude | branch, Linux/Xvfb, `--demo --demo-games 120` with the design's sample images, keys | ✅ card 16 : 9 and flat with narrow blurred margins; detail page flat full width fading into the blur, 16 : 9 full screen; the show started after 10 s, turned to another game, Esc brought the page back | QE looks at all of it |
+| T565-1 to -5, -12 ("Artwork ändern"), -14 | 2026-11-13 | Claude (QE) | bb6141c, Linux/Xvfb, Debug, `--demo --demo-games 120` with test images 3.1 : 1, 16 : 9, 21 : 9, 4 : 3, 2 : 1 (white corners mark the image's edge), keys and mouse | ✅ card: flat and 16 : 9 cut 10 % with narrow blurred margins, 21 : 9 and 2 : 1 cut without margins, 4 : 3 with wide blurred sides; detail page: flat and 21 : 9 full width uncut fading into the blur, 16 : 9 all four corners, 4 : 3 centred with blurred sides; "Artwork ändern" preview and tile alike; show: page fades out, image whole with soft edges, title bottom left. ❌ the cross-fade to the next image passes through the dark page colour while the next image is still decoding (F2); a mouse move followed at once by a click ends the show and the click starts the game (F1) | F1, F2 to the architect; T565-12 "Warten auf deine Auswahl" only checked in the code (no SteamGridDB key here), T565-14 open until F2 |
+| T565-8 (keys, mouse, wheel), T565-9 | 2026-11-13 | Claude (QE) | as above | ✅ a key, a click without moving and the wheel end the show and do nothing else; the next key acts; "Ansicht" open: no show for 13 s. ❌ move, then click (F1) | F1 |

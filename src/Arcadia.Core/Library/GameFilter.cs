@@ -10,97 +10,200 @@ public enum InstalledChoice
     NotInstalled,
 }
 
+/// <summary>Every category of the library's filter (#44), in the modal's order.</summary>
+public enum FilterCategory
+{
+    Installed,
+    Type,
+    Genre,
+    Tag,
+    Developer,
+    Publisher,
+    Year,
+    AgeRating,
+}
+
 /// <summary>
-/// A tab's filter (#44): AND between the categories, OR within one. An empty <see cref="Types"/> lets every type through,
-/// so a filter on nothing is <see cref="None"/>. Pure, and equal by value, so a tab's filtered list can be kept while it
-/// stays the same.
+/// A tab's filter (#44, #466): AND between the categories, OR within one. A category with nothing chosen lets everything
+/// through, so a filter on nothing is <see cref="None"/>. Pure, and equal by value, so a tab's filtered list can be kept
+/// while it stays the same. The metadata categories read an entry's <see cref="GameFacts"/>.
 /// </summary>
 public sealed class GameFilter : IEquatable<GameFilter>
 {
-    private GameFilter(InstalledChoice installed, IReadOnlyList<GameType> types)
+    private readonly NameChoice[] _lists;
+
+    private GameFilter(InstalledChoice installed, IReadOnlyList<GameType> types, NameChoice[] lists, YearChoice? years, RatingChoice? rating)
     {
         Installed = installed;
         Types = types;
+        _lists = lists;
+        Years = years;
+        Rating = rating;
     }
 
-    public static GameFilter None { get; } = new(InstalledChoice.All, []);
+    public static GameFilter None { get; } = new(InstalledChoice.All, [], NoLists(), null, null);
 
     public InstalledChoice Installed { get; }
 
     /// <summary>The chosen types in <see cref="LibraryTypes.Order"/>, each once; empty for "Alle Typen".</summary>
     public IReadOnlyList<GameType> Types { get; }
 
-    public bool IsActive => Installed != InstalledChoice.All || Types.Count > 0;
+    /// <summary>"Erscheinungsjahr"; null for "Alle Jahre".</summary>
+    public YearChoice? Years { get; }
+
+    /// <summary>"Altersfreigabe": the board looked at and its chosen ratings; null before a board was picked.</summary>
+    public RatingChoice? Rating { get; }
+
+    public bool IsActive => Installed != InstalledChoice.All || Types.Count > 0 || _lists.Any(list => list.IsActive) || Years is not null
+        || Rating is { IsActive: true };
+
+    /// <summary>The choice in a category with a long list of names.</summary>
+    public NameChoice NamesOf(FilterList list) => _lists[(int)list];
 
     public static GameFilter Of(InstalledChoice installed, IEnumerable<GameType> types) =>
-        new(Enum.IsDefined(installed) ? installed : InstalledChoice.All, InOrder(types));
+        new(Enum.IsDefined(installed) ? installed : InstalledChoice.All, InOrder(types), NoLists(), null, null);
 
-    public GameFilter WithInstalled(InstalledChoice installed) => Of(installed, Types);
+    public GameFilter WithInstalled(InstalledChoice installed) =>
+        new(Enum.IsDefined(installed) ? installed : InstalledChoice.All, Types, _lists, Years, Rating);
 
     /// <summary>The type chosen or not; the others keep their state.</summary>
-    public GameFilter WithType(GameType type, bool chosen) =>
-        Of(Installed, chosen ? Types.Append(type) : Types.Where(t => t != type));
+    public GameFilter WithType(GameType type, bool chosen) => WithTypes(chosen ? Types.Append(type) : Types.Where(t => t != type));
 
     /// <summary>"Alle Typen": the category lets every type through again.</summary>
-    public GameFilter WithAllTypes() => Of(Installed, []);
+    public GameFilter WithAllTypes() => WithTypes([]);
 
-    public bool Matches(Game game) => MatchesInstalled(game) && MatchesType(game);
+    public GameFilter WithTypes(IEnumerable<GameType> types) => new(Installed, InOrder(types), _lists, Years, Rating);
+
+    public GameFilter WithNames(FilterList list, NameChoice choice)
+    {
+        var lists = (NameChoice[])_lists.Clone();
+        lists[(int)list] = choice;
+        return new(Installed, Types, lists, Years, Rating);
+    }
+
+    public GameFilter WithYears(YearChoice? years) => new(Installed, Types, _lists, years, Rating);
+
+    public GameFilter WithRating(RatingChoice? rating) => new(Installed, Types, _lists, Years, rating);
+
+    /// <summary>An own tag renamed or merged (<paramref name="to"/> the kept name) or deleted (null), #466 case 17.</summary>
+    public GameFilter WithOwnTagRenamed(string name, string? to) =>
+        WithNames(FilterList.Tag, NamesOf(FilterList.Tag).WithOwnRenamed(name, to));
+
+    public bool Matches(Game game, GameFacts facts) => Failing(game, facts) == 0;
 
     /// <summary>The games the filter lets through, in their order; the same list without a filter.</summary>
-    public IReadOnlyList<Game> Apply(IReadOnlyList<Game> games) => IsActive ? games.Where(Matches).ToList() : games;
+    public IReadOnlyList<Game> Apply(IReadOnlyList<Game> games, FilterFacts? facts = null)
+    {
+        if (!IsActive)
+        {
+            return games;
+        }
+
+        facts ??= FilterFacts.None;
+        return games.Where(game => Matches(game, facts.Of(game))).ToList();
+    }
 
     /// <summary>
     /// What is left of the filter in a tab that offers <paramref name="offer"/> (#44 case 17): a category the tab doesn't
-    /// show filters nothing, and a type it doesn't hold drops out. A tab whose games change gets its saved choice back.
+    /// show filters nothing, and a value it doesn't hold drops out. A tab whose games change gets its saved choice back.
     /// </summary>
-    public GameFilter Within(FilterOffer offer) => Of(
+    public GameFilter Within(FilterOffer offer) => new(
         offer.HasInstalled ? Installed : InstalledChoice.All,
-        offer.HasTypes ? Types.Where(offer.Types.Contains) : []);
+        offer.HasTypes ? Types.Where(offer.Types.Contains).ToList() : [],
+        [.. Enum.GetValues<FilterList>().Select(list => Held(list, offer))],
+        offer.HasYears ? Years : null,
+        Rating is { } rating && offer.Boards.Contains(rating.Board) ? rating : null);
 
     /// <summary>
     /// This choice, made in a tab that offers <paramref name="offer"/>, laid over <paramref name="saved"/>: what the tab
-    /// didn't show (a category it hides, a type it doesn't hold) stays as saved, so it comes back with its entries even
+    /// didn't show (a category it hides, a value it doesn't hold) stays as saved, so it comes back with its entries even
     /// after the modal was opened and closed meanwhile (#44 case 17).
     /// </summary>
-    public GameFilter Over(GameFilter saved, FilterOffer offer) => Of(
+    public GameFilter Over(GameFilter saved, FilterOffer offer) => new(
         offer.HasInstalled ? Installed : saved.Installed,
-        offer.HasTypes ? Types.Concat(saved.Types.Where(type => !offer.Types.Contains(type))) : saved.Types);
+        offer.HasTypes ? InOrder(Types.Concat(saved.Types.Where(type => !offer.Types.Contains(type)))) : saved.Types,
+        [.. Enum.GetValues<FilterList>().Select(list => Over(list, saved.NamesOf(list), offer))],
+        offer.HasYears ? Years : saved.Years,
+        // A board the tab has no ratings of wasn't shown: its saved choice stays (case 18 of #466).
+        Rating is { IsActive: true } || saved.Rating is not { } kept || offer.Boards.Contains(kept.Board) ? Rating : kept);
 
     /// <summary>
-    /// The hits and the counts beside every value, each counted with the other category's choice (#44): one pass, so a
-    /// tab of 5,000 entries costs well under a millisecond per press in the modal.
+    /// The hits and the counts beside every value, each counted with the other categories' choice (#44): one pass, each
+    /// entry counted where at most one category stops it.
     /// </summary>
-    public FilterCounts Count(IReadOnlyList<Game> games)
+    public FilterCounts Count(IReadOnlyList<Game> games, FilterFacts? facts = null)
     {
-        int hits = 0, installedAmongTyped = 0, typed = 0;
-        var byType = new Dictionary<GameType, int>();
-        var withInstalled = 0;
+        facts ??= FilterFacts.None;
+        var counts = new FilterCounts(games.Count);
         foreach (var game in games)
         {
-            var installedFits = MatchesInstalled(game);
-            var typeFits = MatchesType(game);
-            if (typeFits)
+            var gameFacts = facts.Of(game);
+            var failing = Failing(game, gameFacts);
+            if (failing == 0)
             {
-                typed++;
-                installedAmongTyped += game.IsInstalled ? 1 : 0;
+                counts.AddHit(game, gameFacts);
             }
-
-            if (installedFits)
+            else if ((failing & (failing - 1)) == 0)
             {
-                withInstalled++;
-                byType[game.Type] = byType.GetValueOrDefault(game.Type) + 1;
-                hits += typeFits ? 1 : 0;
+                // Stopped by exactly one category: it counts beside that category's values only.
+                counts.Add((FilterCategory)System.Numerics.BitOperations.TrailingZeroCount(failing), game, gameFacts);
             }
         }
 
-        return new FilterCounts(hits, games.Count, typed, installedAmongTyped, typed - installedAmongTyped, withInstalled, byType);
+        return counts;
     }
 
-    public bool Equals(GameFilter? other) => other is not null && Installed == other.Installed && Types.SequenceEqual(other.Types);
+    public bool Equals(GameFilter? other) => other is not null && Installed == other.Installed && Types.SequenceEqual(other.Types)
+        && _lists.SequenceEqual(other._lists) && Equals(Years, other.Years) && Equals(Rating, other.Rating);
 
     public override bool Equals(object? obj) => Equals(obj as GameFilter);
 
-    public override int GetHashCode() => HashCode.Combine(Installed, Types.Count, Types.Count > 0 ? Types[0] : default);
+    public override int GetHashCode() => HashCode.Combine(Installed, Types.Count, Types.Count > 0 ? Types[0] : default, Years);
+
+    /// <summary>The categories that stop the entry, one bit per <see cref="FilterCategory"/>; 0 lets it through.</summary>
+    private int Failing(Game game, GameFacts facts)
+    {
+        var failing = 0;
+        if (!MatchesInstalled(game))
+        {
+            failing |= Bit(FilterCategory.Installed);
+        }
+
+        if (Types.Count > 0 && !Types.Contains(game.Type))
+        {
+            failing |= Bit(FilterCategory.Type);
+        }
+
+        foreach (var list in Enum.GetValues<FilterList>())
+        {
+            if (!_lists[(int)list].Matches(facts, list))
+            {
+                failing |= Bit(CategoryOf(list));
+            }
+        }
+
+        if (Years is { } years && !years.Matches(facts))
+        {
+            failing |= Bit(FilterCategory.Year);
+        }
+
+        if (Rating is { } rating && !rating.Matches(facts))
+        {
+            failing |= Bit(FilterCategory.AgeRating);
+        }
+
+        return failing;
+    }
+
+    public static FilterCategory CategoryOf(FilterList list) => list switch
+    {
+        FilterList.Genre => FilterCategory.Genre,
+        FilterList.Tag => FilterCategory.Tag,
+        FilterList.Developer => FilterCategory.Developer,
+        _ => FilterCategory.Publisher,
+    };
+
+    private static int Bit(FilterCategory category) => 1 << (int)category;
 
     private bool MatchesInstalled(Game game) => Installed switch
     {
@@ -109,60 +212,28 @@ public sealed class GameFilter : IEquatable<GameFilter>
         _ => true,
     };
 
-    private bool MatchesType(Game game) => Types.Count == 0 || Types.Contains(game.Type);
+    private NameChoice Held(FilterList list, FilterOffer offer)
+    {
+        var choice = NamesOf(list);
+        return choice.IsActive
+            ? NameChoice.Of(choice.Names.Where(name => offer.Holds(list, name)), choice.Own.Where(offer.HoldsOwnTag), choice.WithUnknown)
+            : choice;
+    }
+
+    private NameChoice Over(FilterList list, NameChoice saved, FilterOffer offer)
+    {
+        var choice = NamesOf(list);
+        return NameChoice.Of(
+            choice.Names.Concat(saved.Names.Where(name => !offer.Holds(list, name))),
+            choice.Own.Concat(saved.Own.Where(own => !offer.HoldsOwnTag(own))),
+            // The switch belongs to what is chosen: the shown values' if any is left, else the saved ones'.
+            choice.IsActive ? choice.WithUnknown : saved.WithUnknown);
+    }
+
+    private static NameChoice[] NoLists() => [.. Enum.GetValues<FilterList>().Select(_ => NameChoice.None)];
 
     private static List<GameType> InOrder(IEnumerable<GameType> types) => types
         .Distinct()
         .OrderBy(LibraryTypes.Position)
         .ToList();
-}
-
-/// <summary>What the modal shows beside the values (#44): each count leaves its own category out.</summary>
-/// <param name="Hits">"Mit dieser Auswahl N …".</param>
-/// <param name="Total">"… von M Einträgen": every entry of the tab.</param>
-/// <param name="AnyInstalledState">"Alle" under "Installiert": the entries the type choice lets through.</param>
-/// <param name="WithInstalled">"Alle Typen": the entries the installed choice lets through.</param>
-/// <param name="ByType">Each type's entries among <paramref name="WithInstalled"/>; a type without any is missing.</param>
-public sealed record FilterCounts(
-    int Hits,
-    int Total,
-    int AnyInstalledState,
-    int Installed,
-    int NotInstalled,
-    int WithInstalled,
-    IReadOnlyDictionary<GameType, int> ByType)
-{
-    public int Of(InstalledChoice choice) => choice switch
-    {
-        InstalledChoice.Installed => Installed,
-        InstalledChoice.NotInstalled => NotInstalled,
-        _ => AnyInstalledState,
-    };
-
-    public int Of(GameType type) => ByType.GetValueOrDefault(type);
-}
-
-/// <summary>
-/// The categories a tab offers (#44): a category appears only where it tells entries apart, so "Installiert" needs both
-/// installed and uninstalled entries and "Typ" more than one type. A tab without any has no filter at all.
-/// </summary>
-public sealed record FilterOffer(bool HasInstalled, IReadOnlyList<GameType> Types)
-{
-    public bool HasTypes => Types.Count > 1;
-
-    public bool HasAny => HasInstalled || HasTypes;
-
-    public static FilterOffer Of(IReadOnlyList<Game> games)
-    {
-        bool installed = false, uninstalled = false;
-        var types = new HashSet<GameType>();
-        foreach (var game in games)
-        {
-            installed |= game.IsInstalled;
-            uninstalled |= !game.IsInstalled;
-            types.Add(game.Type);
-        }
-
-        return new FilterOffer(installed && uninstalled, types.OrderBy(LibraryTypes.Position).ToList());
-    }
 }

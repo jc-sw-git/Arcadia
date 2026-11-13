@@ -176,6 +176,25 @@ public sealed record AppSettings
         return this with { LibraryFilters = filters };
     }
 
+    /// <summary>
+    /// An own tag renamed or merged into <paramref name="to"/>, or deleted (null), in every tab's filter (#466 case 17); the
+    /// same settings when no filter holds it.
+    /// </summary>
+    public AppSettings WithOwnTagRenamed(string name, string? to)
+    {
+        var settings = this;
+        foreach (var launcherId in (LibraryFilters ?? new Dictionary<string, SavedFilter>()).Keys)
+        {
+            var filter = FilterOf(launcherId);
+            if (filter.NamesOf(FilterList.Tag).Has(name, isOwn: true))
+            {
+                settings = settings.WithFilter(launcherId, filter.WithOwnTagRenamed(name, to));
+            }
+        }
+
+        return settings;
+    }
+
     /// <summary>What the user changed about the launcher; nothing changed gives an empty entry.</summary>
     public LauncherPreferences PreferencesOf(string launcherId) =>
         (Launchers ?? new Dictionary<string, LauncherPreferences>()).GetValueOrDefault(launcherId) ?? new LauncherPreferences();

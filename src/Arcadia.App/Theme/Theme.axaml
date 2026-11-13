@@ -162,12 +162,12 @@
       <GradientStop Offset="0.25" Color="#FF0B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
-    <!-- Text straight on the artwork (#531): title, info line, notes and the stacks' names get a soft dark halo, so they
-         read over a bright image too. -->
     <!-- A raised button's label (#531): light text casts a small dark shadow, dark text on blue a light edge below,
          so the label looks pressed into the raised surface. -->
     <DropShadowEffect x:Key="RaisedLabelShadow" OffsetX="0" OffsetY="2" BlurRadius="1.5" Color="#000000" Opacity="0.95" />
     <DropShadowEffect x:Key="RaisedLabelShadowOnAccent" OffsetX="0" OffsetY="1.2" BlurRadius="1" Color="#FFFFFF" Opacity="0.45" />
+    <!-- Text straight on the artwork (#531): title, info line, notes and the stacks' names get a soft dark halo, so they
+         read over a bright image too. -->
     <DropShadowEffect x:Key="TextOnArtShadow" OffsetX="0" OffsetY="2" BlurRadius="14" Color="#000000" Opacity="0.95" />
 
     <!-- Focus rings and shadows. -->
@@ -772,9 +772,6 @@
   <Style Selector="Button.action /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
   </Style>
-  <Style Selector="Button.action.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
-  </Style>
 
   <!-- Buttons that act only when held (#242, Pan's dialogs and its settings row): the fill runs over the hold time and
        the button acts once it is full; letting go earlier empties it. Each fill needs its own <ScaleTransform ScaleX="0" />. -->
@@ -819,9 +816,6 @@
   </Style>
   <Style Selector="Button.hold.holding">
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
-  </Style>
-  <Style Selector="Button.hold.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
   </Style>
   <Style Selector=".hold Border.holdClip">
     <Setter Property="ClipToBounds" Value="True" />
@@ -948,9 +942,6 @@
   <Style Selector="Button.detailAction:disabled">
     <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-  </Style>
-  <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
   </Style>
   <!-- Text and notes on the artwork (#531). -->
   <Style Selector=":is(Control).onArt">
@@ -1346,9 +1337,6 @@
   </Style>
   <Style Selector="Button.quickAllButton.primary:pointerover">
     <Setter Property="Background" Value="{StaticResource RaisedAccentHover}" />
-  </Style>
-  <Style Selector="Button.quickAllButton.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
   </Style>
 
   <!-- One box per value of a value row in an info box (#506), the current one highlighted; same everywhere. -->
@@ -3650,9 +3638,6 @@
     <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
   </Style>
-  <Style Selector="Button.artworkNoticeButton.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
-  </Style>
   <Style Selector="Border.artworkFooter">
     <Setter Property="Height" Value="76" />
     <Setter Property="Margin" Value="0,12,0,0" />
@@ -3842,10 +3827,6 @@
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
-  <!-- The detail page under a dialog: no ring of its own, only the dialog's (T500-25). After the focused styles. -->
-  <Style Selector="Panel.detailCovered Button.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
-  </Style>
   <!-- Own tags (#495): the tag window of a game and the tag list in "Datenquellen", rows as the filter's checkboxes. -->
   <Style Selector="Border.tagDialog">
     <Setter Property="Width" Value="760" />
@@ -3897,7 +3878,8 @@
   <!-- Raised buttons (#531): every button that does something when pressed stands out from its surface, lit from above
        with a shadow beneath, its label set into it; on a light or blue button the label gets a light edge below instead.
        Rows, tabs, chips and value pills stay flat, and so does a greyed button: nothing to press. Each class's own
-       style sets the raised background and, with the focus, the raised edges with its ring. -->
+       style sets the raised background; the edges and, with the focus, the edges with the ring are set only here, and
+       this block stays at the end of the file, after every other style that sets a button's BoxShadow. -->
   <Style Selector="Button.detailAction /template/ Border#Chrome, Button.primary /template/ Border#Chrome, Button.secondary /template/ Border#Chrome,
                    Button.hold /template/ Border#Chrome, Button.finish /template/ Border#Chrome, Button.statusButton /template/ Border#Chrome,
                    Button.quickAllButton /template/ Border#Chrome, Button.artworkNoticeButton /template/ Border#Chrome">
@@ -3931,5 +3913,9 @@
   </Style>
   <Style Selector="Button:disabled /template/ ContentPresenter, Button.primary.blocked /template/ ContentPresenter, Button.hold.locked TextBlock">
     <Setter Property="Effect" Value="{x:Null}" />
+  </Style>
+  <!-- The detail page under a dialog: no ring of its own, only the dialog's (T500-25). After the raised buttons' focus above, the last style of the file. -->
+  <Style Selector="Panel.detailCovered Button.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
 </Styles>

@@ -1,4 +1,4 @@
-﻿using Arcadia.App.Input;
+using Arcadia.App.Input;
 using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Metadata.Igdb;

@@ -1,4 +1,4 @@
-﻿using Arcadia.App.Services;
+using Arcadia.App.Services;
 using Arcadia.Core.Metadata;
 using Arcadia.Launchers.Abstractions;
 

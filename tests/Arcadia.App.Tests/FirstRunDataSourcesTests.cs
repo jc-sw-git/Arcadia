@@ -175,6 +175,7 @@ public sealed class FirstRunDataSourcesTests
         Assert.Equal(AppTexts.DataSourcesKeyConnected(SteamGridDbClient.Ending(FakeSteamGridDb.Key)), Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
         await arcadia.WaitUntilAsync(() => arcadia.SteamGridDb.Asked().Contains("grids/steam/" + GameId), "die Bildersuche soll gleich starten");
         Assert.Equal((AppTexts.Done, AppTexts.Done), (Row(arcadia, FirstRunDataSourcesViewModel.FinishRowKey).Title, step.FinishText));
+        Assert.Contains(Row(arcadia, FirstRunDataSourcesViewModel.FinishRowKey).Info, block => block is InfoText { Text: var text } && text == AppTexts.FirstRunDataSourcesDoneInfo);
 
         arcadia.Press(UiAction.Settings);
         Assert.False(arcadia.Main.IsInFirstRun);
@@ -366,6 +367,9 @@ public sealed class FirstRunDataSourcesTests
         Assert.True(restarted.Main.IsInFirstRun);
         Assert.Contains(SteamGridDbClient.Ending(FakeSteamGridDb.Key), Row(restarted, SteamGridDbKeyRows.KeyRowKey).Subtitle, StringComparison.Ordinal);
         Assert.Equal(["Shop"], restarted.Main.LauncherTabs.Items.Select(tab => tab.Name));
+        Assert.Equal(SteamGridDbKeyRows.KeyRowKey, restarted.Main.Settings!.FocusedRow?.Key);
+        restarted.Press(UiAction.Up);
+        Assert.Equal(FirstRunDataSourcesViewModel.FinishRowKey, restarted.Main.Settings.FocusedRow?.Key);
 
         // B leads back to the launcher page as it was left, ≡ twice ends it, and a restart then shows the library.
         restarted.Press(UiAction.Back);

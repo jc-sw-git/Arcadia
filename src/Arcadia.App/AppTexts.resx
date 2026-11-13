@@ -877,6 +877,7 @@
   <data name="FirstRunSkipSubtitle" xml:space="preserve"><value>Ohne Schlüssel weiter zur Bibliothek</value></data>
   <data name="FirstRunDataSourcesDoneSubtitle" xml:space="preserve"><value>Weiter zur Bibliothek, der Rest lädt im Hintergrund</value></data>
   <data name="FirstRunDataSourcesWithoutInfo" xml:space="preserve"><value>Ohne Schlüssel und Zugang zeigt Arcadia, was die Launcher selbst liefern: ihre Cover, bei Steam auch Beschreibung, Genres und Erscheinungsdatum, so langsam, wie es der Shop erlaubt. SteamGridDB und IGDB bekommen dann keine einzige Anfrage. Die Bibliothek ist sofort da; was noch fehlt, lädt im Hintergrund.</value></data>
+  <data name="FirstRunDataSourcesDoneInfo" xml:space="preserve"><value>Die Bibliothek ist sofort da. Was den Spielen der gewählten Launcher noch fehlt, lädt im Hintergrund, so schnell, wie SteamGridDB, IGDB und der Shop es erlauben; den Fortschritt zeigt Einstellungen › Datenquellen.</value></data>
   <data name="FirstRunDataSourcesLaterHeading" xml:space="preserve"><value>SPÄTER ÄNDERBAR</value></data>
   <data name="FirstRunDataSourcesLaterInfo" xml:space="preserve"><value>Schlüssel und Zugang lassen sich jederzeit unter Einstellungen › Datenquellen eintragen, prüfen oder löschen.</value></data>
   <data name="OnOff" xml:space="preserve"><value>An / Aus</value></data>

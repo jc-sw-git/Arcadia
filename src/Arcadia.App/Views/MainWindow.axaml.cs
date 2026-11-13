@@ -183,6 +183,10 @@ public partial class MainWindow : Window
             _viewModel.Library.PropertyChanged += OnLibraryPropertyChanged;
             BuildKeyboardsOnceLibraryShows(_viewModel.Session);
         }
+
+        // A settings page open before the window knew its view model (the first start resumed on "Datenquellen", #497):
+        // its rows scroll with the focus too.
+        FollowSettingsPage(_viewModel?.Settings);
     }
 
     /// <summary>

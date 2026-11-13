@@ -49,11 +49,6 @@ public sealed class FirstRunDataSourcesViewModel : SettingsCategoryViewModel
             IsPrimary = true,
             ShortcutPad = "≡",
             ShortcutKeys = "Enter",
-            Info =
-            [
-                new InfoText(AppTexts.FirstRunDataSourcesWithoutInfo),
-                new InfoSection(AppTexts.FirstRunDataSourcesLaterHeading, [new InfoText(AppTexts.FirstRunDataSourcesLaterInfo)]),
-            ],
         };
         _key.Changed += OnChanged;
         if (_igdb is not null)
@@ -104,6 +99,11 @@ public sealed class FirstRunDataSourcesViewModel : SettingsCategoryViewModel
         _finish.Title = hasAny ? AppTexts.Done : AppTexts.FirstRunSkip;
         _finish.Subtitle = hasAny ? AppTexts.FirstRunDataSourcesDoneSubtitle : AppTexts.FirstRunSkipSubtitle;
         _finish.ActionText = _finish.Title;
+        _finish.Info =
+        [
+            new InfoText(hasAny ? AppTexts.FirstRunDataSourcesDoneInfo : AppTexts.FirstRunDataSourcesWithoutInfo),
+            new InfoSection(AppTexts.FirstRunDataSourcesLaterHeading, [new InfoText(AppTexts.FirstRunDataSourcesLaterInfo)]),
+        ];
         OnPropertyChanged(nameof(FinishText));
         Marker = _key.State == SteamGridDbKeyState.Rejected || _igdb?.State == IgdbAccessState.Rejected ? ControllerSupport.HealthSeverity.Warning : null;
         SetRows([.. _keyRows.Rows, .. _igdbRows?.Rows ?? [], _finish]);

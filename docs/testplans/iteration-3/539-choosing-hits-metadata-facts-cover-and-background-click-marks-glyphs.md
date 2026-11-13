@@ -3,7 +3,7 @@
 Derived from the owner's findings in the hand test of #43 as written in #539. Keys follow `docs/product/controls.md`
 (WASD, Space = A, Esc = B, V = Y). Every game of the made-up launcher has neither cover nor background, so it seeks both.
 
-**Status:** Automated: T539-1 to -7, -10, -11 · Implementer's run: T539-8, -9 · Open for the owner: T539-12
+**Status:** Automated: T539-1 to -7, -10, -11 · QE: T539-8, -9 (implementer's run, QE review pending) · Open for the owner: T539-12
 
 - [x] **T539-1** "Warten auf deine Auswahl" in "Metadaten": the hits are a list (name, year, first genre · developer), no
       covers, ▲ ▼ through it; beside it an info box with the marked hit's ERSCHIENEN, GENRES, ENTWICKLER, PUBLISHER,

@@ -7,12 +7,12 @@ implementing thread from the issue's changes, as the issue had none; the quality
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 
-- [ ] **T546-1** A game that isn't installed and one with an update, over a bright artwork: the dark cloud behind "Die
+- [x] **T546-1** A game that isn't installed and one with an update, over a bright artwork: the dark cloud behind "Die
   Installation wird in … geöffnet" and "Update verfügbar …" is about half as dark as before (the image shows through), still
   without a hard border, and the text stays readable. · E2E: no (window: drawn)
-- [ ] **T546-2** The same two games: the cloud reaches out by the same amount left and right of the note, so the text sits
+- [x] **T546-2** The same two games: the cloud reaches out by the same amount left and right of the note, so the text sits
   in its middle; the note's left edge stays aligned with "Spielen"/"Installieren". · E2E: no (window: layout)
-- [ ] **T546-3** The same two games, and one with a long title that wraps: the note lies in the middle between the lower
+- [x] **T546-3** The same two games, and one with a long title that wraps: the note lies in the middle between the lower
   edge of the button row and the upper edge of the panel; the button row and the panel don't move. · E2E: no (window: layout)
 - [x] **T546-4** First start, step "Datenquellen": "Überspringen" (or "Fertig" once a key or access is there) is in its
   own group "ABSCHLIESSEN" below the IGDB rows, with the group's heading and spacing; ≡, Enter and the row still end the
@@ -33,3 +33,5 @@ History:
 |---|---|---|---|---|---|
 | T546-4 | 2026-11-13 | Claude | branch, Linux, `dotnet test` (red once with the group removed) | ✅ | – |
 | T546-1 to T546-4 | 2026-11-13 | Claude | branch, Debug, Linux Xvfb 1920 × 1080, demo data ("Burning Kingdom" not installed, "Frozen Outpost" with update); for T546-2/3 the cloud was tinted red for one run to see its extent; first start with `--first-run` | ✅ cloud symmetric around both notes, note in the middle between buttons and panel, "ABSCHLIESSEN" group with heading and gap; T546-1 only on the demo's dark artwork, the long wrapping title not looked at | – |
+| T546-1 to T546-3 | 2026-11-13 | QE (Claude) | branch, Debug, Linux Xvfb 1920 × 1080, demo; the backdrop replaced by a bright plain colour for one run to judge the cloud; a long wrapping title set for one run | ✅ cloud soft and about half as dark, text readable on bright, centred left/right; note in the middle between buttons and panel also under a two-line title; button row and panel unmoved | – |
+| T546-4 | 2026-11-13 | QE (Claude) | same, `--first-run`, focus on the last row (Up from the first) | ✅ "ABSCHLIESSEN" heading and gap, ring whole; `FirstRunDataSourcesTests` green | – |

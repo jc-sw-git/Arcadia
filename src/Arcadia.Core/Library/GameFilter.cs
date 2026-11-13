@@ -32,11 +32,15 @@ public sealed class GameFilter : IEquatable<GameFilter>
 {
     private readonly NameChoice[] _lists;
 
+    // Whether any long list is chosen: most filters choose none, and Failing runs per entry.
+    private readonly bool _anyList;
+
     private GameFilter(InstalledChoice installed, IReadOnlyList<GameType> types, NameChoice[] lists, YearChoice? years, RatingChoice? rating)
     {
         Installed = installed;
         Types = types;
         _lists = lists;
+        _anyList = lists.Any(list => list.IsActive);
         Years = years;
         Rating = rating;
     }
@@ -174,7 +178,7 @@ public sealed class GameFilter : IEquatable<GameFilter>
             failing |= Bit(FilterCategory.Type);
         }
 
-        foreach (var list in Enum.GetValues<FilterList>())
+        foreach (var list in _anyList ? Lists : [])
         {
             if (!_lists[(int)list].Matches(facts, list))
             {
@@ -229,6 +233,9 @@ public sealed class GameFilter : IEquatable<GameFilter>
             // The switch belongs to what is chosen: the shown values' if any is left, else the saved ones'.
             choice.IsActive ? choice.WithUnknown : saved.WithUnknown);
     }
+
+    // Once, not per entry: Failing runs for every entry of the tab at each count.
+    private static readonly FilterList[] Lists = Enum.GetValues<FilterList>();
 
     private static NameChoice[] NoLists() => [.. Enum.GetValues<FilterList>().Select(_ => NameChoice.None)];
 

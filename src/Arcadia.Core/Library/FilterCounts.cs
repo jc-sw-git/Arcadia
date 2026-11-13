@@ -8,16 +8,19 @@ namespace Arcadia.Core.Library;
 /// </summary>
 public sealed class FilterCounts
 {
-    private static readonly int CategoryCount = Enum.GetValues<FilterCategory>().Length;
+    // Arrays once: the counts run per entry, 5,000 a press in a large tab.
+    private static readonly FilterCategory[] Categories = Enum.GetValues<FilterCategory>();
+    private static readonly AgeRatingBoard[] Boards = Enum.GetValues<AgeRatingBoard>();
+    private static readonly int CategoryCount = Categories.Length;
 
     private readonly int[] _base = new int[CategoryCount];
-    private readonly Dictionary<GameType, int> _byType = [];
+    private readonly int[] _byType = new int[Enum.GetValues<GameType>().Length];
     private readonly Dictionary<string, int>[] _byName = [.. Enum.GetValues<FilterList>().Select(_ => new Dictionary<string, int>(FilterNames.Comparer))];
     private readonly Dictionary<string, int> _byOwnTag = new(FilterNames.Comparer);
     private readonly int[] _lacking = new int[Enum.GetValues<FilterList>().Length];
     private readonly Dictionary<int, int> _byYear = [];
     private readonly Dictionary<(AgeRatingBoard Board, string Rating), int> _byRating = [];
-    private readonly Dictionary<AgeRatingBoard, int> _lackingRating = [];
+    private readonly int[] _lackingRating = new int[Boards.Length];
     private int _installed;
     private int _lackingYear;
 
@@ -52,7 +55,7 @@ public sealed class FilterCounts
         _ => AnyInstalledState,
     };
 
-    public int Of(GameType type) => _byType.GetValueOrDefault(type);
+    public int Of(GameType type) => _byType[(int)type];
 
     /// <summary>The entries with <paramref name="name"/> in <paramref name="list"/>; an own tag only counts its own entries.</summary>
     public int Of(FilterList list, string name, bool isOwn = false) =>
@@ -71,12 +74,12 @@ public sealed class FilterCounts
     public int OfRating(AgeRatingBoard board, string rating) => _byRating.GetValueOrDefault((board, rating));
 
     /// <summary>The entries without a rating of <paramref name="board"/>, also those with only another board's.</summary>
-    public int LackingRating(AgeRatingBoard board) => _lackingRating.GetValueOrDefault(board);
+    public int LackingRating(AgeRatingBoard board) => _lackingRating[Array.IndexOf(Boards, board)];
 
     internal void AddHit(Game game, GameFacts facts)
     {
         Hits++;
-        foreach (var category in Enum.GetValues<FilterCategory>())
+        foreach (var category in Categories)
         {
             Add(category, game, facts);
         }
@@ -85,13 +88,20 @@ public sealed class FilterCounts
     internal void Add(FilterCategory category, Game game, GameFacts facts)
     {
         _base[(int)category]++;
+        if (category > FilterCategory.Type && ReferenceEquals(facts, GameFacts.None))
+        {
+            // Most entries of a tab without metadata: only "ohne Angabe" grows, without a lookup.
+            AddLacking(category);
+            return;
+        }
+
         switch (category)
         {
             case FilterCategory.Installed:
                 _installed += game.IsInstalled ? 1 : 0;
                 break;
             case FilterCategory.Type:
-                _byType[game.Type] = _byType.GetValueOrDefault(game.Type) + 1;
+                _byType[(int)game.Type]++;
                 break;
             case FilterCategory.Genre:
                 AddNames(FilterList.Genre, facts);
@@ -122,21 +132,50 @@ public sealed class FilterCounts
 
                 break;
             case FilterCategory.AgeRating:
-                foreach (var board in Enum.GetValues<AgeRatingBoard>())
+                for (var i = 0; i < Boards.Length; i++)
                 {
+                    var board = Boards[i];
                     if (facts.Ratings.TryGetValue(board, out var rating))
                     {
                         _byRating[(board, rating)] = _byRating.GetValueOrDefault((board, rating)) + 1;
                     }
                     else
                     {
-                        _lackingRating[board] = _lackingRating.GetValueOrDefault(board) + 1;
+                        _lackingRating[i]++;
                     }
                 }
 
                 break;
         }
     }
+
+    private void AddLacking(FilterCategory category)
+    {
+        switch (category)
+        {
+            case FilterCategory.Year:
+                _lackingYear++;
+                break;
+            case FilterCategory.AgeRating:
+                for (var i = 0; i < _lackingRating.Length; i++)
+                {
+                    _lackingRating[i]++;
+                }
+
+                break;
+            default:
+                _lacking[(int)ListOf(category)]++;
+                break;
+        }
+    }
+
+    private static FilterList ListOf(FilterCategory category) => category switch
+    {
+        FilterCategory.Genre => FilterList.Genre,
+        FilterCategory.Tag => FilterList.Tag,
+        FilterCategory.Developer => FilterList.Developer,
+        _ => FilterList.Publisher,
+    };
 
     private void AddNames(FilterList list, GameFacts facts)
     {

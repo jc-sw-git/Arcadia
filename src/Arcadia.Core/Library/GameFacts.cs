@@ -103,7 +103,8 @@ public sealed class FilterFacts(IReadOnlyDictionary<string, GameFacts> byKey)
 {
     public static FilterFacts None { get; } = new(new Dictionary<string, GameFacts>());
 
-    public GameFacts Of(Game game) => byKey.GetValueOrDefault(game.Key) ?? GameFacts.None;
+    // A tab without metadata skips building each game's key.
+    public GameFacts Of(Game game) => byKey.Count == 0 ? GameFacts.None : byKey.GetValueOrDefault(game.Key) ?? GameFacts.None;
 }
 
 /// <summary>

@@ -26,6 +26,6 @@ The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-p
 - While any dialog is open (`MainViewModel.IsDialogOpen`) the page behind draws no focus ring.
 - Metadata (#493): `DetailMetadata` turns Core's `MergedMetadata` (`MainViewModel.MetadataOf`) into the info line,
   "Übersicht"'s description and tags and the facts of "Infos" (`DetailAreaViewModel.InfosKey`, no rows).
-  `MainViewModel` hands `MetadataService.Changed` to `GameDetailViewModel.ShowMetadata`. ▲ ▼ in "Infos" raise
-  `GameDetailPageViewModel.ReadScrollRequested`, forwarded as `InfoScrollRequested`; the view scrolls `InfosScroller`
-  there, the info box elsewhere.
+  `MainViewModel` hands `MetadataService.Changed` to `GameDetailViewModel.ShowMetadata`. "Infos" is never entered:
+  while it has the focus in the rail (`GameDetailPageViewModel.IsReadingInfos`) RS raises `InfoScrollRequested` and the
+  view scrolls `InfosScroller`, elsewhere the focused row's info box (#530).

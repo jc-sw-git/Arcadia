@@ -403,7 +403,10 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         }
     }
 
-    /// <summary>The modal closed: the choice is saved for the tab, and the tab shows its hits from the first page.</summary>
+    /// <summary>
+    /// The modal closed: the choice is saved for the tab, and the tab shows its hits from the first page. A detail page
+    /// over it turns through the hits from now on (#530).
+    /// </summary>
     private void ApplyFilter(LauncherTabViewModel tab, GameFilter filter)
     {
         _saveView(settings => settings.WithFilter(tab.Launcher.Id, filter));
@@ -411,6 +414,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         {
             _requestedPage = 0;
             Refresh(focusIndex: 0);
+            _host.ViewChanged();
         }
     }
 

@@ -479,6 +479,16 @@
               <TextBlock Text="{Binding Detail?.SortLabel, TargetNullValue=''}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <!-- The tab's filter, the same chip as over the library (#530): the carousel turns through its hits. -->
+          <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
+                  IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"
+                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="{x:Static app:AppTexts.FilterTip}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
+              <Path Classes="filterFunnel" />
+              <TextBlock Text="{Binding Library.FilterHitsText}" IsVisible="{Binding Library.IsFiltered}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
           <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding Detail?.Current.AcceptHint, TargetNullValue=''}"
@@ -486,7 +496,7 @@
           <ctl:KeyHint Pad="▼" Keys="S" Text="{x:Static app:AppTexts.DetailAreas}" IsVisible="{Binding Detail?.Current.ShowsAreasHint, TargetNullValue=False}" />
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
           <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding Detail?.InfoOverflows, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="R3" Keys="G" Text="{x:Static app:AppTexts.DetailOriginalTitleHint}" IsVisible="{Binding Detail?.Current.HasOriginalTitle, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="⧉" Keys="R" Text="{x:Static app:AppTexts.DetailOriginalTitleHint}" IsVisible="{Binding Detail?.Current.HasOriginalTitle, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">

@@ -56,5 +56,19 @@ public class CarouselTests
         Assert.Equal(-1, Carousel.Find([], Game("gone").Key, previousIndex: 0));
     }
 
+    [Fact]
+    public void FindOrNext_follows_the_shown_game_or_goes_to_the_next_one_still_there()
+    {
+        var before = new[] { Game("a"), Game("b"), Game("c"), Game("d") };
+
+        Assert.Equal(0, Carousel.FindOrNext([Game("c"), Game("b")], before, shown: 2));
+        Assert.Equal(1, Carousel.FindOrNext([Game("a"), Game("d")], before, shown: 1));
+        // Past the end it goes round to the start.
+        Assert.Equal(0, Carousel.FindOrNext([Game("b")], before, shown: 3));
+        Assert.Equal(-1, Carousel.FindOrNext([], before, shown: 1));
+        // None of the old games: the place, clamped.
+        Assert.Equal(0, Carousel.FindOrNext([Game("x")], before, shown: 2));
+    }
+
     private static Game Game(string id) => new() { Id = id, LauncherId = "steam", Title = id, Launch = new LaunchTarget.None() };
 }

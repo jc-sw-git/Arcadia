@@ -693,7 +693,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         var games = Library.ShownGames(tab);
         var index = Carousel.Find(games, key, 0);
         Detail = index < 0 ? null : new GameDetailViewModel(
-            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, DetailInfoOf);
+            tab.Name, games, index, Library.SortLabel, CreateDetailTile, _actions, this, LauncherTabs, () => Library.CreateViewOptions(forDetailPage: true), _time, focus, DetailInfoOf,
+            () => Library.OpenFilterCommand.Execute(null));
     }
 
     /// <summary>
@@ -1379,7 +1380,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILibraryHost.ShowFilter(FilterModalViewModel modal)
     {
-        if (!IsDialogOpen && Search is null && Detail is null)
+        // Over the library, or over a detail page opened from a tab, whose carousel turns through the tab's hits (#530).
+        if (!IsDialogOpen && Search is null && Detail is null or { IsFromLibrary: true })
         {
             FilterModal = modal;
         }

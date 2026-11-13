@@ -34,7 +34,8 @@ public enum ApplyToAllState
 /// <summary>
 /// "Übersicht anpassen" (#500, design RD6Mischung): every row of the other areas, grouped by area, to tick for the game's
 /// quick selection. A ticks or unticks and holds at once, up to five ("n von 5"; with five the others are greyed and passed
-/// over). ▼ after the last entry reaches "Für alle Spiele übernehmen", which asks in place first. B closes; no save, no cancel.
+/// over). ▲ ▼ walk the entries of a column, ◀ ▶ go to the other column at the same height (#530); ▼ after the last entry
+/// reaches "Für alle Spiele übernehmen", which asks in place first. B closes; no save, no cancel.
 /// </summary>
 public sealed partial class CustomizeOverviewViewModel : ViewModelBase
 {
@@ -75,7 +76,7 @@ public sealed partial class CustomizeOverviewViewModel : ViewModelBase
     public static string FullNote => AppTexts.QuickSelectionFull(QuickSelectionSettings.MaxEntries);
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOffered), nameof(IsAsking), nameof(IsApplied), nameof(AcceptText), nameof(BackText), nameof(MovesSideways))]
+    [NotifyPropertyChangedFor(nameof(IsOffered), nameof(IsAsking), nameof(IsApplied), nameof(AcceptText), nameof(BackText), nameof(MovesSideways), nameof(MovesBothWays), nameof(MovesInOneColumn))]
     public partial ApplyToAllState ApplyState { get; private set; }
 
     /// <summary>The explanation beside the button before it was used.</summary>
@@ -100,6 +101,12 @@ public sealed partial class CustomizeOverviewViewModel : ViewModelBase
     /// <summary>◀ ▶ choose between "Abbrechen" and "Ersetzen"; elsewhere ▲ ▼ walk the list.</summary>
     public bool MovesSideways => IsAsking;
 
+    /// <summary>Outside the question the D-pad moves both ways: ▲ ▼ in a column, ◀ ▶ between the two (#530).</summary>
+    public bool MovesBothWays => !IsAsking && LeftGroups.Count > 0 && RightGroups.Count > 0;
+
+    /// <summary>A single column: ▲ ▼ only.</summary>
+    public bool MovesInOneColumn => !IsAsking && !MovesBothWays;
+
     public string AcceptText => IsAsking ? AppTexts.Select : IsApplyFocused ? AppTexts.QuickSelectionApplyToAll : AppTexts.FilterHintToggle;
 
     public string BackText => IsAsking ? AppTexts.Cancel : AppTexts.Close;
@@ -123,6 +130,9 @@ public sealed partial class CustomizeOverviewViewModel : ViewModelBase
                 // Greyed entries (five ticked) are passed over; "Für alle Spiele übernehmen" comes after the last (#500).
                 _focus = ListFocus.Next(_focus, action == UiAction.Up ? -1 : 1, Entries.Count + 1, CanFocus, HeldPress.IsRepeat);
                 ShowFocus();
+                break;
+            case UiAction.Left or UiAction.Right:
+                MoveSideways(action == UiAction.Left ? -1 : 1);
                 break;
             case UiAction.Accept when _focus == ApplyIndex:
                 Ask();
@@ -151,6 +161,43 @@ public sealed partial class CustomizeOverviewViewModel : ViewModelBase
     }
 
     private bool CanFocus(int index) => index == ApplyIndex || !Entries[index].IsGreyed;
+
+    /// <summary>
+    /// ◀ ▶ from an entry: the entry of the other column at the same height, or the nearest one there that isn't greyed.
+    /// With two columns going round is the other column too, so only a held ◀ ▶ stops at the outer one (#476).
+    /// "Für alle Spiele übernehmen" stands alone below both columns, so ◀ ▶ do nothing there.
+    /// </summary>
+    private void MoveSideways(int delta)
+    {
+        if (!MovesBothWays || _focus == ApplyIndex)
+        {
+            return;
+        }
+
+        var left = LeftGroups.SelectMany(group => group.Entries).ToList();
+        var right = RightGroups.SelectMany(group => group.Entries).ToList();
+        var isLeft = left.Contains(Entries[_focus]);
+        if (HeldPress.IsRepeat && isLeft == (delta < 0))
+        {
+            return;
+        }
+
+        var from = isLeft ? left : right;
+        var to = isLeft ? right : left;
+        var height = from.IndexOf(Entries[_focus]);
+        var target = to
+            .Select((entry, index) => (entry, distance: Math.Abs(index - height), below: index > height))
+            .Where(candidate => !candidate.entry.IsGreyed)
+            .OrderBy(candidate => candidate.distance)
+            .ThenBy(candidate => candidate.below)
+            .Select(candidate => candidate.entry)
+            .FirstOrDefault();
+        if (target is not null)
+        {
+            _focus = Entries.ToList().IndexOf(target);
+            ShowFocus();
+        }
+    }
 
     /// <summary>
     /// A click on an entry: the focus goes there and it is ticked or unticked, as with A. A greyed one takes neither, as

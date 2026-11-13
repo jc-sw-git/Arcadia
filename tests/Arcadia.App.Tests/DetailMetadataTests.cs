@@ -117,7 +117,6 @@ public sealed class DetailMetadataTests
         await RunToIdleAsync(arcadia);
         OpenDetail(arcadia);
         GoToInfos(arcadia);
-        arcadia.Press(UiAction.Accept);
 
         arcadia.MetadataStore.Serve("4711", Description);
         await arcadia.RescanAsync();
@@ -126,7 +125,7 @@ public sealed class DetailMetadataTests
         var page = arcadia.Detail!.Current;
         Assert.Equal(Description, page.GameInfo.Description);
         Assert.True(page.OpenArea.IsInfos);
-        Assert.Equal(DetailZone.Rows, page.Zone);
+        Assert.Equal(DetailZone.Rail, page.Zone);
     }
 
     [AvaloniaFact]
@@ -199,21 +198,20 @@ public sealed class DetailMetadataTests
         Assert.Equal((Description, "Steam"), (page.GameInfo.Description, page.GameInfo.DescriptionSource));
         Assert.Equal((5, "Steam"), (page.GameInfo.Tags.Count, page.GameInfo.TagsSource));
 
-        // Rail → "Infos" → A → ▲ ▼ scroll the text → B back to the rail → B closes the page.
+        // Rail → "Infos" → RS scrolls the text without A (#530) → B closes the page. The view says the text is longer
+        // than it shows; A does nothing there.
         var scrolls = new List<int>();
         arcadia.Detail!.InfoScrollRequested += scrolls.Add;
         GoToInfos(arcadia);
-        Assert.Equal(AppTexts.Select, page.AcceptHint);
-        arcadia.Press(UiAction.Accept);
-        Assert.Equal(DetailZone.Rows, page.Zone);
-        Assert.Equal(AppTexts.DetailAreas, page.BackHint);
-        arcadia.Press(UiAction.Down).Press(UiAction.Down).Press(UiAction.Up);
+        Assert.Null(page.AcceptHint);
+        Assert.True(page.IsReadingInfos);
+        arcadia.Detail.InfoOverflows = true;
+        arcadia.Press(UiAction.SecondaryDown).Press(UiAction.SecondaryDown).Press(UiAction.SecondaryUp);
         Assert.Equal([1, 1, -1], scrolls);
-        Assert.True(page.OpenArea.IsInfos);
-
-        arcadia.Press(UiAction.Back);
+        arcadia.Press(UiAction.Accept);
         Assert.Equal(DetailZone.Rail, page.Zone);
         Assert.True(page.OpenArea.IsInfos);
+
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsDetailOpen);
     }

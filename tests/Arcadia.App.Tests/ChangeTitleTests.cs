@@ -73,10 +73,10 @@ public sealed class ChangeTitleTests
 
         // R3 shows and hides "Original-Titel: Zebra", from the rows too.
         Assert.True(page.HasOriginalTitle);
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.True(page.ShowsOriginalTitle);
         Assert.Equal("Original-Titel: Zebra", page.OriginalTitleLine);
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.False(page.ShowsOriginalTitle);
 
         // "Artwork ändern" names it so.
@@ -140,11 +140,11 @@ public sealed class ChangeTitleTests
         // The line is off after a turn and back, after the page was left, and after another tab.
         arcadia.Hold(UiAction.Accept, PastHoldTime);
         Assert.Equal("Aal", arcadia.Detail!.Current.Tile.Title);
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.True(arcadia.Detail.Current.ShowsOriginalTitle);
         arcadia.Press(UiAction.NextPage).Press(UiAction.PreviousPage);
         Assert.False(arcadia.Detail.Current.ShowsOriginalTitle);
-        arcadia.Press(UiAction.Down).Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Down).Press(UiAction.Options);
         Assert.True(arcadia.Detail.Current.ShowsOriginalTitle);
         arcadia.Press(UiAction.Back);
         arcadia.Hold(UiAction.Accept, PastHoldTime);
@@ -158,7 +158,7 @@ public sealed class ChangeTitleTests
         Assert.True(page.Row(GameActionKind.ResetTitle).IsGreyed);
         Assert.Equal(GameActionKind.ResetTitle, page.FocusedRow?.Kind);
         Assert.False(page.HasOriginalTitle);
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.False(page.ShowsOriginalTitle);
         arcadia.Press(UiAction.Back).Press(UiAction.Back);
         Assert.Equal(["Alpha", "Mitte", "Zebra"], arcadia.Main.Library.PageGames.Select(tile => tile.Title));

@@ -5,7 +5,7 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 ## Buttons and keys
 
 - One "Ansicht" modal (L3) for sort + page size; Y = the header's status messages in a modal (`settings.md`). X = search (all launchers, on-screen keyboard, `/steam-epic term`
-  prefix, keyword per launcher), R3 = the library's filter (#44), on the detail page a renamed game's original title (#496), keyboard layout switch where a keyboard is open, View/⧉ or right click = context menu, Menu/☰ = settings.
+  prefix, keyword per launcher), R3 = the library's filter (#44), on the detail page too (#530), ⧉ there a renamed game's original title (#496), keyboard layout switch where a keyboard is open, View/⧉ or right click = context menu, Menu/☰ = settings.
   The context menu stands beside the cover after a right click on it, over the preview's "Optionen" button after ⧉, R
   or a click on that button. No "all launchers" tab. No dedicated favourite button.
 - The keyboard plays like a game, one hand on WASD: WASD move, Space = A (held: details), Esc = B, F = X, V = Y, C = L3, G = R3,
@@ -21,7 +21,7 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
   the mouse wheel and the scroll bars stop at the ends.
 - RS (Shift+W/S, the wheel over it) scrolls an info box that doesn't fit, on the settings page and the detail page
-  (#506); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
+  (#506), and the text of "Infos" while it has the focus in the detail page's rail (#530); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
   again. The footer names RS only while the box overflows.
 - Held buttons repeat (#476): the D-pad and both sticks after 400 ms, then every 90 ms; LT/RT and LB/RB, wherever
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every

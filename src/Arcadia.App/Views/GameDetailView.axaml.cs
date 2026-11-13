@@ -76,7 +76,10 @@ public partial class GameDetailView : UserControl
         FollowPage();
     }
 
-    /// <summary>One notch of the wheel turns the carousel by one game: down is the next, up the previous.</summary>
+    /// <summary>
+    /// One notch of the wheel over the background turns the carousel by one game: down is the next, up the previous. Over
+    /// the panel it never turns (#530): there it scrolls the text or info box under it, so reading never switches the game.
+    /// </summary>
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
@@ -86,11 +89,8 @@ public partial class GameDetailView : UserControl
         }
 
         e.Handled = true;
-        if (e.Source is Visual source && ((_viewModel.InfoOverflows && InfoBox.IsVisualAncestorOf(source))
-            || (ScrollsOver(InfosScroller) && InfosScroller.IsVisualAncestorOf(source))))
+        if (e.Source is Visual source && (source == Panel || Panel.IsVisualAncestorOf(source)))
         {
-            // Over an info box or the text of "Infos" with more than it shows the wheel is its scroll bar (#506, #493),
-            // not a turn.
             return;
         }
 
@@ -139,7 +139,7 @@ public partial class GameDetailView : UserControl
         {
             FollowInfoRow();
         }
-        else if (e.PropertyName == nameof(GameDetailPageViewModel.Zone))
+        else if (e.PropertyName is nameof(GameDetailPageViewModel.Zone) or nameof(GameDetailPageViewModel.IsReadingInfos))
         {
             UpdateInfoOverflow();
         }
@@ -206,10 +206,7 @@ public partial class GameDetailView : UserControl
         UpdateInfoOverflow();
     }, DispatcherPriority.Loaded);
 
-    /// <summary>
-    /// RS or Shift+W/S: the info box one step up (-1) or down (1); in "Infos" also ▲ ▼, its text (#493). A box that fits
-    /// stays.
-    /// </summary>
+    /// <summary>RS or Shift+W/S: the info box, or the text of "Infos" (#530), one step up (-1) or down (1). A box that fits stays.</summary>
     private void OnInfoScrollRequested(int direction)
     {
         var scroller = ShownScroller;
@@ -217,12 +214,12 @@ public partial class GameDetailView : UserControl
         scroller.Offset = new Vector(0, Math.Clamp(scroller.Offset.Y + (direction * InfoScrollStep), 0, max));
     }
 
-    /// <summary>While the focus is on a row whose info box can scroll, or in a longer "Infos", RS scrolls it and the footer names RS.</summary>
+    /// <summary>While the focus is on a row whose info box can scroll, or on a longer "Infos", RS scrolls it and the footer names RS.</summary>
     private void UpdateInfoOverflow()
     {
         if (_viewModel is not null)
         {
-            _viewModel.InfoOverflows = _page is { IsInRows: true } && ScrollsOver(ShownScroller);
+            _viewModel.InfoOverflows = _page is { IsInRows: true } or { IsReadingInfos: true } && ScrollsOver(ShownScroller);
         }
     }
 

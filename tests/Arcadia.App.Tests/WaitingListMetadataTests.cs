@@ -84,29 +84,26 @@ public sealed class WaitingListMetadataTests
     [AvaloniaFact]
     [Trait("TestCase", "T494-16")]
     [Trait("TestCase", "T494-18")]
-    public async Task A_game_with_several_igdb_hits_waits_marked_metadaten_beside_its_artwork_entry_and_keeps_its_launcher_data()
+    [Trait("TestCase", "T538-3")]
+    public async Task A_game_with_several_igdb_hits_waits_on_the_metadata_list_apart_from_its_artwork_entry_and_keeps_its_launcher_data()
     {
         using var arcadia = await StartAsync();
         WaitingListTests.OpenDataSources(arcadia);
+        Assert.Equal("1", Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Artwork)).CountBadge);
 
-        var row = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkNameRows.WaitingKey));
-        Assert.Equal(("3", AppTexts.DataSourcesWaitingSubtitle, true), (row.CountBadge, row.Subtitle, row.CanActivate));
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Metadata));
+        var row = Assert.IsType<ActionRowViewModel>(Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Metadata)));
+        Assert.Equal(("2", AppTexts.DataSourcesWaitingSubtitle, true), (row.CountBadge, row.Subtitle, row.CanActivate));
         var facts = Assert.Single(row.Info.OfType<InfoFacts>()).Facts;
-        Assert.Equal(
-            [("Echo Drift", "Anderer Launcher · Artwork"), ("Echo Drift", "Anderer Launcher · Metadaten"), ("K?ln", "Anderer Launcher · Metadaten")],
-            facts.Select(f => (f.Label, f.Value)));
+        Assert.Equal([("Echo Drift", "Anderer Launcher"), ("K?ln", "Anderer Launcher")], facts.Select(f => (f.Label, f.Value)));
         Assert.Equal("K?ln", arcadia.Main.Session.Titles.Shown(Koeln).Title);
         Assert.Null(arcadia.Metadata.Of(Koeln.Key).Description);
 
-        arcadia.FocusRow(ArtworkNameRows.WaitingKey);
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
-        Assert.Equal(
-            [("Echo Drift", "Anderer Launcher · Artwork"), ("Echo Drift", "Anderer Launcher · Metadaten"), ("K?ln", "Anderer Launcher · Metadaten")],
-            list.Games.Select(g => (g.Title, g.Subline)));
-        Assert.IsType<ArtworkHitsViewModel>(list.Hits);
+        Assert.Equal([("Echo Drift", "Anderer Launcher"), ("K?ln", "Anderer Launcher")], list.Games.Select(g => (g.Title, g.LauncherName)));
+        Assert.All(list.Games, g => Assert.True(g.IsMetadata));
 
-        arcadia.Press(UiAction.Down);
         var hits = await ShownMetadataHitsAsync(list);
         Assert.Equal((AppTexts.WaitingSoughtMetadata, AppTexts.WaitingIntroMetadata(2), AppTexts.WaitingNoteMetadata, "Echo Drift"), (hits.SoughtText, hits.Intro, hits.Note, hits.Term));
         Assert.Equal([("Echo Drift", "2015", true), ("Echo Drift", string.Empty, false)], hits.Hits.Select(h => (h.Name, h.YearText, h.HasYear)));
@@ -118,11 +115,12 @@ public sealed class WaitingListMetadataTests
     [AvaloniaFact]
     [Trait("TestCase", "T494-19")]
     [Trait("TestCase", "T494-31")]
+    [Trait("TestCase", "T538-3")]
     public async Task A_on_a_metadata_hit_shows_its_fields_and_title_everywhere_at_once_and_y_skips_for_good()
     {
         using var arcadia = await StartAsync();
         WaitingListTests.OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.WaitingKey);
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Metadata));
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
 
@@ -132,21 +130,22 @@ public sealed class WaitingListMetadataTests
         arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
         await RunToIdleAsync(arcadia);
 
-        Assert.Equal(["artwork|" + Echo.Key, "metadata|" + Echo.Key], list.Games.Select(g => g.Key));
+        Assert.Equal(["metadata|" + Echo.Key], list.Games.Select(g => g.Key));
         Assert.Equal("Köln", arcadia.Main.Session.Titles.Shown(Koeln).Title);
         Assert.Equal("Second Köln.", arcadia.Metadata.Of(Koeln.Key).Description?.Value);
         Assert.Equal(2, IgdbSearches(arcadia));
 
-        // After the last entry the first is current; ▼ to the metadata entry of "Echo Drift", Y skips it, its artwork
-        // entry stays; B closes the list.
-        Assert.Equal("artwork|" + Echo.Key, list.CurrentGame!.Key);
-        arcadia.Press(UiAction.Down);
+        // After the last entry the first is current: Y skips "Echo Drift" for metadata, its artwork entry stays on the
+        // other list; B closes the list.
         Assert.Equal("metadata|" + Echo.Key, list.CurrentGame!.Key);
         arcadia.Press(UiAction.Status);
         await RunToIdleAsync(arcadia);
-        Assert.Equal(["artwork|" + Echo.Key], list.Games.Select(g => g.Key));
+        Assert.Empty(list.Games);
+        Assert.Single(arcadia.Artwork.Waiting);
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.WaitingList);
+        Assert.IsType<MetadataSourcesTab>(Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected).ShownTab);
+        Assert.Equal(SeveralHitsRows.WaitingKey(WaitingKind.Metadata), arcadia.Main.Settings!.FocusedRow?.Key);
 
         // A reload asks the chosen game by its IGDB id, the skipped one not at all.
         arcadia.Igdb.ServeId(22, FakeIgdb.Game(22, "Köln", extra: "\"summary\":\"Second Köln.\""));
@@ -163,11 +162,12 @@ public sealed class WaitingListMetadataTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T494-17")]
-    public async Task Ersten_nehmen_takes_the_first_hit_of_artwork_and_metadata_entries_with_one_toast()
+    [Trait("TestCase", "T538-2")]
+    public async Task Ersten_nehmen_of_metadaten_takes_the_first_igdb_hit_of_every_waiting_game_and_leaves_the_artwork_list()
     {
         using var arcadia = await StartAsync();
         WaitingListTests.OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.SeveralHitsKey);
+        arcadia.FocusRow(SeveralHitsRows.SeveralHitsKey(WaitingKind.Metadata));
         // Collected as shown: the fake time running to idle can outlast the toast's four seconds, most on a slow runner.
         var toasts = new List<string>();
         arcadia.Main.Toast.PropertyChanged += (_, e) =>
@@ -183,13 +183,15 @@ public sealed class WaitingListMetadataTests
         await RunToIdleAsync(arcadia);
 
         Assert.Equal([AppTexts.DataSourcesTookFirstHits(2)], toasts);
-        Assert.Empty(arcadia.Artwork.Waiting);
+        Assert.Single(arcadia.Artwork.Waiting);
         Assert.Empty(arcadia.Metadata.Waiting);
+        Assert.Equal(SeveralHits.TakeFirst, arcadia.Settings.Current.Metadata.SeveralHits);
+        Assert.Equal(SeveralHits.Ask, arcadia.Settings.Current.Artwork.WithValidValues().SeveralHits);
         Assert.Equal("First Köln.", arcadia.Metadata.Of(Koeln.Key).Description?.Value);
         Assert.Equal("Köln", arcadia.Main.Session.Titles.Shown(Koeln).Title);
 
         arcadia.Press(UiAction.Accept);
-        Assert.Equal(SeveralHits.Ask, arcadia.Settings.Current.Artwork.WithValidValues().SeveralHits);
+        Assert.Equal(SeveralHits.Ask, arcadia.Settings.Current.Metadata.SeveralHits);
         Assert.Empty(arcadia.Metadata.Waiting);
     }
 
@@ -200,10 +202,9 @@ public sealed class WaitingListMetadataTests
         using var arcadia = await StartAsync();
         arcadia.Igdb.ServeName("Echo Drift Remix", FakeIgdb.Game(31, "Echo Drift Remix", 9), FakeIgdb.Game(32, "Echo Drift Remix Soundtrack", 1));
         WaitingListTests.OpenDataSources(arcadia);
-        arcadia.FocusRow(ArtworkNameRows.WaitingKey);
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Metadata));
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
-        arcadia.Press(UiAction.Down);
         var hits = await ShownMetadataHitsAsync(list);
 
         // A into the hits, ▲ to the field, A opens the keyboard, ≡ takes the term.

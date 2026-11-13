@@ -52,7 +52,10 @@ public sealed class FirstRunDataSourcesTests
         return arcadia.DataSourcesStep();
     }
 
-    private static SettingsRowViewModel Row(ArcadiaDriver arcadia, string key) => arcadia.Main.Settings!.Selected.Rows.Single(row => row.Key == key);
+    /// <summary>The row on the first-run step, or in any tab of "Datenquellen".</summary>
+    private static SettingsRowViewModel Row(ArcadiaDriver arcadia, string key) => arcadia.Main.Settings!.Selected is DataSourcesSettingsViewModel dataSources
+        ? dataSources.Tabs.SelectMany(tab => tab.Rows).Single(row => row.Key == key)
+        : arcadia.Main.Settings!.Selected.Rows.Single(row => row.Key == key);
 
     /// <summary>A on the row, the value typed on the on-screen keyboard, ≡ takes it; waits for its check.</summary>
     private static async Task TypeAsync(ArcadiaDriver arcadia, string rowKey, string value, string checkedRowKey)
@@ -172,7 +175,7 @@ public sealed class FirstRunDataSourcesTests
 
         await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
 
-        Assert.Equal(AppTexts.DataSourcesKeyConnected(SteamGridDbClient.Ending(FakeSteamGridDb.Key)), Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
         await arcadia.WaitUntilAsync(() => arcadia.SteamGridDb.Asked().Contains("grids/steam/" + GameId), "die Bildersuche soll gleich starten");
         Assert.Equal((AppTexts.Done, AppTexts.Done), (Row(arcadia, FirstRunDataSourcesViewModel.FinishRowKey).Title, step.FinishText));
         Assert.Contains(Row(arcadia, FirstRunDataSourcesViewModel.FinishRowKey).Info, block => block is InfoText { Text: var text } && text == AppTexts.FirstRunDataSourcesDoneInfo);
@@ -180,7 +183,7 @@ public sealed class FirstRunDataSourcesTests
         arcadia.Press(UiAction.Settings);
         Assert.False(arcadia.Main.IsInFirstRun);
         arcadia.Main.OpenDataSources();
-        Assert.Equal(AppTexts.DataSourcesKeyConnected(SteamGridDbClient.Ending(FakeSteamGridDb.Key)), Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
         Assert.DoesNotContain(FakeSteamGridDb.Key, ArcadiaDriver.Log, StringComparison.Ordinal);
     }
 
@@ -197,7 +200,7 @@ public sealed class FirstRunDataSourcesTests
         await arcadia.WaitUntilAsync(() => arcadia.Artwork.SteamGridDb!.State == SteamGridDbKeyState.Valid, "Schlüssel eingefügt");
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(AppTexts.DataSourcesKeyConnected(SteamGridDbClient.Ending(FakeSteamGridDb.Key)), Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
         Assert.Equal(AppTexts.DataSourcesKeyPastedSearching, arcadia.Main.Toast.Text);
         Assert.DoesNotContain(FakeSteamGridDb.Key, ArcadiaDriver.Log, StringComparison.Ordinal);
     }
@@ -365,7 +368,7 @@ public sealed class FirstRunDataSourcesTests
 
         restarted.DataSourcesStep();
         Assert.True(restarted.Main.IsInFirstRun);
-        Assert.Contains(SteamGridDbClient.Ending(FakeSteamGridDb.Key), Row(restarted, SteamGridDbKeyRows.KeyRowKey).Subtitle, StringComparison.Ordinal);
+        Assert.Equal(AppTexts.DataSourcesKeyUnchecked, Row(restarted, SteamGridDbKeyRows.KeyRowKey).Subtitle);
         Assert.Equal(["Shop"], restarted.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Equal(SteamGridDbKeyRows.KeyRowKey, restarted.Main.Settings!.FocusedRow?.Key);
         restarted.Press(UiAction.Up);
@@ -397,7 +400,7 @@ public sealed class FirstRunDataSourcesTests
         Assert.All(page.Found, row => Assert.True(row.IsOn));
         Assert.Contains("Ersteinrichtung: Stand nicht lesbar", ArcadiaDriver.Log, StringComparison.Ordinal);
         restarted.Press(UiAction.Settings);
-        Assert.Contains(SteamGridDbClient.Ending(FakeSteamGridDb.Key), Row(restarted, SteamGridDbKeyRows.KeyRowKey).Subtitle, StringComparison.Ordinal);
+        Assert.Equal(AppTexts.DataSourcesKeyUnchecked, Row(restarted, SteamGridDbKeyRows.KeyRowKey).Subtitle);
     }
 
     [AvaloniaFact]
@@ -442,7 +445,9 @@ public sealed class FirstRunDataSourcesTests
 
         Assert.True(again.Main.IsFirstRunShown);
         ToStep(again);
-        Assert.Contains(SteamGridDbClient.Ending(FakeSteamGridDb.Key), Row(again, SteamGridDbKeyRows.KeyRowKey).Subtitle, StringComparison.Ordinal);
+        // The stored key is checked again at the start; it shows as stored, then as connected.
+        Assert.NotEqual(AppTexts.DataSourcesKeyNone, Row(again, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        await again.WaitUntilAsync(() => Row(again, SteamGridDbKeyRows.KeyRowKey).Subtitle == AppTexts.DataSourcesKeyConnected, "Schlüssel verbunden");
         Assert.Equal(AppTexts.Done, Row(again, FirstRunDataSourcesViewModel.FinishRowKey).Title);
     }
 

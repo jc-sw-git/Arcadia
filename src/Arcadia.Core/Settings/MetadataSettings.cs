@@ -13,7 +13,10 @@ public enum MetadataSourceKind
     Igdb,
 }
 
-/// <summary>"Reihenfolge für Metadaten" in "Datenquellen" (#494): one order for all fields, each source on or off.</summary>
+/// <summary>
+/// Tab "Metadaten" of "Datenquellen": "Reihenfolge für Metadaten" (#494), one order for all fields, each source on or off;
+/// and its own "Bei mehreren Treffern" (#538).
+/// </summary>
 public sealed record MetadataSettings
 {
     /// <summary>Launcher data first, then IGDB (#43).</summary>
@@ -23,6 +26,15 @@ public sealed record MetadataSettings
 
     /// <summary>The sources switched off: never asked, their fields not shown (the cache keeps them).</summary>
     public IReadOnlyList<MetadataSourceKind> Off { get; init; } = [];
+
+    /// <summary>
+    /// "Bei mehreren Treffern" for IGDB's search by name; null in a <c>settings.json</c> from before #538, when artwork and
+    /// metadata shared the artwork's choice, which then still holds (<see cref="SeveralHitsOr"/>).
+    /// </summary>
+    public SeveralHits? SeveralHits { get; init; }
+
+    /// <summary>The metadata's own choice, else the one it shared with the artwork before.</summary>
+    public SeveralHits SeveralHitsOr(SeveralHits shared) => SeveralHits is { } own && Enum.IsDefined(own) ? own : shared;
 
     public bool IsOn(MetadataSourceKind source) => Off?.Contains(source) != true;
 

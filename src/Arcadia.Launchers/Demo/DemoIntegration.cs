@@ -37,6 +37,9 @@ public sealed class DemoIntegration : ILauncherIntegration
 
     public LauncherInfo Launcher { get; }
 
+    /// <summary>Nothing online is asked for a demo game: a search would only find other games of the same made-up name.</summary>
+    public bool HasMadeUpGames => true;
+
     public ILauncherScanner Scanner { get; }
 
     public ILauncherClient? Client => null;

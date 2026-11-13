@@ -62,9 +62,6 @@ public sealed partial class WaitingGameViewModel : ViewModelBase
 
     public string LauncherName { get; }
 
-    /// <summary>The launcher and what the entry waits for, e.g. "Epic Games · Metadaten".</summary>
-    public string Subline => AppTexts.WaitingEntryLine(launcher: LauncherName, marker: IsMetadata ? AppTexts.WaitingMarkerMetadata : AppTexts.WaitingMarkerArtwork);
-
     /// <summary>The entry the focus is on in the games list, and whose hits show right.</summary>
     [ObservableProperty]
     public partial bool IsCurrent { get; set; }

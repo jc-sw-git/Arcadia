@@ -1050,13 +1050,16 @@
   <data name="ArcadiaVersion" xml:space="preserve"><value>Arcadia {version}</value></data>
   <data name="KeyLayout" xml:space="preserve"><value>Layout: {code}</value></data>
   <data name="DataSourcesTitle" xml:space="preserve"><value>Datenquellen</value></data>
+  <data name="DataSourcesArtworkTab" xml:space="preserve"><value>Artwork</value></data>
+  <data name="DataSourcesMetadataTab" xml:space="preserve"><value>Metadaten</value></data>
+  <data name="DataSourcesTabTurn" xml:space="preserve"><value>Tab</value></data>
   <data name="DataSourcesSteamGridDbGroup" xml:space="preserve"><value>STEAMGRIDDB</value></data>
   <data name="DataSourcesOrderGroup" xml:space="preserve"><value>REIHENFOLGE FÜR ARTWORK</value></data>
   <data name="DataSourcesArtworkGroup" xml:space="preserve"><value>ARTWORK</value></data>
   <data name="DataSourcesKey" xml:space="preserve"><value>Schlüssel</value></data>
   <data name="DataSourcesKeyNone" xml:space="preserve"><value>Kein Schlüssel hinterlegt</value></data>
-  <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Verbunden · endet auf …{ending}</value></data>
-  <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Endet auf …{ending} · noch nicht geprüft</value></data>
+  <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Verbunden</value></data>
+  <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Noch nicht geprüft</value></data>
   <data name="DataSourcesKeyRejected" xml:space="preserve"><value>Schlüssel ungültig · SteamGridDB wird übersprungen</value></data>
   <data name="DataSourcesKeyMissing" xml:space="preserve"><value>Kein Schlüssel hinterlegt · SteamGridDB wird übersprungen</value></data>
   <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Wird geprüft …</value></data>
@@ -1156,9 +1159,12 @@
   <data name="DataSourcesSeveralHitsSubtitle" xml:space="preserve"><value>Wenn ein Spiel nur über den Namen gefunden wird</value></data>
   <data name="DataSourcesSeveralHitsAsk" xml:space="preserve"><value>Selbst auswählen</value></data>
   <data name="DataSourcesSeveralHitsFirst" xml:space="preserve"><value>Ersten nehmen</value></data>
-  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>Steam- und Epic-Spiele findet SteamGridDB eindeutig, IGDB nur Steam-Spiele. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen. Das gilt für Artwork und Metadaten.</value></data>
-  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, behalten sie das Launcher-Bild oder den Platzhalter und die Daten des Launchers.</value></data>
-  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Bild oder das falsche Spiel bei IGDB.</value></data>
+  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>Steam- und Epic-Spiele findet SteamGridDB eindeutig. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen.</value></data>
+  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, behalten sie das Launcher-Bild oder den Platzhalter.</value></data>
+  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Bild.</value></data>
+  <data name="MetadataSeveralHitsInfo" xml:space="preserve"><value>Steam-Spiele findet IGDB eindeutig. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen.</value></data>
+  <data name="MetadataSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, zeigen sie die Daten des Launchers.</value></data>
+  <data name="MetadataSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Spiel bei IGDB.</value></data>
   <data name="DataSourcesTookFirstHits" xml:space="preserve"><value>{count} Spiele: Arcadia hat jeweils den ersten Treffer genommen.</value></data>
   <data name="DataSourcesTookFirstHitOne" xml:space="preserve"><value>1 Spiel: Arcadia hat den ersten Treffer genommen.</value></data>
   <data name="DataSourcesWaiting" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
@@ -1168,15 +1174,13 @@
   <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Nur bei „Selbst auswählen“</value></data>
   <data name="DataSourcesWaitingSteamGridDbOff" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet</value></data>
   <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Auswählen</value></data>
-  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB oder IGDB haben diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. A öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es. „Artwork“ oder „Metadaten“ sagt, wofür.</value></data>
+  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB hat diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. [A] öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es.</value></data>
+  <data name="MetadataWaitingInfo" xml:space="preserve"><value>IGDB hat diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. [A] öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es.</value></data>
   <data name="DataSourcesWaitingInfoNone" xml:space="preserve"><value>Gerade wartet kein Spiel. Findet die nächste Suche ein Spiel nur über den Namen und passen mehrere, erscheint es hier.</value></data>
   <data name="DataSourcesWaitingInfoOff" xml:space="preserve"><value>Die Warteliste gibt es nur, wenn bei „Bei mehreren Treffern“ „Selbst auswählen“ eingestellt ist. Mit „Ersten nehmen“ wählt Arcadia sofort selbst.</value></data>
   <data name="DataSourcesWaitingInfoSteamGridDbOff" xml:space="preserve"><value>Solange SteamGridDB aus ist, sucht Arcadia nicht nach Namen. Die wartenden Spiele bleiben auf der Liste und sind beim Einschalten wieder da.</value></data>
   <data name="WaitingGames" xml:space="preserve"><value>{count} SPIELE</value></data>
   <data name="WaitingGamesOne" xml:space="preserve"><value>1 SPIEL</value></data>
-  <data name="WaitingEntryLine" xml:space="preserve"><value>{launcher} · {marker}</value></data>
-  <data name="WaitingMarkerArtwork" xml:space="preserve"><value>Artwork</value></data>
-  <data name="WaitingMarkerMetadata" xml:space="preserve"><value>Metadaten</value></data>
   <data name="WaitingTitle" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
   <data name="WaitingQuestion" xml:space="preserve"><value>Welches Spiel ist gemeint?</value></data>
   <data name="WaitingPosition" xml:space="preserve"><value>Spiel {number} von {count}</value></data>
@@ -1285,6 +1289,7 @@
   <data name="DataSourcesMetadataMissingNone" xml:space="preserve"><value>Alle Metadaten geladen</value></data>
   <data name="DataSourcesMetadataMissingNotYet" xml:space="preserve"><value>Arcadia lädt nach dem Einlesen von selbst</value></data>
   <data name="DataSourcesMetadataMissingInfo" xml:space="preserve"><value>Nach jedem Einlesen lädt Arcadia im Hintergrund, was den Spielen noch fehlt, ein Spiel nach dem anderen und so langsam, wie es der Shop erlaubt. Ohne Netz oder ohne Antwort versucht Arcadia es beim nächsten Einlesen wieder. Was einmal geladen ist, bleibt auch offline da.</value></data>
+  <data name="DataSourcesMetadataMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ fragt sofort nach allem, was noch fehlt, ohne neu einzulesen, etwa wenn das Netz beim Einlesen weg war.</value></data>
   <data name="DataSourcesMetadataReload" xml:space="preserve"><value>Alle Metadaten neu laden</value></data>
   <data name="DataSourcesMetadataReloadSubtitle" xml:space="preserve"><value>Bis die neuen da sind, bleiben die alten zu sehen</value></data>
   <data name="DataSourcesMetadataReloadRunning" xml:space="preserve"><value>Neu laden läuft</value></data>
@@ -1299,10 +1304,10 @@
   <data name="DataSourcesIgdbClientId" xml:space="preserve"><value>Client-ID</value></data>
   <data name="DataSourcesIgdbSecret" xml:space="preserve"><value>Client-Secret</value></data>
   <data name="DataSourcesIgdbNone" xml:space="preserve"><value>Kein Zugang hinterlegt</value></data>
-  <data name="DataSourcesIgdbSecretMissing" xml:space="preserve"><value>Endet auf …{ending} · Client-Secret fehlt</value></data>
+  <data name="DataSourcesIgdbSecretMissing" xml:space="preserve"><value>Client-Secret fehlt</value></data>
   <data name="DataSourcesIgdbRejected" xml:space="preserve"><value>Zugang ungültig · IGDB wird übersprungen</value></data>
-  <data name="DataSourcesIgdbSecretEnding" xml:space="preserve"><value>Endet auf …{ending}</value></data>
   <data name="DataSourcesIgdbSecretNone" xml:space="preserve"><value>Kein Client-Secret hinterlegt</value></data>
+  <data name="DataSourcesIgdbSecretStored" xml:space="preserve"><value>Hinterlegt · noch nicht geprüft</value></data>
   <data name="DataSourcesIgdbInfo" xml:space="preserve"><value>Mit einem Zugang lädt Arcadia Beschreibung, Genres, Erscheinungsdatum und Altersfreigaben von IGDB und korrigiert Titel mit kaputten Umlauten. IGDB erlaubt 4 Anfragen pro Sekunde; mehr stellt Arcadia nie. Der Zugang ist kostenlos und besteht aus Client-ID und Client-Secret einer Anwendung bei Twitch.</value></data>
   <data name="DataSourcesIgdbHowTo" xml:space="preserve"><value>[A] öffnet die Bildschirmtastatur. Hast du den Wert schon kopiert, geht es mit „Einfügen“ schneller. Ein leeres Feld lässt den Wert, wie er ist. Sind beide Werte da, prüft Arcadia den Zugang sofort.</value></data>
   <data name="DataSourcesIgdbSecretInfo" xml:space="preserve"><value>Das Client-Secret zeigt Twitch einmal, wenn du es für deine Anwendung erzeugst. Arcadia zeigt davon nur die letzten vier Zeichen.</value></data>
@@ -1346,7 +1351,7 @@
   <data name="DataSourcesMetadataOrderGroup" xml:space="preserve"><value>REIHENFOLGE FÜR METADATEN</value></data>
   <data name="DataSourcesLauncherData" xml:space="preserve"><value>Launcher-Daten</value></data>
   <data name="DataSourcesLauncherDataSubtitle" xml:space="preserve"><value>Was die Launcher und ihre Shops liefern, ohne Zugang</value></data>
-  <data name="DataSourcesLauncherDataInfo" xml:space="preserve"><value>Die Daten der Launcher selbst: bei Steam alles aus seinen Dateien und seinem Shop, bei Epic Games nur der Entwickler.</value></data>
+  <data name="DataSourcesLauncherDataInfo" xml:space="preserve"><value>Die Daten der Launcher selbst, aus ihren Dateien und Shops, ohne Zugang.</value></data>
   <data name="DataSourcesIgdbSourceSubtitle" xml:space="preserve"><value>Füllt die Lücken: Beschreibung, Genres, Erscheinungsjahr, Altersfreigabe</value></data>
   <data name="DataSourcesIgdbSkipped" xml:space="preserve"><value>Wird übersprungen, solange kein gültiger Zugang da ist</value></data>
   <data name="DataSourcesIgdbSourceInfo" xml:space="preserve"><value>Eine große Spieledatenbank. Ihre Beschreibungen sind englisch; eine deutsche Beschreibung eines anderen Anbieters geht immer vor. Einen Titel mit kaputten Umlauten ersetzt IGDB unabhängig von der Reihenfolge.</value></data>

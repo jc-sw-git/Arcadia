@@ -98,6 +98,9 @@
               <Panel Width="32" Height="32" IsVisible="{Binding Status.HasSteamGridDbWarning}" ToolTip.Tip="{x:Static app:AppTexts.DataSourcesKeyStatus}">
                 <Path Classes="statusIcon" />
               </Panel>
+              <Panel Width="32" Height="32" IsVisible="{Binding Status.HasIgdbWarning}" ToolTip.Tip="{x:Static app:AppTexts.DataSourcesIgdbStatus}">
+                <Path Classes="statusIcon" />
+              </Panel>
               <Panel Width="32" Height="32" IsVisible="{Binding Status.HasUserDataWarning}" ToolTip.Tip="{x:Static app:AppTexts.UserDataStatus}">
                 <Path Classes="statusIcon" />
               </Panel>
@@ -1228,6 +1231,32 @@
             <!-- Above the rows, e.g. a launcher's logo, name and its neighbours on its page (#137). -->
             <ContentControl DockPanel.Dock="Top" Content="{Binding Head}" IsVisible="{Binding Head, Converter={x:Static ObjectConverters.IsNotNull}}">
               <ContentControl.DataTemplates>
+                <!-- The tabs of "Datenquellen" (#538): LT/RT, Q/E or a click switch them; a warning beside a tab's name. -->
+                <DataTemplate x:DataType="settings:DataSourcesHeadViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="12" Margin="10,0,0,14">
+                    <ctl:KeyHint Pad="LT" Keys="Q" VerticalAlignment="Center" />
+                    <ItemsControl ItemsSource="{Binding Tabs}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Orientation="Horizontal" Spacing="6" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="settings:DataSourcesTabViewModel">
+                          <Button Classes="plain tab" Classes.selected="{Binding IsSelected}" Command="{Binding ChooseCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                              <!-- In the tab's text colour, which the tab styles set. -->
+                              <Path Classes="tabIcon" Data="{Binding Icon}" Stroke="{Binding $parent[Button].Foreground}" />
+                              <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                              <Path Classes="statusIcon" IsVisible="{Binding HasWarning}" VerticalAlignment="Center" ToolTip.Tip="{x:Static app:AppTexts.SomethingWrongTip}" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ctl:KeyHint Pad="RT" Keys="E" VerticalAlignment="Center" />
+                  </StackPanel>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:LauncherPageHeadViewModel">
                   <!-- Room on the right for the neighbour's hover ring, which the page would cut off. -->
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20" Margin="18,4,6,8">
@@ -1345,7 +1374,14 @@
                               <DockPanel>
                                 <views:CountLineView DockPanel.Dock="Left" Classes="small" Margin="0,0,8,0" VerticalAlignment="Top" DataContext="{Binding Counts}"
                                                      IsVisible="{Binding $parent[DockPanel].((settings:SettingsRowViewModel)DataContext)?.HasCounts, TargetNullValue=False}" />
-                                <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                                <Panel IsVisible="{Binding HasSubtitle}">
+                                  <TextBlock ctl:ButtonTextBlock.Text="{Binding Subtitle}" IsVisible="{Binding !HasTintedSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                                  <!-- A state on its lamp's colour, e.g. the SteamGridDB key's (#538); colours from the subtitleTint styles. -->
+                                  <Border Classes="subtitleTint" Classes.working="{Binding IsLampWorking}" Classes.problem="{Binding IsLampProblem}" Classes.failure="{Binding IsLampFailure}"
+                                          IsVisible="{Binding HasTintedSubtitle}">
+                                    <TextBlock Text="{Binding Subtitle}" />
+                                  </Border>
+                                </Panel>
                               </DockPanel>
                               <!-- How far the row's run has got, e.g. the artwork search (#489). -->
                               <ProgressBar Classes="rowProgress" Minimum="0" Maximum="100" Value="{Binding Progress, TargetNullValue=0}" IsVisible="{Binding HasProgress}" />
@@ -1623,6 +1659,24 @@
                     </StackPanel>
                   </StackPanel>
                 </DataTemplate>
+                <!-- A launcher's box, e.g. what it delivers of "Launcher-Daten" (#538); its blocks find the templates up the tree. -->
+                <DataTemplate x:DataType="settings:InfoLauncherBox">
+                  <Border Classes="infoSection">
+                    <StackPanel Spacing="14">
+                      <StackPanel Orientation="Horizontal" Spacing="14">
+                        <ctl:LauncherLogo Classes="launcherLogo" Badge="{Binding Badge}" Width="36" Height="36" />
+                        <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <ItemsControl ItemsSource="{Binding Blocks}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="14" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoFacts">
                   <StackPanel Spacing="2">
                     <TextBlock Classes="label" Text="{Binding Title}" Margin="0,4,0,0" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -1750,7 +1804,7 @@
               <ctl:KeyHint Pad="L3" Keys="C" Alt="Ziehen" Text="{Binding Selected.L3ActionText}" IsVisible="{Binding Selected.L3ActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding Selected.XActionText}" IsVisible="{Binding Selected.XActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
-              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Selected.Head, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="{Binding Selected.TurnText, FallbackValue=''}" IsVisible="{Binding Selected.TurnText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="Klick" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->

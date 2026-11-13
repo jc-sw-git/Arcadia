@@ -52,6 +52,22 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T538-2")]
+    public void Metadata_keeps_the_shared_choice_for_several_hits_from_before_until_it_gets_its_own()
+    {
+        File.WriteAllText(SettingsPath, """{ "Artwork": { "SeveralHits": "TakeFirst" } }""");
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.Null(service.Current.Metadata.SeveralHits);
+        Assert.Equal(SeveralHits.TakeFirst, service.Current.Metadata.SeveralHitsOr(service.Current.Artwork.SeveralHits));
+
+        service.Update(settings => settings with { Metadata = settings.Metadata with { SeveralHits = SeveralHits.Ask } });
+
+        var restarted = new SettingsService(new SettingsStore(SettingsPath)).Current;
+        Assert.Equal(SeveralHits.Ask, restarted.Metadata.SeveralHitsOr(restarted.Artwork.SeveralHits));
+        Assert.Equal(SeveralHits.TakeFirst, restarted.Artwork.SeveralHits);
+    }
+
+    [Fact]
     public void Settings_from_before_the_library_view_get_its_defaults()
     {
         File.WriteAllText(SettingsPath, """{ "PanEnabled": false }""");

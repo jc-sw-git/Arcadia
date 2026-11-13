@@ -6,14 +6,16 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 - `Services/ArtworkFolder`: the cache in `%LOCALAPPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
   its own that sends no cookies; `App.axaml.cs` passes it in through `ArcadiaParts.Artwork` (the tests' in their folder).
   It also makes the `SteamGridDbKey`: DPAPI for the current user on Windows, memory only elsewhere.
-- Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` with `SteamGridDbKeyRows` (key, paste, key
-  page, test, delete; the first usable key searches), `ArtworkSourceRows` (the sources as `ArtworkSourceRowViewModel`
+- Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` switches its two tabs (#538, `IDataSourcesTab`;
+  `DataSourcesHeadViewModel` above the rows, LT/RT) and shows only the chosen tab's rows. `ArtworkSourcesTab` holds
+  `SteamGridDbKeyRows` (key, paste, key page, test, delete; the first usable key searches), `ArtworkSourceRows` (the sources as `ArtworkSourceRowViewModel`
   switches with L3 lifting, missing images with progress and cancel, "Zuschneiden erlaubt"; every change calls
   `ArtworkService.SettingsChanged`, #506) and
-  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch) and `MetadataRows` (#493: a
-  row per launcher with metadata, "Fehlende Metadaten", "Alle Metadaten neu laden"), `IgdbAccessRows` (#494: client id,
-  secret, paste, Twitch's console, test, delete) and `MetadataSourceRows` (the metadata order; `SourceOrder<T>` lifts and
-  moves for both orders); it reaches the
+  `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); `MetadataSourcesTab` holds
+  `IgdbAccessRows` (#494: client id, secret, paste, Twitch's console, test, delete), `MetadataSourceRows` (the metadata
+  order, a box per launcher in "Launcher-Daten"'s info; `SourceOrder<T>` lifts and moves for both orders), `MetadataRows`
+  (#493: "Fehlende Metadaten" with "Jetzt suchen", "Alle Metadaten neu laden") and "Eigene Tags". Each tab has its own
+  `SeveralHitsRows` (by `WaitingKind`). It reaches the
   window through `IDataSourcesHost` (`MainViewModel.DataSources.cs`: toasts, keyboard, `IClipboardText` and
   `IWebBrowser` from `Services/ExternalApps`); the window drags a source as a launcher, through `IDraggableRows`. `StatusBarViewModel.WatchSteamGridDb`/`WatchIgdb` show a rejected key or access in the chip.
 - `LibrarySession` hands every read library to the artwork service and the shown entries to `MetadataService` (#493;
@@ -40,9 +42,9 @@ page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and t
 in `GameDetailView`'s 1920 × 1080 places, so it follows the page's layout. The launcher's image in use is offered as a
 copy among the offers waiting in the cache: taking another tile overwrites the file in use (#532).
 
-"Warten auf deine Auswahl" (#491, metadata entries #494): `Settings/ArtworkNameRows` ("Bei mehreren Treffern", the
-waiting row with its count of both kinds) in "Datenquellen"; `ViewModels/WaitingListViewModel` (the entries, marked
-"Artwork" or "Metadaten", and the two levels) and `WaitingHitsViewModel` (one entry's hits: the grid, "Eigener
+"Warten auf deine Auswahl" (#491, metadata entries #494): `Settings/SeveralHitsRows` ("Bei mehreren Treffern", the
+waiting row with its count) once per tab of "Datenquellen"; `ViewModels/WaitingListViewModel` (the games of one
+`WaitingKind`, and the two levels) and `WaitingHitsViewModel` (one entry's hits: the grid, "Eigener
 Suchbegriff" with the settings' on-screen keyboard, tile images off the UI thread once the focus rests), with
 `ArtworkHitsViewModel` (what is sought, the hit checks) over `ArtworkService.ByName` (`CheckWaitingHitAsync`,
 `SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`) and `MetadataHitsViewModel` over `MetadataService.Waiting.cs`

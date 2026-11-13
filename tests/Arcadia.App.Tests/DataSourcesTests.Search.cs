@@ -171,10 +171,10 @@ public sealed partial class DataSourcesTests
         var missing = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkSourceRows.MissingKey));
         Assert.False(missing.CanActivate);
         Assert.Contains(new InfoText(AppTexts.DataSourcesMissingInfoSteamGridDbOff), missing.Info);
-        var waiting = Row(arcadia, ArtworkNameRows.WaitingKey);
+        var waiting = Row(arcadia, SeveralHitsRows.WaitingKey(WaitingKind.Artwork));
         Assert.Equal(AppTexts.DataSourcesWaitingSteamGridDbOff, waiting.Subtitle);
         Assert.False(waiting.CanActivate);
-        Assert.Equal(AppTexts.DataSourcesKeyConnected("cdef"), Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, SteamGridDbKeyRows.KeyRowKey).Subtitle);
 
         // "Alle Artworks neu laden" stays usable and asks SteamGridDB nothing.
         Assert.True(Row(arcadia, ArtworkReloadRows.ReloadKey).CanActivate);

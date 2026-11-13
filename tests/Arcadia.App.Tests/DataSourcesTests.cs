@@ -89,11 +89,16 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-1")]
-    public async Task The_category_shows_its_groups_and_without_a_key_greys_out_what_needs_one()
+    [Trait("TestCase", "T538-1")]
+    public async Task The_category_shows_its_groups_in_two_tabs_and_without_a_key_greys_out_what_needs_one()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
         var category = OpenDataSources(arcadia);
+        Assert.Equal([AppTexts.DataSourcesArtworkTab, AppTexts.DataSourcesMetadataTab], category.Tabs.Select(t => t.Name));
+        var head = Assert.IsType<DataSourcesHeadViewModel>(category.Head);
+        Assert.Equal([true, false], head.Tabs.Select(t => t.IsSelected));
+        Assert.Equal(AppTexts.DataSourcesTabTurn, category.TurnText);
 
         Assert.Equal(
             [
@@ -108,8 +113,17 @@ public sealed partial class DataSourcesTests
                 (ArtworkReloadRows.ReloadKey, AppTexts.DataSourcesArtworkGroup, 0),
                 ("artwork-crop", AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 0),
-                (ArtworkNameRows.SeveralHitsKey, AppTexts.DataSourcesArtworkGroup, 0),
-                (ArtworkNameRows.WaitingKey, AppTexts.DataSourcesArtworkGroup, 1),
+                (SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 0),
+                (SeveralHitsRows.WaitingKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 1),
+            ],
+            category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
+
+        // RT: the tab "Metadaten" at its first row; LT back to "Artwork".
+        arcadia.Press(UiAction.NextPage);
+        Assert.Equal([false, true], head.Tabs.Select(t => t.IsSelected));
+        Assert.Equal(IgdbAccessRows.ClientIdRowKey, arcadia.Main.Settings!.FocusedRow?.Key);
+        Assert.Equal(
+            [
                 (IgdbAccessRows.ClientIdRowKey, AppTexts.DataSourcesIgdbGroup, 0),
                 ("igdb-client-id-paste", AppTexts.DataSourcesIgdbGroup, 1),
                 (IgdbAccessRows.SecretRowKey, AppTexts.DataSourcesIgdbGroup, 0),
@@ -119,9 +133,16 @@ public sealed partial class DataSourcesTests
                 ("igdb-delete", AppTexts.DataSourcesIgdbGroup, 0),
                 (MetadataSourceRows.SourceKey(MetadataSourceKind.Launcher), AppTexts.DataSourcesMetadataOrderGroup, 0),
                 (MetadataSourceRows.SourceKey(MetadataSourceKind.Igdb), AppTexts.DataSourcesMetadataOrderGroup, 0),
+                (MetadataRows.MissingKey, AppTexts.DataSourcesMetadataGroup, 0),
+                (MetadataRows.ReloadKey, AppTexts.DataSourcesMetadataGroup, 0),
+                (SeveralHitsRows.SeveralHitsKey(WaitingKind.Metadata), AppTexts.DataSourcesMetadataGroup, 0),
+                (SeveralHitsRows.WaitingKey(WaitingKind.Metadata), AppTexts.DataSourcesMetadataGroup, 1),
                 (DataSourcesSettingsViewModel.OwnTagsRowKey, AppTexts.DataSourcesUserDataGroup, 0),
             ],
             category.Rows.Select(row => (row.Key, row.Group!, row.Indent)));
+        arcadia.Press(UiAction.PreviousPage);
+        Assert.Equal([true, false], head.Tabs.Select(t => t.IsSelected));
+        Assert.Equal(SteamGridDbKeyRows.KeyRowKey, arcadia.Main.Settings!.FocusedRow?.Key);
 
         var key = Assert.IsType<TextRowViewModel>(Row(arcadia, SteamGridDbKeyRows.KeyRowKey));
         Assert.Equal((AppTexts.DataSourcesKeyNone, AppTexts.DataSourcesKeyEnter, string.Empty), (key.Subtitle, key.ActivateText, key.ValueText));
@@ -142,6 +163,7 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-2")]
+    [Trait("TestCase", "T538-6")]
     public async Task Key_entry_paste_and_the_connection_test_work_with_the_controller_and_B_goes_back()
     {
         var (arcadia, _) = await StartAsync();
@@ -151,7 +173,8 @@ public sealed partial class DataSourcesTests
         await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
 
         var key = Assert.IsType<TextRowViewModel>(Row(arcadia, SteamGridDbKeyRows.KeyRowKey));
-        Assert.Equal((AppTexts.DataSourcesKeyConnected("cdef"), AppTexts.Edit, "…cdef"), (key.Subtitle, key.ActivateText, key.ValueText));
+        Assert.Equal((AppTexts.DataSourcesKeyConnected, AppTexts.Edit, "…cdef"), (key.Subtitle, key.ActivateText, key.ValueText));
+        Assert.Equal((RowLamp.Working, true), (key.Lamp, key.HasTintedSubtitle));
         Assert.Equal(AppTexts.DataSourcesKeySavedSearching, arcadia.Main.Toast.Text);
         Assert.Equal(SteamGridDbKeyState.Valid, arcadia.Artwork.SteamGridDb!.State);
         Assert.Equal(AppTexts.DataSourcesSteamGridDbSubtitle, Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb)).Subtitle);
@@ -310,6 +333,7 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-13")]
+    [Trait("TestCase", "T538-6")]
     public async Task An_invalid_key_warns_at_the_tab_the_row_and_the_status_chip_and_a_valid_one_clears_all_three()
     {
         var (arcadia, _) = await StartAsync();
@@ -323,6 +347,8 @@ public sealed partial class DataSourcesTests
         Assert.Equal(HealthSeverity.Warning, category.Marker);
         var key = Row(arcadia, SteamGridDbKeyRows.KeyRowKey);
         Assert.Equal((AppTexts.DataSourcesKeyRejected, HealthSeverity.Warning), (key.Subtitle, key.Severity));
+        Assert.Equal((RowLamp.Problem, true), (key.Lamp, key.HasTintedSubtitle));
+        Assert.Equal([true, false], Assert.IsType<DataSourcesHeadViewModel>(category.Head).Tabs.Select(t => t.HasWarning));
         Assert.Contains(key.Info, block => block is InfoSection { Title: var title } && title == AppTexts.DataSourcesNextStepsHeading);
         Assert.True(arcadia.Main.Status.HasSteamGridDbWarning);
         Assert.Equal("store-wide", Hero(arcadia));

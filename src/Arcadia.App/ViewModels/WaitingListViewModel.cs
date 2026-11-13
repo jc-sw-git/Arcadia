@@ -12,9 +12,9 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>
-/// "Warten auf deine Auswahl" (#491, two levels since #506): the games SteamGridDB or IGDB (#494) found only by name with
-/// several matching games, left, each entry marked "Artwork" or "Metadaten" (a game waiting for both is there twice, the
-/// artwork entries first), and the current entry's hits, right (<see cref="WaitingHitsViewModel"/>). In the games list
+/// "Warten auf deine Auswahl" (#491, two levels since #506): the games SteamGridDB (artwork) or IGDB (metadata, #494) found
+/// only by name with several matching games, left, one list per kind (#538), and the current game's hits, right
+/// (<see cref="WaitingHitsViewModel"/>). In the games list
 /// ▲ ▼ choose a game (round at the ends), A goes into its hits, B closes; in the hits the D-pad moves through the grid,
 /// A takes the hit and comes back to the games list on the next waiting entry, B comes back without. Y skips the entry in
 /// both. The list follows the services: entries found by a later search come at the end of their kind, a game that left
@@ -26,6 +26,7 @@ namespace Arcadia.App.ViewModels;
 /// </remarks>
 public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 {
+    private readonly WaitingKind _kind;
     private readonly ArtworkService _artwork;
     private readonly MetadataService? _metadata;
     private readonly Func<Game, string> _titleOf;
@@ -33,15 +34,17 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     private readonly Action<WaitingListViewModel> _close;
     private bool _disposed;
 
+    /// <param name="kind">Which list: the games waiting for their SteamGridDB game or for their IGDB game.</param>
     /// <param name="keyboard">The settings' on-screen keyboard, for "Eigener Suchbegriff".</param>
     /// <param name="close">B in the games list or the ✕: back to the row "Warten auf deine Auswahl".</param>
     /// <param name="titleOf">The title a game shows, its own one included (#496).</param>
-    /// <param name="metadata">The metadata entries (#494); null: only artwork entries.</param>
+    /// <param name="metadata">The metadata entries (#494); needed for <see cref="WaitingKind.Metadata"/>.</param>
     /// <param name="artworkShown">The artwork entries are on the list: SteamGridDB is switched on.</param>
     public WaitingListViewModel(
-        ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close, MetadataService? metadata = null,
+        WaitingKind kind, ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close, MetadataService? metadata = null,
         Func<bool>? artworkShown = null)
     {
+        _kind = kind;
         _artwork = artwork;
         _metadata = metadata;
         _artworkShown = artworkShown ?? (() => true);
@@ -64,6 +67,8 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     }
 
     public static string Title => AppTexts.WaitingTitle;
+
+    public WaitingKind Kind => _kind;
 
     public static string Question => AppTexts.WaitingQuestion;
 
@@ -302,10 +307,8 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>The artwork entries (while SteamGridDB is on), then the metadata entries, each kind in the order it came on the list.</summary>
-    private List<(string Key, WaitingGame? Artwork, WaitingMetadataGame? Metadata)> Entries() =>
-    [
-        .. (_artworkShown() ? _artwork.Waiting : []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: false), (WaitingGame?)w, (WaitingMetadataGame?)null)),
-        .. (_metadata?.Waiting ?? []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: true), (WaitingGame?)null, (WaitingMetadataGame?)w)),
-    ];
+    /// <summary>The games waiting for this list's kind (artwork only while SteamGridDB is on), in the order they came on it.</summary>
+    private List<(string Key, WaitingGame? Artwork, WaitingMetadataGame? Metadata)> Entries() => _kind == WaitingKind.Artwork
+        ? [.. (_artworkShown() ? _artwork.Waiting : []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: false), (WaitingGame?)w, (WaitingMetadataGame?)null))]
+        : [.. (_metadata?.Waiting ?? []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: true), (WaitingGame?)null, (WaitingMetadataGame?)w))];
 }

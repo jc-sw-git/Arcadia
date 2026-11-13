@@ -6,8 +6,9 @@ Index and the category's frame: [README.md](README.md).
 
 - Group "STEAMGRIDDB": row "Schlüssel" (A "Eingeben"/"Bearbeiten": the on-screen keyboard, the field starts empty;
   an empty field taken changes nothing), indented below it "Aus der Zwischenablage einfügen", "Schlüssel-Seite öffnen",
-  "Verbindung testen" and "Schlüssel löschen" (greyed out without a key). The row shows only the key's last four
-  characters ("Verbunden · endet auf …3f9a").
+  "Verbindung testen" and "Schlüssel löschen" (greyed out without a key). The field shows only the key's last four
+  characters ("…3f9a"); the subtitle only the state, on a background in its lamp's colour (#538): "Verbunden" green,
+  "Noch nicht geprüft" and "Wird geprüft …" grey, the rejected key yellow; no key, no lamp and a plain subtitle.
 - A key is 32 letters and digits; spaces and line breaks around it are trimmed, anything else is refused before any
   request. A key typed or pasted is saved and checked at once (one request); "Verbindung testen" checks again,
   10 s at most. No answer or no network keeps the key without a warning.

@@ -8,16 +8,16 @@ Index and the category's frame: [README.md](README.md).
   same ignoring case, punctuation and ™ ® ©. One matching hit, or one result at all, is taken without a question;
   several matching, or none matching but several results, are "several hits" (at most 8, SteamGridDB's order). No
   result: the launcher image or the placeholder, searched again at the next "Jetzt suchen".
-- "Bei mehreren Treffern" (group "ARTWORK"): "Selbst auswählen" (default) puts the game on the waiting list, "Ersten
-  nehmen" takes the first hit. Switching to "Ersten nehmen" while games wait gives each its first hit at once (one
-  toast); switching back puts none of them back.
+- "Bei mehreren Treffern" (group "ARTWORK" of the tab "Artwork"; the tab "Metadaten" has its own, #538): "Selbst
+  auswählen" (default) puts the game on the waiting list, "Ersten nehmen" takes the first hit. Switching to "Ersten
+  nehmen" while games wait gives each of that kind its first hit at once (one toast); switching back puts none back.
 - Before a hit is offered or taken, SteamGridDB is asked whether it has an image of the kind sought (#506); a hit
   without one is dropped, and the rules above count only the hits left (one left: taken; none: no result). "Sought" is
   what the game is missing or has that doesn't fit and wasn't set by hand: cover, background or both; with both a hit
   needs a cover. A failed check stops SteamGridDB for the run (one request, not one per hit).
 - Indented below, always shown, "Warten auf deine Auswahl" with the count; greyed out with no game waiting or with
-  "Ersten nehmen". A opens the screen with two levels. Games list (left; each game's name and launcher, no hit
-  count): ▲ ▼ choose a game, round at the ends; A goes into its hits; B closes (undecided games stay in their order). Hits (right): "Gesucht: Cover und Hintergrund" /
+  "Ersten nehmen". A opens the screen with two levels, only with the games of its tab's kind. Games list (left; each
+  game's name and launcher, no hit count): ▲ ▼ choose a game, round at the ends; A goes into its hits; B closes (undecided games stay in their order). Hits (right): "Gesucht: Cover und Hintergrund" /
   "Gesucht: Cover" / "Gesucht: Hintergrund" (decided again when shown), the field "Eigener Suchbegriff" with
   "Zurücksetzen", and a grid of the hits' images of that kind (cover when both; five covers or three backgrounds a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).
   ◀ ▶ ▲ ▼ go round in rows and columns, the field's row counts as each column's top; A takes the hit and goes back to
@@ -37,18 +37,17 @@ Index and the category's frame: [README.md](README.md).
 - The choice, a skip and the waiting list are kept per game across restarts and a game leaving the library and coming
   back.
 
-## Metadata entries (#494)
+## Metadata entries (#494, #538)
 
-- "Bei mehreren Treffern" and the waiting list are shared by artwork and metadata. A game IGDB finds only by name with
-  several hits waits marked "Metadaten" (the artwork entries "Artwork"), with its launcher data until chosen; a game
-  waiting for both is there twice, each entry decided on its own. The list shows the artwork entries first (only while
-  SteamGridDB is on), then the metadata entries (also while IGDB is switched off or its access is gone: a choice needs no
-  request and shows once IGDB is on), each in the order they came; the row counts the entries shown.
+- The tab "Metadaten" has its own "Bei mehreren Treffern" and "Warten auf deine Auswahl" (group "METADATEN"); a
+  `settings.json` from before keeps the artwork's choice for both until one is changed. A game IGDB finds only by name
+  with several hits waits there, with its launcher data until chosen; a game waiting for both kinds is on both lists,
+  each decided on its own. The metadata list shows its games also while IGDB is switched off or its access is gone (a
+  choice needs no request and shows once IGDB is on), in the order they came.
 - A metadata entry's hits: "Gesucht: Metadaten", IGDB's hits in its order with IGDB's cover (or the placeholder; only
   while the access is usable), name and year (none without a date). "Eigener Suchbegriff" searches IGDB's main games
   (the first 25). A takes the hit: its fields and a corrected title show everywhere at once, without a request; the game
   is asked by that IGDB game from then on. Y skips: launcher data stay, never searched by name on IGDB again, also not
   at "Alle Metadaten neu laden". While it waits it isn't searched again either.
-- Switching to "Ersten nehmen" gives every waiting entry of both kinds its first hit, with one toast counting the games.
 - Choice, skip and waiting entries are kept in the game's metadata cache file, across restarts and a game leaving the
   library; a damaged file counts as not yet searched.

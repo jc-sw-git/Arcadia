@@ -62,7 +62,10 @@ public sealed class IgdbSettingsTests
             arcadia.Press(UiAction.NextTab);
         }
 
-        return Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        var category = Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected);
+        arcadia.Press(UiAction.NextPage);
+        Assert.IsType<MetadataSourcesTab>(category.ShownTab);
+        return category;
     }
 
     private static SettingsRowViewModel Row(ArcadiaDriver arcadia, string key) => arcadia.Main.Settings!.Selected.Rows.Single(row => row.Key == key);
@@ -113,6 +116,7 @@ public sealed class IgdbSettingsTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T494-2")]
+    [Trait("TestCase", "T538-6")]
     public async Task Client_id_and_secret_typed_by_controller_are_checked_once_both_are_there()
     {
         using var arcadia = await StartAsync();
@@ -121,11 +125,13 @@ public sealed class IgdbSettingsTests
 
         await TypeAsync(arcadia, IgdbAccessRows.ClientIdRowKey, FakeIgdb.ClientId);
         Assert.Equal(0, arcadia.Igdb.TokenRequests);
-        Assert.Equal(AppTexts.DataSourcesIgdbSecretMissing(FakeIgdb.ClientId[^4..]), Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesIgdbSecretMissing, Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
+        Assert.Equal((RowLamp.Resting, true), (Row(arcadia, IgdbAccessRows.ClientIdRowKey).Lamp, Row(arcadia, IgdbAccessRows.ClientIdRowKey).HasTintedSubtitle));
 
         await TypeAsync(arcadia, IgdbAccessRows.SecretRowKey, FakeIgdb.Secret);
         Assert.Equal(1, arcadia.Igdb.TokenRequests);
-        Assert.Equal(AppTexts.DataSourcesKeyConnected(FakeIgdb.ClientId[^4..]), Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
+        Assert.Equal((AppTexts.DataSourcesKeyConnected, RowLamp.Working), (Row(arcadia, IgdbAccessRows.SecretRowKey).Subtitle, Row(arcadia, IgdbAccessRows.SecretRowKey).Lamp));
         Assert.Equal("…" + FakeIgdb.Secret[^4..], Assert.IsType<TextRowViewModel>(Row(arcadia, IgdbAccessRows.SecretRowKey)).ValueText);
 
         // B or an empty field keeps the value and sends nothing.
@@ -204,6 +210,7 @@ public sealed class IgdbSettingsTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T494-9")]
+    [Trait("TestCase", "T538-6")]
     public async Task A_rejected_access_warns_at_the_tab_the_row_and_the_status_chip_and_a_valid_secret_clears_them()
     {
         using var arcadia = await StartAsync();
@@ -216,6 +223,9 @@ public sealed class IgdbSettingsTests
         Assert.Equal(HealthSeverity.Warning, category.Marker);
         var row = Row(arcadia, IgdbAccessRows.ClientIdRowKey);
         Assert.Equal((AppTexts.DataSourcesIgdbRejected, HealthSeverity.Warning), (row.Subtitle, row.Severity));
+        Assert.Equal((RowLamp.Problem, true), (row.Lamp, row.HasTintedSubtitle));
+        Assert.Equal((AppTexts.DataSourcesIgdbRejected, RowLamp.Problem), (Row(arcadia, IgdbAccessRows.SecretRowKey).Subtitle, Row(arcadia, IgdbAccessRows.SecretRowKey).Lamp));
+        Assert.Equal([false, true], Assert.IsType<DataSourcesHeadViewModel>(category.Head).Tabs.Select(t => t.HasWarning));
         Assert.True(arcadia.Main.Status.HasIgdbWarning);
 
         arcadia.Press(UiAction.Back).Press(UiAction.Status);

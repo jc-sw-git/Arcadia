@@ -116,7 +116,7 @@ public sealed partial class ArtworkService : IDisposable
             var withSteamGridDb = SteamGridDb is { IsUsable: true };
             lock (_gate)
             {
-                return _lastLibraries?.Where(l => l.Source is not null || withSteamGridDb).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).Count() ?? 0;
+                return _lastLibraries?.Where(l => l.Source is not null || (withSteamGridDb && !l.MadeUp)).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).Count() ?? 0;
             }
         }
     }
@@ -322,7 +322,7 @@ public sealed partial class ArtworkService : IDisposable
                     }
                     : run;
                 _lastLibraries = run.Libraries;
-                foreach (var (library, source) in run.Libraries)
+                foreach (var (library, source, _) in run.Libraries)
                 {
                     if (source is not null)
                     {
@@ -465,8 +465,9 @@ public sealed partial class ArtworkService : IDisposable
         var byPlayer = trigger == RunTrigger.Player;
         var settings = Settings().WithValidValues();
         Volatile.Write(ref _offNow, OffSources(settings));
-        var run = NewRunState(SteamGridDb is { IsUsable: true }) with { Reload = trigger == RunTrigger.Reload, Overwrite = pending.Overwrite };
         var libraries = pending.Libraries;
+        var madeUp = MadeUpGames(libraries);
+        var run = NewRunState(SteamGridDb is { IsUsable: true }) with { Reload = trigger == RunTrigger.Reload, Overwrite = pending.Overwrite, MadeUp = madeUp };
         var keys = libraries.SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
         var newGames = Known.NewOf(keys);
 
@@ -478,7 +479,7 @@ public sealed partial class ArtworkService : IDisposable
             RunTrigger.Rescan => keys.Where(run.Asks!.Contains),
             RunTrigger.Reload => keys,
             _ => keys.Where(IsMissingAny),
-        }).ToHashSet(StringComparer.Ordinal);
+        }).Where(key => !madeUp.Contains(key)).ToHashSet(StringComparer.Ordinal);
         run.ShowsProgress = trigger != RunTrigger.Rescan || searched.Count > 0;
         if (run.ShowsProgress)
         {
@@ -489,7 +490,7 @@ public sealed partial class ArtworkService : IDisposable
         var cancelled = false;
         try
         {
-            foreach (var (library, source) in libraries)
+            foreach (var (library, source, _) in libraries)
             {
                 var lookup = source?.Look() ?? NoImages;
                 foreach (var game in library.Games)
@@ -587,6 +588,10 @@ public sealed partial class ArtworkService : IDisposable
 
     private static readonly IArtworkLookup NoImages = new FixedCandidates([]);
 
+    /// <summary>The demo games: no data source searches for them, so they count as neither searched nor missing.</summary>
+    private static HashSet<string> MadeUpGames(IReadOnlyList<LibraryArtwork> libraries) =>
+        libraries.Where(l => l.MadeUp).SelectMany(l => l.Library.Games).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
+
     private bool IsMissingAny(string key) => Of(key) is not { Cover: not null, Hero: not null };
 
     private static IReadOnlySet<ArtworkSource> OffSources(ArtworkSettings settings) =>
@@ -620,7 +625,7 @@ public sealed partial class ArtworkService : IDisposable
     /// </summary>
     private void EndSearch(IReadOnlyList<LibraryArtwork> libraries, RunState run, bool byPlayer, bool cancelled)
     {
-        var games = libraries.SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
+        var games = libraries.Where(l => !l.MadeUp).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
         var missingCovers = games.Count(key => Of(key)?.Cover is null);
         var missingHeroes = games.Count(key => Of(key)?.Hero is null);
         lock (_gate)
@@ -1304,7 +1309,10 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>SteamGridDB may be asked at all: a usable key, switched on, and it hasn't failed in this run.</summary>
         public bool AsksSteamGridDb => SteamGridDbUsable && Order.Contains(ArtworkSourceKind.SteamGridDb);
 
-        public bool AsksSteamGridDbFor(string gameKey) => AsksSteamGridDb && GoesOnlineFor(gameKey);
+        /// <summary>The demo games, which SteamGridDB is never asked for.</summary>
+        public IReadOnlySet<string> MadeUp { get; init; } = new HashSet<string>();
+
+        public bool AsksSteamGridDbFor(string gameKey) => AsksSteamGridDb && GoesOnlineFor(gameKey) && !MadeUp.Contains(gameKey);
 
         /// <summary>Any request to the network for the game, a launcher's image to download included (#506).</summary>
         public bool GoesOnlineFor(string gameKey) => Asks is null || Asks.Contains(gameKey);

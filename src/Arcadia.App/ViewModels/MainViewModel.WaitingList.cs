@@ -15,11 +15,12 @@ public partial class MainViewModel
 
     partial void OnWaitingListChanged(WaitingListViewModel? oldValue, WaitingListViewModel? newValue) => oldValue?.Dispose();
 
-    void IDataSourcesHost.OpenWaitingList()
+    void IDataSourcesHost.OpenWaitingList(WaitingKind kind)
     {
         if (_artwork is not null)
         {
             WaitingList = new WaitingListViewModel(
+                kind,
                 _artwork,
                 game => Session.Titles.Shown(game).Title,
                 new WaitingKeyboard(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack),
@@ -41,6 +42,6 @@ public partial class MainViewModel
         }
 
         WaitingList = null;
-        Settings?.Selected?.FocusRow(ArtworkNameRows.WaitingKey);
+        Settings?.Selected?.FocusRow(SeveralHitsRows.WaitingKey(list.Kind));
     }
 }

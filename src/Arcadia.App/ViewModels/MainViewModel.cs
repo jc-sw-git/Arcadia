@@ -1002,8 +1002,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return null;
         }
 
+        // First by key: a category with tabs shows the row's tab (#538).
+        category.FocusRow(key);
         var row = category.Rows.FirstOrDefault(r => r.Key == key);
-        category.FocusRow((row ?? category.Rows[0]).Key);
+        if (row is null)
+        {
+            category.FocusRow(category.Rows[0].Key);
+        }
+
         return row;
     }
 

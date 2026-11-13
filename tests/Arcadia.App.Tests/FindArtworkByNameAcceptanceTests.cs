@@ -78,7 +78,7 @@ public sealed class FindArtworkByNameAcceptanceTests
     private static ActionRowViewModel WaitingRow(ArcadiaDriver arcadia)
     {
         WaitingListTests.OpenDataSources(arcadia);
-        var row = Assert.IsType<ActionRowViewModel>(arcadia.Main.Settings!.Selected.Rows.Single(r => r.Key == ArtworkNameRows.WaitingKey));
+        var row = Assert.IsType<ActionRowViewModel>(arcadia.Main.Settings!.Selected.Rows.Single(r => r.Key == SeveralHitsRows.WaitingKey(WaitingKind.Artwork)));
         arcadia.Press(UiAction.Back);
         return row;
     }

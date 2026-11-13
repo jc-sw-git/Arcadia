@@ -55,6 +55,11 @@
     <SolidColorBrush x:Key="Running" Color="#6FD99A" />
     <SolidColorBrush x:Key="OnRunning" Color="#06140C" />
     <SolidColorBrush x:Key="Danger" Color="#FF9A8F" />
+    <!-- A row's state on its lamp's colour (#538): a faint wash of the lamp's colour, the text in the colour itself. -->
+    <SolidColorBrush x:Key="TintResting" Color="#265A6878" />
+    <SolidColorBrush x:Key="TintWorking" Color="#296FD99A" />
+    <SolidColorBrush x:Key="TintProblem" Color="#2EF5B868" />
+    <SolidColorBrush x:Key="TintFailure" Color="#2EFF9A8F" />
     <SolidColorBrush x:Key="SurfaceHover" Color="#1A212B" />
     <SolidColorBrush x:Key="SurfaceDisabled" Color="#11161D" />
     <SolidColorBrush x:Key="TextDisabled" Color="#4A5563" />
@@ -1700,6 +1705,37 @@
     <Setter Property="Foreground" Value="{StaticResource Success}" />
   </Style>
   <!-- A count beside a row's title that asks for the player (#491: games waiting for a choice). -->
+  <Style Selector="Border.subtitleTint">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="Margin" Value="0,2,0,0" />
+    <Setter Property="Background" Value="{StaticResource TintResting}" />
+  </Style>
+  <Style Selector="Border.subtitleTint > TextBlock">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.working">
+    <Setter Property="Background" Value="{StaticResource TintWorking}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.working > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Success}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.problem">
+    <Setter Property="Background" Value="{StaticResource TintProblem}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.problem > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.failure">
+    <Setter Property="Background" Value="{StaticResource TintFailure}" />
+  </Style>
+  <Style Selector="Border.subtitleTint.failure > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+  </Style>
   <Style Selector="Border.rowBadge">
     <Setter Property="MinWidth" Value="28" />
     <Setter Property="Height" Value="28" />

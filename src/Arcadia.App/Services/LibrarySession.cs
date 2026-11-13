@@ -454,8 +454,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     private void UpdateGameData()
     {
         var launchers = _library.Launchers;
-        _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork)).ToList());
-        _metadata?.Update(_shownByLauncher.Select(l => new LibraryMetadata(l, launchers.Registered(l.Launcher.Id)?.Metadata)).ToList());
+        bool MadeUp(LauncherLibrary library) => launchers.Registered(library.Launcher.Id)?.HasMadeUpGames == true;
+        _artwork?.Update(_scanned.Select(l => new LibraryArtwork(l, launchers.Registered(l.Launcher.Id)?.Artwork, MadeUp(l))).ToList());
+        _metadata?.Update(_shownByLauncher.Select(l => new LibraryMetadata(l, launchers.Registered(l.Launcher.Id)?.Metadata, MadeUp(l))).ToList());
     }
 
     /// <summary><see cref="Libraries"/> with the shown titles over the launchers' (#496), and the trackers on them.</summary>

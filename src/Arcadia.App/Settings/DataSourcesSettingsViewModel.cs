@@ -3,45 +3,34 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Metadata;
-using Arcadia.App.Services;
-using Arcadia.Core.Settings;
 using Arcadia.Core.UserData;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Settings;
 
 /// <summary>
-/// The category "Datenquellen" (#489): where covers and backgrounds come from. Groups "STEAMGRIDDB" (the key,
-/// <see cref="SteamGridDbKeyRows"/>), "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" (<see cref="ArtworkSourceRows"/>,
-/// <see cref="ArtworkReloadRows"/>, <see cref="ArtworkNameRows"/>), "IGDB" (the access, <see cref="IgdbAccessRows"/>, #494),
-/// "REIHENFOLGE FÜR METADATEN" (<see cref="MetadataSourceRows"/>) and "METADATEN" (<see cref="MetadataRows"/>, #493). A key
-/// SteamGridDB or an access IGDB turned down is a warning beside the category's name.
+/// The category "Datenquellen" (#489) with two tabs above its rows (#538): "Artwork" (<see cref="ArtworkSourcesTab"/>) and
+/// "Metadaten" (<see cref="MetadataSourcesTab"/>); LT/RT (Q/E) or a click switch them, and the category opens on
+/// "Artwork". Only the chosen tab's rows are shown, so opening the category draws half as many. A key SteamGridDB or an
+/// access IGDB turned down is a warning beside the category's name and beside its tab's.
 /// </summary>
 public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, IDraggableRows
 {
     private readonly SteamGridDbKey _key;
     private readonly ArtworkService _artwork;
-    private readonly SteamGridDbKeyRows _keyRows;
-    private readonly ArtworkSourceRows _sourceRows;
-    private readonly ArtworkReloadRows _reloadRows;
-    private readonly ArtworkNameRows _nameRows;
     private readonly MetadataService? _metadata;
-    private readonly MetadataRows? _metadataRows;
-    private readonly IgdbAccessRows? _igdbRows;
-    private readonly MetadataSourceRows? _metadataSourceRows;
-    private readonly InfoRowViewModel? _userDataRow;
-    private readonly OwnTags? _ownTags;
-    private readonly ActionRowViewModel? _ownTagsRow;
+    private readonly IReadOnlyList<DataSourcesTabViewModel> _tabs;
+    private IDataSourcesTab _shown;
+    private bool _disposed;
 
     /// <summary>The row "Eigene Titel und Tags" (#496), there only while user-data.json was unreadable at the start; the status entry opens it.</summary>
     public const string UserDataRowKey = "user-data";
 
     /// <summary>The row "Eigene Tags (N)" (#495), which opens the tag list.</summary>
     public const string OwnTagsRowKey = "own-tags";
-    private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
-    /// <param name="metadata">The games' metadata (#493); null: the group "METADATEN" is left out.</param>
+    /// <param name="metadata">The games' metadata (#493); null: only the tab "Artwork", without tabs above it.</param>
     /// <param name="ownTags">The player's own tags (#495); null: the row "Eigene Tags" is left out.</param>
     public DataSourcesSettingsViewModel(
         SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null,
@@ -50,25 +39,19 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     {
         _key = key;
         _artwork = artwork;
-        _keyRows = new SteamGridDbKeyRows(
-            key, artwork, host, editor => Editor = editor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
-        _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
-        _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
-        _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList, metadata);
         _metadata = metadata;
-        _metadataRows = metadata is null ? null : new MetadataRows(metadata, question => Dialog = question);
-        _igdbRows = metadata?.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
-        _metadataSourceRows = metadata is null ? null : new MetadataSourceRows(metadata, changes, Show);
-        _userDataRow = userDataUnreadable ? UserDataRow() : null;
-        _ownTags = ownTags;
-        _ownTagsRow = ownTags is null ? null : new ActionRowViewModel(OwnTagsRowKey, string.Empty, host.OpenOwnTags)
+        IDataSourcesTab artworkTab = new ArtworkSourcesTab(key, artwork, host, changes, time, keyPersists, editor => Editor = editor, question => Dialog = question, Show);
+        IReadOnlyList<IDataSourcesTab> tabs = metadata is null
+            ? [artworkTab]
+            : [artworkTab, new MetadataSourcesTab(metadata, artwork, host, changes, time, editor => Editor = editor, question => Dialog = question, Show, userDataUnreadable, ownTags)];
+        _tabs = [.. tabs.Select(tab => new DataSourcesTabViewModel(tab, Choose))];
+        _shown = artworkTab;
+        if (_tabs.Count > 1)
         {
-            Group = AppTexts.DataSourcesUserDataGroup,
-            Subtitle = AppTexts.DataSourcesOwnTagsSubtitle,
-            ActionText = AppTexts.DataSourcesOwnTagsAction,
-            Info = [new InfoText(AppTexts.DataSourcesOwnTagsInfo)],
-            DimmedNote = AppTexts.UserDataUnreadable,
-        };
+            Head = new DataSourcesHeadViewModel(_tabs);
+            TurnText = AppTexts.DataSourcesTabTurn;
+        }
+
         if (metadata is not null)
         {
             metadata.ProgressChanged += OnChanged;
@@ -86,49 +69,43 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         Show();
     }
 
-    /// <summary>L3 lifts a source of "Reihenfolge für Artwork" (#506); while one is lifted, ▲ ▼ move it and B puts it back.</summary>
-    public override bool Handle(UiAction action) =>
-        (_metadataSourceRows?.IsReordering != true && _sourceRows.Handle(action, FocusedRow))
-        || (!_sourceRows.IsReordering && _metadataSourceRows?.Handle(action, FocusedRow) == true);
+    /// <summary>The tab whose rows are shown.</summary>
+    public IDataSourcesTab ShownTab => _shown;
 
-    public bool CanDrag(SettingsRowViewModel row) => row is ArtworkSourceRowViewModel or MetadataSourceRowViewModel;
+    public IReadOnlyList<IDataSourcesTab> Tabs => [.. _tabs.Select(t => t.Tab)];
 
-    /// <summary>The rows the dragged one moves among: the other sources of its own order.</summary>
-    public bool IsInDragList(SettingsRowViewModel row) =>
-        _metadataSourceRows?.IsReordering == true ? row is MetadataSourceRowViewModel : row is ArtworkSourceRowViewModel;
+    /// <summary>
+    /// A lifted source takes every press until it is put down (L3, ▲ ▼, B); else LT/RT switch the tab and L3 lifts a source
+    /// of the tab's order (#506).
+    /// </summary>
+    public override bool Handle(UiAction action)
+    {
+        if (!_shown.IsReordering && action is UiAction.PreviousPage or UiAction.NextPage && _tabs.Count > 1)
+        {
+            Turn(action == UiAction.NextPage ? 1 : -1);
+            return true;
+        }
+
+        return _shown.Handle(action, FocusedRow);
+    }
+
+    public bool CanDrag(SettingsRowViewModel row) => _shown.CanDrag(row);
+
+    /// <summary>The rows the dragged one moves among: the other sources of the shown tab's order.</summary>
+    public bool IsInDragList(SettingsRowViewModel row) => _shown.CanDrag(row);
 
     public void BeginDrag(SettingsRowViewModel row)
     {
-        switch (row)
+        if (_shown.CanDrag(row))
         {
-            case ArtworkSourceRowViewModel source:
-                Focus(source);
-                _sourceRows.Lift(source);
-                break;
-            case MetadataSourceRowViewModel metadataSource when _metadataSourceRows is not null:
-                Focus(metadataSource);
-                _metadataSourceRows.Lift(metadataSource);
-                break;
+            Focus(row);
+            _shown.BeginDrag(row);
         }
     }
 
-    public void DragTo(int rowsAbove)
-    {
-        if (_metadataSourceRows?.IsReordering == true)
-        {
-            _metadataSourceRows.DragTo(rowsAbove);
-        }
-        else
-        {
-            _sourceRows.DragTo(rowsAbove);
-        }
-    }
+    public void DragTo(int rowsAbove) => _shown.DragTo(rowsAbove);
 
-    public void Drop()
-    {
-        _sourceRows.Drop();
-        _metadataSourceRows?.Drop();
-    }
+    public void Drop() => _shown.Drop();
 
     /// <summary>"Alle Artworks neu laden?" or "Alle Metadaten neu laden?": [A] reloads, [B] closes it.</summary>
     public override void HandleDialog(UiAction action)
@@ -140,17 +117,35 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     }
 
     /// <summary>
-    /// B while the key is written drops it (the editor takes B itself); another category puts a lifted source back; nothing
+    /// B while a value is written drops it (the editor takes B itself); another category puts a lifted source back; nothing
     /// else goes a level up here.
     /// </summary>
     public override void Leave()
     {
         Editor?.Drop();
-        _sourceRows.PutBack();
-        _metadataSourceRows?.PutBack();
+        foreach (var tab in _tabs)
+        {
+            tab.Tab.PutBack();
+        }
     }
 
-    private void ShowL3Action() => L3ActionText = FocusedRow is ArtworkSourceRowViewModel or MetadataSourceRowViewModel ? AppTexts.Move : null;
+    /// <summary>The category's tab is chosen: it opens on "Artwork", at its first row.</summary>
+    public override void ShowTopLevel()
+    {
+        ShowTab(_tabs[0].Tab);
+        base.ShowTopLevel();
+    }
+
+    /// <summary>A row of either tab, e.g. the IGDB access from the status modal: its tab is shown first.</summary>
+    public override void FocusRow(string key)
+    {
+        if (!_shown.Rows.Any(r => r.Key == key) && _tabs.FirstOrDefault(t => t.Tab.Rows.Any(r => r.Key == key)) is { } owner)
+        {
+            ShowTab(owner.Tab);
+        }
+
+        base.FocusRow(key);
+    }
 
     public override void Dispose()
     {
@@ -170,15 +165,6 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         }
     }
 
-    /// <summary>From the run's thread or the key's: the rows follow on the UI thread while the category is shown.</summary>
-    private void OnChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
-    {
-        if (!_disposed)
-        {
-            Show();
-        }
-    });
-
     /// <summary>A tag was made, renamed, merged or deleted (#495): "Eigene Tags (N)" follows; UI thread.</summary>
     public void OwnTagsChanged()
     {
@@ -188,39 +174,59 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         }
     }
 
-    // The file is read only at the start, so the row never changes while Arcadia runs.
-    private static InfoRowViewModel UserDataRow() => new(UserDataRowKey, AppTexts.DataSourcesUserData)
+    private void ShowL3Action() => L3ActionText = FocusedRow is not null && _shown.CanDrag(FocusedRow) ? AppTexts.Move : null;
+
+    /// <summary>LT/RT: the other tab, at its first row; a value being written or a lifted source can't be left this way.</summary>
+    private void Turn(int delta)
     {
-        Group = AppTexts.DataSourcesUserDataGroup,
-        Subtitle = AppTexts.DataSourcesUserDataUnreadable,
-        Severity = HealthSeverity.Warning,
-        Info = [new InfoText(AppTexts.DataSourcesUserDataInfo)],
-    };
+        var index = _tabs.ToList().FindIndex(t => t.Tab == _shown);
+        Choose(_tabs[(index + delta + _tabs.Count) % _tabs.Count].Tab);
+    }
+
+    /// <summary>A tab chosen by LT/RT or a click: its rows from the first one.</summary>
+    private void Choose(IDataSourcesTab tab)
+    {
+        if (tab == _shown || IsEditing || _shown.IsReordering)
+        {
+            return;
+        }
+
+        ShowTab(tab);
+        base.ShowTopLevel();
+    }
+
+    private void ShowTab(IDataSourcesTab tab)
+    {
+        if (tab == _shown)
+        {
+            return;
+        }
+
+        _shown.PutBack();
+        _shown = tab;
+        Show();
+    }
+
+    /// <summary>From the run's thread or the key's: the rows follow on the UI thread while the category is shown.</summary>
+    private void OnChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>
+    {
+        if (!_disposed)
+        {
+            Show();
+        }
+    });
 
     private void Show()
     {
-        _keyRows.Refresh();
-        _sourceRows.Refresh();
-        _reloadRows.Refresh();
-        _nameRows.Refresh();
-        _metadataRows?.Refresh();
-        _igdbRows?.Refresh();
-        _metadataSourceRows?.Refresh();
-        if (_ownTags is not null && _ownTagsRow is not null)
+        foreach (var tab in _tabs)
         {
-            // While user-data.json is unreadable the row is greyed with the reason, so nothing typed is lost (D9).
-            // Unreadable, the number would claim there are none: the row shows none.
-            _ownTagsRow.Title = _ownTags.CanChange ? AppTexts.DataSourcesOwnTags(Formatting.Count(_ownTags.All.Count)) : AppTexts.OwnTagsTitle;
-            _ownTagsRow.IsEnabled = _ownTags.CanChange;
-            _ownTagsRow.IsDimmed = !_ownTags.CanChange;
+            tab.Tab.Refresh();
+            tab.IsSelected = tab.Tab == _shown;
+            tab.HasWarning = tab.Tab.HasWarning;
         }
 
-        IsReordering = _sourceRows.IsReordering || _metadataSourceRows?.IsReordering == true;
-        Marker = _key.State == SteamGridDbKeyState.Rejected || _metadata?.Igdb?.State == Core.Metadata.Igdb.IgdbAccessState.Rejected || _userDataRow is not null
-            ? HealthSeverity.Warning
-            : null;
-        SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
-            _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _igdbRows?.Rows ?? [], .. _metadataSourceRows?.Rows ?? [], .. _metadataRows?.Rows ?? [],
-            .. _ownTagsRow is null ? Array.Empty<SettingsRowViewModel>() : [_ownTagsRow], .. _userDataRow is null ? Array.Empty<SettingsRowViewModel>() : [_userDataRow]]);
+        IsReordering = _shown.IsReordering;
+        Marker = _tabs.Any(t => t.HasWarning) ? HealthSeverity.Warning : null;
+        SetRows(_shown.Rows);
     }
 }

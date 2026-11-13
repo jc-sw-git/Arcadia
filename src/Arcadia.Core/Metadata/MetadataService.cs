@@ -52,6 +52,12 @@ public sealed partial class MetadataService : IDisposable
 
     private Pending? _pending;
     private IReadOnlyList<LibraryMetadata>? _lastLibraries;
+
+    // The keys of demo games (LibraryMetadata.MadeUp): IGDB's data, also from an older cache, never shows for them.
+    private volatile IReadOnlySet<string> _madeUp = new HashSet<string>();
+
+    /// <summary>Games that became demo data or stopped being it since the last run; merged again at its start. Under <see cref="_gate"/>.</summary>
+    private readonly HashSet<string> _madeUpFlipped = new(StringComparer.Ordinal);
     private Task _runner = Task.CompletedTask;
 
     // Under _gate: a runner takes pending work. Not _runner.IsCompleted: a runner past its last look at _pending is not
@@ -118,7 +124,7 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    /// <summary>The launchers of the last libraries that deliver metadata, in tab order, for "Datenquellen"; none before the first scan.</summary>
+    /// <summary>The launchers of the last libraries that deliver metadata, in tab order, for "Launcher-Daten"; none before the first scan.</summary>
     public IReadOnlyList<(LauncherInfo Launcher, ILauncherMetadata Source)> Providers
     {
         get
@@ -172,7 +178,8 @@ public sealed partial class MetadataService : IDisposable
     public void Update(IReadOnlyList<LibraryMetadata> libraries) => Start(new Pending(libraries, Reload: false));
 
     /// <summary>
-    /// The first usable IGDB access (#494): what is missing is asked for at once, from the last libraries, as after a scan.
+    /// The first usable IGDB access (#494) or "Jetzt suchen" (#538): what is missing is asked for at once, from the last
+    /// libraries, as after a scan.
     /// </summary>
     /// <returns>False before the first scan: nothing starts.</returns>
     public bool FetchMissing()
@@ -232,6 +239,9 @@ public sealed partial class MetadataService : IDisposable
             {
                 _pending = _pending is { } queued ? run with { Reload = run.Reload || queued.Reload } : run;
                 _lastLibraries = run.Libraries;
+                var madeUp = run.Libraries.Where(l => l.MadeUp).SelectMany(l => l.Library.Games).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
+                _madeUpFlipped.UnionWith(madeUp.Except(_madeUp).Concat(_madeUp.Except(madeUp)));
+                _madeUp = madeUp;
             }
 
             if (!_running)
@@ -343,7 +353,19 @@ public sealed partial class MetadataService : IDisposable
     private void ReadLocal(IReadOnlyList<LibraryMetadata> libraries)
     {
         var changed = new List<string>();
-        foreach (var (library, source) in libraries)
+        string[] flipped;
+        lock (_gate)
+        {
+            flipped = [.. _madeUpFlipped];
+            _madeUpFlipped.Clear();
+        }
+
+        foreach (var key in flipped)
+        {
+            Show(key, changed);
+        }
+
+        foreach (var (library, source, _) in libraries)
         {
             if (source is null || library.Games.Count == 0)
             {
@@ -653,7 +675,7 @@ public sealed partial class MetadataService : IDisposable
     {
         lock (_showGate)
         {
-            var merged = _records.TryGetValue(gameKey, out var cached) ? Merge(cached, _launcherTitles.GetValueOrDefault(gameKey)) : MergedMetadata.None;
+            var merged = _records.TryGetValue(gameKey, out var cached) ? Merge(cached, _launcherTitles.GetValueOrDefault(gameKey), withIgdb: !_madeUp.Contains(gameKey)) : MergedMetadata.None;
             if (_shown.TryGetValue(gameKey, out var shown) ? shown == merged : merged.IsEmpty)
             {
                 return;
@@ -676,7 +698,8 @@ public sealed partial class MetadataService : IDisposable
     /// The providers switched on, in their order, merged per field; a doubtful launcher title is replaced by IGDB's
     /// regardless of the order, a title without <c>?</c> stays the launcher's (#494, D9).
     /// </summary>
-    private MergedMetadata Merge(CachedMetadata cached, string? launcherTitle)
+    /// <param name="withIgdb">False for a demo game: only its launcher's data shows.</param>
+    private MergedMetadata Merge(CachedMetadata cached, string? launcherTitle, bool withIgdb)
     {
         var settings = (Settings() ?? new MetadataSettings()).WithValidValues();
         var providers = new List<ProviderMetadata>();
@@ -686,14 +709,14 @@ public sealed partial class MetadataService : IDisposable
             {
                 providers.Add(new ProviderMetadata(cached.Source, cached.Data));
             }
-            else if (source == MetadataSourceKind.Igdb && cached.Igdb is { } igdb)
+            else if (source == MetadataSourceKind.Igdb && withIgdb && cached.Igdb is { } igdb)
             {
                 providers.Add(new ProviderMetadata(IgdbName, igdb.Data));
             }
         }
 
         var merged = MergedMetadata.Of(providers);
-        return settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
+        return withIgdb && settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
             ? merged with { Title = new Sourced<string>(title, IgdbName), LauncherTitle = new Sourced<string>(launcherTitle!, cached.Source) }
             : merged;
     }

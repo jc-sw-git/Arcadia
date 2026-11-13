@@ -46,12 +46,14 @@ public sealed class IgdbAccessRows
         _clientId = new TextRowViewModel(ClientIdRowKey, AppTexts.DataSourcesIgdbClientId, () => access.ClientIdEnding is { } ending ? "…" + ending : string.Empty, row => Edit(row, isSecret: false))
         {
             Group = Group,
+            TintsSubtitle = true,
             ActionLabel = () => _access.ClientIdEnding is null ? AppTexts.DataSourcesKeyEnter : AppTexts.Edit,
         };
         _pasteClientId = PasteRow("igdb-client-id-paste", isSecret: false);
         _secret = new TextRowViewModel(SecretRowKey, AppTexts.DataSourcesIgdbSecret, () => access.SecretEnding is { } ending ? "…" + ending : string.Empty, row => Edit(row, isSecret: true))
         {
             Group = Group,
+            TintsSubtitle = true,
             ActionLabel = () => _access.SecretEnding is null ? AppTexts.DataSourcesKeyEnter : AppTexts.Edit,
             Info = [new InfoText(AppTexts.DataSourcesIgdbSecretInfo), new InfoText(AppTexts.DataSourcesIgdbHowTo)],
         };
@@ -84,18 +86,26 @@ public sealed class IgdbAccessRows
     public void Refresh()
     {
         var state = _access.State;
+
+        // The fields beside them show the values' ends, so the subtitles say only the state, in the lamp's colour (#538).
+        var lamp = _checking ? RowLamp.Resting : state switch
+        {
+            IgdbAccessState.Valid => RowLamp.Working,
+            IgdbAccessState.Rejected => RowLamp.Problem,
+            _ => RowLamp.Resting,
+        };
         _clientId.Subtitle = _checking
             ? AppTexts.DataSourcesKeyChecking
             : state switch
             {
-                IgdbAccessState.Valid => AppTexts.DataSourcesKeyConnected(_access.ClientIdEnding ?? string.Empty),
+                IgdbAccessState.Valid => AppTexts.DataSourcesKeyConnected,
                 IgdbAccessState.Rejected => AppTexts.DataSourcesIgdbRejected,
-                IgdbAccessState.Unchecked => AppTexts.DataSourcesKeyUnchecked(_access.ClientIdEnding ?? string.Empty),
-                _ when _access.ClientIdEnding is { } ending => AppTexts.DataSourcesIgdbSecretMissing(ending),
+                IgdbAccessState.Unchecked => AppTexts.DataSourcesKeyUnchecked,
+                _ when _access.ClientIdEnding is not null => AppTexts.DataSourcesIgdbSecretMissing,
                 _ => AppTexts.DataSourcesIgdbNone,
             };
         _clientId.Severity = state == IgdbAccessState.Rejected ? HealthSeverity.Warning : null;
-        _clientId.ShowLamp(state == IgdbAccessState.Valid ? RowLamp.Working : null);
+        _clientId.ShowLamp(_access.ClientIdEnding is null ? null : lamp);
         _clientId.Info =
         [
             new InfoText(AppTexts.DataSourcesIgdbInfo),
@@ -106,7 +116,11 @@ public sealed class IgdbAccessRows
             new InfoSection(AppTexts.DataSourcesSendsHeading, [new InfoText(_access.Persists ? AppTexts.DataSourcesIgdbSendsInfo : AppTexts.DataSourcesIgdbSendsInfoInMemory)]),
         ];
         _clientId.Refresh();
-        _secret.Subtitle = _access.SecretEnding is { } secret ? AppTexts.DataSourcesIgdbSecretEnding(secret) : AppTexts.DataSourcesIgdbSecretNone;
+        _secret.Subtitle = _access.SecretEnding is null ? AppTexts.DataSourcesIgdbSecretNone
+            : state == IgdbAccessState.Rejected ? AppTexts.DataSourcesIgdbRejected
+            : state == IgdbAccessState.Valid ? AppTexts.DataSourcesKeyConnected
+            : AppTexts.DataSourcesIgdbSecretStored;
+        _secret.ShowLamp(_access.SecretEnding is null ? null : lamp);
         _secret.Refresh();
 
         var hasAccess = state != IgdbAccessState.None;

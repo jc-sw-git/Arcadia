@@ -5,10 +5,21 @@ namespace Arcadia.App.Tests;
 
 internal static class SettingsSteps
 {
-    /// <summary>Up or down with the D-pad to the row <paramref name="key"/> of the shown category, as the user would.</summary>
+    /// <summary>
+    /// Up or down with the D-pad to the row <paramref name="key"/> of the shown category, as the user would; in
+    /// "Datenquellen" first RT to the tab that has it (#538).
+    /// </summary>
     public static SettingsRowViewModel FocusRow(this ArcadiaDriver arcadia, string key)
     {
         var settings = arcadia.Main.Settings!;
+        if (settings.Selected is DataSourcesSettingsViewModel dataSources)
+        {
+            for (var turns = 0; turns < dataSources.Tabs.Count && dataSources.Rows.All(row => row.Key != key); turns++)
+            {
+                arcadia.Press(UiAction.NextPage);
+            }
+        }
+
         var rows = settings.Selected.Rows;
         var target = rows.Select(row => row.Key).ToList().IndexOf(key);
         Assert.True(target >= 0, $"Zeile {key} nicht gefunden");

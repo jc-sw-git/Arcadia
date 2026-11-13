@@ -41,7 +41,7 @@ public sealed class IgdbControllerFlowTests
 
         await TypeOnKeyboardAsync(arcadia, IgdbAccessRows.ClientIdRowKey, FakeIgdb.ClientId);
         await TypeOnKeyboardAsync(arcadia, IgdbAccessRows.SecretRowKey, FakeIgdb.Secret);
-        Assert.Equal(AppTexts.DataSourcesKeyConnected(FakeIgdb.ClientId[^4..]), Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
+        Assert.Equal(AppTexts.DataSourcesKeyConnected, Row(arcadia, IgdbAccessRows.ClientIdRowKey).Subtitle);
 
         // "Verbindung testen" with A.
         var tokens = arcadia.Igdb.TokenRequests;

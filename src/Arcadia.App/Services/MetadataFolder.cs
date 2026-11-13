@@ -29,7 +29,7 @@ public static class MetadataFolder
         {
             Log = AppLog.Write,
             Settings = () => settings.Current.Metadata,
-            SeveralHits = () => settings.Current.Artwork.WithValidValues().SeveralHits,
+            SeveralHits = () => settings.Current.Metadata.SeveralHitsOr(settings.Current.Artwork.WithValidValues().SeveralHits),
             Igdb = new IgdbAccess(store, new IgdbClient(http, time) { Log = AppLog.Write }, time),
         };
     }

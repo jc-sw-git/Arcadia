@@ -8,7 +8,7 @@
   backgrounds, a 16 : 9 one is taken before a better rated flat one. · E2E: yes
 - [x] **T562-3** "Zuschneiden erlaubt" changes only covers: with "Viel" a background that cuts 22 % still doesn't fit, a
   cover that cuts 20 % does, at once and without a request. · E2E: yes
-- [ ] **T562-4** "Artwork ändern", tab "Hintergrund": the heading reads "HINTERGRUND · 16 : 9", the tiles are 16 : 9 and
+- [x] **T562-4** "Artwork ändern", tab "Hintergrund": the heading reads "HINTERGRUND · 16 : 9", the tiles are 16 : 9 and
   show a flat image cropped as the detail page shows it; "Warten auf deine Auswahl" shows backgrounds in 16 : 9 tiles; the
   info boxes "Wer was liefert" and "Zuschneiden erlaubt" read as listed in the PR. · E2E: no (window: layout)
 - [ ] **T562-5** **Owner:** on your PC, "Alle Artworks neu laden", then two Epic games and two Steam games on the detail
@@ -29,3 +29,5 @@ History:
 |---|---|---|---|---|---|
 | T562-1 to -3 | 2026-11-13 | Claude | branch, Linux, headless tests | ✅ (T562-1, the 16 : 9 beats flat case of T562-2 and T562-3 red with `main`'s `ArtworkFormat`) | – |
 | T562-4 | 2026-11-13 | Claude | branch, Linux/Xvfb, `--demo --demo-games 120`, keys | ✅ "Artwork ändern" → "Hintergrund": heading "16 : 9", 16 : 9 tiles, a 1920 × 620 image cropped in its tile; waiting list not seen (demo games get no hits) | QE looks at the info texts |
+| T562-4 | 2026-11-13 | QE (Claude) | `401c540`, Linux/Xvfb, `--demo`, keys | ✅ "Artwork ändern" → "Hintergrund": "HINTERGRUND · 16 : 9", 16 : 9 tile; info boxes "Wer was liefert" and "Zuschneiden erlaubt" with the new texts; subtitle and "Wenig" say "Cover" since `795f8f9` (text only); waiting list's 16 : 9 tiles not seen (no hits in demo), sizes checked in `Theme.axaml` (280 × 158, 107 × 60) | – |
+| all | 2026-11-13 | QE (Claude) | `401c540`, Linux, `tools/ci/run-tests.sh 4` | ✅ 777 App test methods, Core and Pan green | – |

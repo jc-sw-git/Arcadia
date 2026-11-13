@@ -9,7 +9,7 @@ Replaces T11-7 (three rows of buttons) and the layout parts of T11-1 and T11-8; 
 over" no longer holds for the rows of an area (T499-14). The owner's cases are collected for the owner's test at the
 end of the detail page work.
 
-**Status:** Automated: T499-1 to -26 · QE: T499-27 to -29 · Open for the owner: none (TT499-30, T499-31 passed, 2026-11-13)
+**Status:** Automated: T499-1 to -26 · QE: T499-27 to -29 · Open for the owner: none (T499-30, T499-31 passed, 2026-11-13)
 
 Page and button row
 

@@ -17,7 +17,7 @@ namespace Arcadia.App.ViewModels;
 /// (<see cref="WaitingHitsViewModel"/>). In the games list
 /// ▲ ▼ choose a game (round at the ends), A goes into its hits, B closes; in the hits the D-pad moves through the grid,
 /// A takes the hit and comes back to the games list on the next waiting entry, B comes back without. Y skips the entry in
-/// both. The list follows the services: entries found by a later search come at the end of their kind, a game that left
+/// both. A click on a hit only marks it, a double click takes it (#539). The list follows the services: entries found by a later search come at the end of their kind, a game that left
 /// the library goes.
 /// </summary>
 /// <remarks>
@@ -101,9 +101,9 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     public string AcceptHint => !InHits ? AppTexts.WaitingOpenHitsHint
         : Hits?.Zone == WaitingHitsFocus.Term ? AppTexts.WaitingSearchHint
         : Hits?.Zone == WaitingHitsFocus.Reset ? AppTexts.WaitingReset
-        : AppTexts.WaitingTakeHint;
+        : Hits?.TakeHint ?? AppTexts.WaitingTakeHint;
 
-    public string BackHint => InHits ? AppTexts.Back : AppTexts.Close;
+    public string BackHint => InHits ? Hits?.BackHint ?? AppTexts.Back : AppTexts.Close;
 
     /// <summary>The last choice being made (its images loading); the tests wait for it.</summary>
     public Task Loading { get; private set; } = Task.CompletedTask;
@@ -127,7 +127,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 break;
             case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right or UiAction.Accept when InHits:
                 Hits!.Handle(action);
-                OnPropertyChanged(nameof(AcceptHint));
+                HintsChanged();
                 break;
             case UiAction.Accept when HasGames:
                 EnterHits();
@@ -136,7 +136,15 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 Skip();
                 break;
             case UiAction.Back when InHits:
-                LeaveHits();
+                if (Hits?.StepBack() == true)
+                {
+                    HintsChanged();
+                }
+                else
+                {
+                    LeaveHits();
+                }
+
                 break;
             case UiAction.Back:
                 _close(this);
@@ -176,6 +184,34 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void Accept() => Handle(UiAction.Accept);
 
+    /// <summary>The choice went a step on or back, also by a double click: the footer says what A and B do now.</summary>
+    private void OnHitsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(WaitingHitsViewModel.BackHint) or nameof(WaitingHitsViewModel.TakeHint))
+        {
+            HintsChanged();
+        }
+    }
+
+    private void HintsChanged()
+    {
+        OnPropertyChanged(nameof(AcceptHint));
+        OnPropertyChanged(nameof(BackHint));
+    }
+
+    /// <summary>A click on a hit: the focus comes into the hits, onto it; nothing is taken (#539).</summary>
+    private void Mark(WaitingHitViewModel hit)
+    {
+        if (Hits is not { } hits || _disposed)
+        {
+            return;
+        }
+
+        InHits = true;
+        hits.Mark(hit);
+        HintsChanged();
+    }
+
     private void EnterHits()
     {
         if (Hits is { } hits)
@@ -191,7 +227,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         Hits?.Leave();
     }
 
-    /// <summary>A or a click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>
+    /// <summary>A or a double click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>
     private void Take(WaitingHitViewModel hit)
     {
         if (CurrentGame is not { } game || _disposed)
@@ -208,7 +244,10 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 Refresh();
                 break;
             case ArtworkHitViewModel artworkHit:
-                var choosing = _artwork.ChooseAsync(game.Game, artworkHit.Hit);
+                // A background chosen after the cover (#539) comes from its own game; the cover from the one picked first.
+                var choosing = artworkHit.Cover is { } cover
+                    ? _artwork.ChooseAsync(game.Game, cover, heroHit: artworkHit.Hit)
+                    : _artwork.ChooseAsync(game.Game, artworkHit.Hit);
                 InHits = false;
                 Refresh();
                 Loading = choosing;
@@ -296,13 +335,19 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         game?.IsCurrent = true;
         CurrentGame = game;
         InHits = false;
-        Hits?.Dispose();
+        if (Hits is { } before)
+        {
+            before.PropertyChanged -= OnHitsChanged;
+            before.Dispose();
+        }
+
         Hits = game switch
         {
-            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, _artwork, metadata, game.Title, _keyboard, Take),
-            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take),
+            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, metadata, game.Title, _keyboard, Take, Mark),
+            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take, Mark),
             _ => null,
         };
+        Hits?.PropertyChanged += OnHitsChanged;
         Hits?.Start();
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }

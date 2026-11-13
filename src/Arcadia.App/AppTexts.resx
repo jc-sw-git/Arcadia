@@ -1205,13 +1205,21 @@
   <data name="WaitingOpenHitsHint" xml:space="preserve"><value>Treffer ansehen</value></data>
   <data name="WaitingChooseHitHint" xml:space="preserve"><value>Treffer wählen</value></data>
   <data name="WaitingSearchHint" xml:space="preserve"><value>Suchbegriff ändern</value></data>
-  <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
-  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält die Daten des Launchers und wird bei IGDB nicht mehr nach dem Namen gesucht.</value></data>
+  <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit [Y] überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
+  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Keins davon passt? Mit [Y] überspringst du das Spiel. Es behält die Daten des Launchers und wird bei IGDB nicht mehr nach dem Namen gesucht.</value></data>
   <data name="WaitingDoneTitle" xml:space="preserve"><value>Alles erledigt.</value></data>
   <data name="WaitingDoneText" xml:space="preserve"><value>Kein Spiel wartet mehr auf deine Auswahl.</value></data>
   <data name="WaitingChooseHint" xml:space="preserve"><value>Spiel wählen</value></data>
   <data name="WaitingSkipHint" xml:space="preserve"><value>Überspringen</value></data>
   <data name="WaitingTakeHint" xml:space="preserve"><value>Übernehmen, weiter zum nächsten</value></data>
+  <data name="WaitingTakeCoverHint" xml:space="preserve"><value>Cover nehmen, weiter zum Hintergrund</value></data>
+  <data name="WaitingOtherCover" xml:space="preserve"><value>Anderes Cover</value></data>
+  <data name="WaitingIntroCoverStep" xml:space="preserve"><value>Schritt 1 von 2: SteamGridDB kennt {count} Spiele mit diesem Namen. Wähle zuerst das Cover, danach den Hintergrund – auch von einem anderen Spiel.</value></data>
+  <data name="WaitingIntroCoverStepOwnTerm" xml:space="preserve"><value>Schritt 1 von 2: SteamGridDB findet {count} Spiele mit Cover zu deinem Suchbegriff. Wähle zuerst das Cover, danach den Hintergrund – auch von einem anderen Spiel.</value></data>
+  <data name="WaitingIntroHeroStep" xml:space="preserve"><value>Schritt 2 von 2: {count} dieser Spiele haben einen Hintergrund. Wähle den, der zu deinem Cover passt.</value></data>
+  <data name="WaitingIntroHeroStepOwnTerm" xml:space="preserve"><value>Schritt 2 von 2: SteamGridDB findet {count} Spiele mit Hintergrund zu deinem Suchbegriff. Wähle den, der zu deinem Cover passt.</value></data>
+  <data name="WaitingChosenCover" xml:space="preserve"><value>DEIN COVER</value></data>
+  <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB hat zu diesem Spiel keine weiteren Angaben.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
   <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>

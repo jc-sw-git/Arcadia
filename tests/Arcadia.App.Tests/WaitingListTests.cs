@@ -29,7 +29,7 @@ public sealed class WaitingListTests
         Launch = new LaunchTarget.ProtocolUri("other://run/" + id),
     };
 
-    private static readonly Game[] Games = [GameOf("echo", "Echo Drift"), GameOf("crown", "Golden Crown"), GameOf("ember", "Iron Ember")];
+    internal static readonly Game[] Games = [GameOf("echo", "Echo Drift"), GameOf("crown", "Golden Crown"), GameOf("ember", "Iron Ember")];
 
     /// <summary>Three games, each with several namesakes at SteamGridDB, a valid key, the first search done.</summary>
     private static async Task<ArcadiaDriver> StartAsync()
@@ -156,9 +156,8 @@ public sealed class WaitingListTests
         using var arcadia = await StartAsync();
         var list = OpenList(arcadia);
 
-        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
-        await list.Loading;
-        Dispatcher.UIThread.RunJobs();
+        arcadia.Press(UiAction.Accept).Press(UiAction.Right);
+        await TakeCoverAndItsBackgroundAsync(arcadia, list);
 
         Assert.Equal(("Golden Crown", AppTexts.WaitingPosition(number: 1, count: 2), false), (list.Hits!.Title, list.Position, list.InHits));
         Assert.Equal("https://cdn.example/grid/502.png", CoverOrigin(arcadia, Games[0]));
@@ -166,9 +165,9 @@ public sealed class WaitingListTests
         arcadia.Press(UiAction.Status);
         Assert.Equal("Iron Ember", list.Hits!.Title);
         Assert.Null(CoverOrigin(arcadia, Games[1]));
-        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
-        await list.Loading;
-        Dispatcher.UIThread.RunJobs();
+        await ShownAsync(list);
+        arcadia.Press(UiAction.Accept);
+        await TakeCoverAndItsBackgroundAsync(arcadia, list);
 
         Assert.True(list.IsDone);
         arcadia.Press(UiAction.Back);
@@ -221,6 +220,19 @@ public sealed class WaitingListTests
     }
 
     /// <summary>The focus rested on the current game: its hits checked and their tiles loaded.</summary>
+    /// <summary>
+    /// A on the focused cover, then A on the background the focus starts on, the cover's own (#539): what one A took
+    /// before cover and background were chosen in two steps.
+    /// </summary>
+    internal static async Task TakeCoverAndItsBackgroundAsync(ArcadiaDriver arcadia, WaitingListViewModel list)
+    {
+        arcadia.Press(UiAction.Accept);
+        await ShownAsync(list);
+        arcadia.Press(UiAction.Accept);
+        await list.Loading;
+        Dispatcher.UIThread.RunJobs();
+    }
+
     internal static async Task ShownAsync(WaitingListViewModel list)
     {
         await list.Hits!.Ready.WaitAsync(TimeSpan.FromSeconds(10));
@@ -259,9 +271,9 @@ public sealed class WaitingListTests
         arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Artwork));
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Accept);
-        await list.Loading;
-        Dispatcher.UIThread.RunJobs();
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        await ShownAsync(list);
+        await TakeCoverAndItsBackgroundAsync(arcadia, list);
 
         // Y in the hits skips and comes back to the games list, as A does.
         arcadia.Press(UiAction.Accept).Press(UiAction.Status);

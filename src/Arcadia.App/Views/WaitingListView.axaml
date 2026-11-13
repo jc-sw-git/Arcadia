@@ -85,6 +85,27 @@
                 <TextBlock Classes="waitingCurrent" Text="{Binding Title}" />
                 <TextBlock Classes="waitingSought" Text="{Binding SoughtText}" />
                 <TextBlock Classes="waitingIntro" Text="{Binding Intro}" IsVisible="{Binding HasIntro}" />
+                <!-- Cover and background sought (#539): on the second step the cover chosen first stands beside the backgrounds. -->
+                <ContentControl Content="{Binding}">
+                  <ContentControl.DataTemplates>
+                    <DataTemplate x:DataType="vm:ArtworkHitsViewModel">
+                      <Border Classes="waitingChosenCover" IsVisible="{Binding HasChosenCover}">
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                          <Border Classes="waitingChosenFrame">
+                            <ctl:ArtworkImage File="{Binding ChosenCover?.Image}" CornerRadius="6" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                          </Border>
+                          <StackPanel VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Classes="artworkLabel" Text="{x:Static app:AppTexts.WaitingChosenCover}" />
+                            <TextBlock Classes="waitingGameName" Text="{Binding ChosenCover?.Name}" />
+                          </StackPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                    <DataTemplate x:DataType="vm:WaitingHitsViewModel">
+                      <Panel />
+                    </DataTemplate>
+                  </ContentControl.DataTemplates>
+                </ContentControl>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="0,0,0,20">
                   <Button Classes="plain waitingTermButton" Command="{Binding EditTermCommand}">
                     <Border Classes="textField waitingTerm" Classes.focused="{Binding IsTermFocused}" Classes.editing="{Binding IsEditing}"
@@ -106,41 +127,85 @@
               </StackPanel>
 
               <Border DockPanel.Dock="Bottom" Classes="waitingNote">
-                <TextBlock Text="{Binding Note}" />
+                <TextBlock ctl:ButtonTextBlock.Text="{Binding Note}" />
               </Border>
 
-              <Panel>
-                <ScrollViewer Name="HitScroller" Classes="waitingScroller" Padding="8">
-                  <ItemsControl Name="HitGrid" ItemsSource="{Binding Hits}" Classes.hero="{Binding IsHero}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <UniformGrid Columns="{Binding $parent[ItemsControl].((vm:WaitingHitsViewModel)DataContext)?.Columns, TargetNullValue=6}" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:WaitingHitViewModel">
-                        <Button Classes="plain artworkTile waitingHit" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}"
-                                ToolTip.Tip="{Binding Name}">
-                          <StackPanel Spacing="4">
-                            <Border Classes="artworkFrame">
-                              <Panel>
-                                <TextBlock Classes="waitingHitPlaceholder" Text="{Binding Name}" IsVisible="{Binding !#HitImage.IsShowing}" />
-                                <ctl:ArtworkImage Name="HitImage" File="{Binding Image}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                              </Panel>
-                            </Border>
-                            <TextBlock Classes="waitingHitName" Text="{Binding Name}" />
-                            <TextBlock Classes="waitingHitYear" Text="{Binding YearText}" IsVisible="{Binding HasYear}" />
+              <Grid ColumnDefinitions="*,Auto">
+                <Panel>
+                  <ScrollViewer Name="HitScroller" Classes="waitingScroller" Padding="8">
+                    <!-- A click marks a hit, a double click (WaitingListView.axaml.cs) or A takes it (#539). -->
+                    <ItemsControl Name="HitGrid" ItemsSource="{Binding Hits}" Classes.hero="{Binding IsHero}" Classes.facts="{Binding ShowsFacts}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <UniformGrid Columns="{Binding $parent[ItemsControl].((vm:WaitingHitsViewModel)DataContext)?.Columns, TargetNullValue=6}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.DataTemplates>
+                        <!-- Metadata (#539): a list of names, years and what sets them apart; the facts stand in the box beside it. -->
+                        <DataTemplate x:DataType="vm:MetadataHitViewModel">
+                          <Button Classes="plain waitingFactHit" Classes.focused="{Binding IsFocused}" Command="{Binding MarkCommand}">
+                            <StackPanel Spacing="3">
+                              <TextBlock Classes="waitingGameName" Text="{Binding Name}" ToolTip.Tip="{Binding Name}" />
+                              <TextBlock Classes="waitingGameLauncher" Text="{Binding YearText}" IsVisible="{Binding HasYear}" />
+                              <TextBlock Classes="waitingGameLauncher" Text="{Binding Line}" IsVisible="{Binding HasLine}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                        <DataTemplate x:DataType="vm:WaitingHitViewModel">
+                          <Button Classes="plain artworkTile waitingHit" Classes.focused="{Binding IsFocused}" Command="{Binding MarkCommand}"
+                                  ToolTip.Tip="{Binding Name}">
+                            <StackPanel Spacing="4">
+                              <Border Classes="artworkFrame">
+                                <Panel>
+                                  <TextBlock Classes="waitingHitPlaceholder" Text="{Binding Name}" IsVisible="{Binding !#HitImage.IsShowing}" />
+                                  <ctl:ArtworkImage Name="HitImage" File="{Binding Image}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                                </Panel>
+                              </Border>
+                              <TextBlock Classes="waitingHitName" Text="{Binding Name}" />
+                              <TextBlock Classes="waitingHitYear" Text="{Binding YearText}" IsVisible="{Binding HasYear}" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.DataTemplates>
+                    </ItemsControl>
+                  </ScrollViewer>
+                  <ctl:EdgeFade Name="HitFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #HitScroller}" />
+                  <!-- Why the grid is empty, or that the hits are being checked. -->
+                  <TextBlock Classes="waitingStatus" Text="{x:Static app:AppTexts.WaitingChecking}" IsVisible="{Binding IsChecking}" />
+                  <TextBlock Classes="waitingStatus" Text="{Binding Message}" IsVisible="{Binding HasMessage}" />
+                </Panel>
+
+                <!-- The marked metadata hit's facts (#539): what the player decides by. -->
+                <Border Grid.Column="1" Classes="waitingFacts" IsVisible="{Binding ShowsFacts}">
+                  <ContentControl Content="{Binding MarkedHit}">
+                    <ContentControl.DataTemplates>
+                      <DataTemplate x:DataType="vm:MetadataHitViewModel">
+                        <StackPanel Spacing="14">
+                          <TextBlock Classes="waitingFactsTitle" Text="{Binding Name}" />
+                          <ItemsControl ItemsSource="{Binding Facts.Facts}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:WaitingHitFact">
+                                <Grid ColumnDefinitions="150,*" Margin="0,0,0,8">
+                                  <TextBlock Classes="artworkLabel" Text="{Binding Caption}" VerticalAlignment="Top" />
+                                  <TextBlock Grid.Column="1" Classes="waitingFactValue" Text="{Binding Value}" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <StackPanel Spacing="6" IsVisible="{Binding Facts.HasDescription}">
+                            <TextBlock Classes="artworkLabel" Text="{x:Static app:AppTexts.DetailDescriptionCaption}" />
+                            <TextBlock Classes="waitingFactsDescription" Text="{Binding Facts.Description}" />
                           </StackPanel>
-                        </Button>
+                          <TextBlock Classes="waitingFactValue" Text="{x:Static app:AppTexts.WaitingFactsNone}" IsVisible="{Binding Facts.IsEmpty}" />
+                        </StackPanel>
                       </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </ScrollViewer>
-                <ctl:EdgeFade Name="HitFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #HitScroller}" />
-                <!-- Why the grid is empty, or that the hits are being checked. -->
-                <TextBlock Classes="waitingStatus" Text="{x:Static app:AppTexts.WaitingChecking}" IsVisible="{Binding IsChecking}" />
-                <TextBlock Classes="waitingStatus" Text="{Binding Message}" IsVisible="{Binding HasMessage}" />
-              </Panel>
+                      <DataTemplate x:DataType="vm:WaitingHitViewModel">
+                        <Panel />
+                      </DataTemplate>
+                    </ContentControl.DataTemplates>
+                  </ContentControl>
+                </Border>
+              </Grid>
             </DockPanel>
           </Grid>
 

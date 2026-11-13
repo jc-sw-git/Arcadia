@@ -3852,6 +3852,68 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
   </Style>
+  <!-- #539: a metadata hit is a row of the list beside the info box, the focused one ringed like a tile. -->
+  <Style Selector="Button.waitingFactHit">
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="ItemsControl.facts UniformGrid">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ItemsControl.facts Button.waitingFactHit">
+    <Setter Property="MinHeight" Value="92" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.waitingFactHit.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.waitingFactHit.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.waitingFacts">
+    <Setter Property="Width" Value="540" />
+    <Setter Property="Margin" Value="24,8,0,0" />
+    <Setter Property="Padding" Value="24,20" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactsTitle">
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactValue">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactsDescription">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="24" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="9" />
+    <Setter Property="TextTrimming" Value="WordEllipsis" />
+  </Style>
+  <!-- #539: the cover chosen on the first step, small, above the backgrounds. -->
+  <Style Selector="Border.waitingChosenCover">
+    <Setter Property="Margin" Value="0,0,0,16" />
+  </Style>
+  <Style Selector="Border.waitingChosenFrame">
+    <Setter Property="Width" Value="60" />
+    <Setter Property="Height" Value="90" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
   <Style Selector="Border.waitingNote">
     <Setter Property="Margin" Value="0,24,0,0" />
     <Setter Property="Padding" Value="20,16" />
@@ -3862,7 +3924,6 @@
   </Style>
   <Style Selector="Border.waitingNote > TextBlock">
     <Setter Property="FontSize" Value="16" />
-    <Setter Property="LineHeight" Value="25" />
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
   </Style>

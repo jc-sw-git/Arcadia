@@ -11,6 +11,8 @@ namespace Arcadia.App.ViewModels;
 /// one show at once; once the focus rests on the entry, the others are checked (a few at a time, filling the grid in
 /// SteamGridDB's order) and the tiles' images load. An own term searches SteamGridDB and shows the first
 /// <see cref="SteamGridDbClient.MaxOwnTermHits"/> results with images; nothing of it is kept.
+/// A game seeking cover and background is chosen in two steps (#539): first a cover, then a background, also from
+/// another hit; the background's step starts on the cover's own game, and B there goes back to the covers.
 /// </summary>
 /// <remarks>UI thread only.</remarks>
 public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
@@ -20,10 +22,15 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
 
     private readonly ArtworkService _artwork;
 
-    /// <param name="take">A or a click on a hit: the list takes it.</param>
+    /// <summary>The hit the focus goes to once it shows, until the player moves: the cover's game, on either step.</summary>
+    private int? _focusOn;
+
+    /// <param name="take">A or a double click on a hit: the list takes it.</param>
+    /// <param name="mark">A click on a hit: the list marks it.</param>
     /// <param name="title">The title the game shows, its own one included (#496); the search term starts from the launcher's.</param>
-    public ArtworkHitsViewModel(ArtworkService artwork, WaitingGame waiting, string title, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
-        : base(title, SteamGridDbNames.SearchTermOf(waiting.Game.Title), keyboard, take)
+    public ArtworkHitsViewModel(
+        ArtworkService artwork, WaitingGame waiting, string title, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take, Action<WaitingHitViewModel> mark)
+        : base(title, SteamGridDbNames.SearchTermOf(waiting.Game.Title), keyboard, take, mark)
     {
         _artwork = artwork;
         Waiting = waiting;
@@ -45,8 +52,27 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
 
     /// <summary>The kinds SteamGridDB is to give the game after the choice; decided again once the focus rests on it.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SoughtText), nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns))]
+    [NotifyPropertyChangedFor(nameof(SoughtText), nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns), nameof(SeeksBoth), nameof(TakeHint))]
     public partial IReadOnlyList<ArtworkKind> Sought { get; private set; }
+
+    /// <summary>Cover and background are sought: they are chosen one after the other (#539).</summary>
+    public bool SeeksBoth => Sought.Count > 1;
+
+    /// <summary>The cover is chosen, the background is next: the tiles are backgrounds.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns), nameof(BackHint), nameof(TakeHint))]
+    public partial bool IsHeroStep { get; private set; }
+
+    /// <summary>The cover chosen on the first step, shown beside the backgrounds; null before.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasChosenCover))]
+    public partial ArtworkHitViewModel? ChosenCover { get; private set; }
+
+    public bool HasChosenCover => ChosenCover is not null;
+
+    public override string BackHint => IsHeroStep ? AppTexts.WaitingOtherCover : AppTexts.Back;
+
+    public override string TakeHint => SeeksBoth && !IsHeroStep ? AppTexts.WaitingTakeCoverHint : AppTexts.WaitingTakeHint;
 
     public override string SoughtText => Sought.Count > 1 ? AppTexts.WaitingSoughtBoth
         : Sought[0] == ArtworkKind.Cover ? AppTexts.WaitingSoughtCover
@@ -56,6 +82,17 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
     {
         get
         {
+            if (SeeksBoth)
+            {
+                return (IsHeroStep, IsOwnTerm) switch
+                {
+                    (false, false) => AppTexts.WaitingIntroCoverStep(Hits.Count),
+                    (false, true) => AppTexts.WaitingIntroCoverStepOwnTerm(Hits.Count),
+                    (true, false) => AppTexts.WaitingIntroHeroStep(Hits.Count),
+                    (true, true) => AppTexts.WaitingIntroHeroStepOwnTerm(Hits.Count),
+                };
+            }
+
             var loads = Sought.Count > 1 ? AppTexts.WaitingLoadsBoth : Sought[0] == ArtworkKind.Cover ? AppTexts.WaitingLoadsCover : AppTexts.WaitingLoadsHero;
             return IsOwnTerm ? AppTexts.WaitingIntroOwnTerm(count: Hits.Count, loads: loads) : AppTexts.WaitingIntro(count: Hits.Count, loads: loads);
         }
@@ -63,8 +100,8 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
 
     public override string Note => AppTexts.WaitingNote;
 
-    /// <summary>What the tiles show and the hits are checked for: the cover when both are sought.</summary>
-    public ArtworkKind TileKind => NameMatch.TileKindOf(Sought);
+    /// <summary>What the tiles show and the hits are checked for: the cover when both are sought, until it is chosen.</summary>
+    public ArtworkKind TileKind => IsHeroStep ? ArtworkKind.Hero : NameMatch.TileKindOf(Sought);
 
     public override bool IsHero => TileKind == ArtworkKind.Hero;
 
@@ -82,7 +119,39 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         IntroChanged();
     }
 
-    private WaitingHitViewModel NewHit(SteamGridDbHit hit) => Track(new ArtworkHitViewModel(hit, Take));
+    private WaitingHitViewModel NewHit(SteamGridDbHit hit) =>
+        Track(new ArtworkHitViewModel(hit, MarkFromClick, Take) { Cover = IsHeroStep ? ChosenCover?.Hit : null });
+
+    /// <summary>A on a cover while both are sought: kept, and the backgrounds follow; otherwise the list takes the hit.</summary>
+    protected override void Choose(WaitingHitViewModel hit)
+    {
+        if (!SeeksBoth || IsHeroStep)
+        {
+            base.Choose(hit);
+            return;
+        }
+
+        var cover = (ArtworkHitViewModel)hit;
+        ChosenCover = cover;
+        IsHeroStep = true;
+        _focusOn = cover.Hit.Id;
+        Reload();
+    }
+
+    /// <summary>B on the backgrounds: back to the covers, the focus on the cover chosen before.</summary>
+    public override bool StepBack()
+    {
+        if (!IsHeroStep)
+        {
+            return false;
+        }
+
+        _focusOn = ChosenCover?.Hit.Id;
+        IsHeroStep = false;
+        ChosenCover = null;
+        Reload();
+        return true;
+    }
 
     /// <summary>The game's own hits: what it seeks now, the known ones with their tiles, the unchecked ones checked.</summary>
     protected override async Task ShowOriginalAsync(TimeSpan rest, CancellationToken cancel)
@@ -98,6 +167,13 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         if (!match.Sought.SequenceEqual(Sought))
         {
             var kindBefore = TileKind;
+            if (match.Sought.Count < 2 && IsHeroStep)
+            {
+                // A cover set meanwhile (e.g. by hand): only the background is left to choose, from any hit.
+                IsHeroStep = false;
+                ChosenCover = null;
+            }
+
             Sought = match.Sought;
             if (TileKind != kindBefore)
             {
@@ -118,6 +194,13 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         }
 
         LoadShownTiles(cancel);
+        if (IsHeroStep)
+        {
+            // The waiting match knows which hits have a cover; whether they have a background is asked (once a session).
+            await CheckInOrderAsync(match.Hits, int.MaxValue, hit => _artwork.CheckHitAsync(hit, ArtworkKind.Hero, cancel), cancel);
+            return;
+        }
+
         await CheckInOrderAsync(match.Hits, int.MaxValue, hit => _artwork.CheckWaitingHitAsync(game, hit, cancel), cancel);
     }
 
@@ -193,6 +276,17 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         Done(Hits.Count > 0 ? null : failure ?? AppTexts.WaitingNoHits);
     }
 
+    /// <summary>The cover's game showed on the other step: the focus goes to it, unless the player moved meanwhile.</summary>
+    private void FocusIfWanted(int at, SteamGridDbHit hit)
+    {
+        if (_focusOn == hit.Id && !PlayerMoved)
+        {
+            _focusOn = null;
+            PlayerMoved = true;
+            FocusHit(at);
+        }
+    }
+
     /// <summary>Why SteamGridDB isn't asked: a deleted key is no rejected one (#532).</summary>
     private string KeyFailure => _artwork.SteamGridDb?.State is null or SteamGridDbKeyState.None
         ? AppTexts.DataSourcesKeyMissing
@@ -219,6 +313,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
             case HitCheck.HasImage:
                 var at = Hits.Count(h => order.GetValueOrDefault(((ArtworkHitViewModel)h).Hit.Id, int.MaxValue) < order[result.Hit.Id]);
                 InsertHit(at, NewHit(result.Hit));
+                FocusIfWanted(at, result.Hit);
                 return null;
             case HitCheck.KeyRejected:
                 return KeyFailure;

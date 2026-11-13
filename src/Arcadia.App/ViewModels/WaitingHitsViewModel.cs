@@ -41,16 +41,21 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     private readonly WaitingKeyboard _keyboard;
     private readonly Action<WaitingHitViewModel> _take;
+    private readonly Action<WaitingHitViewModel> _mark;
     private CancellationTokenSource _work = new();
     private readonly List<Task> _tileLoads = [];
     private int _focus;
     private int _column;
 
-    protected WaitingHitsViewModel(string title, string originalTerm, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
+    /// <param name="take">A or a double click chose a hit: the list takes it.</param>
+    /// <param name="mark">A click marked a hit: the list brings the focus into the hits, onto it (#539).</param>
+    protected WaitingHitsViewModel(string title, string originalTerm, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take, Action<WaitingHitViewModel> mark)
     {
         Title = title;
         _keyboard = keyboard;
         _take = take;
+        _mark = mark;
+        Hits.CollectionChanged += (_, _) => MarkedHit = Hits.Count == 0 ? null : Hits[Math.Min(_focus, Hits.Count - 1)];
         OriginalTerm = originalTerm;
         Term = originalTerm;
     }
@@ -84,7 +89,23 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     /// <summary>The tiles are backgrounds, three a row; covers otherwise.</summary>
     public virtual bool IsHero => false;
 
-    public int Columns => IsHero ? HeroColumns : CoverColumns;
+    /// <summary>
+    /// The hits are a list beside an info box with the marked hit's facts, not a grid of images (metadata, #539): games
+    /// of the same name tell apart by their facts, not by their covers.
+    /// </summary>
+    public virtual bool ShowsFacts => false;
+
+    /// <summary>The hit the focus is on, or would be on once in the hits; the info box shows its facts. Null without hits.</summary>
+    [ObservableProperty]
+    public partial WaitingHitViewModel? MarkedHit { get; private set; }
+
+    /// <summary>What B does in the hits: back to the games list, or a step back within the choice.</summary>
+    public virtual string BackHint => AppTexts.Back;
+
+    /// <summary>What A on a hit does.</summary>
+    public virtual string TakeHint => AppTexts.WaitingTakeHint;
+
+    public int Columns => ShowsFacts ? 1 : IsHero ? HeroColumns : CoverColumns;
 
     /// <summary>The entry's search name; "Zurücksetzen" brings it back.</summary>
     public string OriginalTerm { get; }
@@ -227,8 +248,50 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>Takes the hit A or a click chose.</summary>
-    protected void Take(WaitingHitViewModel hit) => _take(hit);
+    /// <summary>
+    /// B in the hits: true when the choice went a step back within the hits (to the cover after the background, #539);
+    /// false sends the focus back to the games list.
+    /// </summary>
+    public virtual bool StepBack() => false;
+
+    /// <summary>A click on a hit (#539): marks it, the focus comes onto it; nothing is chosen.</summary>
+    public void Mark(WaitingHitViewModel hit)
+    {
+        if (Hits.IndexOf(hit) is var index and >= 0)
+        {
+            IsActive = true;
+            PlayerMoved = true;
+            Zone = WaitingHitsFocus.Grid;
+            FocusHit(index);
+        }
+    }
+
+    /// <summary>A or a double click chose the hit; by default the list takes it.</summary>
+    protected virtual void Choose(WaitingHitViewModel hit) => _take(hit);
+
+    /// <summary>A new tile's double click: chosen as with A.</summary>
+    protected void Take(WaitingHitViewModel hit)
+    {
+        if (!IsDisposed && Hits.Contains(hit))
+        {
+            Choose(hit);
+        }
+    }
+
+    /// <summary>A new tile's click: the list marks it, bringing the focus into the hits first.</summary>
+    protected void MarkFromClick(WaitingHitViewModel hit) => _mark(hit);
+
+    /// <summary>The hits again from the start, with the term in the field: e.g. another step of the choice (#539).</summary>
+    protected void Reload()
+    {
+        Hits.Clear();
+        IntroChanged();
+        PlayerMoved = false;
+        Zone = WaitingHitsFocus.Grid;
+        var term = Term;
+        Run(c => IsOwnTerm ? SearchAsync(term, c) : ShowOriginalAsync(TimeSpan.Zero, c));
+        FocusHit(0);
+    }
 
     [RelayCommand]
     private void EditTerm()
@@ -277,7 +340,7 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         switch (Zone)
         {
             case WaitingHitsFocus.Grid when _focus < Hits.Count:
-                _take(Hits[_focus]);
+                Choose(Hits[_focus]);
                 break;
             case WaitingHitsFocus.Term:
                 EditTerm();
@@ -404,6 +467,8 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
             Hits[i].IsFocused = inGrid && i == _focus;
         }
 
+        MarkedHit = _focus < Hits.Count ? Hits[_focus] : null;
+
         OnPropertyChanged(nameof(IsTermFocused));
         OnPropertyChanged(nameof(IsResetFocused));
         FocusMoved?.Invoke(this, EventArgs.Empty);
@@ -434,7 +499,7 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>Cancels what runs for the hits shown and starts <paramref name="work"/>.</summary>
-    private void Run(Func<CancellationToken, Task> work)
+    protected void Run(Func<CancellationToken, Task> work)
     {
         _work.Cancel();
         _work = new CancellationTokenSource();

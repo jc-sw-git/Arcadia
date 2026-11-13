@@ -72,7 +72,9 @@ public sealed partial class WaitingGameViewModel : ViewModelBase
 }
 
 /// <summary>One hit of the current entry, right: its image (a placeholder with its name until it is there), name and year.</summary>
-public abstract partial class WaitingHitViewModel(Action<WaitingHitViewModel> take) : ViewModelBase
+/// <param name="mark">A click: marks it (#539).</param>
+/// <param name="take">A double click: chooses it, as A on it.</param>
+public abstract partial class WaitingHitViewModel(Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take) : ViewModelBase
 {
     public abstract string Name { get; }
 
@@ -90,27 +92,50 @@ public abstract partial class WaitingHitViewModel(Action<WaitingHitViewModel> ta
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
-    /// <summary>A click takes it, as A on it.</summary>
+    /// <summary>A click only marks it: a hit is chosen on purpose, with A or a double click (#539).</summary>
     [RelayCommand]
-    private void Pick() => take(this);
+    private void Mark() => mark(this);
+
+    [RelayCommand]
+    private void Take() => take(this);
 }
 
-/// <summary>A SteamGridDB game offered for an artwork entry (#491).</summary>
-public sealed class ArtworkHitViewModel(SteamGridDbHit hit, Action<WaitingHitViewModel> take) : WaitingHitViewModel(take)
+/// <summary>A SteamGridDB game offered for an artwork entry (#491): its cover, or its background.</summary>
+public sealed class ArtworkHitViewModel(SteamGridDbHit hit, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
+    : WaitingHitViewModel(mark, take)
 {
     public SteamGridDbHit Hit { get; } = hit;
+
+    /// <summary>
+    /// A background offered after the cover was chosen (cover and background sought, #539): the game the cover comes from,
+    /// which may be another one. Null for a cover, and for a background sought alone.
+    /// </summary>
+    public SteamGridDbHit? Cover { get; init; }
 
     public override string Name => Hit.Name;
 
     protected override int? Year => Hit.Year;
 }
 
-/// <summary>An IGDB game offered for a metadata entry (#494): IGDB's cover or the placeholder, name and year.</summary>
-public sealed class MetadataHitViewModel(IgdbGame hit, Action<WaitingHitViewModel> take) : WaitingHitViewModel(take)
+/// <summary>
+/// An IGDB game offered for a metadata entry (#494): its name and year in the list, its facts in the info box beside it
+/// (#539), checked as any metadata before it is shown.
+/// </summary>
+public sealed class MetadataHitViewModel(IgdbGame hit, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
+    : WaitingHitViewModel(mark, take)
 {
+    private WaitingHitFacts? _facts;
+
     public IgdbGame Hit { get; } = hit;
 
     public override string Name => Hit.Name;
+
+    /// <summary>What sets it apart from the other hits: genres and developer, under its name in the list.</summary>
+    public string Line => Facts.Line;
+
+    public bool HasLine => Line.Length > 0;
+
+    public WaitingHitFacts Facts => _facts ??= new WaitingHitFacts(Hit.Data);
 
     protected override int? Year => Hit.Year;
 }

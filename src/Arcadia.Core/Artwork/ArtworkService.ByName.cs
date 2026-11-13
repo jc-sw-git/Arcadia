@@ -37,7 +37,6 @@ public sealed partial class ArtworkService
     // Per session: what SteamGridDB has of a hit (found or not; a failure is asked again) and the tile images downloaded.
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(int Hit, ArtworkKind Kind), SteamGridDbAnswer> _hitImages = new();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Game, int Hit, ArtworkKind Kind), ArtworkFile> _hitTiles = new();
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Game, string Address), ArtworkFile> _offeredCovers = new();
     private NameMatchStore? _names;
 
     private NameMatchStore Names => _names ??= new NameMatchStore(Path.Combine(_cache.Root, NameMatchStore.FileName)) { Log = Log };
@@ -76,12 +75,15 @@ public sealed partial class ArtworkService
 
     /// <summary>
     /// A on a hit: the game is that SteamGridDB game from now on, leaves the waiting list and gets its images at once, by
-    /// order and "Zuschneiden erlaubt" like any automatic image; an image set by hand stays.
+    /// order and "Zuschneiden erlaubt" like any automatic image; an image set by hand stays. With <paramref name="heroHit"/>
+    /// (cover and background sought, #539) the background comes from that game, the cover from <paramref name="hit"/>.
     /// </summary>
-    public async Task ChooseAsync(Game game, SteamGridDbHit hit, CancellationToken cancel = default)
+    public async Task ChooseAsync(Game game, SteamGridDbHit hit, SteamGridDbHit? heroHit = null, CancellationToken cancel = default)
     {
-        Names.Set(game.Key, NameMatch.Chosen(hit.Id));
-        Log($"Artwork: {game.Key} ist SteamGridDB-Spiel {hit.Id} (gewählt)");
+        Names.Set(game.Key, NameMatch.Chosen(hit.Id, heroHit?.Id ?? hit.Id));
+        Log(heroHit is null || heroHit.Id == hit.Id
+            ? $"Artwork: {game.Key} ist SteamGridDB-Spiel {hit.Id} (gewählt)"
+            : $"Artwork: {game.Key} ist SteamGridDB-Spiel {hit.Id}, Hintergrund von {heroHit.Id} (gewählt)");
         WaitingChanged?.Invoke(this, EventArgs.Empty);
 
         // Off the caller's thread: downloads and decoding never hold the UI.
@@ -258,38 +260,6 @@ public sealed partial class ArtworkService
         return tile;
     }
 
-    /// <summary>
-    /// The cover another source offers for a hit of a game waiting for metadata (#494: IGDB's cover), downloaded into the
-    /// place for offered images like a SteamGridDB hit's tile, once per game, address and session; null if it can't be
-    /// loaded now (the tile keeps its placeholder). HTTPS only; the content must be an image. Off the UI thread.
-    /// </summary>
-    public async Task<ArtworkFile?> OfferedCoverAsync(Game game, Uri address, CancellationToken cancel = default)
-    {
-        if (_offeredCovers.TryGetValue((game.Key, address.AbsoluteUri), out var known) && File.Exists(known.Path))
-        {
-            return known;
-        }
-
-        if (await DownloadAsync(game, ArtworkKind.Cover, address, NewRunState(), cancel) is not { } content
-            || ImageCheck.Of(new MemoryStream(content)) is not { } size
-            || ArtworkCache.ExtensionOf(content) is not { } extension)
-        {
-            return null;
-        }
-
-        try
-        {
-            var tile = new ArtworkFile(game.Key, ArtworkKind.Cover, _cache.WriteSuggestion(game.Key, ArtworkKind.Cover, content, extension), size, 0);
-            _offeredCovers[(game.Key, address.AbsoluteUri)] = tile;
-            return tile;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            Log($"Artwork: Treffer-Bild für {game.Key} nicht gespeichert: {e.GetType().Name}");
-            return null;
-        }
-    }
-
     /// <summary>A hit's images of a kind, from this session's answers or asked now; only an answer that settles it is kept.</summary>
     private async Task<SteamGridDbAnswer> HitImagesAsync(SteamGridDbHit hit, ArtworkKind kind, CancellationToken cancel)
     {
@@ -363,7 +333,7 @@ public sealed partial class ArtworkService
             _unknownById[game.Key] = true;
         }
 
-        return Names.Of(game.Key) is { State: NameMatchState.Chosen, GameId: { } gameId }
+        return Names.Of(game.Key)?.GameIdFor(kind) is { } gameId
             ? await steamGridDb.ImagesOfGameAsync(gameId, kind, cancel)
             : SteamGridDbAnswer.Of(SteamGridDbOutcome.NotFound);
     }
@@ -378,8 +348,8 @@ public sealed partial class ArtworkService
     {
         switch (Names.Of(game.Key))
         {
-            case { State: NameMatchState.Chosen, GameId: { } chosen }:
-                return chosen;
+            case { State: NameMatchState.Chosen } chosen:
+                return chosen.GameIdFor(kind);
             case { State: NameMatchState.Waiting or NameMatchState.Skipped }:
                 return null;
         }

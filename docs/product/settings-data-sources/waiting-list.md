@@ -19,10 +19,18 @@ Index and the category's frame: [README.md](README.md).
   "Ersten nehmen". A opens the screen with two levels, only with the games of its tab's kind. Games list (left; each
   game's name and launcher, no hit count): ▲ ▼ choose a game, round at the ends; A goes into its hits; B closes (undecided games stay in their order). Hits (right): "Gesucht: Cover und Hintergrund" /
   "Gesucht: Cover" / "Gesucht: Hintergrund" (decided again when shown), the field "Eigener Suchbegriff" with
-  "Zurücksetzen", and a grid of the hits' images of that kind (cover when both; five covers or three backgrounds a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).
+  "Zurücksetzen", and a grid of the hits' images of that kind (five covers or three backgrounds a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).
   ◀ ▶ ▲ ▼ go round in rows and columns, the field's row counts as each column's top; A takes the hit and goes back to
   the games list on the next waiting game, B goes back without; Y skips the game on both levels. Until chosen a game
   keeps its launcher image or placeholder.
+- Cover and background sought (#539): two steps, "Schritt 1 von 2" the covers, A keeps one ("Cover nehmen, weiter zum
+  Hintergrund"); "Schritt 2 von 2" the backgrounds of the hits that have one, with "DEIN COVER" (small, its name) above
+  them, the focus first on the cover's own game; A takes cover and background, also from two different games. B on step
+  2 is "Anderes Cover": back to the covers, the focus on the one kept; B there goes to the games list. An own term
+  searches the kind of the step. Each kind then comes from its own SteamGridDB game (order, "Zuschneiden erlaubt",
+  "Alle Artworks neu laden" and "Artwork ändern" use that game).
+- Mouse (#539): a click on a hit only marks it (the focus comes onto it, also from the games list); a double click takes
+  it as A does. The note's "[Y]" is the skip button's glyph of the controller in use, with the keyboard its key (V).
 - Hits not yet checked (a waiting list from before #506, a failed check) are checked when the game is shown, never in
   the background: "Treffer werden geprüft …" while they are, "Keine Treffer" when none is left (the game stays until
   skipped). Checks and images start only once the focus rests on a game (150 ms); moving on cancels them.
@@ -44,8 +52,11 @@ Index and the category's frame: [README.md](README.md).
   with several hits waits there, with its launcher data until chosen; a game waiting for both kinds is on both lists,
   each decided on its own. The metadata list shows its games also while IGDB is switched off or its access is gone (a
   choice needs no request and shows once IGDB is on), in the order they came.
-- A metadata entry's hits: "Gesucht: Metadaten", IGDB's hits in its order with IGDB's cover (or the placeholder; only
-  while the access is usable), name and year (none without a date). "Eigener Suchbegriff" searches IGDB's main games
+- A metadata entry's hits: "Gesucht: Metadaten", IGDB's hits in its order as a list (name, year, first genre ·
+  developer; no cover: namesakes tell apart by their facts, #539), ▲ ▼ through it. Beside it an info box with the marked
+  hit's facts, checked like all metadata: "ERSCHIENEN", "GENRES", "ENTWICKLER", "PUBLISHER", "ALTERSFREIGABE" (each only
+  when IGDB has it) and the start of the description (600 characters, cut at a word); with none "IGDB hat zu diesem
+  Spiel keine weiteren Angaben." "Eigener Suchbegriff" searches IGDB's main games
   (the first 25). A takes the hit: its fields and a corrected title show everywhere at once, without a request; the game
   is asked by that IGDB game from then on. Y skips: launcher data stay, never searched by name on IGDB again, also not
   at "Alle Metadaten neu laden". While it waits it isn't searched again either.

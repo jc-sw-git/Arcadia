@@ -500,10 +500,10 @@ public sealed class RecentMessagesAndLogsTests
         Assert.True(Row(arcadia, "logging-log-pan").IsDimmed);
 
         // The same settings page: RB moves between the categories it already built.
-        arcadia.Press(UiAction.PreviousTab, times: 2);
+        arcadia.Press(UiAction.PreviousTab, times: 3);
         Assert.Equal(AppTexts.ControllerCategory, arcadia.Main.Settings!.Selected.Name);
         arcadia.Logs.States[LogKind.Pan] = LogFileState.Present;
-        arcadia.Press(UiAction.NextTab, times: 2);
+        arcadia.Press(UiAction.NextTab, times: 3);
 
         Assert.Equal(AppTexts.AboutTitle, arcadia.Main.Settings!.Selected.Name);
         Assert.False(Row(arcadia, "logging-log-pan").IsDimmed);

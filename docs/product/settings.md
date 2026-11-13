@@ -69,6 +69,10 @@ failures ("… konnte nicht gestartet werden …", unexpected errors, a failed s
 controllers not recognised). Pan's notices take the level of their source. The UI never says "Toast": a toast is a
 "Meldung", a status message a "Status".
 
+## Category "Lokalisierung"
+
+Between "Datenquellen" and "Über Arcadia": [localization.md](localization.md).
+
 ## Category "Über Arcadia"
 
 - Group "VERSION": the version, the search for updates, the update, "Was ist neu".

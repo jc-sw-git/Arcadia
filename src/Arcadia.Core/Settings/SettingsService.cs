@@ -14,11 +14,12 @@ public sealed class SettingsService
     // Volatile: the thread pool reads what the UI thread wrote, without taking the lock.
     private volatile AppSettings _current;
 
-    public SettingsService(SettingsStore store)
+    /// <param name="log">Where a value replaced by its default is reported (#553); nowhere when null.</param>
+    public SettingsService(SettingsStore store, Action<string>? log = null)
     {
         _store = store;
         var loaded = store.Load();
-        _current = loaded.WithValidLibraryView().WithValidMouseMode().WithValidQuickSelection();
+        _current = loaded.WithValidLibraryView().WithValidMouseMode().WithValidQuickSelection().WithValidLocalization(log ?? (_ => { }));
         if (loaded.LibrarySort != _current.LibrarySort || loaded.PreferredPageSize != _current.PreferredPageSize)
         {
             // A view value this version replaced, e.g. a page size of an older Arcadia (#24): saved at once, so

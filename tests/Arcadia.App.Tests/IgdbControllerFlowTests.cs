@@ -47,7 +47,7 @@ public sealed class IgdbControllerFlowTests
         var tokens = arcadia.Igdb.TokenRequests;
         arcadia.FocusRow("igdb-test");
         arcadia.Press(UiAction.Accept);
-        await arcadia.WaitUntilAsync(() => Row(arcadia, "igdb-test").Subtitle == AppTexts.DataSourcesIgdbTestOk(arcadia.Time.GetLocalNow()), "Verbindung getestet");
+        await arcadia.WaitUntilAsync(() => Row(arcadia, "igdb-test").Subtitle == AppTexts.DataSourcesIgdbTestOk(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), "Verbindung getestet");
         Assert.Equal(tokens + 1, arcadia.Igdb.TokenRequests);
 
         // IGDB lifted to first with L3 and ▲, dropped, then lifted back down.

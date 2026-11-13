@@ -7,7 +7,7 @@ nothing reads the real Windows settings. Under #517 there are no window tests pe
 (`GuardPageListTests` fails without it). "The quick selection" are the layouts whose switch is on; "the layout menu" is
 what R3 (G) opens on the on-screen keyboard.
 
-Assumptions (the owner's answers in the issue decide; cases resting on one say so):
+Agreed with the owner (cases resting on one say so):
 A1 Without a saved quick selection all five layouts are in it, as R3 offers all five today.
 A2 A changed default leaves the previous default in the quick selection (its switch on, now changeable).
 A3 A default taken from the system (scenario 13) is not written to `settings.json` until the player changes the row.

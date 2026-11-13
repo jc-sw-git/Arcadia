@@ -67,11 +67,9 @@ public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyL
 
     public override int GetHashCode() => HashCode.Combine(VersionText, DateText, Changes.Count);
 
-    private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
-
     public static InfoRelease Of(ChangelogEntry entry) => new(
         AppTexts.ReleaseVersion(entry.Version.ToString(3)),
-        entry.PublishedAt is { } date ? date.ToLocalTime().ToString("d. MMMM yyyy", German) : string.Empty,
+        entry.PublishedAt is { } date ? Services.Formatting.LongDate(date) : string.Empty,
         entry.Changes.Count > 0 ? entry.Changes : [AppTexts.InfoNoChangesListed]);
 }
 

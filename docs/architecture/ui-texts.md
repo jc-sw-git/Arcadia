@@ -41,7 +41,10 @@ description is translated by Windows' own means (`ServiceDescriptions`).
   (`en/Arcadia.resources.dll`); `Arcadia.Core.Localization.UiLanguages` lists the languages.
 - `UiText` reads the UI culture's texts (en-GB → en), German for German. A text a translation lacks shows in English,
   never German; a text missing altogether shows its key. The App sets the UI culture once at start, from the setting
-  "Sprache"; dates and numbers keep the system's region (`CurrentCulture`). The test projects set German
+  "Sprache", before the first text is read (`UiLanguage.Use`, which keeps the system's display language as
+  `UiLanguage.System`); dates and numbers keep the system's region (`CurrentCulture`). A change applies through a
+  restart (`MainViewModel.RestartForLanguage`, `--show-language-setting`); the acceptance tests fake the system
+  language through `ArcadiaParts.SystemLanguage`. The test projects set German
   (`GermanUiLanguage`), whatever language the machine speaks.
 - A test can swap a class's `Resources` for a `ResourceManager` of its own, e.g. one with a broken text.
 

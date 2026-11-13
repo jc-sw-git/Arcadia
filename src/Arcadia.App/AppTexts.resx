@@ -1378,6 +1378,29 @@
   <data name="DataSourcesMetadataSourceOffInfo" xml:space="preserve"><value>Arcadia fragt die Quelle nicht und blendet ihre Felder und korrigierten Titel aus, bis du sie einschaltest. Geladenes bleibt gespeichert.</value></data>
   <data name="DataSourcesMetadataSourceOffSubtitle" xml:space="preserve"><value>Aus · wird nicht gefragt, ihre Felder sind ausgeblendet</value></data>
   <data name="LocalizationTitle" xml:space="preserve"><value>Lokalisierung</value></data>
+  <data name="LocalizationLanguageGroup" xml:space="preserve"><value>SPRACHE</value></data>
+  <data name="LocalizationLanguage" xml:space="preserve"><value>Sprache</value></data>
+  <data name="LocalizationLanguageSubtitle" xml:space="preserve"><value>In dieser Sprache zeigt Arcadia seine Texte</value></data>
+  <data name="LocalizationLanguageSystem" xml:space="preserve"><value>Systemsprache</value></data>
+  <data name="LocalizationLanguageSystemValue" xml:space="preserve"><value>Arcadia folgt der Anzeigesprache von Windows.</value></data>
+  <data name="LocalizationLanguageFixedValue" xml:space="preserve"><value>Arcadia bleibt in dieser Sprache, egal welche Windows zeigt.</value></data>
+  <data name="LocalizationLanguageSystemSpoken" xml:space="preserve"><value>Die Systemsprache ist {language}. Mit „Systemsprache“ ist Arcadia auf {language}.</value></data>
+  <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>Die Systemsprache ist {language}. Die gibt es in Arcadia noch nicht, mit „Systemsprache“ ist Arcadia deshalb auf Englisch.</value></data>
+  <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows nennt keine Anzeigesprache, mit „Systemsprache“ ist Arcadia deshalb auf Englisch.</value></data>
+  <data name="LocalizationLanguageInfo" xml:space="preserve"><value>Die Wahl wird sofort gespeichert und gilt ab dem nächsten Start. „Sprache anwenden“ darunter startet Arcadia gleich neu.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Metadaten wie Beschreibungen und Genres bleiben in der Sprache, in der sie geladen wurden. „Alle Metadaten neu laden“ in „Datenquellen“ holt sie in der neuen Sprache, wo es sie darin gibt.</value></data>
+  <data name="LocalizationApply" xml:space="preserve"><value>Sprache anwenden</value></data>
+  <data name="LocalizationApplyAction" xml:space="preserve"><value>Neu starten</value></data>
+  <data name="LocalizationApplySame" xml:space="preserve"><value>Die gewählte Sprache ist schon an</value></data>
+  <data name="LocalizationApplyRestarts" xml:space="preserve"><value>Arcadia startet neu und kommt hierher zurück</value></data>
+  <data name="LocalizationApplyInfo" xml:space="preserve"><value>Arcadia startet neu, in der gewählten Sprache, und öffnet wieder diese Seite auf „Sprache“: im Vollbild, wenn es jetzt im Vollbild ist, sonst im Fenster.</value></data>
+  <data name="LocalizationApplyStopsReload" xml:space="preserve"><value>Das Neuladen der Artworks oder Metadaten hört dabei auf und geht nach dem Neustart nicht weiter.</value></data>
+  <data name="LocalizationApplyWaitsForGame" xml:space="preserve"><value>Erst wenn „{game}“ beendet ist</value></data>
+  <data name="LocalizationApplyGameNote" xml:space="preserve"><value>Arcadia kann erst neu starten, wenn „{game}“ beendet ist.</value></data>
+  <data name="LocalizationApplyWaitsForDrivers" xml:space="preserve"><value>Erst nach der Treiberinstallation</value></data>
+  <data name="LocalizationApplyDriversNote" xml:space="preserve"><value>Arcadia kann erst neu starten, wenn die Treiberinstallation fertig ist.</value></data>
+  <data name="LocalizationApplyWaitsForUpdate" xml:space="preserve"><value>Erst nach dem Arcadia-Update</value></data>
+  <data name="LocalizationApplyUpdateNote" xml:space="preserve"><value>Arcadia kann erst neu starten, wenn das Update fertig ist.</value></data>
   <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>BILDSCHIRMTASTATUR</value></data>
   <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Standard-Layout</value></data>
   <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>Mit diesem Layout öffnet sich die Bildschirmtastatur</value></data>

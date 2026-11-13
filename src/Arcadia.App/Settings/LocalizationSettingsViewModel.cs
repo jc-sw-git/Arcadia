@@ -5,8 +5,9 @@ using Arcadia.Core.Settings;
 namespace Arcadia.App.Settings;
 
 /// <summary>
-/// The category "Lokalisierung" (#14, #553) between "Datenquellen" and "Über Arcadia": the on-screen keyboard's default
-/// layout with one switch per layout for R3's quick selection, and the clock. Every change is saved and applies at once.
+/// The category "Lokalisierung" (#14, #553, #554) between "Datenquellen" and "Über Arcadia": the UI language
+/// (<see cref="UiLanguageRows"/>), the on-screen keyboard's default layout with one switch per layout for R3's quick
+/// selection, and the clock. Every change is saved at once; all but the language apply at once too.
 /// </summary>
 public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
 {
@@ -22,13 +23,16 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
     private readonly Action _clockChanged;
     private readonly ChoiceRowViewModel _defaultLayout;
     private readonly List<QuickLayoutRowViewModel> _quick;
+    private readonly UiLanguageRows _language;
 
     /// <param name="clockChanged">"Uhrzeit" changed: every time shown from now on follows it; the header clock at once.</param>
-    public LocalizationSettingsViewModel(SettingsChanges changes, Action clockChanged)
+    /// <param name="language">What "Sprache anwenden" waits for, and how it restarts Arcadia.</param>
+    public LocalizationSettingsViewModel(SettingsChanges changes, Action clockChanged, LanguageRestart language)
         : base(AppTexts.LocalizationTitle, "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z M3.6 9h16.8 M3.6 15h16.8 M11.5 3a17 17 0 0 0 0 18 M12.5 3a17 17 0 0 1 0 18")
     {
         _changes = changes;
         _clockChanged = clockChanged;
+        _language = new UiLanguageRows(changes, language);
         var keyboard = AppTexts.LocalizationKeyboardGroup;
         _defaultLayout = new ChoiceRowViewModel(
             DefaultLayoutKey,
@@ -60,8 +64,11 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
             Info = [new InfoText(AppTexts.LocalizationClockInfo)],
         };
         RefreshQuickRows();
-        SetRows([_defaultLayout, .. _quick, clock]);
+        SetRows([_language.LanguageRow, _language.ApplyRow, _defaultLayout, .. _quick, clock]);
     }
+
+    /// <summary>A game, the driver installation, an update or a reload began or ended: "Sprache anwenden" follows. UI thread.</summary>
+    public void RestartStateChanged() => _language.Refresh();
 
     /// <summary>The layouts as the keyboards offer them now, with a default taken from the system when none is saved.</summary>
     private KeyboardLayoutChoice Layouts => SystemKeyboardLayout.Choice(_changes.Current.Localization);

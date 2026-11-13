@@ -44,16 +44,19 @@ public sealed class LocalizationSettingsTests : IDisposable
         Assert.Equal(names.IndexOf(AppTexts.AboutTitle) - 1, names.IndexOf(AppTexts.LocalizationTitle));
         Assert.Equal(category.Rows[0], arcadia.Main.Settings.FocusedRow);
         Assert.Equal(
-            [AppTexts.LocalizationDefaultLayout, .. LayoutNames, AppTexts.LocalizationClock],
+            [AppTexts.LocalizationLanguage, AppTexts.LocalizationApply, AppTexts.LocalizationDefaultLayout, .. LayoutNames, AppTexts.LocalizationClock],
             category.Rows.Select(row => row.Title));
-        Assert.Equal([AppTexts.LocalizationKeyboardGroup, AppTexts.LocalizationClockGroup], category.Rows.Where(r => r.HasGroupHeading).Select(r => r.Group));
-        Assert.All(category.Rows.Skip(1).Take(5), row => Assert.Equal(1, row.Indent));
-        Assert.Equal(5, category.Rows[0].ValueBoxes.Count);
+        Assert.Equal(
+            [AppTexts.LocalizationLanguageGroup, AppTexts.LocalizationKeyboardGroup, AppTexts.LocalizationClockGroup],
+            category.Rows.Where(r => r.HasGroupHeading).Select(r => r.Group));
+        var defaultLayout = arcadia.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey);
+        Assert.All(category.Rows.SkipWhile(row => row != defaultLayout).Skip(1).Take(5), row => Assert.Equal(1, row.Indent));
+        Assert.Equal(5, defaultLayout.ValueBoxes.Count);
         Assert.Equal(3, arcadia.FocusRow(LocalizationSettingsViewModel.ClockKey).ValueBoxes.Count);
         Assert.Equal(AppTexts.LocalizationClockSystem, CurrentBox(category.Rows[^1]).Title);
 
         // [R3] is something only a controller does: the info shows the button also while the keyboard is in use.
-        Assert.True(Assert.IsType<InfoText>(Assert.Single(category.Rows[0].Info)).KeepsButtons);
+        Assert.True(Assert.IsType<InfoText>(Assert.Single(defaultLayout.Info)).KeepsButtons);
 
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.Settings);
@@ -332,8 +335,32 @@ public sealed class LocalizationSettingsTests : IDisposable
         Assert.Equal("42\u00A0%", Formatting.Percent(0.429));
     }
 
+    [Fact]
+    [Trait("TestCase", "T554-4")]
+    public void The_UI_language_comes_from_the_display_language_and_numbers_from_the_region()
+    {
+        // Display language English, region German: English names, German order and separators.
+        Assert.Equal("en-US", Core.Localization.UiLanguages.Resolve(Core.Localization.UiLanguages.System, CultureInfo.GetCultureInfo("en-US")).Name);
+        var before = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Formatting.UseRegion(CultureInfo.GetCultureInfo("de-DE"));
+
+            Assert.Equal("1.234", Formatting.Count(1234));
+            Assert.Equal("13.11.2026", Formatting.Date(new DateOnly(2026, 11, 13)));
+            Assert.Contains("Nov", Formatting.ShortDate(new DateTimeOffset(2026, 11, 13, 12, 0, 0, TimeSpan.Zero)), StringComparison.Ordinal);
+            Assert.Contains("Fri", Formatting.ShortDate(new DateTimeOffset(2026, 11, 13, 12, 0, 0, TimeSpan.Zero)), StringComparison.Ordinal);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = before;
+        }
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T553-16")]
+    [Trait("TestCase", "T554-4")]
     public async Task With_an_English_US_region_the_library_counts_and_dates_follow_it_and_texts_stay_German()
     {
         Formatting.UseRegion(CultureInfo.GetCultureInfo("en-US"));

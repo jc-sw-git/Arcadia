@@ -3,7 +3,7 @@
 Part 2 of #14; scenarios 1 to 9 and the failure cases there. The cases were derived from the specification before any
 code; the quality engineer checks them again in the review.
 
-**Status:** Automated: – · QE: – · Open for the owner: T554-20, T554-21, T554-22, T554-23
+**Status:** Automated: T554-1 to T554-18 · QE: – · Open for the owner: T554-20, T554-21, T554-22, T554-23
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B). "System language" is the Windows display language, faked in the tests; "region" is the regional
@@ -93,9 +93,19 @@ Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| – | – |
+| T554-1, T554-5, T554-6, T554-12 | `UiLanguageSettingsTests` (App): rows, order, wrapping, saving, when "Sprache anwenden" is active, clicks |
+| T554-2, T554-3, T554-11 | `UiLanguageSettingsTests.System_language_is_used_…`, `The_info_names_…`; `UiLanguagesTests` (Core) |
+| T554-4 | `LocalizationSettingsTests.The_UI_language_comes_from_the_display_language_…`, `With_an_English_US_region_…` (App) |
+| T554-7, T554-14, T554-15 | `UiLanguageSettingsTests.Apply_restarts_…`: saved before the restart, the new start on "Sprache", a failed restart |
+| T554-8, T554-9 | `UiLanguageSettingsTests.Apply_waits_for_a_running_game_…`, `Apply_waits_for_the_driver_installation_…` |
+| T554-10 | `UiLanguageSettingsTests.The_info_names_the_system_language_…` |
+| T554-13 | `LocalizationSettingsTests.An_unknown_language_is_the_system_language_…` (Core) |
+| T554-16, T554-17 | `UiTextTests`, `TranslationsTests` (Core), `EveryUiTextTests` (App, de-DE, de-AT, en-US, en-GB) |
+| T554-18 | `ButtonGlyphTextTests` (Core), `tools/ci/check-ui-texts.sh` |
 
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T554-1 to T554-18 (automated) | 2026-11-13 | Implementer | Debug, Linux cloud container, headless Avalonia | green | – |
+| T554-19 (English screenshots of library, detail, search, first start, settings) | 2026-11-13 | Implementer | Debug, Linux cloud container, `--demo` | German literals left in key hints and views | moved into the resources, guard test extended (`UiTextsStayInResourcesTests`) |

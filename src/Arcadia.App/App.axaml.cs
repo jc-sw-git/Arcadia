@@ -62,6 +62,11 @@ public partial class App : Application
     /// <summary>Hands a game started from Arcadia over to the Arcadia started after an update, so its end brings Arcadia back (#94).</summary>
     private const string StartedGameArgument = "--started-game";
 
+    /// <summary>After "Sprache anwenden" (#554): the settings open on "Sprache", in the new language.</summary>
+    private const string ShowLanguageArgument = "--show-language-setting";
+
+    private const string FullscreenArgument = "--fullscreen";
+
     private IGamepadSource? _gamepad;
 
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
@@ -92,6 +97,9 @@ public partial class App : Application
 
             var settingsStore = SettingsStore.CreateDefault();
             var settings = new SettingsService(settingsStore, AppLog.Write);
+
+            // Before the first text is read: a change of "Sprache" applies after a restart (#554).
+            UiLanguage.Use(settings.Current.Localization.Language);
             var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
             var firstRun = new FirstRunSetup(
                 settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
@@ -138,7 +146,7 @@ public partial class App : Application
             var window = new MainWindow { DataContext = viewModel };
             viewModel.Clipboard = new WindowClipboard(window);
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
-            if (args.Contains("--fullscreen", StringComparer.OrdinalIgnoreCase))
+            if (args.Contains(FullscreenArgument, StringComparer.OrdinalIgnoreCase))
             {
                 window.WindowState = Avalonia.Controls.WindowState.FullScreen;
             }
@@ -151,6 +159,15 @@ public partial class App : Application
             }
 
             desktop.MainWindow = window;
+            viewModel.RestartForLanguage = () => RestartSelf(
+                "Sprache anwenden", // not a UI text (logged)
+                LanguageRestartArguments(RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), window.WindowState == Avalonia.Controls.WindowState.FullScreen),
+                desktop,
+                message => viewModel.Toast.Show(HealthSeverity.Error, message));
+            if (args.Contains(ShowLanguageArgument))
+            {
+                viewModel.ShowLanguageSetting();
+            }
 
             // The mouse mode's overlay is a window too; Arcadia ends with the main window, not the last one.
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
@@ -312,7 +329,7 @@ public partial class App : Application
 
             // Version and Windows build first: a bug report with only the log must say what it is about.
             AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
-                + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}): {string.Join(' ', args)}");
+                + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}, Sprache {UiLanguage.Culture.Name}, System {UiLanguage.System.Name}): {string.Join(' ', args)}");
             viewModel.Session.LoadAsync().Forget(AppTexts.ErrorContextLoadLibrary);
             viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
             updates.CheckIfDueAsync().Forget(AppTexts.ErrorContextUpdateCheck);
@@ -362,6 +379,17 @@ public partial class App : Application
             : null;
     }
 
+    /// <summary>
+    /// After "Sprache anwenden" (#554): the settings open on "Sprache", in fullscreen exactly when the window is now, whatever
+    /// the first start said.
+    /// </summary>
+    private static string[] LanguageRestartArguments(string[] kept, bool fullscreen) =>
+    [
+        .. kept.Where(a => !a.Equals(FullscreenArgument, StringComparison.OrdinalIgnoreCase)),
+        .. fullscreen ? [FullscreenArgument] : Array.Empty<string>(),
+        ShowLanguageArgument,
+    ];
+
     /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>
     private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> startedGames)
     {
@@ -372,8 +400,8 @@ public partial class App : Application
             {
                 i++;
             }
-            // --first-run asked once; the start after an update must not ask again.
-            else if (args[i] != BackgroundArgument && !args[i].Equals(FirstRunArgument, StringComparison.OrdinalIgnoreCase))
+            // --first-run asked once; the start after an update must not ask again, nor open the settings again.
+            else if (args[i] != BackgroundArgument && args[i] != ShowLanguageArgument && !args[i].Equals(FirstRunArgument, StringComparison.OrdinalIgnoreCase))
             {
                 kept.Add(args[i]);
             }

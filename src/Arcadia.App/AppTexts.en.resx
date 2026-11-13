@@ -1378,6 +1378,29 @@
   <data name="DataSourcesMetadataSourceOffInfo" xml:space="preserve"><value>Arcadia doesn’t ask the source and hides its fields and corrected titles until you turn it on. What’s loaded stays saved.</value></data>
   <data name="DataSourcesMetadataSourceOffSubtitle" xml:space="preserve"><value>Off · not asked, its fields are hidden</value></data>
   <data name="LocalizationTitle" xml:space="preserve"><value>Localization</value></data>
+  <data name="LocalizationLanguageGroup" xml:space="preserve"><value>LANGUAGE</value></data>
+  <data name="LocalizationLanguage" xml:space="preserve"><value>Language</value></data>
+  <data name="LocalizationLanguageSubtitle" xml:space="preserve"><value>The language of Arcadia’s texts</value></data>
+  <data name="LocalizationLanguageSystem" xml:space="preserve"><value>System language</value></data>
+  <data name="LocalizationLanguageSystemValue" xml:space="preserve"><value>Arcadia follows the Windows display language.</value></data>
+  <data name="LocalizationLanguageFixedValue" xml:space="preserve"><value>Arcadia stays in this language, whatever language Windows shows.</value></data>
+  <data name="LocalizationLanguageSystemSpoken" xml:space="preserve"><value>The system language is {language}. With “System language”, Arcadia is in {language}.</value></data>
+  <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>The system language is {language}. Arcadia isn’t available in it yet, so with “System language” it is in English.</value></data>
+  <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows names no display language, so with “System language” Arcadia is in English.</value></data>
+  <data name="LocalizationLanguageInfo" xml:space="preserve"><value>The choice is saved at once and applies from the next start. “Apply language” below restarts Arcadia right away.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Metadata such as descriptions and genres stay in the language they were loaded in. “Reload all metadata” in “Data sources” gets them in the new language where they exist in it.</value></data>
+  <data name="LocalizationApply" xml:space="preserve"><value>Apply language</value></data>
+  <data name="LocalizationApplyAction" xml:space="preserve"><value>Restart</value></data>
+  <data name="LocalizationApplySame" xml:space="preserve"><value>The chosen language is already on</value></data>
+  <data name="LocalizationApplyRestarts" xml:space="preserve"><value>Arcadia restarts and comes back here</value></data>
+  <data name="LocalizationApplyInfo" xml:space="preserve"><value>Arcadia restarts in the chosen language and opens this page again on “Language”: in fullscreen if it is in fullscreen now, otherwise in a window.</value></data>
+  <data name="LocalizationApplyStopsReload" xml:space="preserve"><value>The reload of artwork or metadata stops and doesn’t go on after the restart.</value></data>
+  <data name="LocalizationApplyWaitsForGame" xml:space="preserve"><value>Only once “{game}” has ended</value></data>
+  <data name="LocalizationApplyGameNote" xml:space="preserve"><value>Arcadia can restart only once “{game}” has ended.</value></data>
+  <data name="LocalizationApplyWaitsForDrivers" xml:space="preserve"><value>Only after the driver installation</value></data>
+  <data name="LocalizationApplyDriversNote" xml:space="preserve"><value>Arcadia can restart only once the driver installation is done.</value></data>
+  <data name="LocalizationApplyWaitsForUpdate" xml:space="preserve"><value>Only after the Arcadia update</value></data>
+  <data name="LocalizationApplyUpdateNote" xml:space="preserve"><value>Arcadia can restart only once the update is done.</value></data>
   <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>ON-SCREEN KEYBOARD</value></data>
   <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Default layout</value></data>
   <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>The on-screen keyboard opens with this layout</value></data>

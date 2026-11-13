@@ -16,11 +16,12 @@ Index and the category's frame: [README.md](README.md).
 - Formats: a cover 2 : 3; a background 16 : 9, the full-screen detail page's shape, or flat (about 3.1 : 1, Steam's and
   SteamGridDB's), which the detail page crops to 16 : 9 (#562). Of one source's images whose sizes are known before the
   download (SteamGridDB's), a 16 : 9 background comes before a flat one.
-- "Zuschneiden erlaubt" (group "ARTWORK", covers only): Wenig · bis 5 %, Normal · bis 15 % (default), Viel · bis 30 %;
-  backgrounds always 15 %. Each image is checked in the order; the first that fits wins, none fitting: the first source
-  with any image, cropped (an image SteamGridDB gave stands as its image then).
-- Changing the order, a switch or "Zuschneiden erlaubt" starts no search: the images on disk and the launchers' own are
-  picked again at once; SteamGridDB is asked with the new setting for new games and at the next "Jetzt suchen".
+- An image fits when a centred crop to its format cuts away at most 15 %, for covers and backgrounds alike; there is no
+  setting for it (#566: Steam's and SteamGridDB's covers are exactly 2 : 3, so a setting would only choose between Epic's
+  3 : 4 covers, which lose about 11 %, and SteamGridDB's). Each image is checked in the order; the first that fits wins,
+  none fitting: the first source with any image, cropped (an image SteamGridDB gave stands as its image then).
+- Changing the order or a switch starts no search: the images on disk and the launchers' own are picked again at once;
+  SteamGridDB is asked in the new order for new games and at the next "Jetzt suchen".
 - SteamGridDB is asked only for a game and kind whose current image doesn't fit, so a key arriving later also
   replaces fallback images (e.g. a 21 : 9 background), never an image set by hand; an image it gave holds SteamGridDB's
   place in the order. It is asked by the launcher's id (Steam's AppID, Epic's `AppName` on `egs`); a game without one, or

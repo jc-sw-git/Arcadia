@@ -358,8 +358,8 @@ public sealed class EpicArtworkTests : IDisposable
             Assert.Equal((ArtworkSource.Launcher, EpicArtwork.Origin, false), (cached.Hero!.Source, cached.Hero.Origin, cached.Hero.SetByHand));
         }
 
-        Assert.True(ArtworkFormat.Fits(new ImageSize(1200, 1600), ArtworkKind.Cover, ArtworkFormat.NormalTolerance));
-        Assert.True(ArtworkFormat.Fits(new ImageSize(2560, 1440), ArtworkKind.Hero, ArtworkFormat.NormalTolerance));
+        Assert.True(ArtworkFormat.Fits(new ImageSize(1200, 1600), ArtworkKind.Cover));
+        Assert.True(ArtworkFormat.Fits(new ImageSize(2560, 1440), ArtworkKind.Hero));
     }
 
     [Fact]

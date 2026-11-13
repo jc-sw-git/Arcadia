@@ -177,4 +177,37 @@ public sealed class DetailControlsTests
         Assert.False(arcadia.Main.IsDetailOpen);
         Assert.Equal("Alpha", arcadia.Main.Library.FocusedGame?.Title);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T530-9")]
+    public async Task A_filter_from_the_detail_page_that_leaves_no_hit_closes_the_page_to_the_library()
+    {
+        var gog = KnownLaunchers.Gog;
+        var day = ArcadiaDriver.Now.AddDays(-10);
+        Game[] games =
+        [
+            TestGames.Installed(gog, "Alpha", day),
+            TestGames.NotInstalled(gog, "Bravo"),
+            TestGames.Installed(gog, "Charlie", day) with { Type = GameType.Soundtrack },
+        ];
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(gog, games)]);
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        Assert.NotNull(arcadia.Detail);
+
+        // Uninstalled soundtracks: there are none, so no game of the tab passes.
+        arcadia.Press(UiAction.KeyboardLayout);
+        Assert.NotNull(arcadia.Main.FilterModal);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down, times: 2).Press(UiAction.Accept)
+            .Press(UiAction.Back).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Right, times: 2).Press(UiAction.Accept);
+        Assert.Equal("0", arcadia.Main.FilterModal!.HitsText);
+        arcadia.Press(UiAction.KeyboardLayout);
+
+        // The page closes, the library shows that the filter hides every game, and its "Filter ändern" takes A.
+        Assert.Null(arcadia.Main.FilterModal);
+        Assert.False(arcadia.Main.IsDetailOpen);
+        Assert.Null(arcadia.Detail);
+        Assert.True(arcadia.Main.IsNoHitsShown);
+        arcadia.Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Main.FilterModal);
+    }
 }

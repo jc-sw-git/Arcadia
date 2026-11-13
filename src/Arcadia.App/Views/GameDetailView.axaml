@@ -122,7 +122,7 @@
       </DockPanel>
     </Button>
 
-    <!-- Title, button row and the quiet note beside it, on the artwork right of the front cover. -->
+    <!-- Title, button row and the quiet note under it, on the artwork right of the front cover. -->
     <StackPanel Name="Heading" Canvas.Left="496" Canvas.Top="116" Width="1164" DataContext="{Binding Current}" x:DataType="vm:GameDetailPageViewModel">
       <StackPanel Orientation="Horizontal" Spacing="10">
         <Border Classes="detailChip">
@@ -167,26 +167,28 @@
         </StackPanel.IsVisible>
         <TextBlock Text="{Binding GameInfo.InfoLine, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"
                    MaxWidth="1040" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-        <Border Classes="ageBadge" IsVisible="{Binding GameInfo.HasBadge}">
+        <ctl:AgeRatingBadge Classes="ageBadge" Tone="{Binding GameInfo.BadgeTone}" IsVisible="{Binding GameInfo.HasBadge}">
           <TextBlock Text="{Binding GameInfo.Badge, TargetNullValue=''}" />
-        </Border>
+        </ctl:AgeRatingBadge>
       </StackPanel>
       <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). -->
-      <DockPanel Margin="0,20,0,0">
-        <ItemsControl Name="ButtonRow" DockPanel.Dock="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}" VerticalAlignment="Center">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="16" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-        </ItemsControl>
-        <!-- The quiet note: an icon and text, no surface or border; the focus never lands on it. -->
-        <StackPanel Name="Note" Classes="onArt" Margin="28,0,0,0" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding HasNotes}">
+      <ItemsControl Name="ButtonRow" Margin="0,20,0,0" HorizontalAlignment="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="16" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+      <!-- The quiet note under "Spielen" (#541): an icon and text, no surface or border; the focus never lands on it. A soft
+           dark cloud behind it, wider than the text and fading out at every edge, keeps it readable on a bright image. -->
+      <Panel Name="NoteArea" HorizontalAlignment="Left" Margin="4,10,0,0" IsVisible="{Binding HasNotes}">
+        <Border Classes="detailNoteScrim" Margin="-48,-22,-140,-30" IsHitTestVisible="False" />
+        <StackPanel Name="Note" Classes="onArt" Spacing="4" MaxWidth="900">
           <DockPanel IsVisible="{Binding HasUpdateNote}">
             <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 4v12M6 10l6 6 6-6M5 20h14" Margin="0,0,12,0" />
             <StackPanel Spacing="1" VerticalAlignment="Center">
               <TextBlock Text="{x:Static app:AppTexts.DetailUpdateAvailable}" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding UpdateNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding UpdateNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </DockPanel>
           <DockPanel IsVisible="{Binding HasPlayNote}">
@@ -198,7 +200,7 @@
             <TextBlock Text="{Binding SoundtrackNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </DockPanel>
         </StackPanel>
-      </DockPanel>
+      </Panel>
     </StackPanel>
 
     <!-- The panel: the rail of areas on the left, the open area beside it. -->
@@ -238,9 +240,12 @@
                apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so a
                name and a value like "Standard (Arcadia)" fit side by side. -->
           <Grid Name="Overview" ColumnDefinitions="480,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
-            <StackPanel Spacing="8">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailQuickSelectionCaption}" FontSize="13" Margin="0,0,0,6" />
-              <ItemsControl Name="QuickEntries" ItemsSource="{Binding Overview.Rows}">
+            <!-- The places of five entries stay reserved (#541), so the note and "Übersicht anpassen" never move: the note right
+                 under the fifth place, "Übersicht anpassen" in the middle between that place and the panel's lower edge (the
+                 -28 reaches through AreaContent's margin to that edge). 5 × 56 + 4 × 8 = 312. -->
+            <Grid RowDefinitions="Auto,312,*">
+              <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailQuickSelectionCaption}" FontSize="13" Margin="0,0,0,14" />
+              <ItemsControl Name="QuickEntries" Grid.Row="1" VerticalAlignment="Top" ItemsSource="{Binding Overview.Rows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Spacing="8" />
@@ -274,22 +279,24 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Name="Customize" Classes="plain quickEntry customize" Classes.focused="{Binding IsCustomizeFocused}" Margin="0,18,0,0"
-                      Command="{Binding CustomizeCommand}">
-                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                  <Viewbox Width="20" Height="20" VerticalAlignment="Center">
-                    <Path Classes="quickIcon" Data="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" Width="24" Height="24" Stretch="None" />
-                  </Viewbox>
-                  <TextBlock Classes="quickTitle" Text="{x:Static app:AppTexts.DetailCustomizeOverview}" />
-                </StackPanel>
-              </Button>
-              <!-- Why the focused entry is greyed out: "Übersicht" has no info box. -->
-              <DockPanel Name="QuickNote" Margin="4,6,0,0" IsVisible="{Binding HasQuickNote}">
-                <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
-                      VerticalAlignment="Top" Margin="0,2,10,0" />
-                <TextBlock Text="{Binding QuickNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
-              </DockPanel>
-            </StackPanel>
+              <Panel Grid.Row="2">
+                <!-- Why the focused entry is greyed out: "Übersicht" has no info box. -->
+                <DockPanel Name="QuickNote" Margin="4,6,0,0" IsVisible="{Binding HasQuickNote}">
+                  <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
+                        VerticalAlignment="Top" Margin="0,2,10,0" />
+                  <TextBlock Text="{Binding QuickNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <Button Name="Customize" Classes="plain quickEntry customize" Classes.focused="{Binding IsCustomizeFocused}" VerticalAlignment="Center" Margin="0,0,0,-28"
+                        Command="{Binding CustomizeCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                    <Viewbox Width="20" Height="20" VerticalAlignment="Center">
+                      <Path Classes="quickIcon" Data="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" Width="24" Height="24" Stretch="None" />
+                    </Viewbox>
+                    <TextBlock Classes="quickTitle" Text="{x:Static app:AppTexts.DetailCustomizeOverview}" />
+                  </StackPanel>
+                </Button>
+              </Panel>
+            </Grid>
 
             <DockPanel Grid.Column="1">
             <!-- The first tags, own ones first (#495), and "+n" (#493), at the foot of the column as in the artboard. -->
@@ -392,9 +399,9 @@
                               <TextBlock DockPanel.Dock="Right" Classes="metadataSource" Text="{Binding Source}" Margin="16,0,0,0" VerticalAlignment="Center" />
                               <Panel>
                                 <TextBlock Text="{Binding Value}" IsVisible="{Binding !IsBadge}" FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
-                                <Border Classes="ageBadge" HorizontalAlignment="Left" IsVisible="{Binding IsBadge}">
+                                <ctl:AgeRatingBadge Classes="ageBadge" Tone="{Binding Tone}" HorizontalAlignment="Left" IsVisible="{Binding IsBadge}">
                                   <TextBlock Text="{Binding Value}" />
-                                </Border>
+                                </ctl:AgeRatingBadge>
                               </Panel>
                             </DockPanel>
                           </Border>

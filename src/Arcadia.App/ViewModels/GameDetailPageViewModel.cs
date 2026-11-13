@@ -176,7 +176,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     public bool HasPlayNote => PlayNote is not null;
 
-    /// <summary>The quiet note beside the buttons has something to say.</summary>
+    /// <summary>The quiet note under "Spielen" has something to say.</summary>
     public bool HasNotes => HasUpdateNote || HasPlayNote || HasSoundtrackNote;
 
     /// <summary>The focus to carry to the next game.</summary>

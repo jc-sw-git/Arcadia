@@ -305,6 +305,26 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T541-2")]
+    public async Task Igdb_adds_the_boards_steam_lacks_and_steams_own_board_stays_first()
+    {
+        await GrantAccessAsync();
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16")] };
+        _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: "\"age_ratings\":[{\"organization\":4,\"rating_category\":22},"
+            + "{\"organization\":2,\"rating_category\":5},{\"organization\":1,\"rating_category\":11}]"));
+        Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
+        await RunToIdleAsync();
+
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "16"), "Made-up Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "18"), "IGDB"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "M"), "IGDB"),
+            ],
+            _service.Of(Game.KeyOf(Steamish.Id, "100")).AgeRatings);
+    }
+
+    [Fact]
     [Trait("TestCase", "T494-26")]
     public async Task An_epic_game_gets_igdbs_english_description_genres_year_and_usk_and_keeps_epics_developer()
     {

@@ -21,8 +21,9 @@ Index and the category's frame: [README.md](README.md). The specification is #43
 - Genres: Arcadia's fixed German list (Action, Abenteuer, Rollenspiel, Strategie, Simulation, Rennspiel, Sport, Shooter,
   Puzzle, Plattformer, Kampfspiel, Gelegenheitsspiel, Indie, MMO, Arcade, Musik, Point-and-Click, Visual Novel, Karten-
   und Brettspiel, Taktik); unmapped genres are dropped. Provider tags are taken as delivered.
-- Age ratings USK, PEGI, ESRB as delivered, unknown values dropped. Without a real USK, Steam's own rating for Germany
-  counts as USK, its source "laut Steam".
+- Age ratings USK, PEGI, ESRB as delivered, unknown values dropped, merged per board (#541): each board's rating comes
+  from the first provider in the order that has it, so IGDB adds the boards Steam lacks. Without a real USK from any
+  provider, Steam's own rating for Germany counts as USK. Every rating names its provider the same way ("Steam", "IGDB").
 - When: after every scan, in the background, for the entries shown (a switched-off type asks nothing); one request at a
   time within the store's limit (Steam: 180 per 5 minutes, below its 200), 10 s each, HTTP 429 waits and continues. No
   network, a timeout or a server error skip the game silently until the next scan. Nothing is fetched before the first

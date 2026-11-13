@@ -1,6 +1,6 @@
 # Architecture: the detail page in `Arcadia.App`
 
-The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-page.md`.
+The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-page/`.
 
 - `GameDetailViewModel`: the carousel, its `DetailCoverViewModel`s placed by `Controls/DepthSlot`, and the shown
   `GameDetailPageViewModel` (buttons, rail of `DetailAreaViewModel`s with `DetailRowViewModel`s from `DetailAreas`,

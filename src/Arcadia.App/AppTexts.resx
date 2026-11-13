@@ -615,7 +615,6 @@
   <data name="DetailListSeparator" xml:space="preserve"><value>, </value></data>
   <data name="DetailMoreTags" xml:space="preserve"><value>+{count}</value></data>
   <data name="DetailAgeRating" xml:space="preserve"><value>{board} {rating}</value></data>
-  <data name="DetailSourceByStore" xml:space="preserve"><value>laut {source}</value></data>
   <data name="DetailDescriptionCaption" xml:space="preserve"><value>BESCHREIBUNG</value></data>
   <data name="DetailTitleCaption" xml:space="preserve"><value>TITEL</value></data>
   <data name="DetailGenresCaption" xml:space="preserve"><value>GENRES</value></data>

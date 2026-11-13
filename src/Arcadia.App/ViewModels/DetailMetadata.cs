@@ -7,8 +7,11 @@ namespace Arcadia.App.ViewModels;
 /// <summary>A tag as the detail page shows it: the player's own (#495) drawn apart from a provider's.</summary>
 public sealed record DetailTag(string Name, bool IsOwn);
 
-/// <summary>One line of "Infos" (#493): its caption, the value or an age rating badge, and the provider it came from.</summary>
-public sealed record DetailFact(string Caption, string Value, string Source, bool IsBadge = false);
+/// <summary>
+/// One line of "Infos" (#493): its caption, the value or an age rating badge in its board's colour (#541), and the
+/// provider it came from.
+/// </summary>
+public sealed record DetailFact(string Caption, string Value, string Source, bool IsBadge = false, AgeRatingTone Tone = AgeRatingTone.White);
 
 /// <summary>
 /// What the detail page shows of a game's metadata (#493): the info line under the title, the short description and the
@@ -29,6 +32,7 @@ public sealed class DetailMetadata
         var genres = data.Genres?.Value.Select(GenreNames.Of).ToList();
         var year = data.ReleaseDate?.Value.Year.ToString(Formatting.Culture);
         Badge = data.AgeRatings.Count > 0 ? BadgeOf(data.AgeRatings[0].Value) : null;
+        BadgeTone = data.AgeRatings.Count > 0 ? AgeRatingTones.Of(data.AgeRatings[0].Value) : AgeRatingTone.White;
         InfoLine = Joined(AppTexts.DetailInfoSeparator, genres is null ? null : List(genres), data.Developers is { } developers ? List(developers.Value) : null, year);
         RailLine = data.IsEmpty ? AppTexts.DetailInfosNone : Joined(AppTexts.DetailInfoSeparator, genres?[0], year, Badge) ?? Joined(AppTexts.DetailInfoSeparator, data.Developers?.Value[0]) ?? string.Empty;
 
@@ -61,10 +65,10 @@ public sealed class DetailMetadata
         Add(facts, AppTexts.DetailReleasedCaption, data.ReleaseDate, date => date.ToString("dd.MM.yyyy", Formatting.Culture));
         for (var r = 0; r < data.AgeRatings.Count; r++)
         {
-            // The caption stands once, beside the first rating; each rating names its own source.
+            // The caption stands once, beside the first rating; each rating names its own source, the same way whether
+            // the store's own rating for Germany stands in for a USK or not (#541).
             var rating = data.AgeRatings[r];
-            var source = rating.Value.ByStore ? AppTexts.DetailSourceByStore(source: rating.Source) : rating.Source;
-            facts.Add(new(r == 0 ? AppTexts.DetailAgeRatingCaption : string.Empty, BadgeOf(rating.Value), source, IsBadge: true));
+            facts.Add(new(r == 0 ? AppTexts.DetailAgeRatingCaption : string.Empty, BadgeOf(rating.Value), rating.Source, IsBadge: true, AgeRatingTones.Of(rating.Value)));
         }
 
         Facts = facts;
@@ -80,6 +84,9 @@ public sealed class DetailMetadata
 
     /// <summary>The first age rating, e.g. "USK 16": USK before PEGI before ESRB.</summary>
     public string? Badge { get; }
+
+    /// <summary>The colour of <see cref="Badge"/>'s border (#541).</summary>
+    public AgeRatingTone BadgeTone { get; }
 
     public bool HasBadge => Badge is not null;
 

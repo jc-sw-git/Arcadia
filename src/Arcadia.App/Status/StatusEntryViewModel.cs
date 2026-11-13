@@ -31,7 +31,7 @@ public sealed partial class StatusEntryViewModel : ViewModelBase
 
     public string ShortText => Entry.ShortText;
 
-    public string SinceText => $"seit {Formatting.Clock(Entry.Since)}";
+    public string SinceText => AppTexts.StatusSince(Formatting.Clock(Entry.Since));
 
     public string FixLabel => Entry.FixLabel ?? string.Empty;
 

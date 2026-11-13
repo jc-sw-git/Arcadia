@@ -1500,7 +1500,7 @@
             <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="20">
               <Grid.DataTemplates>
                 <DataTemplate x:DataType="settings:InfoText">
-                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.KeepsButtons="{Binding KeepsButtons}" ctl:ButtonTextBlock.Text="{Binding Text}" />
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoAvatar">
                   <StackPanel Orientation="Horizontal" Spacing="16">

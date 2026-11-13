@@ -23,6 +23,6 @@ internal static class LauncherTexts
         var age = clock.GetUtcNow() - time;
         return age < TimeSpan.FromMinutes(1) ? AppTexts.JustNow
             : age < TimeSpan.FromHours(1) ? AppTexts.MinutesAgo((int)age.TotalMinutes)
-            : AppTexts.AtTime(time.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture));
+            : AppTexts.AtTime(Services.Formatting.ClockWithUnit(time.ToLocalTime()));
     }
 }

@@ -22,7 +22,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public partial string Title { get; set; } = title;
 
     /// <summary>The heading of the info panel: the title in capitals, like the group headings, or <see cref="PanelTitle"/>.</summary>
-    public virtual string InfoTitle => PanelTitle ?? Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+    public virtual string InfoTitle => PanelTitle ?? Title.ToUpper(Services.Formatting.Culture);
 
     /// <summary>
     /// A heading of the info panel other than the title, for rows that show the same panel (e.g. "LETZTE MELDUNGEN" on its
@@ -484,7 +484,7 @@ public sealed class HoldRowViewModel : ActionRowViewModel, IDisposable
 
     public HoldButtonViewModel Hold { get; }
 
-    public override string ActivateText => AppTexts.HoldToAct(action: ActionText, seconds: Hold.HoldTime.TotalSeconds.ToString("0", Services.Formatting.Culture));
+    public override string ActivateText => AppTexts.HoldToAct(action: ActionText, seconds: Services.Formatting.Number((int)Math.Round(Hold.HoldTime.TotalSeconds)));
 
     public override void Activate() => Hold.Press();
 

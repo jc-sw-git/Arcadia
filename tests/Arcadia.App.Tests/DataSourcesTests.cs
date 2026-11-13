@@ -205,7 +205,7 @@ public sealed partial class DataSourcesTests
         arcadia.FocusRow("steamgriddb-test");
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesTestOkToast, "getestet");
-        Assert.Equal(AppTexts.DataSourcesTestOk(arcadia.Time.GetLocalNow()), Row(arcadia, "steamgriddb-test").Subtitle);
+        Assert.Equal(AppTexts.DataSourcesTestOk(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), Row(arcadia, "steamgriddb-test").Subtitle);
 
         // B from the field drops what was typed, B from the page goes back to the library.
         arcadia.FocusRow(SteamGridDbKeyRows.KeyRowKey);
@@ -324,7 +324,7 @@ public sealed partial class DataSourcesTests
         arcadia.SteamGridDb.ValidKey = WrongKey;
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesKeyRejectedToast, "abgelehnt");
-        Assert.Equal(AppTexts.DataSourcesTestRejected(arcadia.Time.GetLocalNow()), Row(arcadia, "steamgriddb-test").Subtitle);
+        Assert.Equal(AppTexts.DataSourcesTestRejected(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), Row(arcadia, "steamgriddb-test").Subtitle);
     }
 
     [AvaloniaFact]

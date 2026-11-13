@@ -134,9 +134,9 @@ public sealed class IgdbAccessRows
         _test.Subtitle = (hasAccess, _access.LastCheck) switch
         {
             (false, _) => AppTexts.DataSourcesIgdbNeedsAccess,
-            (true, { Outcome: IgdbOutcome.Rejected } check) => AppTexts.DataSourcesIgdbTestRejected(check.At.ToOffset(_time.GetLocalNow().Offset)),
+            (true, { Outcome: IgdbOutcome.Rejected } check) => AppTexts.DataSourcesIgdbTestRejected(Services.Formatting.Clock(check.At.ToOffset(_time.GetLocalNow().Offset))),
             (true, { Outcome: IgdbOutcome.NoConnection }) => AppTexts.DataSourcesTestNoConnection,
-            (true, { } check) => AppTexts.DataSourcesIgdbTestOk(check.At.ToOffset(_time.GetLocalNow().Offset)),
+            (true, { } check) => AppTexts.DataSourcesIgdbTestOk(Services.Formatting.Clock(check.At.ToOffset(_time.GetLocalNow().Offset))),
             _ => AppTexts.DataSourcesIgdbTestNotYet,
         };
         _pasteClientId.IsEnabled = !_checking;

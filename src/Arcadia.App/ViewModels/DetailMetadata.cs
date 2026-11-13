@@ -30,7 +30,7 @@ public sealed class DetailMetadata
         OwnTags = ownTags ?? [];
         IsEmpty = data.IsEmpty && OwnTags.Count == 0;
         var genres = data.Genres?.Value.Select(GenreNames.Of).ToList();
-        var year = data.ReleaseDate?.Value.Year.ToString(Formatting.Culture);
+        var year = data.ReleaseDate?.Value.Year is { } released ? Formatting.Number(released) : null;
         Badge = data.AgeRatings.Count > 0 ? BadgeOf(data.AgeRatings[0].Value) : null;
         BadgeTone = data.AgeRatings.Count > 0 ? AgeRatingTones.Of(data.AgeRatings[0].Value) : AgeRatingTone.White;
         InfoLine = Joined(AppTexts.DetailInfoSeparator, genres is null ? null : List(genres), data.Developers is { } developers ? List(developers.Value) : null, year);
@@ -62,7 +62,7 @@ public sealed class DetailMetadata
         Add(facts, AppTexts.DetailGenresCaption, data.Genres, _ => List(genres!));
         Add(facts, AppTexts.DetailDevelopersCaption, data.Developers, List);
         Add(facts, AppTexts.DetailPublishersCaption, data.Publishers, List);
-        Add(facts, AppTexts.DetailReleasedCaption, data.ReleaseDate, date => date.ToString("dd.MM.yyyy", Formatting.Culture));
+        Add(facts, AppTexts.DetailReleasedCaption, data.ReleaseDate, Formatting.Date);
         for (var r = 0; r < data.AgeRatings.Count; r++)
         {
             // The caption stands once, beside the first rating; each rating names its own source, the same way whether

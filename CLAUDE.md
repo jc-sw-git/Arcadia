@@ -125,6 +125,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | On-screen keyboard | `docs/product/on-screen-keyboard.md` |
 | Mouse mode, "Zurück zu Arcadia", Steam's desktop layout | `docs/product/mouse-mode.md` |
 | Settings page, status messages | `docs/product/settings.md` |
+| Settings category "Lokalisierung": keyboard layouts, quick selection, clock, dates and numbers | `docs/product/localization.md` |
 | Settings category "Controller": Pan's switch and rows, "Controller zuordnen", SISR | `docs/product/settings-controller.md` |
 | Settings category "Datenquellen": SteamGridDB key, artwork order, crop tolerance, the artwork search, IGDB access, metadata order | `docs/product/settings-data-sources/` |
 | Installing the drivers from the settings: questions first, the progress dialog | `docs/product/settings-controller-install.md` |

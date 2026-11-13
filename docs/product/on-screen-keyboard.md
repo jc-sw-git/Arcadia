@@ -11,6 +11,8 @@ On-screen keyboard (#129, #110). Where the search and the mouse mode use it: `se
   icon at its left edge, the button at its right; ↹ is a theme icon, no embedded font has it), caps lock a blank key
   the focus skips, no Ctrl/Alt/Win.
 - A right block with "Layout: DE" (R3), "Nach oben/unten" (⧉), "Ausblenden" (B) and the arrows.
+- It opens in the default layout; R3 offers the quick selection and a switch holds only until it closes, nothing is
+  saved; with the default alone in the quick selection "Layout" is greyed out (`localization.md`, #553).
 - On the normal level a key shows its character large, the shift one small above (left out when it is just the capital
   letter) and the AltGr one small at the bottom right. With shift or AltGr on, only that level's characters; keys
   without one stay empty and the focus passes over them. Dead keys type their own character. A layout without AltGr

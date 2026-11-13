@@ -84,6 +84,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _time = time;
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
         Messages = new RecentMessages(time, AppLog.Write);
+        Formatting.ClockFormat = settings.Current.Localization.Clock;
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
@@ -1039,6 +1040,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
             .. CreateDataSources(changes) is { } dataSources ? [dataSources] : Array.Empty<SettingsCategoryViewModel>(),
+            new LocalizationSettingsViewModel(changes, ApplyClock),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget(AppTexts.ErrorContextOpenLog)),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -1058,6 +1060,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     [RelayCommand]
     private void CloseSettings() => Settings = null;
+
+    /// <summary>"Uhrzeit" as saved (#553): every time shown from now on follows it, the header clock at once.</summary>
+    private void ApplyClock()
+    {
+        Formatting.ClockFormat = _settings.Current.Localization.Clock;
+        Status.UpdateClock();
+    }
 
     /// <summary>Opens a log in the system's default app (#433); a failure is an error toast, never an exception.</summary>
     private async Task OpenLogAsync(LogKind kind)
@@ -1428,10 +1437,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILauncherSettingsHost.GiveBackKeyboard(IKeyboardTarget editor) => SettingsKeyboard.GiveBack(editor);
 
-    /// <summary>A keyboard in the layout last chosen, whose choice of another layout is saved.</summary>
+    /// <summary>A keyboard that opens in the default layout and offers the quick selection (#553).</summary>
     private SharedKeyboard CreateSharedKeyboard() => new(
-        () => KeyboardLayout.Find(_settings.Current.KeyboardLayout),
-        layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
+        () => SystemKeyboardLayout.Choice(_settings.Current.Localization),
         _time,
         action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
 

@@ -9,29 +9,41 @@ namespace Arcadia.App.Keyboard;
 /// </summary>
 public sealed class SharedKeyboard : IKeyboardTarget, IDisposable
 {
-    private readonly Func<KeyboardLayout> _layout;
+    private readonly Func<KeyboardLayoutChoice> _layouts;
     private IKeyboardTarget? _user;
 
-    /// <param name="layout">The layout last chosen; it may change elsewhere between two users.</param>
-    /// <param name="layoutChosen">A layout was picked on this keyboard; it counts everywhere the keyboard shows.</param>
+    /// <param name="layouts">The default layout and the quick selection; they may change in the settings between two users.</param>
     /// <param name="post">Reaches the UI thread from the keyboard's repeat timers.</param>
-    public SharedKeyboard(Func<KeyboardLayout> layout, Action<KeyboardLayout> layoutChosen, TimeProvider time, Action<Action> post)
+    public SharedKeyboard(Func<KeyboardLayoutChoice> layouts, TimeProvider time, Action<Action> post)
     {
-        _layout = layout;
-        Keyboard = new OnScreenKeyboardViewModel(layout(), this, time, post);
-        Keyboard.LayoutChosen += layoutChosen;
+        _layouts = layouts;
+        Keyboard = new OnScreenKeyboardViewModel(layouts(), this, time, post);
     }
 
     public OnScreenKeyboardViewModel Keyboard { get; }
 
-    /// <summary><paramref name="user"/> takes the keyboard; it starts as a new one would: first key, shift off, the layout last chosen.</summary>
+    /// <summary><paramref name="user"/> takes the keyboard; it starts as a new one would: first key, shift off, the default layout (#553).</summary>
     public OnScreenKeyboardViewModel Take(IKeyboardTarget user, bool usesController)
     {
         _user = user;
-        Keyboard.Open(_layout(), atTop: false);
+        Keyboard.Open(_layouts(), atTop: false);
         Keyboard.FocusStart();
         Keyboard.UsesController = usesController;
         return Keyboard;
+    }
+
+    /// <summary>
+    /// <paramref name="user"/> brings its keyboard out again: a layout picked with [R3] lasts only until the keyboard
+    /// closes (#553), so it opens on the default again, where it was docked.
+    /// </summary>
+    public void Reopen(IKeyboardTarget user)
+    {
+        if (_user == user)
+        {
+            var usesController = Keyboard.UsesController;
+            Keyboard.Open(_layouts(), Keyboard.AtTop);
+            Keyboard.UsesController = usesController;
+        }
     }
 
     /// <summary><paramref name="user"/> is done; keys pressed meanwhile reach nothing. A newer user keeps the keyboard.</summary>

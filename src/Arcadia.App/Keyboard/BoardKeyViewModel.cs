@@ -29,10 +29,10 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
         PressCommand = new RelayCommand(() => press(this));
     }
 
-    public BoardKey Key { get; }
+    public BoardKey Key { get; private set; }
 
     /// <summary>Its place in <see cref="FullKeyboard.Keys"/>; names it to the focus (<see cref="KeySpot.Key"/>).</summary>
-    public int Index { get; }
+    public int Index { get; private set; }
 
     public double Left { get; }
 
@@ -117,6 +117,19 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
     public bool IsSkipped => IsBlank || IsUnavailable || IsHidden || (IsCharacter && Label.Length == 0);
 
     public IRelayCommand PressCommand { get; }
+
+    /// <summary>
+    /// Whether this key can stand for <paramref name="key"/> of another layout: same kind, place and size, so only what it
+    /// types differs, which the keyboard shows on every layout change anyway.
+    /// </summary>
+    public bool Fits(BoardKey key) => Key with { Cap = null } == key with { Cap = null };
+
+    /// <summary>Stands for <paramref name="key"/> of the new layout from now on (<see cref="Fits"/>).</summary>
+    public void StandFor(BoardKey key, int index)
+    {
+        Key = key;
+        Index = index;
+    }
 
     /// <summary>The printing of a key (owner, 2026-10-22: symbol as on a real key and a name); narrow ones keep only the symbol.</summary>
     private static (string Symbol, string Text, string? Glyph) Face(BoardKey key) => key.Kind switch

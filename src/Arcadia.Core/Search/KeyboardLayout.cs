@@ -60,7 +60,7 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
         Row("<yxcvbnm,.-", ">YXCVBNM;:_", "|      µ"),
     ]);
 
-    /// <summary>All layouts, in the order the layout menu lists them (owner, 2026-10-17: all five until #14).</summary>
+    /// <summary>All layouts, in the order the layout menu lists them (the R3 menu shows those of the quick selection, #553).</summary>
     public static IReadOnlyList<KeyboardLayout> All { get; } =
     [
         German,
@@ -98,7 +98,10 @@ public sealed record KeyboardLayout(string Id, string Code, string Name, string 
     public bool HasAltGr => Rows.Any(row => row.Any(key => key.AltGr is not null));
 
     /// <summary>The layout stored as <paramref name="id"/>; German for none or one this version doesn't know.</summary>
-    public static KeyboardLayout Find(string? id) => All.FirstOrDefault(l => l.Id == id) ?? German;
+    public static KeyboardLayout Find(string? id) => TryFind(id) ?? German;
+
+    /// <summary>The layout stored as <paramref name="id"/>; null for none or one this version doesn't know.</summary>
+    public static KeyboardLayout? TryFind(string? id) => All.FirstOrDefault(l => l.Id == id);
 
     /// <summary>
     /// A row from the characters of each level, key by key; a space stands for nothing. The AltGr

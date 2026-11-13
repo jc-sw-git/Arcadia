@@ -101,5 +101,5 @@ Reads every 1 ms while pads get states for a game, sends on the reading thread, 
 ## Not done yet
 
 Not verified on hardware yet: the button bits of the Switch 2 Pro's C and the Edge's paddles as SDL maps them, the
-Switch 2 Pro's stick calibration with VIIPER's zeroed flash. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmware` ends
+Switch 2 Pro's stick calibration with VIIPER's zeroed flash. Not detected: VIIPER refusing another pad (no free slot). `ReleaseForFirmwareAsync` ends
 the whole emulation, so the other controllers' pads are replugged too.

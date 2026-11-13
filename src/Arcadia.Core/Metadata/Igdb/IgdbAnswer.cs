@@ -4,7 +4,7 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Core.Metadata.Igdb;
 
 /// <summary>
-/// Reads IGDB's answer (#494): genres onto Arcadia's list, age ratings by organization and rating category, themes and
+/// Reads IGDB's answer (#494): genres onto Arcadia's list, age ratings by organization and the rating's text (#541), themes and
 /// keywords as provider tags, developers and publishers from the involved companies, the first release date. Anything of
 /// another shape is left out; the values are checked again (<see cref="MetadataCheck"/>) before they are shown.
 /// </summary>
@@ -42,24 +42,34 @@ public static class IgdbAnswer
     // IGDB has "Action" only as a theme; it is the genre of Arcadia's list.
     private const string ActionTheme = "Action";
 
-    // Organizations: ESRB 1, PEGI 2, USK 4. Rating categories: PEGI 1–5, ESRB 6–12 (RP and EC have no place), USK 18–22.
-    private static readonly Dictionary<(long Organization, long Category), AgeRating> Ratings = new()
+    /// <summary>
+    /// How this version reads age ratings. An answer cached with a lower number was read the wrong way and is asked again
+    /// (#541: PEGI and ESRB were read by guessed ids and never matched).
+    /// </summary>
+    public const int Reading = 1;
+
+    // Organizations, also in the deprecated "category": ESRB 1, PEGI 2, USK 4.
+    private static readonly Dictionary<long, AgeRatingBoard> Boards = new()
     {
-        [(2, 1)] = new(AgeRatingBoard.Pegi, "3"),
-        [(2, 2)] = new(AgeRatingBoard.Pegi, "7"),
-        [(2, 3)] = new(AgeRatingBoard.Pegi, "12"),
-        [(2, 4)] = new(AgeRatingBoard.Pegi, "16"),
-        [(2, 5)] = new(AgeRatingBoard.Pegi, "18"),
-        [(1, 8)] = new(AgeRatingBoard.Esrb, "E"),
-        [(1, 9)] = new(AgeRatingBoard.Esrb, "E10+"),
-        [(1, 10)] = new(AgeRatingBoard.Esrb, "T"),
-        [(1, 11)] = new(AgeRatingBoard.Esrb, "M"),
-        [(1, 12)] = new(AgeRatingBoard.Esrb, "AO"),
-        [(4, 18)] = new(AgeRatingBoard.Usk, "0"),
-        [(4, 19)] = new(AgeRatingBoard.Usk, "6"),
-        [(4, 20)] = new(AgeRatingBoard.Usk, "12"),
-        [(4, 21)] = new(AgeRatingBoard.Usk, "16"),
-        [(4, 22)] = new(AgeRatingBoard.Usk, "18"),
+        [1] = AgeRatingBoard.Esrb,
+        [2] = AgeRatingBoard.Pegi,
+        [4] = AgeRatingBoard.Usk,
+    };
+
+    // The deprecated "rating" enum, documented by IGDB: PEGI 1–5, ESRB 8–12 (RP and EC have no place), USK 18–22. The ids
+    // of "rating_category" are not documented, so that one is read by its own "rating" text instead.
+    private static readonly Dictionary<long, string> LegacyRatings = new()
+    {
+        [1] = "3", [2] = "7", [3] = "12", [4] = "16", [5] = "18",
+        [8] = "E", [9] = "E10+", [10] = "T", [11] = "M", [12] = "AO",
+        [18] = "0", [19] = "6", [20] = "12", [21] = "16", [22] = "18",
+    };
+
+    // A category's text as IGDB may write it ("Twelve", "USK 12", "E10"), onto the board's own value.
+    private static readonly Dictionary<string, string> RatingWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ZERO"] = "0", ["THREE"] = "3", ["SIX"] = "6", ["SEVEN"] = "7", ["TWELVE"] = "12", ["SIXTEEN"] = "16", ["EIGHTEEN"] = "18",
+        ["E10"] = "E10+",
     };
 
     /// <summary>The games of an answer, in its order; null if it isn't IGDB's JSON (an array of objects).</summary>
@@ -128,13 +138,43 @@ public static class IgdbAnswer
     }
 
     private static List<AgeRating> AgeRatings(JsonElement game) =>
-    [
-        .. Objects(game, "age_ratings")
-            .Select(r => (Long(r, "organization"), Long(r, "rating_category")) is ({ } organization, { } category)
-                && Ratings.TryGetValue((organization, category), out var rating) ? rating : null)
-            .OfType<AgeRating>()
-            .Distinct(),
-    ];
+        [.. Objects(game, "age_ratings").Select(AgeRatingOf).OfType<AgeRating>().Distinct()];
+
+    /// <summary>
+    /// One rating: the board from "organization" (or the deprecated "category"), the value from the rating category's own
+    /// text, else from the deprecated "rating" enum; a value the board doesn't have is dropped.
+    /// </summary>
+    private static AgeRating? AgeRatingOf(JsonElement rating)
+    {
+        if ((Long(rating, "organization") ?? Long(rating, "category")) is not { } organization || !Boards.TryGetValue(organization, out var board))
+        {
+            return null;
+        }
+
+        var value = rating.TryGetProperty("rating_category", out var category) && category.ValueKind == JsonValueKind.Object
+            && Text(category, "rating") is { } text
+            ? RatingText(board, text)
+            : Long(rating, "rating") is { } legacy && LegacyRatings.TryGetValue(legacy, out var known) ? known : null;
+        return value is null ? null : MetadataCheck.CheckedRating(new AgeRating(board, value));
+    }
+
+    /// <summary>"USK 12", "Twelve", "12", "E10" → "12", "12", "12", "E10+": without the board's name, words as digits.</summary>
+    private static string? RatingText(AgeRatingBoard board, string text)
+    {
+        var value = text.Trim();
+        var name = board.ToString();
+        if (value.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+        {
+            value = value[name.Length..].TrimStart(' ', '_', '-');
+        }
+
+        if (board != AgeRatingBoard.Esrb)
+        {
+            value = value.TrimEnd('+');
+        }
+
+        return value.Length == 0 ? null : RatingWords.GetValueOrDefault(value, value);
+    }
 
     private static List<string> Companies(JsonElement game, string role) =>
     [

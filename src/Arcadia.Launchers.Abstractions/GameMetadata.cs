@@ -56,7 +56,7 @@ public enum AgeRatingBoard
 /// <param name="Rating">The board's own value: <c>0</c>, <c>6</c>, <c>12</c>, <c>16</c>, <c>18</c> (USK), <c>3</c> … <c>18</c> (PEGI), <c>E</c>, <c>E10+</c>, <c>T</c>, <c>M</c>, <c>AO</c> (ESRB).</param>
 /// <param name="ByStore">
 /// Not the board's rating but the store's own one for that country (Steam's <c>steam_germany</c>); it counts only when no
-/// provider has the board's real rating, and its source then reads "laut &lt;store&gt;".
+/// provider has the board's real rating.
 /// </param>
 public sealed record AgeRating(AgeRatingBoard Board, string Rating, bool ByStore = false);
 

@@ -172,6 +172,7 @@ public sealed class DetailMetadataTests
     [AvaloniaFact]
     [Trait("TestCase", "T493-14")]
     [Trait("TestCase", "T493-28")]
+    [Trait("TestCase", "T541-1")]
     public async Task Infos_lists_every_field_with_its_source_and_the_controller_alone_scrolls_it_and_goes_back()
     {
         var game = GameOf(KnownLaunchers.Steam, "4711");
@@ -191,7 +192,7 @@ public sealed class DetailMetadataTests
                 (AppTexts.DetailDevelopersCaption, "Nordkai Studio", "Steam", false),
                 (AppTexts.DetailPublishersCaption, "Seidenfaden Interactive", "Steam", false),
                 (AppTexts.DetailReleasedCaption, "14.03.2021", "Steam", false),
-                (AppTexts.DetailAgeRatingCaption, "USK 16", "laut Steam", true),
+                (AppTexts.DetailAgeRatingCaption, "USK 16", "Steam", true),
                 (string.Empty, "PEGI 16", "Steam", true),
             ],
             page.GameInfo.Facts.Select(fact => (fact.Caption, fact.Value, fact.Source, fact.IsBadge)));

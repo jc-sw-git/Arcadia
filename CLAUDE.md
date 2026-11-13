@@ -120,7 +120,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Library, page sizes, sorting, header tab strip | `docs/product/library.md` |
 | Buttons and keys (gamepad, WASD), button hints, held buttons, dialogs | `docs/product/controls.md` |
 | Controllers in games: Pan's emulated pads, the Steam Controller, the per-game mode | `docs/product/controllers-in-games.md` |
-| A / game start, detail page, game actions, updates | `docs/product/detail-page.md` |
+| A / game start, detail page, game actions, updates | `docs/product/detail-page/` |
 | Search | `docs/product/search.md` |
 | On-screen keyboard | `docs/product/on-screen-keyboard.md` |
 | Mouse mode, "Zurück zu Arcadia", Steam's desktop layout | `docs/product/mouse-mode.md` |

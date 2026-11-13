@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Arcadia.Core.Library;
 using Arcadia.Core.Metadata;
 using Arcadia.Core.Metadata.Igdb;
@@ -305,13 +306,76 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T541-2")]
+    public async Task Igdb_adds_the_boards_steam_lacks_and_steams_own_board_stays_first()
+    {
+        await GrantAccessAsync();
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16")] };
+        _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: Ratings("USK 18", "PEGI 18", "ESRB M")));
+        Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
+        await RunToIdleAsync();
+
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "16"), "Made-up Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "18"), "IGDB"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "M"), "IGDB"),
+            ],
+            _service.Of(Game.KeyOf(Steamish.Id, "100")).AgeRatings);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T541-2")]
+    public async Task An_answer_cached_before_ratings_were_read_right_is_asked_again_and_adds_the_missing_boards()
+    {
+        await GrantAccessAsync();
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true)] };
+        _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: Ratings("PEGI 12", "ESRB E10")));
+        Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
+        await RunToIdleAsync();
+        _service.Dispose();
+
+        // A file as the version before wrote it: no "reading", and only what that version could read.
+        var file = Assert.Single(Directory.EnumerateFiles(Path.Combine(_root, "metadata"), "*.json", SearchOption.AllDirectories));
+        var stored = JsonNode.Parse(File.ReadAllText(file))!;
+        stored["igdb"]!.AsObject().Remove("reading");
+        stored["igdb"]!["data"]!["ageRatings"] = new JsonArray();
+        File.WriteAllText(file, stored.ToJsonString());
+        var requests = _igdb.ApiRequests;
+
+        _service = NewService();
+        _service.Open();
+        Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
+        await RunToIdleAsync();
+
+        Assert.Equal(requests + 1, _igdb.ApiRequests);
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true), "Made-up Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "IGDB"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "E10+"), "IGDB"),
+            ],
+            _service.Of(Game.KeyOf(Steamish.Id, "100")).AgeRatings);
+    }
+
+    /// <summary>IGDB's age ratings as the query asks for them: the organization and the rating category's own text.</summary>
+    private static string Ratings(params string[] ratings) =>
+        "\"age_ratings\":[" + string.Join(',', ratings.Select(rating => rating.Split(' ') switch
+        {
+            ["ESRB", var value] => $"{{\"organization\":1,\"rating_category\":{{\"id\":1,\"rating\":\"{value}\"}}}}",
+            ["PEGI", var value] => $"{{\"organization\":2,\"rating_category\":{{\"id\":2,\"rating\":\"{value}\"}}}}",
+            [_, var value] => $"{{\"organization\":4,\"rating_category\":{{\"id\":3,\"rating\":\"{value}\"}}}}",
+            _ => throw new ArgumentException(rating),
+        })) + "]";
+
+    [Fact]
     [Trait("TestCase", "T494-26")]
     public async Task An_epic_game_gets_igdbs_english_description_genres_year_and_usk_and_keeps_epics_developer()
     {
         await GrantAccessAsync();
         _epicSource.Local["e1"] = new GameMetadata { Developers = ["Made-up Studio"] };
         _igdb.ServeName("Nordwind", FakeIgdb.Game(1, "Nordwind", extra: Summary("A made-up English text about the game.")
-            + ",\"genres\":[{\"name\":\"Role-playing (RPG)\"}],\"first_release_date\":1609459200,\"age_ratings\":[{\"organization\":4,\"rating_category\":20}]"));
+            + ",\"genres\":[{\"name\":\"Role-playing (RPG)\"}],\"first_release_date\":1609459200," + Ratings("USK 12")));
         Scan(epic: [GameOf(Epicish, "e1", "Nordwind")]);
         await RunToIdleAsync();
 

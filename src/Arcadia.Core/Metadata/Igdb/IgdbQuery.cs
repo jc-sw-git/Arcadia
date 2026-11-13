@@ -23,7 +23,7 @@ public sealed record IgdbQuery(string Endpoint, string Body, bool Nested = false
     private static readonly string[] Fields =
     [
         "name", "summary", "first_release_date", "game_type", "category", "genres.name", "themes.name", "keywords.name",
-        "age_ratings.organization", "age_ratings.rating_category", "involved_companies.company.name",
+        "age_ratings.organization", "age_ratings.rating_category.rating", "age_ratings.category", "age_ratings.rating", "involved_companies.company.name",
         "involved_companies.developer", "involved_companies.publisher", "cover.image_id",
     ];
 

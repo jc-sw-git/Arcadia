@@ -10,7 +10,7 @@ Mausmodus" ("Controller"), "Artwork ändern" and "Deinstallieren …" ("Verwalte
 entries (decision in #500). Automated cases use the demo or made-up Steam and Epic fixtures (`ArcadiaDriver`), window
 cases `ArcadiaWindow`. Replaces T499-7 (A on "Übersicht" did nothing) and the "facts in full width" part of T499-1.
 
-**Status:** Automated: T500-1 to -23 · QE: T500-24 to -28 · Open for the owner: T500-29, T500-30
+**Status:** Automated: T500-1 to -23 · QE: T500-24 to -28 · Owner passed: T500-29, T500-30
 
 Quick selection in "Übersicht"
 
@@ -111,11 +111,11 @@ Look (QE run of the app, visual checklist of #498)
 
 For the owner
 
-- [ ] **T500-29** **Owner:** On the real PC with the Steam Controller: in a real Steam game change "Steam-Controller-Modus"
+- [x] **T500-29** **Owner:** On the real PC with the Steam Controller: in a real Steam game change "Steam-Controller-Modus"
       in the quick selection and start the game (the mode holds); untick "Artwork ändern", apply to all games, open two
       other games and a game of another launcher (they show it), give one game its own selection, restart Arcadia: all
       as left. · E2E: no (real controller, real library and settings)
-- [ ] **T500-30** **Owner:** Release build on the real PC: walking the entries and the dialog and ticking feel instant
+- [x] **T500-30** **Owner:** Release build on the real PC: walking the entries and the dialog and ticking feel instant
       (< 50 ms). · E2E: no (budget on the owner's PC)
 
 Decided with the implementation: a greyed entry shows its reason below the entries while it has the focus, and in its
@@ -138,3 +138,4 @@ History:
 | T500-1, -2, -5, -7, -11, -12, -17 (look) | 2026-11-12 | Claude | PR branch, Debug, Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ screenshots: entries with values and the greyed entries' reason, rings whole on the first and last entry, "Übersicht anpassen", the first and last checkbox row and "Abbrechen"; one ring at a time, none behind the dialog | software rendering only; mouse (T500-24) and the full look checklist left to the QE run |
 | T500-6, -25 (QE findings) | 2026-11-12 | Claude | PR branch, Debug, Linux cloud container; Xvfb 1920 × 1080, `--demo` | ✅ `QuickSelectionTests`: an installation finishing activates "Deinstallieren …" in place with the focus on it (red with the focus place not restored); `IsDialogOpen` reported on opening and closing a dialog (red without the notifications); screenshot: no ring behind "Übersicht anpassen" under the dialog (pixel 33 → 10) | T500-9's L3, X and Y stay with the QE run, as T499-12 |
 | T500-9 (L3, X, Y), -24 to -28 (QE run) | 2026-11-12 | Claude (QE) | PR branch at ce59576, Release, Xvfb 1920 × 1080 and 1280 × 720, `--demo`, keys by xdotool, mouse by xdotool | ✅ T500-9: L3 ("Ansicht"), X (search) and Y leave "Übersicht" open and the focus on its entry after closing; T500-24: a click ticks an entry in the dialog, ✕ closes it with the focus on "Übersicht anpassen", a click on it opens the dialog, a click on "Für alle Spiele übernehmen" asks; T500-25: rings whole on the entries, "Übersicht anpassen", the checkbox rows, the button, "Abbrechen"; no ring behind the dialog (pixel 31 → 3 after ce59576); T500-26/-27: "Standard (Arcadia)" in one line beside its name at 480 px, nothing cut at 1280 × 720, greyed entries readable, gaps as the artboard RD6Mischung (34, 8, 26 before "Übersicht anpassen"; dialog gap 26, columns 28), no colour outside `Theme.axaml`; T500-28: ▲ ▼ and A in the entries and the dialog 0.6–25 ms press to frame, "Ersetzen" 20 ms; start with 1,031 / 5,031 demo games 2.1 / 2.6 s and 290 / 304 MB, also with 5,394 per-game selections, the same as without (2.3 s): the container's software rendering, not the selection | the arrows beside a value only mechanically (demo has no Pan, so both value entries are greyed); the 2 s start budget can only be judged on the real machine, since the container misses it without the change too |
+| T500-29, T500-30 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

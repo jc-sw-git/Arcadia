@@ -19,7 +19,7 @@ holds at most 200 characters (the field says "Höchstens 200 Zeichen" beyond); l
 and "Titel zurücksetzen" are also in the context menu (`docs/product/detail-page.md`: menu and detail page offer the
 same actions). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Open for the owner: T496-18, T496-16 with a real gamepad (the QE ran it with keys)
+**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Owner passed: T496-18
 
 **Change and reset**
 
@@ -86,7 +86,7 @@ same actions). The owner's cases are collected by the closing thread of #43.
 - [x] **T496-17** Release build, demo data with 1,000 games: changing a title, resetting it and toggling the line each
       show within 50 ms (`Bild:` lines); the UI thread never waits for the file write. · E2E: no (Release timings;
       quality engineer's run)
-- [ ] **T496-18** **Owner:** own library, Windows, Steam Controller: give an Epic game with a broken title (`?` in it)
+- [x] **T496-18** **Owner:** own library, Windows, Steam Controller: give an Epic game with a broken title (`?` in it)
       an own title, check library, sorting by name and the search; R3 on its detail page shows the broken original;
       close and start Arcadia: the own title is still there; "Titel zurücksetzen" brings the original back.
       · E2E: no (own library, real Steam Controller)
@@ -122,3 +122,4 @@ History:
 | Fixes of the QE's first pass: "Titel ändern" press to frame (`Bild: Accept`), 1,000 demo games | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | first opening 15.5 ms, later 6–8 ms (before: 525–688 ms); "Artwork ändern" 81 ms | view kept by `MainWindow`, its keyboard drawer in the layout from the start |
 | Fixes of the QE's first pass: two-line own title with the R3 line | 2026-11-12 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed: the line takes the info line's place, the button row stays above the areas | — |
 | QE second run T496-13, -16 (keys), -17, "Eigene Titel" row | 2026-11-12 | quality engineer | Release, Linux cloud container (Xvfb, `--demo --demo-games 1000`, keys) | passed | two-line title with the R3 line keeps the button row; "Titel ändern" opens in 4–15 ms, R3 ≤ 1 ms (reset 40 ms in the first run); status line whole, entry opens "Eigene Titel", B back |
+| T496-18 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

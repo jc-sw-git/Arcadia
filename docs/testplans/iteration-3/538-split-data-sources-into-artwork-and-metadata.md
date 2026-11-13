@@ -4,7 +4,7 @@ Derived from the owner's findings in the hand test of #43 as written in #538; th
 ("Datenquellen" stays one category with two tabs "Artwork" and "Metadaten", each with an icon). Keys follow
 `docs/product/controls.md` (WASD, Space = A, Esc = B, Q/E = LT/RT).
 
-**Status:** Automated: T538-1 to -8 · QE: T538-9, -10 · Open for the owner: T538-11
+**Status:** Automated: T538-1 to -8 · QE: T538-9, -10 · Owner passed: T538-11
 
 - [x] **T538-1** ≡, RB to "Datenquellen": two tabs "Artwork" (chosen) and "Metadaten" above the rows; "Artwork" holds
       STEAMGRIDDB, REIHENFOLGE FÜR ARTWORK, ARTWORK; RT shows "Metadaten" at its first row with IGDB, REIHENFOLGE FÜR
@@ -30,7 +30,7 @@ Derived from the owner's findings in the hand test of #43 as written in #538; th
       subtitles in each state, the "Launcher-Daten" boxes with logos, the header chip with the IGDB symbol. · E2E: no (window)
 - [x] **T538-10** Opening "Datenquellen" (from "Über Arcadia" and from "Controller") reacts as fast as the other
       categories: press-to-frame from `arcadia.log` (`Bild: NextTab`), before and after. · E2E: no (rendering time)
-- [ ] **T538-11** **Owner:** on the real PC, switch onto "Datenquellen" from "Controller" and "Über Arcadia" and judge the
+- [x] **T538-11** **Owner:** on the real PC, switch onto "Datenquellen" from "Controller" and "Über Arcadia" and judge the
       delay; read the new texts (tabs, subtitles, "Jetzt suchen", the info boxes). · E2E: no (owner's hardware and wording)
 
 Automated tests:
@@ -57,3 +57,4 @@ History:
 | T538-1 to -8 | 2026-11-13 | QE | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (757 of 757 App methods, Core, Pan) | Core's `Igdb_gets_at_most_4_requests_a_second` failed once while the app ran beside it, then passed 5 of 5 alone and in a full Core run: timing under load, not this PR |
 | T538-9 | 2026-11-13 | QE | Linux/Xvfb, Debug, `--demo`, keys | pass | Both tabs with icons, the chosen one lit, Q/E and the footer "Tab"; "Metadaten" groups IGDB, REIHENFOLGE FÜR METADATEN, METADATEN with its own "Bei mehreren Treffern" and "Warten auf deine Auswahl", EIGENE DATEN; "Launcher-Daten" boxes with logo and name (GOG Galaxy, Ubisoft Connect, EA app). Tints and the header's IGDB symbol only by test |
 | T538-10 | 2026-11-13 | QE | Linux/Xvfb, Debug, `--demo`, 3 s between presses, `Bild: NextTab`/`PreviousTab` | pass | Onto "Datenquellen": 159 / 123 / 97 / 102 ms; the other categories 97–247 ms (one 382 ms onto "Über Arcadia") |
+| T538-11 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

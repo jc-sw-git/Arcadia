@@ -3,7 +3,7 @@
 Findings of the owner's hand test of #43 (detail page from #498/#499/#500), changes 1 to 6 of the issue. The cases were written by the implementing thread from the issue's
 changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Open for the owner: T530-6, T530-7, T530-10, T530-11
+**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Owner passed: T530-6, T530-7, T530-10, T530-11
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B, Q/E = LT/RT, Shift+W/S = RS). "A jump" is the animation of one carousel turn: title, info line and
@@ -25,7 +25,7 @@ the panel's content fading in and rising a little.
 - [x] **T530-5** Mouse wheel: over the panel (quick selection, description, "Infos", an info box) it never switches the
   game, it scrolls the text under it where there is more; over the background (artwork, stacks) one notch turns one
   game as before (T506-5). · E2E: no (window: the wheel's target is the drawn layout)
-- [ ] **T530-6** **Owner:** On your PC with the Steam Controller, hold RT (and LT) for about two seconds on the detail
+- [x] **T530-6** **Owner:** On your PC with the Steam Controller, hold RT (and LT) for about two seconds on the detail
   page and let go: the title jumps at the first turn and again when you let go, never in between. `arcadia.log` says
   "Detailseite: LT/RT losgelassen, Seite folgt mit Sprung" for each release. · E2E: no (real controller and real
   rendering: in the container and the tests both jumps already came before this change, and the owner's log of the
@@ -36,12 +36,12 @@ the panel's content fading in and rising a little.
 - [x] **T530-9** The shown game drops out of the filter: the page shows the next hit after it in the order before (not
   the game at its old index), area and focus kept; a filter that keeps it keeps it shown; with no hit left the page
   closes to the library. · E2E: yes
-- [ ] **T530-7** **Owner:** With the controller, the glyph inside the rail's focus ring reads as "press A to enter" and
+- [x] **T530-7** **Owner:** With the controller, the glyph inside the rail's focus ring reads as "press A to enter" and
   doesn't crowd the value line. With the keyboard the wider "Leertaste" glyph cuts the value line of "Übersicht"
   ("Vor 1 Woche · 84 St…"); say whether that is fine or the line should run under the glyph. · E2E: no (look and feel)
-- [ ] **T530-10** **Owner:** A renamed game: ⧉ shows and hides "Original-Titel" (the footer says "[⧉] Original-Titel"),
+- [x] **T530-10** **Owner:** A renamed game: ⧉ shows and hides "Original-Titel" (the footer says "[⧉] Original-Titel"),
   R3 opens the filter instead. · E2E: no (the button's new place is the owner's choice to confirm in use)
-- [ ] **T530-11** **Owner:** Under "Davor"/"Danach" an arrow pointing left/right holds LT/RT (Q/E); it is easy to hit
+- [x] **T530-11** **Owner:** Under "Davor"/"Danach" an arrow pointing left/right holds LT/RT (Q/E); it is easy to hit
   with the mouse, lights up on hover, a click turns the carousel. · E2E: no (look and feel; added on the owner's wish)
 
 Earlier cases this changes: T493-2, T493-14 and T493-28 entered "Infos" with A and scrolled it with ▲ ▼; "Infos" is now
@@ -62,3 +62,4 @@ History:
 | T530-2, -3, -4, -5, dialog | 2026-11-13 | Claude | PR branch, Debug, Linux cloud container (Xvfb), keys and mouse, `--demo` | ✅ held E: the release fades the title in; glyph in the ring of "Übersicht"/"Controller", none on "Infos", footer "⇧W ⇧S / Mausrad Infotext"; Shift+S scrolls "Infos" from the rail; wheel over the panel keeps the game, over the background turns it; dialog: D moves to "Verwalten", footer "WASD Wählen" | – |
 | T530-9 (no hit left) | 2026-11-13 | QE (Claude) | PR branch, Release, Linux cloud container | ✅ new acceptance test red once with `Carousel.FindOrNext` returning 0 for an empty list (the page stayed open with nothing to show), green on the branch | – |
 | T530-3, -4, -5, -8, -9 | 2026-11-13 | QE (Claude) | PR branch, Release, Linux cloud container (Xvfb), keys and mouse, `--demo` | ✅ G opens the filter over the page, the chip at the foot shows "13 von 31" after "Nur nicht installierte", the installed game gave way to the next hit with the focus kept in the rail; glyph in the ring of "Übersicht", none on "Infos"; Shift+S and the wheel over "Infos" scroll it without turning, the wheel over the background turns. Keyboard: the "Leertaste" glyph shortens the value line of "Übersicht" ("Vor 1 Woche · 84 St…") | owner's look T530-7 |
+| T530-6, T530-7, T530-10, T530-11 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

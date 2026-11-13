@@ -8,7 +8,7 @@ code. Automated tests use made-up games, names, ids and access values and a fake
 changed decision changes its case. #494 came in two PRs: access, matching, order and titles first, then the waiting
 list entries "Metadaten" (T494-16 to T494-20). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T494-2 to T494-17, T494-19 to T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-18, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
+**Status:** Automated: T494-2 to T494-17, T494-19 to T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-18, T494-22, T494-33 · Owner passed: T494-34, T494-35, T494-36
 
 **IGDB access**
 
@@ -139,14 +139,14 @@ list entries "Metadaten" (T494-16 to T494-20). The owner's cases are collected b
 
 **Owner** (real Twitch and IGDB, own library)
 
-- [ ] **T494-34** **Owner:** "Zugang anlegen" with the controller, create the access in Twitch's console by mouse, paste
+- [x] **T494-34** **Owner:** "Zugang anlegen" with the controller, create the access in Twitch's console by mouse, paste
   id and secret with "Einfügen" → "Verbunden", mouse mode off again in Arcadia. Close and start Arcadia: still
   "Verbunden". Change one character of the secret: warning at the tab, the row and the status chip; pasting the right
   one clears it. · E2E: no (real Twitch account and browser)
-- [ ] **T494-35** **Owner:** with access, the own Epic games get description, genres, year and age rating; titles with
+- [x] **T494-35** **Owner:** with access, the own Epic games get description, genres, year and age rating; titles with
   broken umlauts are correct in library, search and detail page; none shows another game's data; the library stays
   fluid while it loads. · E2E: no (real IGDB, own library)
-- [ ] **T494-36** **Owner:** move IGDB first and back: the Steam games' fields change at once, German descriptions stay.
+- [x] **T494-36** **Owner:** move IGDB first and back: the Steam games' fields change at once, German descriptions stay.
   If "Warten auf deine Auswahl" shows "Metadaten" entries: take the right hit for one, skip another, restart Arcadia:
   both stay decided. If none waits, note that; T494-16 to T494-20 cover it with made-up data. · E2E: no (real IGDB, own
   library)
@@ -181,3 +181,4 @@ History:
 | T494-16, -19, -20 (red once) | 2026-11-13 | Claude | same, a waiting or skipped game searched by name again on purpose | ❌ as expected, ✅ again | – |
 | T494-18, -19 (look only) | 2026-11-13 | Claude | branch of part 2's PR, Debug, Linux Xvfb 1920 × 1080, `--demo` with two GOG games seeded as waiting, keys | ✅ row counts 2, entries "GOG Galaxy · Metadaten", "Gesucht: Metadaten", placeholders with name and year, A takes (file holds IGDB id), Y skips, "Alles erledigt."; QE's own run still checks T494-18 (covers, clicks) | – |
 | T494-18 | 2026-11-13 | QE (Claude) | branch of part 2's PR, Release, Linux Xvfb 1920 × 1080, `--demo`, a local fake Twitch/IGDB over HTTPS (made-up hits, three equal names, one without a cover, one without a date) and IGDB's real image host, keys and mouse | ✅ entries "GOG Galaxy · Metadaten", "Gesucht: Metadaten", IGDB's covers loaded, the placeholder for a hit without cover, no year for a hit without date; an own term shows IGDB's six main games; a click on an entry shows its hits, a click on a hit takes it; after a restart (artwork entries seeded) a game waiting for both is there twice, "Artwork" first, and without access the covers stay placeholders; "Ersten nehmen" gives one toast | – |
+| T494-34, T494-35, T494-36 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

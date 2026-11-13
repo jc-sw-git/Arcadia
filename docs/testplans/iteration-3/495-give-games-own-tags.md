@@ -14,7 +14,7 @@ Deviations from the cases, for the owner's look in #43's final test:
   not as a field with the source "Eigene".
 - D6: the questions quote with „…“ (`docs/product/ui-texts.md`), not ‚…'.
 
-**Status:** Automated: T495-1 to -11, -13 to -19, -21 to -27, -30 (guard on `main`) · QE: T495-12, -20, -28, -29, -31 · Open for the owner: T495-32, T495-33
+**Status:** Automated: T495-1 to -11, -13 to -19, -21 to -27, -30 (guard on `main`) · QE: T495-12, -20, -28, -29, -31 · Owner passed: T495-32, T495-33
 
 **Tag window (detail page and context menu)**
 
@@ -102,10 +102,10 @@ Deviations from the cases, for the owner's look in #43's final test:
 
 **Owner** (own PC, real library, Steam Controller; collected with the other #43 slices at the end)
 
-- [ ] **T495-32** **Owner:** on the TV with the Steam Controller: give three own games the tag "Couch-Koop" from the
+- [x] **T495-32** **Owner:** on the TV with the Steam Controller: give three own games the tag "Couch-Koop" from the
       detail page and one from the context menu, rename another tag into "couch-koop" and merge, open "Eigene Tags" →
       "Couch-Koop" → a game → B back; everything readable from the couch, typing on the keyboard comfortable. · E2E: no (own PC, TV, Steam Controller)
-- [ ] **T495-33** **Owner:** after T495-32, close and start Arcadia, rescan and "Alle Metadaten neu laden": all own tags
+- [x] **T495-33** **Owner:** after T495-32, close and start Arcadia, rescan and "Alle Metadaten neu laden": all own tags
       and their games are still there, own tags before Steam's on the detail page. · E2E: no (own library, real Steam metadata)
 
 ## Tests
@@ -138,3 +138,4 @@ History:
 | T495-30 | 2026-11-13 | QE (Claude) | PR #529, Release, Linux, window guards run locally (`Arcadia.App.Tests.Guards`) | ✅ 43 green, "Tags eines Spiels", "Eigene Tags", "Eigene Tags › Spiele" included | – |
 | T495-31 | 2026-11-13 | QE (Claude) | as T495-12 | ✅ status message, "Tags" (context menu, detail page) and "Eigene Tags" greyed with the note, `user-data.json.broken` beside the file, file not overwritten; after repairing it the message is gone at the next start | Review finding 3 (count "(0)") |
 | Review findings 1–3 fixed: rail line "Artwork, Tags, Titel und mehr", the search from a page opened from the tag list leads back to that page and B to the list, "Eigene Tags" without a count while unreadable | 2026-11-13 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) and `OwnTagsTests` | ✅ the line whole while the area is focused | – |
+| T495-32, T495-33 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

@@ -1,8 +1,8 @@
 # #560 Final test of #43: glyphs, scrolling the hit info, row order and quick selection alignment
 
-**Status:** Automated: T560-2, T560-3, T560-4 · QE: T560-5, T560-6 · Open for the owner: T560-1, T560-7
+**Status:** Automated: T560-2, T560-3, T560-4 · QE: T560-5, T560-6 · Owner passed: T560-1, T560-7
 
-- [ ] **T560-1** **Owner:** `--first-run` with the Steam Controller, step "Datenquellen": the focus on "Fertig" shows ≡'s
+- [x] **T560-1** **Owner:** `--first-run` with the Steam Controller, step "Datenquellen": the focus on "Fertig" shows ≡'s
   glyph whole (lines on the dark glyph), not an empty dark circle. · E2E: no (real controller: the keyboard shows the
   key "Enter" as text, which was never broken)
 - [x] **T560-2** Detail page: "Spielen" shows A's glyph while it has the focus; with the focus in the rail or the other
@@ -16,7 +16,7 @@
   sits about a third of the way down to "Übersicht anpassen". · E2E: no (window: layout)
 - [x] **T560-6** Detail page, quick selection: the ◀ ▶ of "Steam-Controller-Modus" and "Individueller Mausmodus" stand
   in the same columns, the values centred between them. · E2E: no (window: layout)
-- [ ] **T560-7** **Owner:** on your PC, a metadata entry with a long description: RS scrolls the info box to its end,
+- [x] **T560-7** **Owner:** on your PC, a metadata entry with a long description: RS scrolls the info box to its end,
   nothing is cut off. · E2E: no (real IGDB descriptions)
 
 Automated tests:
@@ -37,3 +37,4 @@ History:
 | T560-1 | 2026-11-13 | Claude | branch, code only | cause found: the focused pill's style painted every path inside it, also ≡'s icon, in the glyph's own dark colour; now only the pill's own spinner | owner checks with the controller |
 | T560-2, -4, -5, -6 | 2026-11-13 | QE (Claude) | `01c420c`, Linux/Xvfb, `--demo`, keys | ✅ A only on the focused "Spielen" (download arrow on "Installieren"); note icon on its line, about a third of the way down; ◀ ▶ in columns; switch indented under "Neu laden" | – |
 | all | 2026-11-13 | QE (Claude) | `01c420c`, Linux, `tools/ci/run-tests.sh 4` | ✅ 777 App test methods, Core and Pan green | – |
+| T560-1, T560-7 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

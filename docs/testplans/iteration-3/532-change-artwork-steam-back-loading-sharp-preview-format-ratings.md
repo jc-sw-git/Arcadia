@@ -1,6 +1,6 @@
 # #532 Change artwork: Steam artwork back, loading state, sharp images, preview, format and ratings
 
-**Status:** Automated: T532-1, T532-3, T532-5, T532-6, T532-8 · QE: T532-2, T532-4, T532-7, T532-9 · Open for the owner: T532-10, T532-11
+**Status:** Automated: T532-1, T532-3, T532-5, T532-6, T532-8 · QE: T532-2, T532-4, T532-7, T532-9 · Owner passed: T532-10, T532-11
 
 - [x] **T532-1** A game shows its launcher's image (automatic). In "Artwork ändern" A on a SteamGridDB tile, then A on the launcher's tile again, without closing the modal: the launcher's image is used again (set by hand, ticked), no warning "konnte nicht geladen werden". · E2E: yes
 - [x] **T532-2** Detail page with several games with covers: RT twice quickly and once slowly, LT back: the cover in front is as sharp as when the detail page is opened directly on that game. · E2E: no (window: decode size; pinned by the guard `SharpCoverTests`)
@@ -11,8 +11,8 @@
 - [x] **T532-7** The LB/RB glyphs beside "Cover" / "Hintergrund" are keycaps centred on the tabs' height, keyboard and controller glyphs; a click on one switches the tab. · E2E: no (window: layout)
 - [x] **T532-8** After the SteamGridDB key is deleted, an artwork entry in "Warten auf deine Auswahl" says "Kein Schlüssel hinterlegt · SteamGridDB wird übersprungen", not "Schlüssel ungültig …"; nothing is asked. · E2E: yes
 - [x] **T532-9** The preview shows the detail page as it is laid out: background over the whole page, the cover top left beside title and buttons, the stacks to the sides, the panel below; the cover tab rings the cover, the background tab the whole preview. · E2E: no (window: layout)
-- [ ] **T532-10** **Owner:** On the real PC, a Steam game that was blurry on the detail page: reach it with LT/RT from two games away: sharp. · E2E: no (real images and screen scaling)
-- [ ] **T532-11** **Owner:** On the real PC, a Steam game: choose a SteamGridDB cover, then Steam's again in the same modal: Steam's cover shows. · E2E: no (real Steam cache)
+- [x] **T532-10** **Owner:** On the real PC, a Steam game that was blurry on the detail page: reach it with LT/RT from two games away: sharp. · E2E: no (real images and screen scaling)
+- [x] **T532-11** **Owner:** On the real PC, a Steam game: choose a SteamGridDB cover, then Steam's again in the same modal: Steam's cover shows. · E2E: no (real Steam cache)
 
 Automated tests:
 
@@ -34,3 +34,4 @@ History:
 | T532-2 | 2026-11-13 | QE (Claude) | branch, Linux container, headless guard (`WINDOW_GUARDS=1`) | ✅ (red with `RedrawImages` taken out) | – |
 | T532-7, T532-9 | 2026-11-13 | QE (Claude) | branch, Release, Linux container, Xvfb 1920 × 1080, `--demo`, keyboard | ✅ keycaps centred on the tabs, preview as the detail page, ring on cover / whole background | – |
 | T532-4 | 2026-11-13 | QE (Claude) | a3a1d45f, Release, Linux container, Xvfb, `--demo`, loading held 30 s by a local delay | ✅ frames light up in turn, magnifier moves to and fro, text changes; no "Cannot find the appropriate transform" in `arcadia.log` | – |
+| T532-10, T532-11 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

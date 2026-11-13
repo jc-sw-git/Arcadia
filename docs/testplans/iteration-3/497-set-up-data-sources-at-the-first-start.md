@@ -11,7 +11,7 @@ panel, on-screen keyboard and browser pages are the settings' own. T497-12 says 
 step does what the settings' "Datenquellen" do (greyed rows keep the focus, T494-1, `docs/product/controls.md` says
 "passed over"): the contradiction is for the owner to decide, the step follows the settings.
 
-**Status:** Automated: T497-1 to T497-12 · QE: T497-13 · Open for the owner: T497-14 (T497-15 · RC on the release candidate)
+**Status:** Automated: T497-1 to T497-12 · QE: T497-13 · Open for the owner: T497-14 (first start, moved to the acceptance review of the iteration, I#267), T497-15 (on the release candidate)
 
 - [x] **T497-1** Fresh first start (settings without `ActiveLaunchers`), controller only: "Fertig" on "Welche Launcher
   soll Arcadia nutzen?" leads to the step "Datenquellen" in place of the library, same frame as the launcher page (header

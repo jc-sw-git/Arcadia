@@ -17,7 +17,7 @@
         <StackPanel Spacing="18">
           <TextBlock Text="{Binding EditorHeading}" FontSize="34" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <Border Name="NameField" Classes="textField editing changeTitleField" Classes.problem="{Binding Editor?.HasProblem, TargetNullValue=False}">
+            <Border Name="NameField" Classes="textField editing changeTitleField">
               <StackPanel Orientation="Horizontal" ClipToBounds="True">
                 <TextBlock Classes="fieldText" Text="{Binding Editor?.TextBeforeCaret, TargetNullValue=''}" />
                 <Border Classes="caret fieldCaret" />
@@ -26,7 +26,7 @@
             </Border>
             <Button Grid.Column="1" Classes="plain artworkNoticeButton" Content="{x:Static app:AppTexts.ChangeTitleTake}" Command="{Binding TakeNameCommand}" />
           </Grid>
-          <TextBlock Classes="rowProblem" Text="{Binding Editor?.Problem, TargetNullValue=''}" IsVisible="{Binding Editor?.HasProblem, TargetNullValue=False}" />
+          <TextBlock Classes="limitNotice" Text="{Binding Editor?.LimitNotice, TargetNullValue=''}" IsVisible="{Binding Editor?.HasLimitNotice, TargetNullValue=False}" />
           <TextBlock Classes="changeTitleNote" Text="{x:Static vm:OwnTagsDialogViewModel.NameNote}" />
         </StackPanel>
       </Border>

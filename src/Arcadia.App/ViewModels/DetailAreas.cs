@@ -112,19 +112,26 @@ public static class DetailAreas
     }
 
     public static IReadOnlyList<DetailRowViewModel> ManageRows(
-        GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, IGameActionHost host, Action<DetailRowViewModel> point) =>
-    [
-        new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
-            Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
-        new(GameActionKind.Tags, AppTexts.ActionTags, AppTexts.DetailTagsSubtitle, AppTexts.DetailTagsInfo,
-            Find(actions, GameActionKind.Tags), greyedReason: null, value: TagsLine(host.OwnTagsOf(tile.Game).Count), point),
-        new(GameActionKind.ChangeTitle, AppTexts.ActionChangeTitle, AppTexts.DetailChangeTitleSubtitle, AppTexts.DetailChangeTitleInfo,
-            Find(actions, GameActionKind.ChangeTitle), greyedReason: null, value: null, point),
-        new(GameActionKind.ResetTitle, AppTexts.ActionResetTitle, AppTexts.DetailResetTitleSubtitle, AppTexts.DetailResetTitleInfo,
-            Find(actions, GameActionKind.ResetTitle), greyedReason: null, value: null, point),
-        new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.DetailUninstallSubtitle(tile.LauncherName), AppTexts.DetailUninstallInfo(tile.LauncherName),
-            Find(actions, GameActionKind.Uninstall), AppTexts.NotInstalled, value: null, point),
-    ];
+        GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, IGameActionHost host, Action<DetailRowViewModel> point)
+    {
+        var ownTags = host.OwnTagsOf(tile.Game);
+        return
+        [
+            new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
+                Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
+            new(GameActionKind.Tags, AppTexts.ActionTags, AppTexts.DetailTagsSubtitle, AppTexts.DetailTagsInfo,
+                Find(actions, GameActionKind.Tags), greyedReason: null, value: TagsLine(ownTags.Count), point)
+            {
+                InfoTags = ownTags,
+            },
+            new(GameActionKind.ChangeTitle, AppTexts.ActionChangeTitle, AppTexts.DetailChangeTitleSubtitle, AppTexts.DetailChangeTitleInfo,
+                Find(actions, GameActionKind.ChangeTitle), greyedReason: null, value: null, point),
+            new(GameActionKind.ResetTitle, AppTexts.ActionResetTitle, AppTexts.DetailResetTitleSubtitle, AppTexts.DetailResetTitleInfo,
+                Find(actions, GameActionKind.ResetTitle), greyedReason: null, value: null, point),
+            new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.DetailUninstallSubtitle(tile.LauncherName), AppTexts.DetailUninstallInfo(tile.LauncherName),
+                Find(actions, GameActionKind.Uninstall), AppTexts.NotInstalled, value: null, point),
+        ];
+    }
 
     /// <summary>The value of the row "Tags" (#495): "Keine", "1 Tag", "3 Tags".</summary>
     public static string TagsLine(int count) =>

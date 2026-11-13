@@ -3,7 +3,7 @@
 Derived from the owner's findings in the hand test of #43 as written in #539. Keys follow `docs/product/controls.md`
 (WASD, Space = A, Esc = B, V = Y). Every game of the made-up launcher has neither cover nor background, so it seeks both.
 
-**Status:** Automated: T539-1 to -7, -10, -11 · QE: T539-8, -9 (implementer's run, QE review pending) · Open for the owner: T539-12
+**Status:** Automated: T539-1 to -7, -10, -11 · QE: T539-8, -9 (implementer and QE) · Open for the owner: T539-12
 
 - [x] **T539-1** "Warten auf deine Auswahl" in "Metadaten": the hits are a list (name, year, first genre · developer), no
       covers, ▲ ▼ through it; beside it an info box with the marked hit's ERSCHIENEN, GENRES, ENTWICKLER, PUBLISHER,
@@ -60,3 +60,5 @@ History:
 | T539-8 | 2026-11-13 | implementer | Linux, headless window drawn by Skia (1920 × 1080), as above, after the owner asked for tabs instead of two steps | pass: tabs "Cover"/"Hintergrund" with LB/RB (⇧ Q/⇧ E with the keyboard), "DEIN COVER"/"DEIN HINTERGRUND" with "Noch nicht gewählt", the pick's accent frame apart from the focus ring | Two steps replaced by tabs; pictures `captures-539/tab-*.png` |
 | T539-9 | 2026-11-13 | implementer | as above, real pointer events (press and release, twice for the double click) | pass: a click on the tab "Hintergrund" turns to it, a click marks, a double click picks for its tab and turns, a double click on a cover then takes both | – |
 | T539-1 to -7, -10, -11 | 2026-11-13 | implementer | Linux cloud container, Release, `tools/ci/run-tests.sh 4`, after the tabs | pass (Core 3203, Pan 438, App 867 in 4 shards) | – |
+| T539-1 to -7, -10, -11 | 2026-11-13 | QE | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (Core 3203, Pan 438, App 4 shards green); T539-5 and T539-7 red once by mutation (background game dropped; a click taking the hit) | Found: B in the hits keeps the picks (see PR Review) |
+| T539-8, -9 | 2026-11-13 | QE | Linux, headless window drawn by Skia (1920 × 1080), the made-up launcher and fake SteamGridDB, controller presses, keyboard (D) and a real pointer click | pass: both tabs, "DEIN COVER"/"DEIN HINTERGRUND", focus on the pick's own game, a click on a background marks it and takes nothing, with the keyboard ⇧ Q/⇧ E, V, Esc, Leertaste, WASD | Pictures `captures-539/qe/` in the project files |

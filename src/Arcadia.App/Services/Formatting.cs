@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 
 namespace Arcadia.App.Services;
@@ -218,26 +220,45 @@ public static class Formatting
     public static (IBrush Background, IBrush Accent) CoverBrushes(string seed)
     {
         var hue = StableHash(seed) % 360;
-        return (
-            new SolidColorBrush(new HslColor(1, hue, 0.28, 0.20).ToRgb()),
-            new SolidColorBrush(new HslColor(1, hue, 0.55, 0.66).ToRgb()));
+        return (Tone(hue, "PlaceholderCoverTone"), Tone(hue, "PlaceholderCoverAccentTone"));
     }
 
     /// <summary>The detail page's placeholder backdrop and its decorative rings, in the cover's hue.</summary>
     public static (IBrush Backdrop, IBrush Ring) HeroBrushes(string seed)
     {
         var hue = StableHash(seed) % 360;
-        return (
-            new SolidColorBrush(new HslColor(1, hue, 0.30, 0.17).ToRgb()),
-            new SolidColorBrush(new HslColor(1, hue, 0.40, 0.28).ToRgb()));
+        return (Tone(hue, "PlaceholderHeroBackdropTone"), Tone(hue, "PlaceholderHeroRingTone"));
     }
 
     /// <summary>The first letter of a name, as a whole character also when it is made of several (e.g. an emoji).</summary>
     public static string Monogram(string name) =>
         name.Trim() is { Length: > 0 } trimmed ? trimmed[..StringInfo.GetNextTextElementLength(trimmed)].ToUpper(Culture) : "?";
 
-    public static IBrush LauncherTileBrush(string launcherId) =>
-        new SolidColorBrush(new HslColor(1, StableHash(launcherId) % 360, 0.35, 0.30).ToRgb());
+    public static IBrush LauncherTileBrush(string launcherId) => Tone(StableHash(launcherId) % 360, "PlaceholderLauncherTileTone");
+
+    /// <summary>
+    /// The hue with the theme's saturation and lightness ("0.28 0.20" in <c>Theme.axaml</c>), so a theme changes the
+    /// placeholders as it changes every other colour. Without a theme (or a value it can't read) the tone is grey.
+    /// </summary>
+    private static SolidColorBrush Tone(int hue, string key)
+    {
+        var (saturation, lightness) = Application.Current?.TryFindResource(key, out var value) == true && value is string tone
+            ? ParsedTones.GetOrAdd(tone, ParseTone)
+            : Grey;
+        return new SolidColorBrush(new HslColor(1, hue, saturation, lightness).ToRgb());
+    }
+
+    private static readonly (double Saturation, double Lightness) Grey = (0, 0.25);
+
+    // A placeholder per game at every scan: each tone is parsed once.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (double Saturation, double Lightness)> ParsedTones = new(StringComparer.Ordinal);
+
+    private static (double Saturation, double Lightness) ParseTone(string tone) =>
+        tone.Split(' ', StringSplitOptions.RemoveEmptyEntries) is [var s, var l]
+        && double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var saturation)
+        && double.TryParse(l, NumberStyles.Float, CultureInfo.InvariantCulture, out var lightness)
+            ? (saturation, lightness)
+            : Grey;
 
     private static int StableHash(string text)
     {

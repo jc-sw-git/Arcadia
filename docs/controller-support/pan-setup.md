@@ -41,7 +41,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
   description, recovery, pre-shutdown and DACL are set again in place, a stopped service is started. Anything else:
 - Pan copies itself to `%ProgramFiles%\Arcadia\Pan\Pan.exe`, compares the copy's SHA-256 with the source and the
   expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
-  90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
+  100 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
   ("… abgelehnt"); exit code 3 points to `pan.log`.
 - "HidHide antwortet unerwartet" → "Neu installieren": a run with `--hidhide --hidhide-repair` runs the
   pinned installer with Windows Installer's reinstall, one prompt; only over the very driver it installs and never

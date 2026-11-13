@@ -176,7 +176,7 @@
           <Panel>
             <Grid RowDefinitions="180,*" DataContext="{Binding Library.FocusedGame}" x:DataType="vm:GameTileViewModel">
               <Panel Background="{Binding CoverBrush}">
-                <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
+                <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="{StaticResource MonogramOpacity}"
                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" IsVisible="{Binding !#PreviewArt.IsShowing}" />
                 <!-- The background, as on the detail page the preview leads to (#487). -->
                 <ctl:ArtworkImage Name="PreviewArt" File="{Binding Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />

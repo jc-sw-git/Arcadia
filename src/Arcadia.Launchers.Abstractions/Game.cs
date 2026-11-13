@@ -54,12 +54,6 @@ public sealed record Game
 
     public string? InstallDirectory { get; init; }
 
-    /// <summary>
-    /// The game's main executable, if known. Used to detect that a game started through its
-    /// launcher is actually running.
-    /// </summary>
-    public string? ExecutablePath { get; init; }
-
     public DateTimeOffset? InstalledAt { get; init; }
 
     /// <summary>Null when the launcher does not report it or the game was never played.</summary>

@@ -182,6 +182,18 @@ public sealed partial class ControllerSupportServiceTests : IDisposable
     }
 
     [Theory]
+    [InlineData(typeof(System.Text.Json.JsonException))]
+    [InlineData(typeof(UriFormatException))]
+    public async Task A_broken_answer_from_a_feed_is_a_failed_action_at_its_row(Type error)
+    {
+        var service = Create();
+
+        await service.RunBusyAsync("Treiber werden installiert", _ => throw (Exception)Activator.CreateInstance(error, "kaputte Antwort")!, CancellationToken.None);
+
+        Assert.Equal("kaputte Antwort", service.LastError);
+    }
+
+    [Theory]
     [Trait("TestCase", "T242-26")]
     [InlineData(false)]
     [InlineData(true)]

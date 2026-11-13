@@ -69,6 +69,9 @@ internal sealed class SteamWebApi(HttpClient http)
     /// <summary>A full avatar is some 10 KB; far more is no avatar.</summary>
     public const int MaxAvatarBytes = 512 * 1024;
 
+    /// <summary>The owned games of a 5,000-game account are about 1 MB; far more is no answer of Steam's.</summary>
+    public const int MaxJsonBytes = 32 * 1024 * 1024;
+
     private const int EResultOk = 1;
 
     /// <summary>
@@ -154,26 +157,11 @@ internal sealed class SteamWebApi(HttpClient http)
                 return new SteamApiError($"Avatar: HTTP {(int)response.StatusCode}", Status: response.StatusCode);
             }
 
-            if (response.Content.Headers.ContentLength > MaxAvatarBytes)
+            if (await ReadAtMostAsync(response, MaxAvatarBytes, timeout.Token).ConfigureAwait(false) is not { } bytes)
             {
                 return new SteamApiError("Avatar: zu groß"); // not a UI text (log)
             }
 
-            await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-            using var picture = new MemoryStream();
-            var buffer = new byte[16 * 1024];
-            int read;
-            while ((read = await body.ReadAsync(buffer, timeout.Token).ConfigureAwait(false)) > 0)
-            {
-                if (picture.Length + read > MaxAvatarBytes)
-                {
-                    return new SteamApiError("Avatar: zu groß"); // not a UI text (log)
-                }
-
-                picture.Write(buffer, 0, read);
-            }
-
-            var bytes = picture.ToArray();
             return IsJpegOrPng(bytes) ? SteamApiResult<byte[]>.Ok(bytes) : new SteamApiError("Avatar: kein Bild"); // not a UI text (log)
         }
         catch (Exception e) when (Failure("Avatar", e, cancellationToken) is { } error)
@@ -211,19 +199,48 @@ internal sealed class SteamWebApi(HttpClient http)
 
         try
         {
-            using var response = await http.SendAsync(message, timeout.Token).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
             if (Check(method, response) is { } error)
             {
                 return new JsonAnswer(null, error);
             }
 
-            await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-            return new JsonAnswer(await JsonDocument.ParseAsync(body, cancellationToken: timeout.Token).ConfigureAwait(false), null);
+            if (await ReadAtMostAsync(response, MaxJsonBytes, timeout.Token).ConfigureAwait(false) is not { } json)
+            {
+                return new JsonAnswer(null, new SteamApiError($"{method}: Antwort zu groß")); // not a UI text (log)
+            }
+
+            return new JsonAnswer(JsonDocument.Parse(json), null);
         }
         catch (Exception e) when (Failure(method, e, cancellationToken) is { } error)
         {
             return new JsonAnswer(null, error);
         }
+    }
+
+    /// <summary>The body, or null once it grows past <paramref name="max"/> bytes (whatever its header announced).</summary>
+    private static async Task<byte[]?> ReadAtMostAsync(HttpResponseMessage response, int max, CancellationToken cancellationToken)
+    {
+        if (response.Content.Headers.ContentLength > max)
+        {
+            return null;
+        }
+
+        await using var body = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var content = new MemoryStream();
+        var buffer = new byte[16 * 1024];
+        int read;
+        while ((read = await body.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            if (content.Length + read > max)
+            {
+                return null;
+            }
+
+            content.Write(buffer, 0, read);
+        }
+
+        return content.ToArray();
     }
 
     /// <summary>

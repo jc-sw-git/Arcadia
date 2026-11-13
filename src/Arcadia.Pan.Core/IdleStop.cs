@@ -4,9 +4,10 @@ namespace Arcadia.Pan;
 /// Stops Pan after <paramref name="timeout"/> without a client; a client that comes meanwhile cancels it. While
 /// <paramref name="keepRunning"/> says Pan still has work of its own (a retry that shows the Steam Controller after a
 /// partial teardown), the countdown starts over instead: stopping would end that retry with the controller hidden (review
-/// of #252, P2 1).
+/// of #252, P2 1). <paramref name="hasClient"/> is asked last: a connection's end reports "gone" after its successor
+/// may already have said "present", and that stale "gone" must not stop Pan under a live emulation.
 /// </summary>
-public sealed class IdleStop(TimeSpan timeout, Func<bool> keepRunning, Action stop, Action<string> log) : IDisposable
+public sealed class IdleStop(TimeSpan timeout, Func<bool> keepRunning, Func<bool> hasClient, Action stop, Action<string> log) : IDisposable
 {
     private CancellationTokenSource? _countdown;
     private bool _toldStaying;
@@ -57,6 +58,12 @@ public sealed class IdleStop(TimeSpan timeout, Func<bool> keepRunning, Action st
                     }
 
                     Arm(countdown);
+                    return;
+                }
+
+                if (hasClient())
+                {
+                    log($"Countdown of {timeout.TotalSeconds:0} s ended, but a client is connected: staying");
                     return;
                 }
 

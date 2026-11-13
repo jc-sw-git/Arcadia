@@ -278,6 +278,15 @@
     <!-- The mouse mode's on-screen keyboard (#110): keys with a darker lower edge like real ones (owner, 2026-10-22). -->
     <BoxShadows x:Key="KeyCapEdge">inset 0 -3 0 0 #0F141A</BoxShadows>
     <BoxShadows x:Key="KeyCapEdgeFocused">inset 0 -3 0 0 #0F141A, 0 0 0 3 #F2F5F8</BoxShadows>
+    <!-- Placeholders until artwork is loaded (Formatting): the hue comes from the title or the launcher's id, saturation
+         and lightness from here, as "saturation lightness". -->
+    <x:String x:Key="PlaceholderCoverTone">0.28 0.20</x:String>
+    <x:String x:Key="PlaceholderCoverAccentTone">0.55 0.66</x:String>
+    <x:String x:Key="PlaceholderHeroBackdropTone">0.30 0.17</x:String>
+    <x:String x:Key="PlaceholderHeroRingTone">0.40 0.28</x:String>
+    <x:String x:Key="PlaceholderLauncherTileTone">0.35 0.30</x:String>
+    <!-- The big letter on a cover without artwork: the accent, toned down. -->
+    <x:Double x:Key="MonogramOpacity">0.55</x:Double>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->

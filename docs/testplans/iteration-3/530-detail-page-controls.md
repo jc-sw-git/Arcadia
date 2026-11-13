@@ -37,7 +37,8 @@ the panel's content fading in and rising a little.
   the game at its old index), area and focus kept; a filter that keeps it keeps it shown; with no hit left the page
   closes to the library. · E2E: yes
 - [ ] **T530-7** **Owner:** With the controller, the glyph inside the rail's focus ring reads as "press A to enter" and
-  doesn't crowd the value line. · E2E: no (look and feel)
+  doesn't crowd the value line. With the keyboard the wider "Leertaste" glyph cuts the value line of "Übersicht"
+  ("Vor 1 Woche · 84 St…"); say whether that is fine or the line should run under the glyph. · E2E: no (look and feel)
 - [ ] **T530-10** **Owner:** A renamed game: ⧉ shows and hides "Original-Titel" (the footer says "[⧉] Original-Titel"),
   R3 opens the filter instead. · E2E: no (the button's new place is the owner's choice to confirm in use)
 

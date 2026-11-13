@@ -75,7 +75,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     [ObservableProperty]
     public partial DetailMetadata GameInfo { get; private set; }
 
-    /// <summary>The automatic title while the game has an own one (#496); null without one, then R3 does nothing here.</summary>
+    /// <summary>The automatic title while the game has an own one (#496); null without one, then ⧉ does nothing here.</summary>
     public string? OriginalTitle { get; }
 
     public bool HasOriginalTitle => OriginalTitle is not null;
@@ -83,11 +83,11 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     /// <summary>"Original-Titel: …" under the title.</summary>
     public string OriginalTitleLine => OriginalTitle is { } original ? AppTexts.DetailOriginalTitle(original) : string.Empty;
 
-    /// <summary>R3 shows and hides the line; a page shown anew (another game, the page left) starts without it.</summary>
+    /// <summary>⧉ shows and hides the line; a page shown anew (another game, the page left) starts without it.</summary>
     [ObservableProperty]
     public partial bool ShowsOriginalTitle { get; private set; }
 
-    /// <summary>R3 (G): shows or hides "Original-Titel: …" while the game has an own title, wherever the focus is.</summary>
+    /// <summary>⧉ (R): shows or hides "Original-Titel: …" while the game has an own title, wherever the focus is.</summary>
     public void ToggleOriginalTitle()
     {
         if (HasOriginalTitle)

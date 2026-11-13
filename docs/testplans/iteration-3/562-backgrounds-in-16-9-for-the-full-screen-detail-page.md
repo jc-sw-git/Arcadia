@@ -6,8 +6,8 @@
   SteamGridDB isn't asked for the game's background. · E2E: yes
 - [x] **T562-2** A flat background (Steam's 1920 × 620) fits too: SteamGridDB isn't asked for it; of SteamGridDB's own
   backgrounds, a 16 : 9 one is taken before a better rated flat one. · E2E: yes
-- [x] **T562-3** "Zuschneiden erlaubt" changes only covers: with "Viel" a background that cuts 22 % still doesn't fit, a
-  cover that cuts 20 % does, at once and without a request. · E2E: yes
+- [x] ~~**T562-3** "Zuschneiden erlaubt" changes only covers: with "Viel" a background that cuts 22 % still doesn't fit, a
+  cover that cuts 20 % does, at once and without a request. · E2E: yes~~ Outdated: the setting is gone (#566), see T566-2.
 - [x] **T562-4** "Artwork ändern", tab "Hintergrund": the heading reads "HINTERGRUND · 16 : 9", the tiles are 16 : 9 and
   show a flat image cropped as the detail page shows it; "Warten auf deine Auswahl" shows backgrounds in 16 : 9 tiles; the
   info boxes "Wer was liefert" and "Zuschneiden erlaubt" read as listed in the PR. · E2E: no (window: layout)

@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Arcadia.Core.Artwork;
 
 namespace Arcadia.Core.Settings;
 
@@ -14,20 +13,6 @@ public enum ArtworkSourceKind
     SteamGridDb,
 }
 
-/// <summary>"Zuschneiden erlaubt" (#13): how much of an image a centred crop may cut away for it to fit its frame.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<CropAllowance>))]
-public enum CropAllowance
-{
-    /// <summary>"Wenig": up to 5 %.</summary>
-    Little,
-
-    /// <summary>"Normal": up to 15 %, the default.</summary>
-    Normal,
-
-    /// <summary>"Viel": up to 30 %.</summary>
-    Much,
-}
-
 /// <summary>"Bei mehreren Treffern" (#491): what happens when a game found only by its name matches several games.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<SeveralHits>))]
 public enum SeveralHits
@@ -40,8 +25,8 @@ public enum SeveralHits
 }
 
 /// <summary>
-/// The settings of the group "Reihenfolge für Artwork", "Zuschneiden erlaubt" (#489) and "Bei mehreren Treffern" (#491) in
-/// "Datenquellen".
+/// The settings of the group "Reihenfolge für Artwork" (#489) and "Bei mehreren Treffern" (#491) in "Datenquellen". The
+/// former "Zuschneiden erlaubt" (<c>Crop</c>) is gone (#566): a saved value is ignored and dropped at the next save.
 /// </summary>
 public sealed record ArtworkSettings
 {
@@ -60,23 +45,11 @@ public sealed record ArtworkSettings
 
     public bool IsOn(ArtworkSourceKind source) => Off?.Contains(source) != true;
 
-    public CropAllowance Crop { get; init; } = CropAllowance.Normal;
-
     public SeveralHits SeveralHits { get; init; } = SeveralHits.Ask;
-
-    /// <summary>The share of a cover <see cref="Crop"/> lets the crop cut away; backgrounds always use "Normal" (#562).</summary>
-    public double Tolerance => ToleranceOf(Crop);
-
-    public static double ToleranceOf(CropAllowance crop) => crop switch
-    {
-        CropAllowance.Little => 0.05,
-        CropAllowance.Much => 0.30,
-        _ => ArtworkFormat.NormalTolerance,
-    };
 
     /// <summary>
     /// What a hand-edited or newer <c>settings.json</c> may hold, made usable: every known source once, in the saved order,
-    /// a missing one at the end, an unknown source switched off left out; an unknown tolerance is "Normal", an unknown "Bei mehreren Treffern" "Selbst auswählen".
+    /// a missing one at the end, an unknown source switched off left out; an unknown "Bei mehreren Treffern" is "Selbst auswählen".
     /// </summary>
     public ArtworkSettings WithValidValues()
     {
@@ -87,7 +60,6 @@ public sealed record ArtworkSettings
         {
             Order = order.SequenceEqual(Order ?? []) ? Order! : order,
             Off = off.SequenceEqual(Off ?? []) ? Off! : off,
-            Crop = Enum.IsDefined(Crop) ? Crop : CropAllowance.Normal,
             SeveralHits = Enum.IsDefined(SeveralHits) ? SeveralHits : SeveralHits.Ask,
         };
     }

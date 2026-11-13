@@ -36,7 +36,7 @@ public sealed record CachedImage(string File, ArtworkSource Source, string Origi
 /// <param name="OwnHero">The player's own file for the background, as <paramref name="OwnCover"/>.</param>
 /// <param name="Unreadable">Its metadata couldn't be read: every image in the folder counts as set by hand (#13).</param>
 /// <param name="OffCover">The automatic cover of another source than the one in use (#506): of a source switched off, or one
-/// that gave way to a changed order or tolerance; kept so it is back in use without a copy or download; at most one per
+/// that gave way to a changed order; kept so it is back in use without a copy or download; at most one per
 /// kind, the one shown last.</param>
 /// <param name="OffHero">The same for the background.</param>
 public sealed record CachedArtwork(

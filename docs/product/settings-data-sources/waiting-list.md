@@ -29,7 +29,7 @@ Index and the category's frame: [README.md](README.md).
   weiter zum Hintergrund" / "Hintergrund nehmen, weiter zum Cover"), the focus there on its pick or the pick's own game;
   either kind can be picked first, also from two different games. Once both are picked, A takes them ("Übernehmen,
   weiter zum nächsten"). A tab keeps its pick while switching; B goes to the games list and drops both picks (the game starts again on "Cover"). An own term
-  searches the kind of the tab. Each kind then comes from its own SteamGridDB game (order, "Zuschneiden erlaubt",
+  searches the kind of the tab. Each kind then comes from its own SteamGridDB game (order,
   "Alle Artworks neu laden" and "Artwork ändern" use that game).
 - Mouse (#539): a click on a hit only marks it (the focus comes onto it, also from the games list); a double click takes
   it as A does. The note's "[Y]" is the skip button's glyph of the controller in use, with the keyboard its key (V).
@@ -41,7 +41,7 @@ Index and the category's frame: [README.md](README.md).
   the search name in the field) brings back the search name and its hits. The term isn't stored. Without network
   "SteamGridDB nicht erreichbar", with a rejected key the key notice.
 - The games list and the grid show a scroll bar and fade at the edge where more follow.
-- A chosen hit is the game's SteamGridDB game from then on; its images are automatic (order, "Zuschneiden erlaubt" and
+- A chosen hit is the game's SteamGridDB game from then on; its images are automatic (order and
   "Alle Artworks neu laden" apply), an image set by hand stays. A skipped game is never searched by name again.
   "Artwork ändern" offers the chosen game's images; for a waiting or skipped game none from SteamGridDB.
 - The choice, a skip and the waiting list are kept per game across restarts and a game leaving the library and coming

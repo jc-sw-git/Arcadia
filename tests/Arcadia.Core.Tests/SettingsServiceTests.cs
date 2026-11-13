@@ -52,6 +52,20 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T566-3")]
+    public void An_old_crop_value_is_ignored_and_dropped_at_the_next_save()
+    {
+        File.WriteAllText(SettingsPath, """{ "Artwork": { "Crop": "Much", "SeveralHits": "TakeFirst" } }""");
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.Equal(SeveralHits.TakeFirst, service.Current.Artwork.SeveralHits);
+
+        service.Update(settings => settings with { KeepSisr = true });
+
+        Assert.DoesNotContain("Crop", File.ReadAllText(SettingsPath), StringComparison.Ordinal);
+        Assert.Equal(SeveralHits.TakeFirst, new SettingsService(new SettingsStore(SettingsPath)).Current.Artwork.SeveralHits);
+    }
+
+    [Fact]
     [Trait("TestCase", "T538-2")]
     public void Metadata_keeps_the_shared_choice_for_several_hits_from_before_until_it_gets_its_own()
     {

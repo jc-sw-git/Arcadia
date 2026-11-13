@@ -130,4 +130,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| All automated tests (`dotnet test`) | 2026-11-13 | implementer | Debug, Linux cloud container | see PR | — |
+| All automated tests (`dotnet test`, window guards included) | 2026-11-13 | implementer | Debug, Linux cloud container | passed after adapting the tests that counted "Verwalten"'s rows, the menu and the quick selection's defaults | — |
+| App look: tag window from the menu, detail page ("Übersicht", "Verwalten"), "Eigene Tags (1)", tag list, a tag's games | 2026-11-13 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed after one fix | "1 Tags" over the list → "1 Tag" |

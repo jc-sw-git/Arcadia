@@ -30,3 +30,5 @@ The rest of the App: [app.md](app.md); the product rules: `docs/product/detail-p
   `MainViewModel` hands `MetadataService.Changed` to `GameDetailViewModel.ShowMetadata`. "Infos" is never entered:
   while it has the focus in the rail (`GameDetailPageViewModel.IsReadingInfos`) RS raises `InfoScrollRequested` and the
   view scrolls `InfosScroller`, elsewhere the focused row's info box (#530).
+  An age rating's colour is `AgeRatingTones.Of` (a UI matter, not Core's); `Controls/AgeRatingBadge` draws it with the
+  brush `AgeRating{Tone}` from `Theme.axaml` (#541).

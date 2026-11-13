@@ -8,7 +8,8 @@ namespace Arcadia.App.Controls;
 
 /// <summary>
 /// Fills a <see cref="TextBlock"/> with a text whose controller buttons are drawn as small badges, as
-/// the legend draws them (<see cref="PadGlyph"/>, <c>Border.glyph.inline</c> in the theme), in the printing of the controller in use (#215). <c>Text</c> is prose (⧉, ≡ and names in brackets such as "[L3]");
+/// the legend draws them (<see cref="PadGlyph"/>, <c>Border.glyph.inline</c> in the theme), in the printing of the controller in use (#215),
+/// and in prose as the key that does the same while the keyboard is in use (#539). <c>Text</c> is prose (⧉, ≡ and names in brackets such as "[L3]");
 /// <c>Buttons</c> is a list of buttons, where names such as A or LB become badges too.
 /// </summary>
 public static class ButtonTextBlock
@@ -32,6 +33,7 @@ public static class ButtonTextBlock
             foreach (var glyph in (block.Inlines ?? []).OfType<InlineUIContainer>().Select(container => container.Child).OfType<PadGlyph>())
             {
                 glyph.Symbols = GetSymbols(block);
+                glyph.Keys = KeysOf(block, glyph.Button ?? string.Empty, namesToo: GetText(block) is null);
             }
         });
     }
@@ -48,6 +50,13 @@ public static class ButtonTextBlock
 
     public static void SetButtons(TextBlock block, string? value) => block.SetValue(ButtonsProperty, value);
 
+    /// <summary>
+    /// The key a badge in prose shows while the keyboard is in use (#539); none in a list of a controller's buttons (the
+    /// mouse mode's help) or in a text about one controller only, which name that controller's buttons on purpose.
+    /// </summary>
+    private static string? KeysOf(TextBlock block, string button, bool namesToo) =>
+        namesToo || GetSymbols(block) is not null ? null : Input.KeyNames.Of(button);
+
     private static void Fill(TextBlock block, string? text, bool namesToo)
     {
         var inlines = block.Inlines ??= [];
@@ -55,7 +64,7 @@ public static class ButtonTextBlock
         foreach (var part in ButtonText.Split(text ?? string.Empty, namesToo))
         {
             inlines.Add(part.IsButton
-                ? new InlineUIContainer(new PadGlyph { Classes = { "inline" }, Button = part.Text, Symbols = GetSymbols(block) })
+                ? new InlineUIContainer(new PadGlyph { Classes = { "inline" }, Button = part.Text, Symbols = GetSymbols(block), Keys = KeysOf(block, part.Text, namesToo) })
                 {
                     BaselineAlignment = BaselineAlignment.Center,
                 }

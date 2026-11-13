@@ -98,6 +98,12 @@ public sealed class DetailMetadata
 
     public bool HasDescription => Description is not null;
 
+    /// <summary>
+    /// Said in "Übersicht" and "Infos" where the description would be, when no provider has one (#531); null with one.
+    /// The short description falls back to the full one and back, so both are missing together.
+    /// </summary>
+    public string? MissingDescription => HasDescription ? null : AppTexts.DetailNoDescription;
+
     /// <summary>The provider of the description, e.g. "Steam"; shown only in "Infos".</summary>
     public string? DescriptionSource { get; }
 

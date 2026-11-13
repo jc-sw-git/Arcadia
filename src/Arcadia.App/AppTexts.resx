@@ -608,6 +608,7 @@
   <data name="DetailAreaController" xml:space="preserve"><value>Controller</value></data>
   <data name="DetailAreaManage" xml:space="preserve"><value>Verwalten</value></data>
   <data name="DetailAreaInfos" xml:space="preserve"><value>Infos</value></data>
+  <data name="DetailNoDescription" xml:space="preserve"><value>Es liegt keine Beschreibung zu dem Spiel vor.</value></data>
   <data name="DetailInfosNone" xml:space="preserve"><value>Noch keine Infos</value></data>
   <data name="DetailInfosNoneText" xml:space="preserve"><value>Zu diesem Spiel hat Arcadia noch keine Infos: keine Beschreibung, keine Genres, keinen Entwickler.</value></data>
   <data name="DetailInfoSeparator" xml:space="preserve"><value> · </value></data>

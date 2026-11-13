@@ -75,6 +75,14 @@ public sealed class EdgeFade : Control
     public static readonly StyledProperty<ScrollViewer?> ScrollTargetProperty =
         AvaloniaProperty.Register<EdgeFade, ScrollViewer?>(nameof(ScrollTarget));
 
+    /// <summary>
+    /// With a <see cref="ScrollTarget"/>: instead of laying <see cref="FadeColor"/> over the content, the content itself
+    /// turns transparent towards the edge (#531). For a strip over an image, e.g. the launcher tabs over a game's artwork,
+    /// where a coloured fade would show as a dark block with hard edges.
+    /// </summary>
+    public static readonly StyledProperty<bool> MasksContentProperty =
+        AvaloniaProperty.Register<EdgeFade, bool>(nameof(MasksContent));
+
     /// <summary>Room a focused element keeps from a fade, e.g. for its focus ring (<see cref="ScrollIntoView"/>).</summary>
     public static readonly StyledProperty<double> FocusRoomProperty =
         AvaloniaProperty.Register<EdgeFade, double>(nameof(FocusRoom));
@@ -121,6 +129,8 @@ public sealed class EdgeFade : Control
 
     public double FocusRoom { get => GetValue(FocusRoomProperty); set => SetValue(FocusRoomProperty, value); }
 
+    public bool MasksContent { get => GetValue(MasksContentProperty); set => SetValue(MasksContentProperty, value); }
+
     /// <summary>The fade at the top or the left, as drawn (for tests: its bounds and opacity).</summary>
     public Control StartFade => _start;
 
@@ -156,6 +166,7 @@ public sealed class EdgeFade : Control
             if (change.OldValue is ScrollViewer old)
             {
                 old.ScrollChanged -= OnScrollChanged;
+                old.OpacityMask = null;
             }
 
             if (change.NewValue is ScrollViewer scroller)
@@ -165,7 +176,8 @@ public sealed class EdgeFade : Control
 
             UpdateShown();
         }
-        else if (change.Property == ConditionProperty || change.Property == EdgesProperty || change.Property == OrientationProperty)
+        else if (change.Property == ConditionProperty || change.Property == EdgesProperty || change.Property == OrientationProperty
+                 || change.Property == MasksContentProperty || change.Property == CurveProperty)
         {
             UpdateShown();
         }
@@ -229,9 +241,65 @@ public sealed class EdgeFade : Control
 
         ShowsStart = showsStart;
         ShowsEnd = showsEnd;
-        _start.Opacity = showsStart ? 1 : 0;
-        _end.Opacity = showsEnd ? 1 : 0;
+        var paints = !(MasksContent && ScrollTarget is not null);
+        _start.Opacity = paints && showsStart ? 1 : 0;
+        _end.Opacity = paints && showsEnd ? 1 : 0;
+        if (ScrollTarget is { } target)
+        {
+            target.OpacityMask = paints ? null : Mask(target);
+        }
     }
+
+    /// <summary>
+    /// The scroller's opacity: the curve turned round (where a painted fade would cover, the content is gone) at each
+    /// edge that shows, fully opaque between them. Null with no edge showing.
+    /// </summary>
+    private LinearGradientBrush? Mask(ScrollViewer target)
+    {
+        var vertical = Orientation == Orientation.Vertical;
+        var length = vertical ? target.Viewport.Height : target.Viewport.Width;
+        if ((!ShowsStart && !ShowsEnd) || length <= 0)
+        {
+            return null;
+        }
+
+        var brush = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = vertical ? new RelativePoint(0, 1, RelativeUnit.Relative) : new RelativePoint(1, 0, RelativeUnit.Relative),
+        };
+        var curve = Curve ?? [];
+        if (ShowsStart)
+        {
+            var depth = Math.Min(StartDepth / length, 0.5);
+            foreach (var stop in curve)
+            {
+                brush.GradientStops.Add(new GradientStop(Visible(stop), stop.Offset * depth));
+            }
+        }
+        else
+        {
+            brush.GradientStops.Add(new GradientStop(Colors.Black, 0));
+        }
+
+        if (ShowsEnd)
+        {
+            var depth = Math.Min(EndDepth / length, 0.5);
+            foreach (var stop in curve.Reverse())
+            {
+                brush.GradientStops.Add(new GradientStop(Visible(stop), 1 - (stop.Offset * depth)));
+            }
+        }
+        else
+        {
+            brush.GradientStops.Add(new GradientStop(Colors.Black, 1));
+        }
+
+        return brush;
+    }
+
+    /// <summary>How much of the content shows where the curve's stop would cover it.</summary>
+    private static Color Visible(GradientStop stop) => Color.FromArgb((byte)(255 - stop.Color.A), 0, 0, 0);
 
     private void UpdateLook()
     {

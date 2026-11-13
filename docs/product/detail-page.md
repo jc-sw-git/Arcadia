@@ -5,7 +5,8 @@
   holding the left button 1 s opens the details with the same ring. The context menu and the detail page offer the same actions
   (`GameActionViewModel.For`); the detail page has no menu (#499):
   - On the game's artwork beside its cover: title, then one button row "Spielen", "Zu Favoriten", "In … öffnen" and
-    a quiet note beside it (update, installation, soundtrack) that the focus never takes. The page always opens on
+    a quiet note beside it (update, installation, soundtrack) that the focus never takes. A long title shrinks to half
+    its size before it wraps (two lines, then "…"), so the button row stays in place (#531). The page always opens on
     "Spielen" with "Übersicht" open. Under the title the info line (#493): genres · developer · year, cut with "…" in one
     line, and the first age rating as a badge (USK before PEGI before ESRB); a missing part leaves no "·", none at all no line.
   - Below, a panel with a rail of areas, each with a value line: "Übersicht", "Infos", "Controller" (Steam Controller mode,
@@ -14,9 +15,10 @@
     to the rail. An area A enters shows A's glyph inside its focus ring, so ◀ ▶ aren't tried (#530). ◀ ▶ change a value row at once, both ways.
   - "Übersicht" (#500): left the quick selection, up to 5 rows of the other areas in the order of the areas, each acting
     as its row (a greyed one says why below the entries, there is no info box), and set apart "Übersicht anpassen";
-    right the game's facts, which take no focus. ▲ ▼ walk the entries and "Übersicht anpassen", round at the ends; it
+    right the title again and the game's facts, which take no focus. ▲ ▼ walk the entries and "Übersicht anpassen", round at the ends; it
     keeps the focus when the carousel turns, an entry past the next game's last goes to its last. Above the facts the
-    short description (4 lines, then "…"; without one the start of the full one), at the foot the first 3 tags and "+n".
+    short description (4 lines, then "…"; without one the start of the full one; with none at all here and in "Infos"
+    „Es liegt keine Beschreibung zu dem Spiel vor.“), at the foot the first 3 tags and "+n".
   - "Infos" (#493) has no rows: the full description on the left, every field with its source on the right (genres,
     developer, publisher, release date, each age rating; a USK only from Steam's `steam_germany` says "laut Steam"),
     then the tags. It is not entered (no glyph, A does nothing): while it has the

@@ -70,8 +70,10 @@
               </ItemsControl>
             </ScrollViewer>
 
-            <!-- Fade out where more tabs follow; clicks pass through to a cut-off tab, the wheel turns the strip. -->
-            <ctl:EdgeFade Name="TabFade" Orientation="Horizontal" Curve="{StaticResource EdgeFadeCurveTabs}" Duration="0:0:0" ScrollTarget="{Binding #TabScroller}" />
+            <!-- Fade out where more tabs follow; clicks pass through to a cut-off tab, the wheel turns the strip. The tabs
+                 themselves fade (#531): on the detail page the artwork lies behind them, where a dark fade showed as a block. -->
+            <ctl:EdgeFade Name="TabFade" Orientation="Horizontal" Curve="{StaticResource EdgeFadeCurveTabs}" Duration="0:0:0" ScrollTarget="{Binding #TabScroller}"
+                          MasksContent="True" />
           </Panel>
         </DockPanel>
 

@@ -31,12 +31,19 @@ Keys follow `docs/product/controls.md`; every case works with the gamepad alone.
   filter on the TV: every button looks raised and the same, the checkmarks sit straight. · E2E: no (look and feel; the
   owner approves the design)
 
-## Runs during implementation
+Automated tests:
 
-- Linux cloud container (Ubuntu 24.04, Xvfb 1920 × 1080, `--demo`, keys for the gamepad): settings "Launcher" and
-  "Datenquellen" (focus on an action row, greyed rows), library tab strip, filter, detail page with the quick selection,
-  "Übersicht anpassen" (checkmarks at 1000 %). T540-1 to T540-5 looked at; the shadow of the settings' pills was cut off
-  by the row's content and is fixed.
-- `tools/ci/run-tests.sh 4` green; window guards: `The_selected_tab_shows_whole…` green after its probe learned the
-  gradient; `No_ring_is_cut_off…` red on "Datenquellen › artwork-missing" exactly as on `main` since #543 (fixed there
-  separately).
+| Test cases | Tests |
+|---|---|
+| T540-3 | `FocusRingTests.The_selected_tab_shows_whole_at_the_first_a_middle_and_the_last_tab_of_a_long_strip` (window guard, `main`) |
+
+History:
+
+| Test | Date | Who | Build / environment | Result | Consequence |
+|---|---|---|---|---|---|
+| T540-1 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb | ❌ the pills' shadow cut off in a rectangle | fixed in this PR (`ContentControl.unclipped`) |
+| T540-1 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb | ✅ | – |
+| T540-2 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb (settings, filter, quick selection, "Artwork ändern") | ✅ | – |
+| T540-3 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb; window guard | ✅ | – |
+| T540-4 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb | ✅ | – |
+| T540-5 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb ("Übersicht anpassen" at 1000 %) | ✅ | – |

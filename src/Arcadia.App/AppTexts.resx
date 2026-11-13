@@ -1232,7 +1232,7 @@
   <data name="ArtworkLoading5" xml:space="preserve"><value>Suche das schönste Motiv …</value></data>
   <data name="ArtworkLoading6" xml:space="preserve"><value>Entwickle die Negative …</value></data>
   <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
-  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1 WIE DER KOPF DER DETAILSEITE</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1</value></data>
   <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} VORSCHLÄGE</value></data>
   <data name="ArtworkSourceRow" xml:space="preserve"><value>Quelle</value></data>
   <data name="ArtworkFileRow" xml:space="preserve"><value>Datei</value></data>

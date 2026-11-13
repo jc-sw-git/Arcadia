@@ -122,64 +122,62 @@
           <DockPanel Grid.Column="1">
             <TextBlock DockPanel.Dock="Top" Classes="artworkLabel" Text="{Binding GridHeading}" />
             <Panel>
-            <!-- While the images are looked for: frames that light up one after the other under a magnifier going to and
-                 fro, and a text that changes at random. -->
-            <StackPanel Classes="artworkLoading" IsVisible="{Binding IsLoading}">
-              <Canvas Width="300" Height="150">
-                <Border Classes="artworkLoadingFrame first" Canvas.Left="0" Canvas.Top="20" />
-                <Border Classes="artworkLoadingFrame second" Canvas.Left="106" Canvas.Top="20" />
-                <Border Classes="artworkLoadingFrame third" Canvas.Left="212" Canvas.Top="20" />
-                <Path Classes="artworkLoadingGlass" Canvas.Top="40">
-                  <Path.RenderTransform><TranslateTransform /></Path.RenderTransform>
-                </Path>
-              </Canvas>
-              <TextBlock Classes="artworkLoadingText" Text="{Binding LoadingText}" />
-            </StackPanel>
-            <ScrollViewer Name="TileScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8">
-              <ItemsControl Name="TileList" ItemsSource="{Binding GridItems}" Classes.hero="{Binding IsHeroTab}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <WrapPanel ItemSpacing="20" LineSpacing="22" />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.DataTemplates>
-                  <DataTemplate x:DataType="vm:ArtworkTileViewModel">
-                    <Button Classes="plain artworkTile" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
-                      <StackPanel Spacing="8">
-                        <Border Classes="artworkFrame">
-                          <Panel>
-                            <ctl:ArtworkImage File="{Binding File}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                            <Border Classes="artworkOwnEmpty" IsVisible="{Binding IsEmptyOwnFile}">
-                              <StackPanel Classes="artworkOwnContent">
-                                <Path Classes="artworkFolderIcon" />
-                                <TextBlock Classes="artworkOwnLabel" Text="{x:Static vm:ArtworkTileViewModel.OwnFileLabel}" />
-                              </StackPanel>
-                            </Border>
-                            <Border Classes="artworkTag" IsVisible="{Binding HasTag}">
-                              <TextBlock Text="{Binding Tag}" />
-                            </Border>
-                            <Border Classes="artworkTick" IsVisible="{Binding IsInUse}">
-                              <Path Classes="artworkTickMark" />
-                            </Border>
-                          </Panel>
-                        </Border>
-                        <TextBlock Classes="artworkCaption" Text="{Binding Caption}" />
-                      </StackPanel>
-                    </Button>
-                  </DataTemplate>
-                  <DataTemplate x:DataType="vm:ArtworkNoticeViewModel">
-                    <Border Classes="artworkNotice">
-                      <StackPanel Spacing="12" VerticalAlignment="Center">
-                        <TextBlock Classes="artworkNoticeTitle" Text="{Binding Title}" />
-                        <TextBlock Classes="artworkNoticeText" Text="{Binding Text}" />
-                        <Button Classes="plain artworkNoticeButton" Classes.focused="{Binding IsFocused}" HorizontalAlignment="Left"
-                                Content="{x:Static vm:ArtworkNoticeViewModel.ButtonText}" Command="{Binding OpenDataSourcesCommand}" />
-                      </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.DataTemplates>
-              </ItemsControl>
-            </ScrollViewer>
+              <!-- While the images are looked for: frames that light up one after the other under a magnifier going to and
+                   fro, and a text that changes at random. -->
+              <StackPanel Classes="artworkLoading" IsVisible="{Binding IsLoading}">
+                <Canvas Width="300" Height="150">
+                  <Border Classes="artworkLoadingFrame first" Canvas.Left="0" Canvas.Top="20" />
+                  <Border Classes="artworkLoadingFrame second" Canvas.Left="106" Canvas.Top="20" />
+                  <Border Classes="artworkLoadingFrame third" Canvas.Left="212" Canvas.Top="20" />
+                  <Path Classes="artworkLoadingGlass" Canvas.Top="40" />
+                </Canvas>
+                <TextBlock Classes="artworkLoadingText" Text="{Binding LoadingText}" />
+              </StackPanel>
+              <ScrollViewer Name="TileScroller" VerticalScrollBarVisibility="Hidden" Padding="8" Margin="-8">
+                <ItemsControl Name="TileList" ItemsSource="{Binding GridItems}" Classes.hero="{Binding IsHeroTab}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel ItemSpacing="20" LineSpacing="22" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.DataTemplates>
+                    <DataTemplate x:DataType="vm:ArtworkTileViewModel">
+                      <Button Classes="plain artworkTile" Classes.focused="{Binding IsFocused}" Command="{Binding PickCommand}">
+                        <StackPanel Spacing="8">
+                          <Border Classes="artworkFrame">
+                            <Panel>
+                              <ctl:ArtworkImage File="{Binding File}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                              <Border Classes="artworkOwnEmpty" IsVisible="{Binding IsEmptyOwnFile}">
+                                <StackPanel Classes="artworkOwnContent">
+                                  <Path Classes="artworkFolderIcon" />
+                                  <TextBlock Classes="artworkOwnLabel" Text="{x:Static vm:ArtworkTileViewModel.OwnFileLabel}" />
+                                </StackPanel>
+                              </Border>
+                              <Border Classes="artworkTag" IsVisible="{Binding HasTag}">
+                                <TextBlock Text="{Binding Tag}" />
+                              </Border>
+                              <Border Classes="artworkTick" IsVisible="{Binding IsInUse}">
+                                <Path Classes="artworkTickMark" />
+                              </Border>
+                            </Panel>
+                          </Border>
+                          <TextBlock Classes="artworkCaption" Text="{Binding Caption}" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                    <DataTemplate x:DataType="vm:ArtworkNoticeViewModel">
+                      <Border Classes="artworkNotice">
+                        <StackPanel Spacing="12" VerticalAlignment="Center">
+                          <TextBlock Classes="artworkNoticeTitle" Text="{Binding Title}" />
+                          <TextBlock Classes="artworkNoticeText" Text="{Binding Text}" />
+                          <Button Classes="plain artworkNoticeButton" Classes.focused="{Binding IsFocused}" HorizontalAlignment="Left"
+                                  Content="{x:Static vm:ArtworkNoticeViewModel.ButtonText}" Command="{Binding OpenDataSourcesCommand}" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.DataTemplates>
+                </ItemsControl>
+              </ScrollViewer>
             </Panel>
           </DockPanel>
         </Grid>

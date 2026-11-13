@@ -248,7 +248,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            var choices = await _artwork.ChoicesAsync(Tile.Game, kind);
+            var choices = await ChoicesOffUiThreadAsync(kind);
             _choices[kind] = choices;
             if (Kind == kind)
             {
@@ -264,6 +264,9 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
             }
         }
     }
+
+    // The launcher's image is picked and copied synchronously inside the service: off the UI thread, the focus stays smooth.
+    private Task<ArtworkChoices> ChoicesOffUiThreadAsync(ArtworkKind kind) => Task.Run(() => _artwork.ChoicesAsync(Tile.Game, kind));
 
     private void StartLoadingTexts()
     {
@@ -467,7 +470,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     /// <summary>The tab's choices again, after the own file or the launcher's image changed; the focus stays.</summary>
     private async Task ReloadAsync(ArtworkKind kind)
     {
-        var choices = await _artwork.ChoicesAsync(Tile.Game, kind);
+        var choices = await ChoicesOffUiThreadAsync(kind);
         _choices[kind] = choices;
         if (Kind == kind)
         {

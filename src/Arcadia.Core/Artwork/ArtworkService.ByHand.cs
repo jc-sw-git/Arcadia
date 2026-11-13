@@ -75,7 +75,8 @@ public sealed partial class ArtworkService
     /// <summary>
     /// What the modal shows for <paramref name="game"/>'s <paramref name="kind"/>: the image in use, the own file and the
     /// offers. The launcher's image is the one Arcadia would choose among the launcher's; offered images it has to
-    /// download wait in the cache until one is taken. Off the UI thread; at most <see cref="DownloadTimeout"/> per download.
+    /// download wait in the cache until one is taken. Call it off the UI thread: the launcher's pick and copy run
+    /// synchronously; at most <see cref="DownloadTimeout"/> per download.
     /// </summary>
     public async Task<ArtworkChoices> ChoicesAsync(Game game, ArtworkKind kind, CancellationToken cancel = default)
     {

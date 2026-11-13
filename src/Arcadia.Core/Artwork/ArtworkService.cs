@@ -11,7 +11,7 @@ namespace Arcadia.Core.Artwork;
 /// Brings every game's cover and background into the cache and says which games' images changed (#13, #487, #489). After
 /// each scan it runs once over the libraries in the background: for every image not set by hand it asks the sources switched
 /// on, in the order of "Reihenfolge für Artwork" (the launcher's images in their order, SteamGridDB's best rated) and keeps
-/// the first that fits the format within "Zuschneiden erlaubt", else the first image at all; an image already cached stays
+/// the first that fits the format (<see cref="ArtworkFormat"/>), else the first image at all; an image already cached stays
 /// unless an earlier or changed file of the launcher replaces it, so a download happens only for what is missing.
 /// SteamGridDB is asked only with a usable key, by the game's store id, only for an image the cache doesn't hold fitting, and
 /// on its own only for a game new to the library (#506, <see cref="KnownGames"/>); every other game only when the player
@@ -87,7 +87,7 @@ public sealed partial class ArtworkService : IDisposable
 
     public Action<string> Log { get; init; } = _ => { };
 
-    /// <summary>"Reihenfolge für Artwork" and "Zuschneiden erlaubt", read at the start of every run (#489).</summary>
+    /// <summary>"Reihenfolge für Artwork", read at the start of every run (#489).</summary>
     public Func<ArtworkSettings> Settings { get; init; } = () => new ArtworkSettings();
 
     /// <summary>SteamGridDB with the player's key (#489); null: launcher images only.</summary>
@@ -174,7 +174,7 @@ public sealed partial class ArtworkService : IDisposable
     public void Update(IReadOnlyList<LibraryArtwork> libraries) => Start(new PendingRun(libraries, RunTrigger.Rescan));
 
     /// <summary>
-    /// "Zuschneiden erlaubt", the order or a source's switch changed (#506): images of a source switched off disappear at
+    /// The order or a source's switch changed (#506): images of a source switched off disappear at
     /// once, and a run picks again among the images on disk and the launchers' own; it searches nothing.
     /// </summary>
     public void SettingsChanged()
@@ -803,7 +803,7 @@ public sealed partial class ArtworkService : IDisposable
 
                 if (artwork.Of(kind) is { } replaced && IsKeptAside(replaced, take.Source) && _checked.TryGetValue((artwork.GameKey, kind), out var replacedSize))
                 {
-                    // Another source's image gives way (a changed order or tolerance): kept, so changing back needs no download.
+                    // Another source's image gives way (a changed order): kept, so changing back needs no download.
                     artwork = SetOff(artwork, kind, replaced, replacedSize);
                 }
 
@@ -866,7 +866,7 @@ public sealed partial class ArtworkService : IDisposable
                     : ((Pick, ImageSize)?)null;
                 if (held is var (option, size))
                 {
-                    if (ArtworkFormat.Fits(size, kind, run.Tolerance))
+                    if (ArtworkFormat.Fits(size, kind))
                     {
                         return option;
                     }
@@ -887,7 +887,7 @@ public sealed partial class ArtworkService : IDisposable
             {
                 if (off is not null && offSize is { } offFits && off.Source == from && IsSameOriginal(off, candidate))
                 {
-                    if (ArtworkFormat.Fits(offFits, kind, run.Tolerance))
+                    if (ArtworkFormat.Fits(offFits, kind))
                     {
                         return new Pick.SetOn(off, offFits);
                     }
@@ -901,7 +901,7 @@ public sealed partial class ArtworkService : IDisposable
                     continue;
                 }
 
-                if (ArtworkFormat.Fits(size, kind, run.Tolerance))
+                if (ArtworkFormat.Fits(size, kind))
                 {
                     return option;
                 }
@@ -948,7 +948,7 @@ public sealed partial class ArtworkService : IDisposable
             return null;
         }
 
-        if (cached is not null && cachedSize is { } held && (cached.Stamp == url.AbsoluteUri || (ArtworkFormat.Fits(held, kind, run.Tolerance) && !replaced)))
+        if (cached is not null && cachedSize is { } held && (cached.Stamp == url.AbsoluteUri || (ArtworkFormat.Fits(held, kind) && !replaced)))
         {
             // Nothing earlier fits and the cache holds an image the launcher didn't replace: no download for what is there already.
             return (new Pick.Keep(), held);
@@ -980,7 +980,7 @@ public sealed partial class ArtworkService : IDisposable
         Game game, ArtworkKind kind, IArtworkLookup lookup, ImageSize? cachedSize, RunState run, CancellationToken cancel)
     {
         if (SteamGridDb is null || !run.AsksSteamGridDbFor(game.Key)
-            || cachedSize is { } held && ArtworkFormat.Fits(held, kind, run.Tolerance))
+            || cachedSize is { } held && ArtworkFormat.Fits(held, kind))
         {
             return [];
         }
@@ -990,7 +990,7 @@ public sealed partial class ArtworkService : IDisposable
             return [];
         }
 
-        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind, run.Tolerance));
+        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind));
         return best is null ? [] : [new ArtworkCandidate(SteamGridDbOrigin, Download: best.Url)];
     }
 
@@ -1270,7 +1270,7 @@ public sealed partial class ArtworkService : IDisposable
         public IReadOnlySet<string> AskAlso { get; init; } = new HashSet<string>();
     }
 
-    /// <summary>A run's state with the order, switches and tolerance as set now (#489, #506).</summary>
+    /// <summary>A run's state with the order and switches as set now (#489, #506).</summary>
     private RunState NewRunState(bool steamGridDbUsable = false)
     {
         var settings = Settings().WithValidValues();
@@ -1294,8 +1294,6 @@ public sealed partial class ArtworkService : IDisposable
 
         /// <summary>The sources switched on, in their order; followed during the run (<see cref="Follow"/>).</summary>
         public IReadOnlyList<ArtworkSourceKind> Order { get; set; } = ArtworkSettings.DefaultOrder;
-
-        public double Tolerance { get; set; } = ArtworkFormat.NormalTolerance;
 
         /// <summary>"Bei mehreren Treffern" (#491).</summary>
         public SeveralHits SeveralHits { get; init; }
@@ -1329,7 +1327,6 @@ public sealed partial class ArtworkService : IDisposable
         public void Follow(ArtworkSettings settings)
         {
             Order = settings.OnInOrder;
-            Tolerance = settings.Tolerance;
         }
 
         /// <summary>Games searched by name in this run that SteamGridDB found nothing for: searched again at the next search (#506).</summary>

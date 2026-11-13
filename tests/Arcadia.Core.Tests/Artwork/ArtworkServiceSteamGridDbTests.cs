@@ -9,7 +9,7 @@ namespace Arcadia.Core.Tests.Artwork;
 
 /// <summary>
 /// #489: SteamGridDB as a second source of the artwork run: no request without a key, the order of the sources and
-/// "Zuschneiden erlaubt", a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23; T507-1).
+/// the 15 % crop rule (#566), a turned-down key, the counts and the search again (T489-12, T489-13, T489-15 to T489-23; T507-1).
 /// </summary>
 public sealed class ArtworkServiceSteamGridDbTests : IDisposable
 {
@@ -186,34 +186,17 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     }
 
     [Theory]
-    [Trait("TestCase", "T489-16")]
-    [InlineData(CropAllowance.Little, ArtworkService.SteamGridDbOrigin)]
-    [InlineData(CropAllowance.Normal, "steam-server")]
-    [InlineData(CropAllowance.Much, "steam-server")]
-    public async Task The_tolerance_decides_whether_a_launcher_cover_cut_by_ten_percent_still_fits(CropAllowance crop, string expected)
+    [Trait("TestCase", "T566-2")]
+    [InlineData(667, true)] // 10 % cut away
+    [InlineData(675, true)] // 3 : 4, Epic's format: 11.1 %
+    [InlineData(511, true)] // 14.8 %
+    [InlineData(505, false)] // 15.8 %
+    [InlineData(750, false)] // 20 %, wider than 2 : 3
+    public async Task A_launcher_cover_fits_while_the_crop_cuts_away_at_most_fifteen_percent(int coverWidth, bool launcherFits)
     {
         await WithKeyAsync();
-        // 667 × 900 cut to 2 : 3 loses 10 %.
-        BothSources(launcherCoverWidth: 667);
-        _settings = _settings with { Crop = crop };
-
-        await ScanAsync();
-
-        Assert.Equal(expected, Cached()!.Cover!.Origin);
-    }
-
-    [Theory]
-    [Trait("TestCase", "T489-16")]
-    [InlineData(CropAllowance.Little, 571, true)] // 4.8 % cut away
-    [InlineData(CropAllowance.Little, 564, false)] // 6.0 %
-    [InlineData(CropAllowance.Much, 421, true)] // 29.8 %
-    [InlineData(CropAllowance.Much, 414, false)] // 31.0 %
-    public async Task The_limits_of_wenig_and_viel_hold_at_the_percent(CropAllowance crop, int coverWidth, bool launcherFits)
-    {
-        await WithKeyAsync();
-        // A cover 2 : 3 needs 600 × 900; narrower ones are cut at top and bottom.
+        // A cover 2 : 3 needs 600 × 900; narrower ones are cut at top and bottom, wider ones at the sides.
         BothSources(launcherCoverWidth: coverWidth);
-        _settings = _settings with { Crop = crop };
 
         await ScanAsync();
 
@@ -221,14 +204,12 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     }
 
     [Fact]
-    [Trait("TestCase", "T562-3")]
-    public async Task Zuschneiden_erlaubt_leaves_backgrounds_at_fifteen_percent()
+    [Trait("TestCase", "T566-2")]
+    public async Task A_background_that_cuts_more_than_fifteen_percent_gives_way_to_steamgriddbs()
     {
         await WithKeyAsync();
-        // 1500 × 620 (2.42 : 1) loses 22 % cut to the flat 3.1 : 1 and 27 % cut to 16 : 9: within "Viel", but backgrounds
-        // stay at "Normal".
+        // 1500 × 620 (2.42 : 1) loses 22 % cut to the flat 3.1 : 1 and 27 % cut to 16 : 9.
         BothSources(launcherHeroWidth: 1500);
-        _settings = _settings with { Crop = CropAllowance.Much };
 
         await ScanAsync();
 
@@ -285,7 +266,7 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     }
 
     [Fact]
-    [Trait("TestCase", "T489-16")]
+    [Trait("TestCase", "T566-2")]
     public async Task Without_a_fitting_image_anywhere_the_first_source_with_one_is_cropped()
     {
         await WithKeyAsync();
@@ -357,7 +338,7 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
         await WithKeyAsync();
         BothSources();
         await ScanAsync();
-        _settings = _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher], Crop = CropAllowance.Little };
+        _settings = _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] };
 
         await ScanAsync();
         _service.SearchAgain(byPlayer: true);
@@ -478,15 +459,18 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     [InlineData(false)]
     public async Task SteamGridDbs_image_stays_at_the_next_scan_when_the_launcher_offers_a_file(bool steamGridDbFirst)
     {
-        // A launcher cover that cuts 10 %: with SteamGridDB first or with "Wenig", SteamGridDB's is the one to show.
+        // With SteamGridDB first a launcher cover that fits (10 % cut away) gives way; with the launcher first one that
+        // doesn't (20 %): either way SteamGridDB's is the one to show.
         var file = Path.Combine(_root, "cover.png");
-        File.WriteAllBytes(file, TestImages.Png(667, 900));
+        File.WriteAllBytes(file, TestImages.Png(steamGridDbFirst ? 667 : 750, 900));
         _source.Cover = [new("steam-cache", File: file)];
         _sgdb.Cover("steam", Id, GridCover, 600, 900);
         _images.Serve(GridCover, TestImages.Png(600, 900));
-        _settings = steamGridDbFirst
-            ? _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] }
-            : _settings with { Crop = CropAllowance.Little };
+        if (steamGridDbFirst)
+        {
+            _settings = _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] };
+        }
+
         await WithKeyAsync();
 
         await ScanAsync();

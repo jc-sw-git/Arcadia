@@ -19,7 +19,7 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
 | Topic | File |
 |---|---|
 | SteamGridDB key: entry, paste, test, delete, the warning (#489) | [steamgriddb-key.md](steamgriddb-key.md) |
-| Artwork order, sources on and off, crop tolerance, when Arcadia searches, "Jetzt suchen", "Alle Artworks neu laden" (#489, #490, #506) | [artwork-order-and-search.md](artwork-order-and-search.md) |
+| Artwork order, sources on and off, the fixed crop rule, when Arcadia searches, "Jetzt suchen", "Alle Artworks neu laden" (#489, #490, #506) | [artwork-order-and-search.md](artwork-order-and-search.md) |
 | Search by name and "Warten auf deine Auswahl" (#491, #506) | [waiting-list.md](waiting-list.md) |
 | Metadata: providers, merge, order, doubtful titles, language rule, genres, age ratings, when it loads, the rows of "METADATEN" (#43, #493, #494) | [metadata.md](metadata.md) |
 | IGDB: access, fetching, matching by AppID and by name (#494) | [igdb.md](igdb.md) |

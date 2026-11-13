@@ -108,4 +108,6 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T554-1 to T554-18 (automated) | 2026-11-13 | Implementer | Debug, Linux cloud container, headless Avalonia | green | – |
+| Full test run | 2026-11-13 | Implementer | Debug, Linux cloud container | `WindowLifetimeTests` red: the new subscriptions for "Sprache anwenden" were never removed | unsubscribed in `Dispose`; green |
+| T554-7 (real restart) | 2026-11-13 | Implementer | Debug, Linux cloud container, Xvfb, `--demo --fullscreen` | restarted in English on "Sprache", `--fullscreen` carried; focus first jumped to the row under the resting pointer | first pointer event only sets where the pointer rests; focus stays on "Sprache" |
 | T554-19 (English screenshots of library, detail, search, first start, settings) | 2026-11-13 | Implementer | Debug, Linux cloud container, `--demo` | German literals left in key hints and views | moved into the resources, guard test extended (`UiTextsStayInResourcesTests`) |

@@ -18,7 +18,7 @@ in the tag window and in the tag list and for renaming in the tag list alike.
 - [x] **T533-4** "Neuer Tag": at 39 characters no notice; the 40th (on-screen keyboard or real keyboard) shows
       „Maximale Länge erreicht: höchstens 40 Zeichen“ below the field; more is refused and the notice stays; erasing one
       hides it; the full name can still be taken. · E2E: yes
-- [ ] **T533-5** The look: the notice below the field in the tag dialog with the keyboard greyed, the info box with the
+- [x] **T533-5** The look: the notice below the field in the tag dialog with the keyboard greyed, the info box with the
       tag chips (a 40-character tag cut with "…") and with the line for none. · E2E: no (window)
 - [ ] **T533-6** **Owner:** read the new texts in place (info box of "Tags", "Titel ändern", the notice) and judge the
       wording. · E2E: no (wording is the owner's call)
@@ -38,3 +38,5 @@ History:
 | All automated tests (`dotnet test`) | 2026-11-13 | implementer | Debug, Linux cloud container | ✅ | – |
 | T533-5 | 2026-11-13 | implementer | Debug, Linux cloud container (Xvfb 1920 × 1080, `--demo`, keys) | ✅ notice in warning colour below the field, keys greyed at 40; info box with "Keine"-line, then two chips after adding tags | – |
 | T533-2 (unreadable file) | 2026-11-13 | implementer | Debug, Linux cloud container | ✅ after the fix | QE finding 1: the greyed row said „keine eigenen Tags“ → lists nothing now |
+| T533-5 | 2026-11-13 | QE | PR #534 at 8153c9e, Debug, Linux cloud container (Xvfb 1920 × 1080, `--demo`, keys) | ✅ line for none; notice in the warning colour below the field at 40 characters, keys greyed; the 40-character tag as one chip cut with "…" under "EIGENE TAGS" | – |
+| All tests with the window guards (`WINDOW_GUARDS=1 tools/ci/run-tests.sh 4`) | 2026-11-13 | QE | PR #534 at 8153c9e, Release, Linux cloud container | ✅ | – |

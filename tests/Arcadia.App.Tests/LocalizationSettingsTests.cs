@@ -280,7 +280,7 @@ public sealed class LocalizationSettingsTests : IDisposable
     [Trait("TestCase", "T553-14")]
     public void No_display_text_keeps_a_fixed_time_or_date_format()
     {
-        var root = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src");
+        var root = Path.Combine(RepoRoot(), "src");
         var resources = Directory.EnumerateFiles(root, "*Texts*.resx", SearchOption.AllDirectories)
             .Concat(Directory.EnumerateFiles(root, "*.axaml", SearchOption.AllDirectories));
         Assert.All(resources, file => Assert.DoesNotMatch(new Regex("HH:mm|hh:mm|dd\\.MM"), File.ReadAllText(file)));
@@ -345,6 +345,18 @@ public sealed class LocalizationSettingsTests : IDisposable
         {
             CultureInfo.CurrentCulture = TestSystem.GermanRegion;
         }
+    }
+
+    // From this file, not the build output: the CI runs the tests from a copied output folder.
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisFile = "")
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(thisFile)!);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Arcadia.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException($"Arcadia.slnx not found above {thisFile}.");
     }
 
     private static LocalizationSettingsViewModel Open(ArcadiaDriver arcadia)

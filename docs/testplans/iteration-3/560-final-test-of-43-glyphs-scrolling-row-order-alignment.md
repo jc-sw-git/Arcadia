@@ -11,7 +11,7 @@
   while they overflow their box, and only then the footer names RS; facts that fit ignore RS; the list's game stays and
   the list stays open. · E2E: yes
 - [x] **T560-4** Settings, "Artwork": "Von Hand gesetzte Artworks überschreiben" sits right under "Alle Artworks neu
-  laden", indented; "Zuschneiden erlaubt" follows. · E2E: yes
+  laden", indented; "Bei mehreren Treffern" follows (#566). · E2E: yes
 - [x] **T560-5** Detail page, quick selection: the note under the fifth place has its icon centred on the first line and
   sits about a third of the way down to "Übersicht anpassen". · E2E: no (window: layout)
 - [x] **T560-6** Detail page, quick selection: the ◀ ▶ of "Steam-Controller-Modus" and "Individueller Mausmodus" stand

@@ -7,7 +7,7 @@ searched) have their own files; part C uses the IDs T506-80 to T506-119.
 
 Automated tests use made-up games, names, ids and images and a fake SteamGridDB that records every request (search by
 name, the images per hit, the image downloads) and can answer slowly, throttle, fail or reject the key; nothing
-reaches the real one. "Sought" is what the game is missing or has that doesn't fit "Zuschneiden erlaubt": cover,
+reaches the real one. "Sought" is what the game is missing or has that doesn't fit its format: cover,
 background or both. "Has an image" means SteamGridDB lists at least one image of the sought kind for that hit (cover
 when both are sought). Open questions Q1 to Q7 (bottom) are answered with their recommendation unless the owner says
 otherwise; the cases follow the recommendation.

@@ -3,7 +3,7 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Tests.Artwork;
 
-/// <summary>#487, #562: the fitting-format rule with the tolerance "Normal" (15 %), T487-8 to T487-10, T562-1 to T562-3.</summary>
+/// <summary>#487, #562, #566: the fitting-format rule (15 % for covers and backgrounds), T487-8 to T487-10, T562-1, T562-2, T566-2.</summary>
 public sealed class ArtworkFormatTests
 {
     [Fact]

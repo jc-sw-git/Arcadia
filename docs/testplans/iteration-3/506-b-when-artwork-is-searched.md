@@ -58,7 +58,7 @@ follow them.
   suchen" and a new game use the new value. · E2E: no (unit test)~~ Outdated: the setting is gone (#566), see T566-2.
 - [x] **T506-52** A changed order or a source switched on: images on disk and the launchers' own images are picked
   again at once in the new order, 0 requests; images set by hand stay. · E2E: no (unit test)
-- [x] **T506-53** The info texts of "Zuschneiden erlaubt", the order and the switches no longer say "bei der nächsten
+- [x] **T506-53** The info texts of the order and the switches no longer say "bei der nächsten
   Suche" but what T506-50 to -52 do (wording in the PR's text list, `docs/product/ui-texts.md`). · E2E: no (view model
   test on the texts)
 

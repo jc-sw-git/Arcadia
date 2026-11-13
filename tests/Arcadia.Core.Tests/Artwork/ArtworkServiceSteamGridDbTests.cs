@@ -266,7 +266,7 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
     }
 
     [Fact]
-    [Trait("TestCase", "T489-16")]
+    [Trait("TestCase", "T566-2")]
     public async Task Without_a_fitting_image_anywhere_the_first_source_with_one_is_cropped()
     {
         await WithKeyAsync();

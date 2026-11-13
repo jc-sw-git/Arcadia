@@ -341,7 +341,6 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     }
 
     [Fact]
-    [Trait("TestCase", "T506-50")]
     [Trait("TestCase", "T506-52")]
     public async Task A_changed_order_picks_among_the_images_on_disk_at_once_without_a_request()
     {

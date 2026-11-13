@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
 using Arcadia.App.ViewModels;
@@ -11,8 +12,8 @@ using Avalonia.Headless.XUnit;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// #506 part B, the QE's acceptance tests in "Datenquellen": a source switched off or on and a changed "Zuschneiden
-/// erlaubt" change the images on disk at once, without a request.
+/// #506 part B, the QE's acceptance tests in "Datenquellen": a source switched off or on changes the images on disk at
+/// once, without a request; an old "Zuschneiden erlaubt" in settings.json changes nothing (#566).
 /// </summary>
 public sealed partial class DataSourcesTests
 {
@@ -97,30 +98,27 @@ public sealed partial class DataSourcesTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T506-50")]
-    [Trait("TestCase", "T562-3")]
-    public async Task A_changed_crop_tolerance_picks_again_among_the_images_on_disk_at_once_without_a_request()
+    [Trait("TestCase", "T566-3")]
+    public async Task An_old_crop_value_in_settings_json_is_ignored_and_dropped_at_the_next_save()
     {
-        // The launcher's cover (750 × 900) cuts 20 %: more than "Normal" allows, within "Viel".
-        var (arcadia, images) = await StartWithBothHeroesAsync(coverWidth: 750);
+        // The launcher's cover (750 × 900) cuts 20 %: more than the 15 % a cover may lose, within the former "Viel".
+        var (arcadia, _) = await StartWithBothHeroesAsync(coverWidth: 750);
         using var _ = arcadia;
         Assert.Equal(ArtworkService.SteamGridDbOrigin, Cover(arcadia));
+        var settings = JsonNode.Parse(File.ReadAllText(arcadia.SettingsPath))!.AsObject();
+        settings["Artwork"]!["Crop"] = "Much";
+        File.WriteAllText(arcadia.SettingsPath, settings.ToJsonString());
 
-        // "Viel": the launcher's cover, first in the order, fits now and is shown at once; the background stays, as
-        // "Zuschneiden erlaubt" applies to covers only (#562).
-        var crop = Assert.IsType<ChoiceRowViewModel>(arcadia.FocusRow("artwork-crop"));
-        arcadia.Press(UiAction.Right);
-        Assert.Equal(CropAllowance.Much, arcadia.Settings.Current.Artwork.Crop);
-        await SettledAsync(arcadia);
-        Assert.Equal(("store-cover", ArtworkService.SteamGridDbOrigin), (Cover(arcadia), Hero(arcadia)));
+        using var restarted = await arcadia.RestartAsync();
+        await SettledAsync(restarted);
 
-        // Back to "Normal": SteamGridDB's again, at once.
-        arcadia.Press(UiAction.Left);
-        Assert.Equal(AppTexts.DataSourcesCropNormal, crop.ValueText);
-        await SettledAsync(arcadia);
-        Assert.Equal((ArtworkService.SteamGridDbOrigin, ArtworkService.SteamGridDbOrigin), (Cover(arcadia), Hero(arcadia)));
-
-        Assert.Equal(0, Requests(arcadia, images));
+        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cover(restarted));
+        Assert.Null(restarted.Main.Toast.Text);
+        OpenDataSources(restarted);
+        restarted.FocusRow(ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher));
+        // Any change saves the settings anew.
+        restarted.Press(UiAction.Left);
+        Assert.DoesNotContain("\"Crop\"", File.ReadAllText(restarted.SettingsPath), StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

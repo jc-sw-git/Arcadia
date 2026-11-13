@@ -343,13 +343,13 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     [Fact]
     [Trait("TestCase", "T506-50")]
     [Trait("TestCase", "T506-52")]
-    public async Task A_changed_tolerance_or_order_picks_among_the_images_on_disk_at_once_without_a_request()
+    public async Task A_changed_order_picks_among_the_images_on_disk_at_once_without_a_request()
     {
         await WithKeyAsync();
         var id = Ids(1)[0];
         SteamGridDbHas(id);
 
-        // 667 × 900 cut to 2 : 3 loses 10 %: it fits "Normal", not "Wenig".
+        // 667 × 900 cut to 2 : 3 loses 10 %: it fits.
         LauncherCoverFile(id, 667, 900);
         _settings = _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] };
         await ScanAsync(id);
@@ -359,33 +359,10 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
         await ChangeSettingsAsync(_settings with { Order = ArtworkSettings.DefaultOrder });
         Assert.Equal(("steam-cache", ArtworkService.SteamGridDbOrigin), (Cached(id)!.Cover!.Origin, Cached(id)!.OffCover!.Origin));
 
-        await ChangeSettingsAsync(_settings with { Crop = CropAllowance.Little });
+        await ChangeSettingsAsync(_settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] });
         Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached(id)!.Cover!.Origin);
         Assert.Equal(new ImageSize(600, 900), _service.Of("steam:" + id)!.Cover!.Size);
-
-        await ChangeSettingsAsync(_settings with { Crop = CropAllowance.Normal });
-        Assert.Equal("steam-cache", Cached(id)!.Cover!.Origin);
         Assert.Equal((0, 0), (_sgdb.Count, ImageRequests));
-    }
-
-    [Fact]
-    [Trait("TestCase", "T506-51")]
-    public async Task A_stricter_tolerance_with_nothing_fitting_on_disk_keeps_the_first_sources_image_until_a_search()
-    {
-        await WithKeyAsync();
-        var id = Ids(1)[0];
-        LauncherCoverFile(id, 667, 900);
-        _sgdb.Knows("heroes", "steam", id);
-        await ScanAsync(id);
-        SteamGridDbHas(id);
-        ClearRequests();
-
-        await ChangeSettingsAsync(_settings with { Crop = CropAllowance.Little });
-        await ScanAsync(id);
-        Assert.Equal(("steam-cache", 0, 0), (Cached(id)!.Cover!.Origin, _sgdb.Count, ImageRequests));
-
-        await SearchAsync();
-        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached(id)!.Cover!.Origin);
     }
 
     [Fact]

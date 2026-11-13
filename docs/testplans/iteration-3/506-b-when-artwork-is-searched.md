@@ -50,12 +50,12 @@ follow them.
 
 **Settings changes start nothing (scenario 9)**
 
-- [x] **T506-50** Given launcher first and a launcher cover cutting 10 % plus a SteamGridDB cover on disk that fits,
+- [x] ~~**T506-50** Given launcher first and a launcher cover cutting 10 % plus a SteamGridDB cover on disk that fits,
   when I change "Zuschneiden erlaubt" from "Normal" to "Wenig", then the SteamGridDB cover is shown everywhere at once,
-  0 requests; back to "Normal": the launcher cover again at once. · E2E: yes
-- [x] **T506-51** A stricter "Zuschneiden erlaubt" that makes an image no longer fit, with no fitting image on disk:
+  0 requests; back to "Normal": the launcher cover again at once. · E2E: yes~~ Outdated: the setting is gone (#566), see T566-2.
+- [x] ~~**T506-51** A stricter "Zuschneiden erlaubt" that makes an image no longer fit, with no fitting image on disk:
   the first source's image stays, cropped (#13's fallback); 0 requests, also at the next rescans; the next "Jetzt
-  suchen" and a new game use the new value. · E2E: no (unit test)
+  suchen" and a new game use the new value. · E2E: no (unit test)~~ Outdated: the setting is gone (#566), see T566-2.
 - [x] **T506-52** A changed order or a source switched on: images on disk and the launchers' own images are picked
   again at once in the new order, 0 requests; images set by hand stay. · E2E: no (unit test)
 - [x] **T506-53** The info texts of "Zuschneiden erlaubt", the order and the switches no longer say "bei der nächsten
@@ -140,8 +140,8 @@ follow them.
   once, back without waiting; images set by hand stay. · E2E: no (real images, how it looks)
 - [x] **T506-77** **Owner:** reorder the sources with the Steam Controller (L3, ▲ ▼, L3, once with B) and once with the
   mouse; the images follow. · E2E: no (real Steam Controller)
-- [x] **T506-78** **Owner:** change "Zuschneiden erlaubt" on the own library: images already there change at once,
-  no search starts. · E2E: no (real images)
+- [x] ~~**T506-78** **Owner:** change "Zuschneiden erlaubt" on the own library: images already there change at once,
+  no search starts. · E2E: no (real images)~~ Outdated: the setting is gone (#566), see T566-2.
 - [x] **T506-79** **Owner:** close Arcadia during "Jetzt suchen", start it again: found images there, no search runs on
   its own. · E2E: no (real shutdown on Windows)
 

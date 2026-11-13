@@ -28,8 +28,8 @@ public enum HitCheck
 /// The search by name (#491): a game SteamGridDB doesn't know by a launcher's id is searched by its name once; one
 /// matching game is taken, several wait for the player ("Selbst auswählen") or the first is taken ("Ersten nehmen").
 /// The match is kept per game across restarts (<see cref="NameMatchStore"/>): a chosen game is asked by its SteamGridDB
-/// game from then on, a skipped one never again. A chosen game's images are automatic (D5): order, "Zuschneiden
-/// erlaubt" and "Alle Artworks neu laden" apply as to any. Before a hit is offered or taken, SteamGridDB is asked whether it
+/// game from then on, a skipped one never again. A chosen game's images are automatic (D5): the order and
+/// "Alle Artworks neu laden" apply as to any. Before a hit is offered or taken, SteamGridDB is asked whether it
 /// has an image of the kind sought (#506); a hit without one is dropped.
 /// </summary>
 public sealed partial class ArtworkService
@@ -75,7 +75,7 @@ public sealed partial class ArtworkService
 
     /// <summary>
     /// A on a hit: the game is that SteamGridDB game from now on, leaves the waiting list and gets its images at once, by
-    /// order and "Zuschneiden erlaubt" like any automatic image; an image set by hand stays. With <paramref name="heroHit"/>
+    /// the order and the format like any automatic image; an image set by hand stays. With <paramref name="heroHit"/>
     /// (cover and background sought, #539) the background comes from that game, the cover from <paramref name="hit"/>.
     /// </summary>
     public async Task ChooseAsync(Game game, SteamGridDbHit hit, SteamGridDbHit? heroHit = null, CancellationToken cancel = default)
@@ -295,7 +295,7 @@ public sealed partial class ArtworkService
     {
         var run = NewRunState();
         var answer = await HitImagesAsync(hit, kind, cancel);
-        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind, run.Tolerance));
+        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind));
         if (best is null
             || await DownloadAsync(game, kind, best.Url, run, cancel) is not { } content
             || ImageCheck.Of(new MemoryStream(content)) is not { } size
@@ -421,16 +421,15 @@ public sealed partial class ArtworkService
 
     /// <summary>
     /// The kinds SteamGridDB is to give the game now (#506, "Gesucht: …"): those whose image is missing or doesn't fit
-    /// "Zuschneiden erlaubt" and wasn't set by hand, as a run asks SteamGridDB for them; both if none. Reads what the
+    /// its format and wasn't set by hand, as a run asks SteamGridDB for them; both if none. Reads what the
     /// views show and the game's metadata, so it needs no lock and no request. Any thread, off the UI thread.
     /// </summary>
     public IReadOnlyList<ArtworkKind> SoughtOf(Game game)
     {
-        var tolerance = Settings().WithValidValues().Tolerance;
         var shown = Of(game.Key);
         var stored = _cache.Read(game.Key);
         var sought = Kinds.Where(kind => stored?.Of(kind) is not { SetByHand: true }
-            && (shown?.Of(kind) is not { } file || !ArtworkFormat.Fits(file.Size, kind, tolerance))).ToList();
+            && (shown?.Of(kind) is not { } file || !ArtworkFormat.Fits(file.Size, kind))).ToList();
         return sought.Count == 0 ? NameMatch.BothKinds : sought;
     }
 

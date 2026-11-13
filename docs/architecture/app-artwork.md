@@ -9,7 +9,7 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
 - Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` switches its two tabs (#538, `IDataSourcesTab`;
   `DataSourcesHeadViewModel` above the rows, LT/RT) and shows only the chosen tab's rows. `ArtworkSourcesTab` holds
   `SteamGridDbKeyRows` (key, paste, key page, test, delete; the first usable key searches), `ArtworkSourceRows` (the sources as `ArtworkSourceRowViewModel`
-  switches with L3 lifting, missing images with progress and cancel, "Zuschneiden erlaubt"; every change calls
+  switches with L3 lifting, missing images with progress and cancel; every change calls
   `ArtworkService.SettingsChanged`, #506) and
   `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); `MetadataSourcesTab` holds
   `IgdbAccessRows` (#494: client id, secret, paste, Twitch's console, test, delete), `MetadataSourceRows` (the metadata

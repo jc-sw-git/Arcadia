@@ -24,11 +24,10 @@ public sealed class ArtworkFormatTests
     }
 
     [Fact]
-    public void The_cover_tolerance_leaves_backgrounds_at_15_percent()
+    public void Epics_three_by_four_cover_fits_and_one_wider_than_fifteen_percent_doesnt()
     {
-        Assert.True(ArtworkFormat.Fits(new ImageSize(421, 900), ArtworkKind.Cover, 0.30));
-        Assert.False(ArtworkFormat.Fits(new ImageSize(2400, 1000), ArtworkKind.Hero, 0.30));
-        Assert.True(ArtworkFormat.Fits(new ImageSize(1920, 1080), ArtworkKind.Hero, 0.05));
+        Assert.True(ArtworkFormat.Fits(new ImageSize(1200, 1600), ArtworkKind.Cover));
+        Assert.False(ArtworkFormat.Fits(new ImageSize(750, 900), ArtworkKind.Cover));
     }
 
     [Fact]

@@ -61,7 +61,7 @@ public class CarouselTests
     {
         var before = new[] { Game("a"), Game("b"), Game("c"), Game("d") };
 
-        Assert.Equal(0, Carousel.FindOrNext([Game("c"), Game("b")], before, shown: 1));
+        Assert.Equal(0, Carousel.FindOrNext([Game("c"), Game("b")], before, shown: 2));
         Assert.Equal(1, Carousel.FindOrNext([Game("a"), Game("d")], before, shown: 1));
         // Past the end it goes round to the start.
         Assert.Equal(0, Carousel.FindOrNext([Game("b")], before, shown: 3));

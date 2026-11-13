@@ -9,4 +9,6 @@ real Windows service. Touches T238-11 (latency summary), T214-9 (settings file) 
 
 | What | Date | Who | Environment | Result | Notes |
 |---|---|---|---|---|---|
-| `dotnet test` Core and Pan | 2026-11-13 | Claude | Linux cloud container, .NET 10 | pass | Core 3,270, Pan 444 (before the last three items) |
+| `dotnet test` Core and Pan | 2026-11-13 | Claude | Linux cloud container, .NET 10 | pass | Core 3,270, Pan 444 |
+| `tools/ci/run-tests.sh 4` after a Release build | 2026-11-13 | Claude | same | pass | Core 3,271, Pan 444, App shards 238 + 229 + 225 + 210 |
+| Demo library under Xvfb: covers without artwork in their hues, the monogram toned down | 2026-11-13 | Claude | same, `tools/dev/screenshot-arcadia.sh` | pass | placeholders as before, now from `Theme.axaml` |

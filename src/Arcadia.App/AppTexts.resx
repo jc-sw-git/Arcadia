@@ -1378,7 +1378,7 @@
   <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Standard-Layout</value></data>
   <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>Mit diesem Layout öffnet sich die Bildschirmtastatur</value></data>
   <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Tastenanordnung {kind}. Jede Bildschirmtastatur öffnet sich mit diesem Layout: in der Suche, in Textfeldern und im Mausmodus.</value></data>
-  <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>Mit [R3] wechselst du auf der offenen Tastatur zu einem anderen Layout der Schnellauswahl. Der Wechsel gilt, bis sich die Tastatur schließt; beim nächsten Öffnen ist wieder das Standard-Layout da.</value></data>
+  <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>Mit [R3] wechselst du auf der Bildschirmtastatur zu einem anderen Layout der Schnellauswahl. Der Wechsel gilt, bis sich die Bildschirmtastatur schließt; beim nächsten Öffnen ist wieder das Standard-Layout da.</value></data>
   <data name="LocalizationLayoutName" xml:space="preserve"><value>{name} · {kind}</value></data>
   <data name="LocalizationQuickLayout" xml:space="preserve"><value>Schnellauswahl</value></data>
   <data name="LocalizationQuickLayoutSubtitle" xml:space="preserve"><value>In der Schnellauswahl der Bildschirmtastatur</value></data>

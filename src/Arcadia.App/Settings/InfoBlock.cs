@@ -19,6 +19,9 @@ public sealed record InfoText(string Text) : InfoBlock
 {
     /// <summary>A fixed printing for its buttons, for a text about one controller only (#315); null follows the controller in use.</summary>
     public Arcadia.Input.ButtonSymbols? Symbols { get; init; }
+
+    /// <summary>About something only a controller does: its buttons stay buttons while the keyboard is in use (<see cref="Controls.ButtonTextBlock.KeepsButtonsProperty"/>).</summary>
+    public bool KeepsButtons { get; init; }
 }
 
 /// <summary>An account's picture and name, e.g. the Steam avatar after the sign-in (#280).</summary>

@@ -52,6 +52,9 @@ public sealed class LocalizationSettingsTests : IDisposable
         Assert.Equal(3, arcadia.FocusRow(LocalizationSettingsViewModel.ClockKey).ValueBoxes.Count);
         Assert.Equal(AppTexts.LocalizationClockSystem, CurrentBox(category.Rows[^1]).Title);
 
+        // [R3] is something only a controller does: the info shows the button also while the keyboard is in use.
+        Assert.True(Assert.IsType<InfoText>(Assert.Single(category.Rows[0].Info)).KeepsButtons);
+
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.Settings);
     }

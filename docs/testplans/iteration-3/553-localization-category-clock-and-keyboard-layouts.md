@@ -18,7 +18,7 @@ A7 Region decides order and separators of dates and numbers; day and month names
 follow the UI language.
 A8 R3 stays a menu; it lists the quick selection in the order of the settings rows, the layout in use marked.
 
-**Status:** Automated: T553-1, T553-3 to T553-18 · QE: T553-2, T553-19 · Open for the owner: T553-20, T553-21 (T553-22 · RC on the release candidate)
+**Status:** Automated: T553-1, T553-3 to T553-18, T553-23 · QE: T553-2, T553-19 · Open for the owner: T553-20, T553-21 (T553-22 · RC on the release candidate)
 
 - [x] **T553-1** Settings, controller only: LB/RB reach the tab "Lokalisierung" between "Datenquellen" and "Über Arcadia";
   it opens on its first row, scrolled to the top. Groups BILDSCHIRMTASTATUR ("Standard-Layout" with ◀ ▶; indented one
@@ -87,6 +87,10 @@ A8 R3 stays a menu; it lists the quick selection in the order of the settings ro
   closes and the next opening shows the default again. · E2E: no (real controller, real window in front)
 - [ ] **T553-22** After updating from the last release: the layout last chosen with R3 is the default, all five layouts
   are in the quick selection, the clock is "Wie im System" *(A1, A4)*. · E2E: no (installed update) · RC
+- [x] **T553-23** Owner's finding: an R3 switch keeps the keys that stand where they stood (only what they type
+  changes) and shows within a frame, not after half a second; the info of "Standard-Layout" shows [R3] as the
+  controller's button also while the keyboard is in use (Xbox without a controller). · E2E: no (window guard, no
+  rendering for the glyph)
 
 Automated tests:
 
@@ -94,6 +98,7 @@ Automated tests:
 |---|---|
 | T553-1, T553-3 to T553-10, T553-12 to T553-16, T553-18 | `Arcadia.App.Tests.LocalizationSettingsTests` |
 | T553-4, T553-10, T553-11, T553-17 | `Arcadia.Core.Tests.LocalizationSettingsTests` |
+| T553-23 | `Arcadia.App.Tests.Guards.SearchSpeedTests` (window guard, `main` only), `LocalizationSettingsTests` (info) |
 
 History:
 
@@ -104,3 +109,4 @@ History:
 | Look at the category, the greyed default switch, 12 hours in the header | 2026-11-13 | Implementer | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys | Rows, indents, blue note, footer without actions on the default switch, "7:54 PM" | – |
 | T553-2, T553-19 (QE run) | 2026-11-13 | QE | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys and mouse | Failed: value boxes with the [R3] glyph cut off, "Español · QWERTY con Ñ" shortened in the pill, "12 Stunden (9:58 PM)" touching the arrows; in the search B then X kept the R3 layout (T553-7); a quick selection of the wrong type left only the default (T553-17) | Fixed in 5075b3c (texts without glyph, shorter pill values, keyboard reopens in the default, unreadable list = all five) |
 | T553-2, T553-19 (QE rerun) | 2026-11-13 | QE | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys and mouse | Passed: nothing cut off, focus ring and greyed switch fine; clicks on ◀ ▶, switches and the "Layout" key, W/S/A/D, Esc work; G in the search types (a real keyboard types there) | – |
+| T553-23 (owner's finding: switch lagged) | 2026-11-13 | Implementer | Release, Linux, headless window, Stopwatch around R3 → accept | Before: 700–1,400 ms, 0 of 63 key controls kept; after: 6–100 ms, 59 of 63 kept | Keys reused across layouts |

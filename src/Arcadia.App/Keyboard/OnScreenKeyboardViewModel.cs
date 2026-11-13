@@ -394,15 +394,48 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         }
     }
 
+    /// <summary>
+    /// The keys of <see cref="_board"/>. A key that stands where one of the old layout stood stays and only types something
+    /// else: building every key's controls anew made a layout switch take most of a second (#553).
+    /// </summary>
     private void BuildKeys()
     {
-        Keys.Clear();
+        var old = new Dictionary<(int Row, double Left), BoardKeyViewModel>();
+        foreach (var key in Keys)
+        {
+            old.TryAdd((key.Key.Row, key.Key.Left), key);
+        }
+
         _keyViews.Clear();
+        var shown = new List<BoardKeyViewModel>(_board.Keys.Count);
         for (var i = 0; i < _board.Keys.Count; i++)
         {
-            var key = new BoardKeyViewModel(_board.Keys[i], i, Click);
-            Keys.Add(key);
-            _keyViews[key.Key] = key;
+            var boardKey = _board.Keys[i];
+            BoardKeyViewModel key;
+            if (old.Remove((boardKey.Row, boardKey.Left), out var kept) && kept.Fits(boardKey))
+            {
+                kept.StandFor(boardKey, i);
+                key = kept;
+            }
+            else
+            {
+                key = new BoardKeyViewModel(boardKey, i, Click);
+            }
+
+            shown.Add(key);
+            _keyViews[boardKey] = key;
+        }
+
+        var stays = shown.ToHashSet();
+        foreach (var gone in Keys.Where(key => !stays.Contains(key)).ToList())
+        {
+            Keys.Remove(gone);
+        }
+
+        var present = Keys.ToHashSet();
+        foreach (var added in shown.Where(key => !present.Contains(key)))
+        {
+            Keys.Add(added);
         }
 
         UpdateDockKey();

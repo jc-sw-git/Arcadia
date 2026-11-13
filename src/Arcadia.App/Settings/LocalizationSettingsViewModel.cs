@@ -42,7 +42,7 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
             Group = keyboard,
             Subtitle = AppTexts.LocalizationDefaultLayoutSubtitle,
             ValueInfos = [.. KeyboardLayout.All.Select(layout => AppTexts.LocalizationDefaultLayoutValue(kind: layout.Kind))],
-            Info = [new InfoText(AppTexts.LocalizationDefaultLayoutInfo)],
+            Info = [new InfoText(AppTexts.LocalizationDefaultLayoutInfo) { KeepsButtons = true }],
         };
         _quick = [.. KeyboardLayout.All.Select(layout => new QuickLayoutRowViewModel(this, layout) { Group = keyboard, Indent = 1 })];
         var clock = new ChoiceRowViewModel(

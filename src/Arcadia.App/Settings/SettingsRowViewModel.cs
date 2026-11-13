@@ -269,6 +269,9 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     private IReadOnlyList<ValueBox> _valueBoxes = [];
     private bool _boxesShown;
 
+    // The value text last announced by Refresh.
+    private string? _shownValueText;
+
     public ChoiceRowViewModel(string key, string title, Func<int> get, Action<int> set, Func<int, string> format, int min, int max)
         : base(key, title)
     {
@@ -334,10 +337,19 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public override void Activate() => Change(1);
 
-    /// <summary>The value changed elsewhere (or a value it is shown with), so it is read again.</summary>
+    /// <summary>
+    /// The value changed elsewhere (or a value it is shown with), so it is read again. <see cref="ValueText"/> is announced
+    /// only when it reads differently: the info panel goes back to its top on it, and a run refreshing the rows every few
+    /// seconds must not pull it there while it is scrolled (#547).
+    /// </summary>
     public void Refresh()
     {
-        OnPropertyChanged(nameof(ValueText));
+        if (ValueText != _shownValueText)
+        {
+            _shownValueText = ValueText;
+            OnPropertyChanged(nameof(ValueText));
+        }
+
         OnPropertyChanged(nameof(CanDecrease));
         OnPropertyChanged(nameof(CanIncrease));
         ShowCurrentBox();

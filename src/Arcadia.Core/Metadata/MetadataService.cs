@@ -67,6 +67,9 @@ public sealed partial class MetadataService : IDisposable
     // Under _gate: "Alle Metadaten neu laden" was confirmed and its run has not ended; Progress reports it from the
     // confirmation on, also while another run still goes or the reload fails at once.
     private bool _reloadAsked;
+
+    // Under _gate: stops the run going on now ("Suche abbrechen", "Neu laden abbrechen"); a new one for each run.
+    private CancellationTokenSource _runCancel = new();
     private MetadataProgress _progress = MetadataProgress.NotYet;
 
     public MetadataService(MetadataCache cache, HttpClient http, TimeProvider time)
@@ -229,6 +232,32 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
+    /// <summary>
+    /// "Suche abbrechen" or "Neu laden abbrechen" (#43): the run going on stops after the request in flight and nothing
+    /// queued follows. What was fetched stays; the rest waits for the next scan or "Jetzt suchen", and the games a
+    /// cancelled reload didn't reach keep their data.
+    /// </summary>
+    public void CancelRun()
+    {
+        lock (_gate)
+        {
+            if (!_running)
+            {
+                return;
+            }
+
+            _pending = null;
+            _reloadAsked = false;
+            _runCancel.Cancel();
+
+            // Shown as stopped at once, not only once the request in flight has ended.
+            _progress = _progress with { Running = false, Reload = false, Remaining = null };
+        }
+
+        Log("Metadaten: Lauf vom Spieler abgebrochen");
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public void Dispose() => _shutdown.Cancel();
 
     private void Start(Pending? run)
@@ -264,25 +293,17 @@ public sealed partial class MetadataService : IDisposable
 
             while (TakePending() is { } pending)
             {
-                if (pending.Reload)
+                var cancel = NewRunCancel();
+                try
                 {
-                    foreach (var game in StoreGames(pending.Libraries))
-                    {
-                        _reloadLeft.Add(game.Game.Key);
-                    }
-
-                    foreach (var game in IgdbGames(pending.Libraries))
-                    {
-                        _igdbReloadLeft.Add(game.Game.Key);
-                    }
+                    await RunOnceAsync(pending, cancel);
                 }
-
-                ReadLocal(pending.Libraries);
-                WaitingChanged?.Invoke(this, EventArgs.Empty);
-                var storesReached = await FetchAsync(pending.Libraries, pending.Reload, _shutdown.Token);
-                if (!HasPending())
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested && !_shutdown.IsCancellationRequested)
                 {
-                    await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, _shutdown.Token);
+                    // Cancelled by the player: a reload ends here, the games it didn't reach keep their data.
+                    _reloadLeft.Clear();
+                    _igdbReloadLeft.Clear();
+                    Report(pending.Libraries, null, null);
                 }
             }
         }
@@ -297,26 +318,65 @@ public sealed partial class MetadataService : IDisposable
         }
         finally
         {
-            lock (_gate)
-            {
-                // In the same lock as the decision below, so a run starting now isn't reported as ended, and a
-                // confirmed reload ends with it.
-                _progress = _progress with { Running = false, Reload = false, Remaining = null };
+            EndRunner();
+        }
+    }
 
-                // A run queued while this one ended still needs a runner.
-                if (_pending is not null && !_shutdown.IsCancellationRequested)
-                {
-                    _runner = Task.Run(RunAsync);
-                }
-                else
-                {
-                    _running = false;
-                    _reloadAsked = false;
-                }
+    private CancellationToken NewRunCancel()
+    {
+        lock (_gate)
+        {
+            _runCancel.Dispose();
+            _runCancel = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
+            return _runCancel.Token;
+        }
+    }
+
+    private async Task RunOnceAsync(Pending pending, CancellationToken cancel)
+    {
+        if (pending.Reload)
+        {
+            foreach (var game in StoreGames(pending.Libraries))
+            {
+                _reloadLeft.Add(game.Game.Key);
             }
 
-            ProgressChanged?.Invoke(this, EventArgs.Empty);
+            foreach (var game in IgdbGames(pending.Libraries))
+            {
+                _igdbReloadLeft.Add(game.Game.Key);
+            }
         }
+
+        ReadLocal(pending.Libraries);
+        WaitingChanged?.Invoke(this, EventArgs.Empty);
+        var storesReached = await FetchAsync(pending.Libraries, pending.Reload, cancel);
+        if (!HasPending())
+        {
+            await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, cancel);
+        }
+    }
+
+    private void EndRunner()
+    {
+        lock (_gate)
+        {
+            // In the same lock as the decision below, so a run starting now isn't reported as ended, and a
+            // confirmed reload ends with it.
+            _progress = _progress with { Running = false, Reload = false, Remaining = null };
+
+            // A run queued while this one ended still needs a runner.
+            if (_pending is not null && !_shutdown.IsCancellationRequested)
+            {
+                _runner = Task.Run(RunAsync);
+            }
+            else
+            {
+                _running = false;
+                _reloadAsked = false;
+            }
+        }
+
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private Pending? TakePending()

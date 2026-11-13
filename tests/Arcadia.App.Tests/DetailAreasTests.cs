@@ -180,10 +180,10 @@ public sealed class DetailAreasTests
         var page = arcadia.Detail!.Current;
 
         Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode], page.Area(DetailAreaViewModel.ControllerKey).Rows.Select(row => row.Kind));
-        Assert.Equal([GameActionKind.Artwork, GameActionKind.ChangeTitle, GameActionKind.ResetTitle, GameActionKind.Uninstall],
+        Assert.Equal([GameActionKind.Artwork, GameActionKind.Tags, GameActionKind.ChangeTitle, GameActionKind.ResetTitle, GameActionKind.Uninstall],
             page.Area(DetailAreaViewModel.ManageKey).Rows.Select(row => row.Kind));
-        // A title can be set before the installation (#496); everything else waits for it.
-        Assert.All(page.Areas.SelectMany(area => area.Rows).Where(row => row.Kind != GameActionKind.ChangeTitle),
+        // A title and tags can be set before the installation (#496, #495); everything else waits for it.
+        Assert.All(page.Areas.SelectMany(area => area.Rows).Where(row => row.Kind is not (GameActionKind.ChangeTitle or GameActionKind.Tags)),
             row => Assert.True(row.IsGreyed && row.HasNote, $"{row.Title} nicht ausgegraut mit Grund"));
         Assert.False(page.Row(GameActionKind.ChangeTitle).IsGreyed);
 

@@ -625,7 +625,7 @@
   <data name="DetailTagsCaption" xml:space="preserve"><value>TAGS DER QUELLEN</value></data>
   <data name="DetailOverviewLine" xml:space="preserve"><value>{lastPlayed} · {playtime}</value></data>
   <data name="DetailControllerLine" xml:space="preserve"><value>Modus „{mode}“</value></data>
-  <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Titel, Deinstallieren</value></data>
+  <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Tags, Titel, Deinstallieren</value></data>
   <data name="DetailQuickSelectionCaption" xml:space="preserve"><value>SCHNELLAUSWAHL</value></data>
   <data name="DetailCustomizeOverview" xml:space="preserve"><value>Übersicht anpassen</value></data>
   <data name="QuickSelectionDialogSubtitle" xml:space="preserve"><value>Bis zu 5 Einträge für die Schnellauswahl von {game}.</value></data>
@@ -667,19 +667,51 @@
   <data name="DetailResetTitleSubtitle" xml:space="preserve"><value>Zurück zum automatischen Titel</value></data>
   <data name="DetailResetTitleInfo" xml:space="preserve"><value>Verwirft den eigenen Titel. Das Spiel heißt wieder so, wie es der Launcher oder eine Datenquelle nennt.</value></data>
   <data name="DetailNoOwnTitle" xml:space="preserve"><value>Das Spiel hat keinen eigenen Titel.</value></data>
-  <data name="DetailTitleUnreadable" xml:space="preserve"><value>Die Datei mit deinen eigenen Titeln (user-data.json) ist nicht lesbar. Arcadia überschreibt sie nicht: repariere oder lösche sie und starte Arcadia neu.</value></data>
+  <data name="UserDataUnreadable" xml:space="preserve"><value>Eigene Tags und Titel sind gerade nicht lesbar: Arcadia überschreibt die Datei user-data.json nicht. Repariere oder lösche sie und starte Arcadia neu.</value></data>
   <data name="DetailOriginalTitle" xml:space="preserve"><value>Original-Titel: {title}</value></data>
   <data name="DetailOriginalTitleHint" xml:space="preserve"><value>Original-Titel</value></data>
   <data name="ChangeTitleNote" xml:space="preserve"><value>Leer lassen oder „{title}“ eingeben stellt den automatischen Titel wieder her.</value></data>
   <data name="ChangeTitleTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
   <data name="ChangeTitleTake" xml:space="preserve"><value>Übernehmen</value></data>
-  <data name="UserDataStatus" xml:space="preserve"><value>Eigene Titel nicht lesbar</value></data>
-  <data name="UserDataStatusShort" xml:space="preserve"><value>Automatische Titel gelten, bis user-data.json lesbar ist</value></data>
+  <data name="UserDataStatus" xml:space="preserve"><value>Eigene Titel und Tags nicht lesbar</value></data>
+  <data name="UserDataStatusShort" xml:space="preserve"><value>Ohne eigene Titel und Tags, bis user-data.json lesbar ist</value></data>
   <data name="DataSourcesUserDataGroup" xml:space="preserve"><value>EIGENE DATEN</value></data>
-  <data name="DataSourcesUserData" xml:space="preserve"><value>Eigene Titel</value></data>
+  <data name="DataSourcesUserData" xml:space="preserve"><value>Eigene Titel und Tags</value></data>
   <data name="DataSourcesUserDataUnreadable" xml:space="preserve"><value>user-data.json nicht lesbar</value></data>
-  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen automatischen Titel, und Titel lassen sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
-  <data name="ErrorContextUserData" xml:space="preserve"><value>Eigene Titel speichern</value></data>
+  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen automatischen Titel und keine eigenen Tags, und beides lässt sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
+  <data name="ErrorContextUserData" xml:space="preserve"><value>Eigene Titel und Tags speichern</value></data>
+  <data name="ActionTags" xml:space="preserve"><value>Tags</value></data>
+  <data name="ActionTagsMore" xml:space="preserve"><value>Tags …</value></data>
+  <data name="DetailTagsSubtitle" xml:space="preserve"><value>Eigene Tags vergeben oder entfernen</value></data>
+  <data name="DetailTagsInfo" xml:space="preserve"><value>Deine Tags wie „Couch-Koop“ gelten über alle Launcher hinweg und bleiben beim neuen Einlesen und beim Neuladen der Metadaten erhalten. Alle Tags verwaltest du unter Einstellungen → Datenquellen → Eigene Tags.</value></data>
+  <data name="DetailTagsNone" xml:space="preserve"><value>Keine</value></data>
+  <data name="DetailTagsOne" xml:space="preserve"><value>1 Tag</value></data>
+  <data name="DetailTagsMany" xml:space="preserve"><value>{count} Tags</value></data>
+  <data name="DetailOwnTagsCaption" xml:space="preserve"><value>EIGENE TAGS</value></data>
+  <data name="TagsWindowHeading" xml:space="preserve"><value>Tags · {game}</value></data>
+  <data name="TagsNew" xml:space="preserve"><value>Neuer Tag</value></data>
+  <data name="TagsRename" xml:space="preserve"><value>Tag umbenennen</value></data>
+  <data name="TagsHintToggle" xml:space="preserve"><value>Zuordnen</value></data>
+  <data name="TagsHintDelete" xml:space="preserve"><value>Löschen</value></data>
+  <data name="TagsHintRename" xml:space="preserve"><value>Umbenennen</value></data>
+  <data name="TagsHintGames" xml:space="preserve"><value>Spiele zeigen</value></data>
+  <data name="TagsHintCreate" xml:space="preserve"><value>Anlegen</value></data>
+  <data name="TagsNameNote" xml:space="preserve"><value>Ein Tag gilt für alle Launcher. Groß- und Kleinschreibung zählt nicht: „couch-koop“ ist „Couch-Koop“.</value></data>
+  <data name="TagsDeleteQuestion" xml:space="preserve"><value>„{name}“ löschen?</value></data>
+  <data name="TagsDeleteGamesNone" xml:space="preserve"><value>Kein Spiel hat diesen Tag.</value></data>
+  <data name="TagsDeleteGamesOne" xml:space="preserve"><value>1 Spiel verliert den Tag.</value></data>
+  <data name="TagsDeleteGamesMany" xml:space="preserve"><value>{count} Spiele verlieren den Tag.</value></data>
+  <data name="TagsDeleteConfirm" xml:space="preserve"><value>Löschen</value></data>
+  <data name="TagsMergeQuestion" xml:space="preserve"><value>Mit „{name}“ zusammenführen?</value></data>
+  <data name="TagsMergeText" xml:space="preserve"><value>Alle Spiele von „{from}“ bekommen „{into}“, und „{from}“ verschwindet.</value></data>
+  <data name="TagsMergeConfirm" xml:space="preserve"><value>Zusammenführen</value></data>
+  <data name="TagsGamesNone" xml:space="preserve"><value>Kein Spiel hat diesen Tag.</value></data>
+  <data name="OwnTagsTitle" xml:space="preserve"><value>Eigene Tags</value></data>
+  <data name="OwnTagsCount" xml:space="preserve"><value>{count} Tags</value></data>
+  <data name="DataSourcesOwnTags" xml:space="preserve"><value>Eigene Tags ({count})</value></data>
+  <data name="DataSourcesOwnTagsAction" xml:space="preserve"><value>Verwalten</value></data>
+  <data name="DataSourcesOwnTagsSubtitle" xml:space="preserve"><value>Tags anlegen, umbenennen, löschen und ihre Spiele zeigen</value></data>
+  <data name="DataSourcesOwnTagsInfo" xml:space="preserve"><value>Deine eigenen Tags gelten über alle Launcher hinweg. Hier legst du neue an, benennst sie um, führst zwei zusammen oder löschst einen von allen Spielen. Zu jedem Tag siehst du seine Spiele und öffnest ihre Detailseite. Einem Spiel gibst du Tags auf seiner Detailseite unter „Verwalten“ oder im Kontextmenü.</value></data>
   <data name="DetailUninstallSubtitle" xml:space="preserve"><value>Übergibt an {launcher}</value></data>
   <data name="DetailUninstallInfo" xml:space="preserve"><value>Fragt vorher nach und lässt dann {launcher} das Spiel deinstallieren. Es bleibt in deiner Bibliothek und lässt sich jederzeit wieder installieren.</value></data>
   <data name="TileUninstalling" xml:space="preserve"><value>Wird deinstalliert …</value></data>

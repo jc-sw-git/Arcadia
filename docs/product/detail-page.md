@@ -9,7 +9,7 @@
     "Spielen" with "Übersicht" open. Under the title the info line (#493): genres · developer · year, cut with "…" in one
     line, and the first age rating as a badge (USK before PEGI before ESRB); a missing part leaves no "·", none at all no line.
   - Below, a panel with a rail of areas, each with a value line: "Übersicht", "Infos", "Controller" (Steam Controller mode,
-    "Individueller Mausmodus") and "Verwalten" ("Artwork ändern", "Titel ändern", "Titel zurücksetzen", "Deinstallieren …"). ▼ from any button goes to the
+    "Individueller Mausmodus") and "Verwalten" ("Artwork ändern", "Tags", "Titel ändern", "Titel zurücksetzen", "Deinstallieren …"). ▼ from any button goes to the
     rail, ▲ on the first area back to "Spielen"; a focused area shows its content at once, A goes into its rows, B back
     to the rail. ◀ ▶ change a value row at once, both ways.
   - "Übersicht" (#500): left the quick selection, up to 5 rows of the other areas in the order of the areas, each acting
@@ -72,3 +72,5 @@
   hint "[R3] Original-Titel" only then; every page shown anew (another game, the page left) starts without the line.
   While `user-data.json` is unreadable both rows are greyed with the reason, the header has a warning, and its entry
   opens "Eigene Titel" in "Datenquellen", which says why (damaged, locked, from a newer Arcadia) and what to do.
+- "Tags" (#495) opens the tag window of the game; own tags show before the providers' tags
+  ([own-tags.md](settings-data-sources/own-tags.md)).

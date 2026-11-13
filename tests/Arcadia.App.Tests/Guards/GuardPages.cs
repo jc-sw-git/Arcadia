@@ -40,6 +40,8 @@ internal static class GuardPages
         new("Übersicht anpassen", [typeof(CustomizeOverviewViewModel)], OpenCustomizeOverview,
             arcadia => Presses(arcadia, UiAction.Down, UiAction.Down, UiAction.Down)),
         new("Titel ändern", [typeof(ChangeTitleViewModel)], OpenChangeTitle),
+        new("Tags eines Spiels", [typeof(TagWindowViewModel)], OpenTagWindow,
+            arcadia => Down(arcadia, arcadia.Arcadia.Main.TagWindow!.Entries.Count)),
         new("Suche", [typeof(SearchViewModel)], Pressing(UiAction.Search), Search, RingsAtLeast: 30,
             RingFinding: ("mit Treffern", "Der Rahmen des fokussierten Treffers in der ersten Reihe ist oben nur halb so hell (#518).")),
         new("Tastaturlayout der Suche", [typeof(LayoutMenuViewModel)], Pressing(UiAction.Search, UiAction.KeyboardLayout),
@@ -54,6 +56,10 @@ internal static class GuardPages
         new("Treiberinstallation", [typeof(DriverInstallDialogViewModel)], OpenDriverInstallAsync, Start: StartWithEveryControllerPartMissingAsync, Focused: _ => null),
         GuardPage.NotWalkedYet("Controller zuordnen", [typeof(ControllerLayoutsViewModel)], "„Controller zuordnen“ gibt es nur mit dem Steam Controller unter Windows."),
         new("Einstellungen › Datenquellen", [typeof(DataSourcesSettingsViewModel)], OpenCategoryAsync<DataSourcesSettingsViewModel>, Rows) { IsSettingsPage = true },
+        new("Eigene Tags", [typeof(TagListViewModel)], OpenTagListAsync,
+            arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Entries.Count)),
+        new("Eigene Tags › Spiele", [typeof(TagListViewModel)], OpenTagGamesAsync,
+            arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Games!.Items.Count)),
         new("Einstellungen › Über Arcadia", [typeof(AboutSettingsViewModel)], OpenCategoryAsync<AboutSettingsViewModel>, Rows) { IsSettingsPage = true },
         GuardPage.NotWalkedYet("Frage in den Einstellungen", [typeof(SettingsQuestionViewModel)], "Fragt nur nach Änderungen an Bildern oder Controller-Modi, die der Test erst anlegen müsste."),
         GuardPage.NotWalkedYet("Bearbeitungsfeld", [typeof(TextEditorViewModel)], "Ein Textfeld in einer Zeile; die Guards sehen es mit seiner Zeile."),
@@ -162,6 +168,43 @@ internal static class GuardPages
         arcadia.Arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Uninstall);
         arcadia.Press(UiAction.Accept);
         Assert.NotNull(arcadia.Arcadia.Main.Confirmation);
+    }
+
+    /// <summary>From the detail page: "Verwalten", "Tags", A, with two tags the game has one of (#495).</summary>
+    private static async Task OpenTagWindow(ArcadiaWindow arcadia)
+    {
+        await OpenDetail(arcadia);
+        AddTags(arcadia, arcadia.Arcadia.Detail!.Current.Tile.Game.Key);
+        arcadia.Arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Tags);
+        arcadia.Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Arcadia.Main.TagWindow);
+        arcadia.Settle();
+    }
+
+    /// <summary>"Datenquellen", "Eigene Tags", A (#495).</summary>
+    private static async Task OpenTagListAsync(ArcadiaWindow arcadia)
+    {
+        AddTags(arcadia, arcadia.Arcadia.FocusedGame!.Game.Key);
+        await OpenCategoryAsync<DataSourcesSettingsViewModel>(arcadia);
+        arcadia.Arcadia.FocusRow(DataSourcesSettingsViewModel.OwnTagsRowKey);
+        arcadia.Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Arcadia.Main.TagList);
+        arcadia.Settle();
+    }
+
+    /// <summary>The tag list, down to the tag with a game, A (#495).</summary>
+    private static async Task OpenTagGamesAsync(ArcadiaWindow arcadia)
+    {
+        await OpenTagListAsync(arcadia);
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        Assert.True(arcadia.Arcadia.Main.TagList!.Games is { HasGames: true });
+        arcadia.Settle();
+    }
+
+    private static void AddTags(ArcadiaWindow arcadia, string gameKey)
+    {
+        arcadia.Arcadia.Main.Tags.Create("Couch-Koop", gameKey);
+        arcadia.Arcadia.Main.Tags.Create("Zu zweit");
     }
 
     /// <summary>From the detail page's quick selection: into "Übersicht", up to "Übersicht anpassen", A.</summary>

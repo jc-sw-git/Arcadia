@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="using:Arcadia.App"
+             xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
+             x:Class="Arcadia.App.Views.TagWindowView"
+             x:DataType="vm:TagWindowViewModel">
+
+  <!-- "Tags · <game>" (#495): "Neuer Tag" first, then every own tag with a tick where the game has it. The checkbox rows
+       are the filter's (#44), as in "Übersicht anpassen". -->
+  <Panel>
+    <Panel IsVisible="{Binding !IsEditing}">
+      <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              Command="{Binding GoBackCommand}" />
+      <Border Classes="prompt tagDialog" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Panel>
+          <Button Classes="plain dialogClose" Margin="0,-24,-28,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
+                  IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Input.ShowsCloseButtons, TargetNullValue=False}" Command="{Binding GoBackCommand}">
+            <Path Data="M1 1L13 13M13 1L1 13" StrokeThickness="2.5" StrokeLineCap="Round" Width="14" Height="14" Stretch="None" />
+          </Button>
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Classes="tagDialogHeading" Text="{Binding Heading}" Margin="0,0,40,24" />
+            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" Margin="0,22,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
+                <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" />
+                <Button Classes="plain" Command="{Binding GoBackCommand}">
+                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                </Button>
+                <Button Classes="plain tagHint" Classes.off="{Binding IsNewFocused}" Command="{Binding DeleteCommand}">
+                  <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.TagsHintDelete}" />
+                </Button>
+                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static vm:TagWindowViewModel.AcceptHint}" />
+              </StackPanel>
+            </Border>
+            <Panel>
+              <ScrollViewer Name="TagScroller" Classes="waitingScroller" Padding="4" MaxHeight="620">
+                <ItemsControl Name="TagRows" ItemsSource="{Binding Entries}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TagEntryViewModel">
+                      <Button Classes="plain filterValue tagRow" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsTicked}" Classes.newTag="{Binding IsNew}"
+                              Command="{Binding ClickCommand}" ToolTip.Tip="{Binding Text}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                          <Border Classes="filterCheck" IsVisible="{Binding IsTag}">
+                            <Path Classes="filterCheckMark" />
+                          </Border>
+                          <Path Classes="tagNewIcon" IsVisible="{Binding IsNew}" />
+                          <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Text}" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <ctl:EdgeFade Name="TagFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #TagScroller}" />
+            </Panel>
+          </DockPanel>
+        </Panel>
+      </Border>
+    </Panel>
+
+    <views:TagDialogPartsView />
+  </Panel>
+</UserControl>

@@ -3,7 +3,9 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Metadata;
+using Arcadia.App.Services;
 using Arcadia.Core.Settings;
+using Arcadia.Core.UserData;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Settings;
@@ -28,16 +30,22 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
     private readonly IgdbAccessRows? _igdbRows;
     private readonly MetadataSourceRows? _metadataSourceRows;
     private readonly InfoRowViewModel? _userDataRow;
+    private readonly OwnTags? _ownTags;
+    private readonly ActionRowViewModel? _ownTagsRow;
 
-    /// <summary>The row "Eigene Titel" (#496), there only while user-data.json was unreadable at the start; the status entry opens it.</summary>
+    /// <summary>The row "Eigene Titel und Tags" (#496), there only while user-data.json was unreadable at the start; the status entry opens it.</summary>
     public const string UserDataRowKey = "user-data";
+
+    /// <summary>The row "Eigene Tags (N)" (#495), which opens the tag list.</summary>
+    public const string OwnTagsRowKey = "own-tags";
     private bool _disposed;
 
     /// <param name="keyPersists">The key is kept across a restart (Windows' DPAPI); else only until Arcadia closes.</param>
     /// <param name="metadata">The games' metadata (#493); null: the group "METADATEN" is left out.</param>
+    /// <param name="ownTags">The player's own tags (#495); null: the row "Eigene Tags" is left out.</param>
     public DataSourcesSettingsViewModel(
         SteamGridDbKey key, ArtworkService artwork, IDataSourcesHost host, SettingsChanges changes, TimeProvider time, bool keyPersists, MetadataService? metadata = null,
-        bool userDataUnreadable = false)
+        bool userDataUnreadable = false, OwnTags? ownTags = null)
         : base(AppTexts.DataSourcesTitle, "M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0 M4 6v6a8 3 0 0 0 16 0v-6 M4 12v6a8 3 0 0 0 16 0v-6")
     {
         _key = key;
@@ -52,6 +60,15 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _igdbRows = metadata?.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
         _metadataSourceRows = metadata is null ? null : new MetadataSourceRows(metadata, changes, Show);
         _userDataRow = userDataUnreadable ? UserDataRow() : null;
+        _ownTags = ownTags;
+        _ownTagsRow = ownTags is null ? null : new ActionRowViewModel(OwnTagsRowKey, string.Empty, host.OpenOwnTags)
+        {
+            Group = AppTexts.DataSourcesUserDataGroup,
+            Subtitle = AppTexts.DataSourcesOwnTagsSubtitle,
+            ActionText = AppTexts.DataSourcesOwnTagsAction,
+            Info = [new InfoText(AppTexts.DataSourcesOwnTagsInfo)],
+            DimmedNote = AppTexts.UserDataUnreadable,
+        };
         if (metadata is not null)
         {
             metadata.ProgressChanged += OnChanged;
@@ -162,6 +179,15 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         }
     });
 
+    /// <summary>A tag was made, renamed, merged or deleted (#495): "Eigene Tags (N)" follows; UI thread.</summary>
+    public void OwnTagsChanged()
+    {
+        if (!_disposed)
+        {
+            Show();
+        }
+    }
+
     // The file is read only at the start, so the row never changes while Arcadia runs.
     private static InfoRowViewModel UserDataRow() => new(UserDataRowKey, AppTexts.DataSourcesUserData)
     {
@@ -180,12 +206,20 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         _metadataRows?.Refresh();
         _igdbRows?.Refresh();
         _metadataSourceRows?.Refresh();
+        if (_ownTags is not null && _ownTagsRow is not null)
+        {
+            // While user-data.json is unreadable the row is greyed with the reason, so nothing typed is lost (D9).
+            _ownTagsRow.Title = AppTexts.DataSourcesOwnTags(Formatting.Count(_ownTags.All.Count));
+            _ownTagsRow.IsEnabled = _ownTags.CanChange;
+            _ownTagsRow.IsDimmed = !_ownTags.CanChange;
+        }
+
         IsReordering = _sourceRows.IsReordering || _metadataSourceRows?.IsReordering == true;
         Marker = _key.State == SteamGridDbKeyState.Rejected || _metadata?.Igdb?.State == Core.Metadata.Igdb.IgdbAccessState.Rejected || _userDataRow is not null
             ? HealthSeverity.Warning
             : null;
         SetRows([.. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
             _nameRows.SeveralHitsRow, _nameRows.WaitingRow, .. _igdbRows?.Rows ?? [], .. _metadataSourceRows?.Rows ?? [], .. _metadataRows?.Rows ?? [],
-            .. _userDataRow is null ? Array.Empty<SettingsRowViewModel>() : [_userDataRow]]);
+            .. _ownTagsRow is null ? Array.Empty<SettingsRowViewModel>() : [_ownTagsRow], .. _userDataRow is null ? Array.Empty<SettingsRowViewModel>() : [_userDataRow]]);
     }
 }

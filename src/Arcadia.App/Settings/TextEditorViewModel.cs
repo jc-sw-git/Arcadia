@@ -18,6 +18,8 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     private readonly Func<string, bool> _take;
     private readonly Action _close;
     private readonly Action<IKeyboardTarget> _giveBackKeyboard;
+    private readonly Func<char, bool>? _takes;
+    private readonly int? _maxLength;
     private TextWithCaret _text;
 
     /// <param name="problemOf">Why a text can't be taken, or null if it can.</param>
@@ -25,6 +27,7 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     /// <param name="close">The editor is done, the text taken or dropped.</param>
     /// <param name="takeKeyboard">The settings' one on-screen keyboard, now typing into this editor; given back on dispose.</param>
     /// <param name="takes">The characters the text may hold; the on-screen keyboard greys out the others. Null: all.</param>
+    /// <param name="maxLength">The most characters the text may hold: typing beyond is refused and the keyboard greys out its characters once it is full. Null: no limit.</param>
     public TextEditorViewModel(
         string text,
         Func<string, string?> problemOf,
@@ -32,15 +35,18 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
         Action close,
         Func<IKeyboardTarget, OnScreenKeyboardViewModel> takeKeyboard,
         Action<IKeyboardTarget> giveBackKeyboard,
-        Func<char, bool>? takes = null)
+        Func<char, bool>? takes = null,
+        int? maxLength = null)
     {
         _text = TextWithCaret.AtEnd(text);
+        _takes = takes;
+        _maxLength = maxLength;
         _problemOf = problemOf;
         _take = take;
         _close = close;
         _giveBackKeyboard = giveBackKeyboard;
         Keyboard = takeKeyboard(this);
-        Keyboard.Configure(key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown, takes);
+        ConfigureKeyboard();
         Problem = problemOf(text);
     }
 
@@ -123,6 +129,11 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
     public void Type(string text)
     {
         var typed = new string(text.Where(c => !char.IsControl(c)).ToArray());
+        if (_maxLength is { } max)
+        {
+            typed = typed[..Math.Min(typed.Length, Math.Max(0, max - Text.Length))];
+        }
+
         if (typed.Length > 0)
         {
             SetText(_text.Insert(typed));
@@ -210,10 +221,22 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
 
     private void SetText(TextWithCaret text)
     {
+        var wasFull = IsFull;
         _text = text;
         Problem = _problemOf(text.Text);
         ShowCaret();
+        if (IsFull != wasFull)
+        {
+            ConfigureKeyboard();
+        }
     }
+
+    private bool IsFull => _maxLength is { } max && Text.Length >= max;
+
+    // Without ↹ and the edge key; full, every character key is greyed out and only erasing, moving and taking are left.
+    private void ConfigureKeyboard() => Keyboard.Configure(
+        key => key.Kind is BoardKeyKind.Tab or BoardKeyKind.Dock ? BoardKeyState.Hidden : BoardKeyState.Shown,
+        _maxLength is null ? _takes : c => !IsFull && (_takes?.Invoke(c) ?? true));
 
     private void MoveCaret(TextWithCaret text)
     {

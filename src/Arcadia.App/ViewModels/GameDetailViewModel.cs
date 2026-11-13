@@ -23,7 +23,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private readonly IPageHost _host;
     private readonly LauncherTabsViewModel _tabs;
     private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
-    private readonly Func<string, MergedMetadata> _metadataOf;
+    private readonly Func<string, DetailMetadata> _metadataOf;
 
     // A held LT/RT turns only the covers; the page follows on release (#499).
     private bool _pageBehind;
@@ -31,7 +31,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// <param name="tabName">Null when the page was opened from the search; then it has no sort order either.</param>
     /// <param name="createViewOptions">The library's "Ansicht" dialog for L3; null from the search, whose hits keep their order.</param>
     /// <param name="focus">The focus of the page this one replaces (another tab, #499); null starts on "Spielen".</param>
-    /// <param name="metadataOf">The metadata of a game by its key (#493); none without it.</param>
+    /// <param name="metadataOf">What the page shows of a game's metadata and own tags by its key (#493, #495); none without it.</param>
     public GameDetailViewModel(
         string? tabName,
         IReadOnlyList<Game> games,
@@ -44,9 +44,9 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         Func<ViewOptionsViewModel?>? createViewOptions,
         TimeProvider time,
         DetailFocus? focus = null,
-        Func<string, MergedMetadata>? metadataOf = null)
+        Func<string, DetailMetadata>? metadataOf = null)
     {
-        _metadataOf = metadataOf ?? (_ => MergedMetadata.None);
+        _metadataOf = metadataOf ?? (_ => DetailMetadata.None);
         TabName = tabName;
         _jump = new TurnJump(time, JumpTime);
         _createTile = createTile;
@@ -280,7 +280,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         var key = Current.Tile.Game.Key;
         if (keys.Contains(key))
         {
-            Current.ShowMetadata(new DetailMetadata(_metadataOf(key)));
+            Current.ShowMetadata(_metadataOf(key));
         }
     }
 
@@ -329,7 +329,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
             shown.ReadScrollRequested -= OnReadScrollRequested;
         }
 
-        var page = new GameDetailPageViewModel(front, _actions, focus, new DetailMetadata(_metadataOf(front.Game.Key)));
+        var page = new GameDetailPageViewModel(front, _actions, focus, _metadataOf(front.Game.Key));
         page.ReadScrollRequested += OnReadScrollRequested;
         Current = page;
     }

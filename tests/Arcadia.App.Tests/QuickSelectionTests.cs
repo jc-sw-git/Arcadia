@@ -22,7 +22,7 @@ public sealed class QuickSelectionTests
 
     private static readonly LauncherSpec[] SteamAndGog = [new(KnownLaunchers.Steam, 3), new(KnownLaunchers.Gog, 3)];
 
-    private static readonly GameActionKind[] Defaults = [GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Artwork, GameActionKind.Uninstall];
+    private static readonly GameActionKind[] Defaults = [GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Artwork, GameActionKind.Tags, GameActionKind.Uninstall];
 
     [AvaloniaFact]
     [Trait("TestCase", "T500-1")]
@@ -35,7 +35,7 @@ public sealed class QuickSelectionTests
         Assert.True(page.OpenArea.IsOverview);
         Assert.Equal(Defaults, page.QuickKinds());
         Assert.Equal(page.Row(GameActionKind.ControllerMode).ValueText, page.Overview.Rows[0].ValueText);
-        Assert.Equal([true, true, false, false], page.Overview.Rows.Select(entry => entry.IsChoice));
+        Assert.Equal([true, true, false, false, false], page.Overview.Rows.Select(entry => entry.IsChoice));
         Assert.False(page.Overview.HasInfoBox);
         Assert.Null(page.InfoRow);
     }
@@ -51,8 +51,8 @@ public sealed class QuickSelectionTests
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         Assert.Equal(DetailZone.Rows, page.Zone);
         Assert.Same(page.Overview.Rows[0], page.FocusedRow);
-        arcadia.Press(UiAction.Down, times: 3);
-        Assert.Same(page.Overview.Rows[3], page.FocusedRow);
+        arcadia.Press(UiAction.Down, times: 4);
+        Assert.Same(page.Overview.Rows[4], page.FocusedRow);
         arcadia.Press(UiAction.Down);
         Assert.True(page.IsCustomizeFocused);
         Assert.Null(page.FocusedRow);
@@ -130,7 +130,7 @@ public sealed class QuickSelectionTests
         Assert.Null(arcadia.Main.ChangeArtwork);
         Assert.Equal((true, GameActionKind.Artwork), (page.OpenArea.IsOverview, page.FocusedRow?.Kind));
 
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Accept);
         Assert.Equal(AppTexts.GameAskUninstall(page.Tile.Title), arcadia.Main.Confirmation?.Title);
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.Confirmation);
@@ -147,12 +147,13 @@ public sealed class QuickSelectionTests
         var page = arcadia.Detail!.Current;
 
         Assert.Equal(Defaults, page.QuickKinds());
-        Assert.All(page.Overview.Rows, entry => Assert.True(entry.IsGreyed, $"{entry.Title} nicht ausgegraut"));
+        // Tags apply to a game not installed too (#495).
+        Assert.All(page.Overview.Rows, entry => Assert.Equal(entry.Kind != GameActionKind.Tags, entry.IsGreyed));
         var uninstall = FocusEntry(arcadia, GameActionKind.Uninstall);
         Assert.Equal(page.Row(GameActionKind.Uninstall).Note, uninstall.Note);
         Assert.Equal(AppTexts.NotInstalled, page.QuickNote);
 
-        arcadia.Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Right);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Up, times: 2).Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Right);
         Assert.Null(arcadia.Main.Confirmation);
         Assert.Null(arcadia.Main.ChangeArtwork);
         Assert.Empty(arcadia.Settings.Current.MouseMode.GameChoices);
@@ -225,7 +226,7 @@ public sealed class QuickSelectionTests
 
         OpenCustomize(arcadia);
         arcadia.Press(UiAction.Back);
-        arcadia.Press(UiAction.Up, times: 2);
+        arcadia.Press(UiAction.Up, times: 3);
         Assert.Equal(GameActionKind.Artwork, arcadia.Detail!.Current.FocusedRow?.Kind);
         arcadia.Press(UiAction.Accept);
         Assert.NotNull(arcadia.Main.ChangeArtwork);
@@ -248,7 +249,7 @@ public sealed class QuickSelectionTests
         Assert.Equal((null, true, AppTexts.DetailAreas), (page.AcceptHint, page.ShowsChangeHint, page.BackHint));
         arcadia.Press(UiAction.Down, times: 2);
         Assert.Equal((AppTexts.ActionChangeArtwork, false), (page.AcceptHint, page.ShowsChangeHint));
-        arcadia.Press(UiAction.Down, times: 2);
+        arcadia.Press(UiAction.Down, times: 3);
         Assert.Equal((AppTexts.DetailCustomizeOverview, false, AppTexts.DetailAreas), (page.AcceptHint, page.ShowsChangeHint, page.BackHint));
 
         // A greyed entry names neither A nor ◀ ▶.
@@ -329,15 +330,16 @@ public sealed class QuickSelectionTests
         Assert.Equal(AppTexts.QuickSelectionDialogSubtitle(page.Tile.Title), dialog.Subtitle);
         Assert.Equal([AppTexts.DetailAreaController.ToUpperInvariant(), AppTexts.DetailAreaManage.ToUpperInvariant()], dialog.Groups.Select(group => group.Caption));
         Assert.Equal(
-            [AppTexts.DetailControllerModeTitle, AppTexts.DetailMouseModeTitle, AppTexts.ActionChangeArtwork, AppTexts.ActionChangeTitle, AppTexts.ActionResetTitle, AppTexts.ActionUninstallMore],
+            [AppTexts.DetailControllerModeTitle, AppTexts.DetailMouseModeTitle, AppTexts.ActionChangeArtwork, AppTexts.ActionTags, AppTexts.ActionChangeTitle, AppTexts.ActionResetTitle, AppTexts.ActionUninstallMore],
             dialog.Entries.Select(entry => entry.Title));
-        // The title entries (#496) came after the defaults were set, so they aren't ticked.
-        Assert.Equal([true, true, true, false, false, true], dialog.Entries.Select(entry => entry.IsTicked));
-        Assert.Equal("4 von 5", dialog.CountText);
+        // The title entries (#496) came after the defaults were set, so they aren't ticked; "Tags" (#495) is a default.
+        Assert.Equal([true, true, true, true, false, false, true], dialog.Entries.Select(entry => entry.IsTicked));
+        Assert.Equal("5 von 5", dialog.CountText);
         Assert.True(dialog.IsOffered);
         Assert.True(dialog.Entries[0].IsFocused);
 
-        arcadia.Press(UiAction.Down, times: dialog.Entries.Count);
+        // Full: the two unticked entries are passed over.
+        arcadia.Press(UiAction.Down, times: dialog.Entries.Count(entry => entry.IsTicked));
         Assert.True(dialog.IsApplyFocused);
         Assert.Equal(AppTexts.QuickSelectionApplyToAll, dialog.AcceptText);
         arcadia.Press(UiAction.Down);
@@ -366,14 +368,14 @@ public sealed class QuickSelectionTests
         var dialog = OpenCustomize(arcadia);
 
         arcadia.Press(UiAction.Accept);
-        Assert.Equal("3 von 5", dialog.CountText);
+        Assert.Equal("4 von 5", dialog.CountText);
         Assert.Equal(Defaults[1..], arcadia.Detail!.Current.QuickKinds());
         arcadia.Press(UiAction.Down, times: 2).Press(UiAction.Accept);
-        Assert.Equal([GameActionKind.MouseMode, GameActionKind.Uninstall], arcadia.Detail.Current.QuickKinds());
+        Assert.Equal([GameActionKind.MouseMode, GameActionKind.Tags, GameActionKind.Uninstall], arcadia.Detail.Current.QuickKinds());
 
         // Ticked again last, it still stands first: the order of the areas.
         arcadia.Press(UiAction.Up, times: 2).Press(UiAction.Accept);
-        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Uninstall], arcadia.Detail.Current.QuickKinds());
+        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Tags, GameActionKind.Uninstall], arcadia.Detail.Current.QuickKinds());
         Assert.True(arcadia.Detail.Current.IsCustomizeFocused);
 
         arcadia.Press(UiAction.Back).Press(UiAction.NextPage);
@@ -382,7 +384,7 @@ public sealed class QuickSelectionTests
         using var restarted = await arcadia.RestartAsync();
         restarted.Hold(UiAction.Accept, PastHoldTime);
         Assert.Equal(game.Key, restarted.Detail!.Current.Tile.Game.Key);
-        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Uninstall], restarted.Detail.Current.QuickKinds());
+        Assert.Equal([GameActionKind.ControllerMode, GameActionKind.MouseMode, GameActionKind.Tags, GameActionKind.Uninstall], restarted.Detail.Current.QuickKinds());
     }
 
     [AvaloniaFact]
@@ -481,7 +483,13 @@ public sealed class QuickSelectionTests
         Assert.Same(dialog, arcadia.Main.CustomizeOverview);
 
         // Also while it asks.
-        arcadia.Press(UiAction.Down, times: dialog.Entries.Count - 1).Press(UiAction.Accept);
+        // Five are ticked: the others are passed over on the way to "Für alle Spiele übernehmen".
+        while (!dialog.IsApplyFocused)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        arcadia.Press(UiAction.Accept);
         Assert.True(dialog.IsAsking);
         arcadia.Press(UiAction.NextPage).Press(UiAction.NextTab);
         Assert.Equal(game, arcadia.Detail!.Current.Tile.Game.Key);
@@ -532,8 +540,9 @@ public sealed class QuickSelectionTests
         var dialog = OpenCustomize(arcadia);
 
         // Only "Artwork ändern" stays ticked, then for all games.
-        // Past the title entries (#496), which aren't ticked.
-        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Down, times: 4).Press(UiAction.Accept);
+        // "Tags" (#495) unticked too, past the title entries (#496), which aren't ticked.
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Down, times: 2).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Down, times: 3).Press(UiAction.Accept);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
         Assert.True(dialog.IsApplied);
         Assert.True(dialog.IsApplyFocused);

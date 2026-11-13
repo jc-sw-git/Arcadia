@@ -4,6 +4,9 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.App.ViewModels;
 
+/// <summary>A tag as the detail page shows it: the player's own (#495) drawn apart from a provider's.</summary>
+public sealed record DetailTag(string Name, bool IsOwn);
+
 /// <summary>One line of "Infos" (#493): its caption, the value or an age rating badge, and the provider it came from.</summary>
 public sealed record DetailFact(string Caption, string Value, string Source, bool IsBadge = false);
 
@@ -11,30 +14,35 @@ public sealed record DetailFact(string Caption, string Value, string Source, boo
 /// What the detail page shows of a game's metadata (#493): the info line under the title, the short description and the
 /// tags in "Übersicht", and in "Infos" the full description and every field with its source. A field nobody delivered is
 /// left out; without any, the info line, the description and the tags are missing and "Infos" says there is nothing yet.
+/// The player's own tags (#495) come before the providers'; a provider's tag of the same name shows once, as the own one.
 /// </summary>
 public sealed class DetailMetadata
 {
     /// <summary>How many tags "Übersicht" names before "+n"; one line of the artboard holds about three.</summary>
     public const int OverviewTagCount = 3;
 
-    public DetailMetadata(MergedMetadata data)
+    /// <param name="ownTags">The game's own tags, alphabetically (#495).</param>
+    public DetailMetadata(MergedMetadata data, IReadOnlyList<string>? ownTags = null)
     {
-        IsEmpty = data.IsEmpty;
+        OwnTags = ownTags ?? [];
+        IsEmpty = data.IsEmpty && OwnTags.Count == 0;
         var genres = data.Genres?.Value.Select(GenreNames.Of).ToList();
         var year = data.ReleaseDate?.Value.Year.ToString(Formatting.Culture);
         Badge = data.AgeRatings.Count > 0 ? BadgeOf(data.AgeRatings[0].Value) : null;
         InfoLine = Joined(AppTexts.DetailInfoSeparator, genres is null ? null : List(genres), data.Developers is { } developers ? List(developers.Value) : null, year);
-        RailLine = IsEmpty ? AppTexts.DetailInfosNone : Joined(AppTexts.DetailInfoSeparator, genres?[0], year, Badge) ?? Joined(AppTexts.DetailInfoSeparator, data.Developers?.Value[0]) ?? string.Empty;
+        RailLine = data.IsEmpty ? AppTexts.DetailInfosNone : Joined(AppTexts.DetailInfoSeparator, genres?[0], year, Badge) ?? Joined(AppTexts.DetailInfoSeparator, data.Developers?.Value[0]) ?? string.Empty;
 
         // Without a short description "Übersicht" shows the start of the full one, cut after its lines.
         ShortDescription = data.ShortDescription?.Value ?? data.Description?.Value;
         Description = data.Description?.Value ?? data.ShortDescription?.Value;
         DescriptionSource = (data.Description ?? data.ShortDescription)?.Source;
 
-        Tags = data.Tags?.Value ?? [];
+        var own = OwnTags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Tags = [.. (data.Tags?.Value ?? []).Where(tag => !own.Contains(tag))];
         TagsSource = data.Tags?.Source;
-        OverviewTags = [.. Tags.Take(OverviewTagCount)];
-        MoreTags = Tags.Count > OverviewTagCount ? AppTexts.DetailMoreTags(count: Formatting.Count(Tags.Count - OverviewTagCount)) : null;
+        var all = OwnTags.Select(tag => new DetailTag(tag, IsOwn: true)).Concat(Tags.Select(tag => new DetailTag(tag, IsOwn: false))).ToList();
+        OverviewTags = [.. all.Take(OverviewTagCount)];
+        MoreTags = all.Count > OverviewTagCount ? AppTexts.DetailMoreTags(count: Formatting.Count(all.Count - OverviewTagCount)) : null;
 
         var facts = new List<DetailFact>();
         if (data.Title is { } title)
@@ -93,15 +101,23 @@ public sealed class DetailMetadata
     /// <summary>The provider of the description, e.g. "Steam"; shown only in "Infos".</summary>
     public string? DescriptionSource { get; }
 
-    /// <summary>Every tag in the provider's order.</summary>
+    /// <summary>The player's own tags (#495), alphabetically; in "Infos" under their own caption.</summary>
+    public IReadOnlyList<string> OwnTags { get; }
+
+    public bool HasOwnTags => OwnTags.Count > 0;
+
+    /// <summary>Every provider's tag in the provider's order, without those the player has as own tags.</summary>
     public IReadOnlyList<string> Tags { get; }
 
     public bool HasTags => Tags.Count > 0;
 
+    /// <summary>"Übersicht" shows tags: own or a provider's.</summary>
+    public bool HasOverviewTags => OverviewTags.Count > 0;
+
     public string? TagsSource { get; }
 
-    /// <summary>The first tags, shown in "Übersicht"; <see cref="MoreTags"/> counts the rest.</summary>
-    public IReadOnlyList<string> OverviewTags { get; }
+    /// <summary>The first tags, own ones first, shown in "Übersicht"; <see cref="MoreTags"/> counts the rest.</summary>
+    public IReadOnlyList<DetailTag> OverviewTags { get; }
 
     /// <summary>"+6"; null when all tags show.</summary>
     public string? MoreTags { get; }

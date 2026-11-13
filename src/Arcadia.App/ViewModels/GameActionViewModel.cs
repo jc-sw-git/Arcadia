@@ -16,6 +16,7 @@ public enum GameActionKind
     OpenInLauncher,
     ControllerMode,
     MouseMode,
+    Tags,
     ChangeTitle,
     ResetTitle,
     Uninstall,
@@ -71,6 +72,12 @@ public interface IGameActionHost
     /// <summary>"Artwork ändern" (#490): the modal for the game's cover and background.</summary>
     void ChangeArtwork(GameTileViewModel tile);
 
+    /// <summary>"Tags" (#495): the window with the own tags, ticked where the game has them.</summary>
+    void EditTags(GameTileViewModel tile);
+
+    /// <summary>The names of the game's own tags, alphabetically (#495).</summary>
+    IReadOnlyList<string> OwnTagsOf(Game game);
+
     /// <summary>"Titel ändern" (#496): the on-screen keyboard over the page, prefilled with the shown title.</summary>
     void ChangeTitle(GameTileViewModel tile);
 
@@ -80,7 +87,7 @@ public interface IGameActionHost
     /// <summary>The title the game would show without its own (#496); null while it has none.</summary>
     string? OriginalTitleOf(Game game);
 
-    /// <summary>Why own titles can't be changed now (their file is unreadable, #496); null while they can.</summary>
+    /// <summary>Why own titles and tags can't be changed now (their file is unreadable, #496, #495); null while they can.</summary>
     string? TitleBlockedReason { get; }
 
     /// <summary>The ids of the game's quick selection in "Übersicht" (#500): its own, else the one for all games, else the defaults.</summary>
@@ -179,6 +186,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
         GameActionKind.OpenInLauncher => "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
         GameActionKind.ControllerMode => "M4 8h12M13 5l3 3-3 3M20 16H8M11 13l-3 3 3 3",
         GameActionKind.MouseMode => "M12 3.5a5.5 5.5 0 0 0-5.5 5.5v6a5.5 5.5 0 0 0 11 0V9A5.5 5.5 0 0 0 12 3.5M6.5 10h11M12 3.5V10",
+        GameActionKind.Tags => DetailAreas.TagsIcon,
         GameActionKind.ChangeTitle => DetailAreas.ChangeTitleIcon,
         GameActionKind.ResetTitle => DetailAreas.ResetTitleIcon,
         _ => "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
@@ -235,6 +243,9 @@ public sealed partial class GameActionViewModel : ViewModelBase
             actions.Add(new(GameActionKind.Artwork, AppTexts.ActionChangeArtworkMore, null, true, () => host.ChangeArtwork(tile), AppTexts.ActionChangeArtwork));
         }
 
+        // Own tags (#495) and titles (#496) belong to every game, installed or not.
+        var ownDataBlocked = host.TitleBlockedReason;
+        actions.Add(new(GameActionKind.Tags, AppTexts.ActionTagsMore, ownDataBlocked, ownDataBlocked is null, () => host.EditTags(tile), AppTexts.ActionTags));
         actions.AddRange(TitleActions(tile, host));
 
         actions.Add(game.OpenInLauncher is null

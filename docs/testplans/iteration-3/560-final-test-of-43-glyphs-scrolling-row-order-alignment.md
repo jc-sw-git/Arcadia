@@ -35,3 +35,5 @@ History:
 | T560-4 | 2026-11-13 | Claude | branch, Linux/Xvfb, `--demo` | ✅ screenshot: the switch indented under "Neu laden" | – |
 | T560-5, -6 | 2026-11-13 | Claude | branch, Linux/Xvfb, `--demo`, keys | ✅ note icon on its line, arrows in columns; "Spielen" with play icon while the focus is in the quick selection | – |
 | T560-1 | 2026-11-13 | Claude | branch, code only | cause found: the focused pill's style painted every path inside it, also ≡'s icon, in the glyph's own dark colour; now only the pill's own spinner | owner checks with the controller |
+| T560-2, -4, -5, -6 | 2026-11-13 | QE (Claude) | `01c420c`, Linux/Xvfb, `--demo`, keys | ✅ A only on the focused "Spielen" (download arrow on "Installieren"); note icon on its line, about a third of the way down; ◀ ▶ in columns; switch indented under "Neu laden" | – |
+| all | 2026-11-13 | QE (Claude) | `01c420c`, Linux, `tools/ci/run-tests.sh 4` | ✅ 777 App test methods, Core and Pan green | – |

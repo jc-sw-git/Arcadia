@@ -233,7 +233,7 @@ public sealed partial class MetadataService : IDisposable
     }
 
     /// <summary>
-    /// "Suche abbrechen" or "Neu laden abbrechen" (#43): the run going on stops after the request in flight and nothing
+    /// "Suche abbrechen" or "Neu laden abbrechen" (#547): the run going on stops at once, its request in flight too, and nothing
     /// queued follows. What was fetched stays; the rest waits for the next scan or "Jetzt suchen", and the games a
     /// cancelled reload didn't reach keep their data.
     /// </summary>
@@ -291,9 +291,8 @@ public sealed partial class MetadataService : IDisposable
                 _indexed = true;
             }
 
-            while (TakePending() is { } pending)
+            while (TakePending() is ({ } pending, var cancel))
             {
-                var cancel = NewRunCancel();
                 try
                 {
                     await RunOnceAsync(pending, cancel);
@@ -319,16 +318,6 @@ public sealed partial class MetadataService : IDisposable
         finally
         {
             EndRunner();
-        }
-    }
-
-    private CancellationToken NewRunCancel()
-    {
-        lock (_gate)
-        {
-            _runCancel.Dispose();
-            _runCancel = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
-            return _runCancel.Token;
         }
     }
 
@@ -379,13 +368,16 @@ public sealed partial class MetadataService : IDisposable
         ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private Pending? TakePending()
+    /// <summary>The queued run with a token of its own; taken in one lock with it, so "Suche abbrechen" can't fall between.</summary>
+    private (Pending? Run, CancellationToken Cancel) TakePending()
     {
         lock (_gate)
         {
             var pending = _pending;
             _pending = null;
-            return pending;
+            _runCancel.Dispose();
+            _runCancel = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
+            return (pending, _runCancel.Token);
         }
     }
 

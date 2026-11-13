@@ -143,13 +143,17 @@ public sealed class MetadataSettingsTests
         Assert.Empty(toasts);
     }
 
-    [AvaloniaFact]
+    [AvaloniaTheory]
     [Trait("TestCase", "T547-1")]
-    public async Task While_a_run_goes_the_focused_rows_info_stays_where_it_was_scrolled()
+    [InlineData("metadata-source-launcher")]
+    [InlineData(IgdbAccessRows.ClientIdRowKey)]
+    [InlineData(IgdbAccessRows.SecretRowKey)]
+    [InlineData(SteamGridDbKeyRows.KeyRowKey)]
+    public async Task While_a_run_goes_the_focused_rows_info_stays_where_it_was_scrolled(string rowKey)
     {
         using var arcadia = await StartAsync(["4000001", "4000002", "4000003"], "4000001", "4000003");
         OpenDataSources(arcadia);
-        var row = arcadia.FocusRow(MetadataSourceRows.SourceKey(MetadataSourceKind.Launcher));
+        var row = arcadia.FocusRow(rowKey);
         var resets = new List<string>();
         arcadia.Main.Settings!.FocusMoved += (_, _) => resets.Add("FocusMoved");
         row.PropertyChanged += (_, e) =>

@@ -36,11 +36,12 @@ Index and the category's frame: [README.md](README.md). The specification is #43
   what the store learns (Steam: only the AppID).
 - "Fehlende Metadaten" with "Jetzt suchen" (A): asks the stores and IGDB at once for every game still missing their
   answer, as after a scan, also one skipped for want of a network; greyed out before the first scan and while a reload
-  goes. While a search goes (after a scan or "Jetzt suchen") it reads "Suche abbrechen" (#547): A stops the run after
-  the request in flight; what was loaded stays, the rest waits for the next scan or "Jetzt suchen". While a run goes "412 von 1.000, noch etwa 20 Minuten" ("noch etwa 1 Minute", "weniger als
-  eine Minute") with a bar; else the counts; none missing "Alle Metadaten geladen", greyed; before the first scan
-  "Arcadia lädt nach dem Einlesen von selbst". The estimate is the longer of the store's gap and the rate seen.
+  goes. While a search goes (after a scan or "Jetzt suchen") it reads "Suche abbrechen" (#547): A stops it at once;
+  what was loaded stays, the rest waits for the next scan or "Jetzt suchen". While a run goes "412 von 1.000, noch
+  etwa 20 Minuten" ("noch etwa 1 Minute", "weniger als eine Minute") with a bar; else the counts; none missing "Alle
+  Metadaten geladen", greyed; before the first scan "Arcadia lädt nach dem Einlesen von selbst". The estimate is the
+  longer of the store's gap and the rate seen.
 - "Alle Metadaten neu laden" asks first ([B] or "Abbrechen" sends nothing); the old data stays until replaced; own
-  titles and tags stay. While it runs ("Neu laden läuft") it reads "Neu laden abbrechen": A stops it, the games it
-  didn't reach keep their data and count as loaded. Reaching no
-  store at all: one warning; a background run says nothing.
+  titles and tags stay. While it runs ("Neu laden läuft") it reads "Neu laden abbrechen": A stops it at once, the
+  games it didn't reach keep their data and count as loaded. Reaching no store at all: one warning; a background run
+  says nothing.

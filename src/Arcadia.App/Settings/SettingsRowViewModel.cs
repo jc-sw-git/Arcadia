@@ -160,9 +160,22 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool IsError => Severity == HealthSeverity.Error;
 
-    /// <summary>What the info panel shows while the row has the focus, below <see cref="ValueBoxes"/>.</summary>
-    [ObservableProperty]
-    public partial IReadOnlyList<InfoBlock> Info { get; set; } = [];
+    /// <summary>
+    /// What the info panel shows while the row has the focus, below <see cref="ValueBoxes"/>. The same blocks again announce
+    /// nothing: a run refreshes the rows every few seconds and the panel must keep where it was scrolled (#547).
+    /// </summary>
+    public IReadOnlyList<InfoBlock> Info
+    {
+        get;
+        set
+        {
+            if (!field.SequenceEqual(value))
+            {
+                field = value;
+                OnPropertyChanged();
+            }
+        }
+    } = [];
 
     /// <summary>One box per value below the row's name in the info panel (#506), the current one highlighted; empty: none.</summary>
     public virtual IReadOnlyList<ValueBox> ValueBoxes => [];

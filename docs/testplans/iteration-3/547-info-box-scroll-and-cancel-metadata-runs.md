@@ -7,9 +7,10 @@ Derived from the owner's findings in the hand test of #43 after #538, as written
 
 - [x] **T547-1** ≡ → "Datenquellen" → "Metadaten", focus "Launcher-Daten" while "Fehlende Metadaten" loads and scroll its
       info box down with RS: it stays where it was scrolled while the run refreshes the rows (no jump to the top). The
-      same holds for every choice row (artwork order, switches) during an artwork search or a scan. · E2E: yes
+      same for "Client-ID", "Client-Secret" and the SteamGridDB key, and every choice or text row during an artwork
+      search or a scan. · E2E: yes
 - [x] **T547-2** While a search goes (after a scan or "Jetzt suchen"), "Fehlende Metadaten" reads "Suche abbrechen"; A
-      stops the run after the request in flight, what was loaded stays, the next "Jetzt suchen" asks for the rest. · E2E: yes
+      stops the run at once, what was loaded stays, the next "Jetzt suchen" asks for the rest. · E2E: yes
 - [x] **T547-3** While "Alle Metadaten neu laden" runs, it reads "Neu laden abbrechen" and "Fehlende Metadaten" is
       greyed; A stops it, the games it didn't reach keep their data and nothing counts as missing. · E2E: yes
 - [x] **T547-4** Both with the controller alone: after stopping, each row offers its action again ("Jetzt suchen",
@@ -35,3 +36,5 @@ History:
 | T547-1 | 2026-11-13 | implementer | Linux cloud container, Debug, `dotnet test` | fail, then pass | Red first: "Launcher-Daten" announced its value 3 times during one run, each sending the info box to its top; `ChoiceRowViewModel.Refresh` now announces only a changed value |
 | T547-1 to -4 | 2026-11-13 | implementer | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (761 of 761 App methods, Core, Pan) | — |
 | T547-5 | 2026-11-13 | implementer | Linux/Xvfb `--demo` | not run | Demo games ask no store since #538, so no run goes there; left to QE with a made-up library or the owner |
+| T547-1 | 2026-11-13 | implementer | Linux cloud container, Debug, `dotnet test` | fail, then pass | QE finding: "Client-ID", "Client-Secret" and the SteamGridDB key still went to the top (red for 3 of 4 rows); text rows now announce only a changed value and a row given the same info blocks announces nothing |
+| T547-1 to -4 | 2026-11-13 | implementer | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (761 of 761 App methods, Core, Pan) | after the QE fixes |

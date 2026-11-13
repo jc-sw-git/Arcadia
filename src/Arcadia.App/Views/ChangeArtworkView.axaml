@@ -178,6 +178,8 @@
                   </ItemsControl.DataTemplates>
                 </ItemsControl>
               </ScrollViewer>
+              <!-- Where more tiles follow, the grid fades into the modal (docs/product/design.md → Scrolling). -->
+              <ctl:EdgeFade Name="TileFade" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #TileScroller}" />
             </Panel>
           </DockPanel>
         </Grid>

@@ -327,6 +327,17 @@ public sealed class OwnTagsTests
         arcadia.Press(UiAction.NextPage);
         Assert.Equal("Eisenflut", arcadia.Detail.Current.Tile.Title);
 
+        // The search from here and back: the same page over the tag's games, B still leads to the tag list.
+        arcadia.Press(UiAction.Search);
+        Assert.NotNull(arcadia.Search);
+        for (var presses = 0; arcadia.Search is not null && presses < 3; presses++)
+        {
+            arcadia.Press(UiAction.Back);
+        }
+
+        Assert.Null(arcadia.Search);
+        Assert.Equal(("Eisenflut", 2), (arcadia.Detail!.Current.Tile.Title, arcadia.Detail.Games.Count));
+
         // B: the tag's games with the focus on the game shown last; B, B: the tags, then "Datenquellen" on the row.
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Detail);
@@ -456,7 +467,7 @@ public sealed class OwnTagsTests
 
         OpenDataSources(restarted);
         var tagsRow = restarted.FocusRow(DataSourcesSettingsViewModel.OwnTagsRowKey);
-        Assert.True(tagsRow.IsDimmed);
+        Assert.Equal(("Eigene Tags", true), (tagsRow.Title, tagsRow.IsDimmed));
         Assert.Equal(AppTexts.UserDataUnreadable, tagsRow.DimmedNote);
         restarted.Press(UiAction.Accept);
         Assert.Null(restarted.Main.TagList);

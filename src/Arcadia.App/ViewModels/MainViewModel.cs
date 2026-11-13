@@ -828,9 +828,6 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
         if (Detail is { } detail)
         {
-            // The search's way back leads to the library; a tag list behind the page isn't brought back from there.
-            _tagListBehindDetail?.Dispose();
-            _tagListBehindDetail = null;
             DetailBehindSearch = detail;
             Detail = null;
         }
@@ -861,6 +858,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (DetailBehindSearch is { } detail)
         {
             DetailBehindSearch = null;
+            if (ReturnFromSearchToTagGame(detail))
+            {
+                return;
+            }
+
             if (LauncherTabs.SelectedTab is { } tab && detail.Update(Library.ShownGames(tab), Library.SortLabel))
             {
                 Detail = detail;

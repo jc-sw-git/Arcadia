@@ -209,7 +209,8 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         if (_ownTags is not null && _ownTagsRow is not null)
         {
             // While user-data.json is unreadable the row is greyed with the reason, so nothing typed is lost (D9).
-            _ownTagsRow.Title = AppTexts.DataSourcesOwnTags(Formatting.Count(_ownTags.All.Count));
+            // Unreadable, the number would claim there are none: the row shows none.
+            _ownTagsRow.Title = _ownTags.CanChange ? AppTexts.DataSourcesOwnTags(Formatting.Count(_ownTags.All.Count)) : AppTexts.OwnTagsTitle;
             _ownTagsRow.IsEnabled = _ownTags.CanChange;
             _ownTagsRow.IsDimmed = !_ownTags.CanChange;
         }

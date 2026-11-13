@@ -133,6 +133,28 @@ public partial class MainViewModel : IOwnTagsHost
     }
 
     /// <summary>
+    /// The search closed over a detail page opened from the tag list: the page again, still turning through the tag's
+    /// games, with B back to the list; the list itself if the game left the library meanwhile.
+    /// </summary>
+    private bool ReturnFromSearchToTagGame(GameDetailViewModel detail)
+    {
+        if (_tagListBehindDetail is null)
+        {
+            return false;
+        }
+
+        Detail = detail;
+        if (!((IOwnTagsHost)this).GamesInLibrary().ContainsKey(detail.Current.Tile.Game.Key))
+        {
+            ReturnToTagList();
+            return true;
+        }
+
+        ShowOwnTags();
+        return true;
+    }
+
+    /// <summary>
     /// A tag was made, ticked, renamed, merged, deleted or put back after a failed write: the dialogs, the detail page's
     /// tags and its row "Tags" follow at once, without a scan.
     /// </summary>

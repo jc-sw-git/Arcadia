@@ -1377,7 +1377,7 @@
   <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>BILDSCHIRMTASTATUR</value></data>
   <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Standard-Layout</value></data>
   <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>Mit diesem Layout öffnet sich die Bildschirmtastatur</value></data>
-  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Die Bildschirmtastatur öffnet sich mit dem Layout {layout}, in der Suche, in jedem Textfeld und im Mausmodus.</value></data>
+  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Jede Bildschirmtastatur öffnet sich mit diesem Layout: in der Suche, in Textfeldern und im Mausmodus.</value></data>
   <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>Mit R3 wechselst du auf der offenen Tastatur zu einem anderen Layout der Schnellauswahl. Der Wechsel gilt, bis sich die Tastatur schließt; beim nächsten Öffnen ist wieder das Standard-Layout da.</value></data>
   <data name="LocalizationLayoutName" xml:space="preserve"><value>{name} · {kind}</value></data>
   <data name="LocalizationQuickLayout" xml:space="preserve"><value>Schnellauswahl</value></data>
@@ -1393,7 +1393,7 @@
   <data name="LocalizationClock24" xml:space="preserve"><value>24 Stunden (21:58)</value></data>
   <data name="LocalizationClock12" xml:space="preserve"><value>12 Stunden (9:58 PM)</value></data>
   <data name="LocalizationClockSystemInfo" xml:space="preserve"><value>Arcadia zeigt die Uhrzeit so, wie das System sie zeigt.</value></data>
-  <data name="LocalizationClock24Info" xml:space="preserve"><value>Von 0:00 bis 23:59, zum Beispiel 21:58 Uhr.</value></data>
+  <data name="LocalizationClock24Info" xml:space="preserve"><value>Von 00:00 bis 23:59, zum Beispiel 21:58 Uhr.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Mit AM und PM, zum Beispiel 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Gilt sofort für die Uhr oben, „seit“ im Status, die letzten Meldungen, „Zuletzt gespielt“ und jede andere Uhrzeit. Datum und Zahlen folgen dem Regionsformat des Systems.</value></data>
 </root>

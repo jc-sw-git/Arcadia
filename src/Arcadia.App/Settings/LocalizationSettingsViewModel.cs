@@ -41,7 +41,7 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
         {
             Group = keyboard,
             Subtitle = AppTexts.LocalizationDefaultLayoutSubtitle,
-            ValueInfos = [.. KeyboardLayout.All.Select(layout => AppTexts.LocalizationDefaultLayoutValue(NameOf(layout)))],
+            ValueInfos = [.. KeyboardLayout.All.Select(_ => AppTexts.LocalizationDefaultLayoutValue)],
             Info = [new InfoText(AppTexts.LocalizationDefaultLayoutInfo)],
         };
         _quick = [.. KeyboardLayout.All.Select(layout => new QuickLayoutRowViewModel(this, layout) { Group = keyboard, Indent = 1 })];
@@ -126,11 +126,19 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
             DimmedNote = AppTexts.LocalizationDefaultAlwaysIn;
         }
 
+        // The default's switch can't change: the footer offers neither ◀ ▶ nor A on it.
+        public override bool CanChange => !_category.IsDefault(_layout);
+
+        public override bool CanActivate => CanChange;
+
+        public override bool ShowsActivateHint => CanChange;
+
         /// <summary>The default may have moved to or from this layout.</summary>
         public void ShowDefault()
         {
             IsDimmed = _category.IsDefault(_layout);
             Refresh();
+            NotifyActionsChanged();
         }
 
         protected override bool Allows(int value) => !_category.IsDefault(_layout);

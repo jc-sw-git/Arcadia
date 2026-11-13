@@ -62,7 +62,7 @@ step does what the settings' "Datenquellen" do (greyed rows keep the focus, T494
   without a key) are passed over, A opens the on-screen keyboard with an empty field, B in the keyboard keeps the previous
   value without a request; WASD and arrow keys do the same. · E2E: yes (greyed rows keep the focus as in the settings,
   see above)
-- [ ] **T497-13** Window, QE's run: the step at 1920×1080 in Big Picture and in a small desktop window: rows, info panel
+- [x] **T497-13** Window, QE's run: the step at 1920×1080 in Big Picture and in a small desktop window: rows, info panel
   and the skip button unclipped, focus ring whole, button hints match the step; a mouse click on a row, on "Einfügen" and
   on the skip button does what A does; every text German and per `docs/product/ui-texts.md`. · E2E: no (window)
 - [ ] **T497-14** **Owner:** start the own Arcadia with `--first-run` and only the Steam Controller: walk the launcher
@@ -88,3 +88,4 @@ History:
 | T497-1 to T497-12 | 2026-11-13 | Claude (QE) | PR branch 93ea8eb, Linux container, `tools/ci/run-tests.sh 4` (Release), 710 App tests; two mutations (no launcher limit on the step, no switch record) turn 3 tests red | ✅ | – |
 | T497-13 | 2026-11-13 | Claude (QE) | PR branch 93ea8eb, Release, Xvfb 1920×1080 and window 1280×720, `--demo --first-run` and a fresh first start without `--demo`, keys and mouse | ❌ | Fresh step fine (rows, info panel, hints, texts, clicks on a row, "Einfügen", wrap to "Überspringen"). After a restart on the step the list doesn't follow the focus: "Überspringen" focused but out of sight (the window never follows a settings page set before it binds); back to the architect |
 | T497-9, T497-13 (resumed step scrolls with the focus) | 2026-11-13 | Claude | PR #527 after the QE finding, Linux Xvfb 1920 × 1080, real app resumed on "Datenquellen", ▲ from the first row | ✅ "Überspringen" scrolled into view | – |
+| T497-13 | 2026-11-13 | Claude (QE) | PR branch f8899ee, Release, Xvfb 1920×1080, fresh first start without `--demo`, killed on the step and restarted | ✅ | Resumed step scrolls with the focus to "Überspringen"; with a pasted key the last row is "Fertig" with its own info text; ending it shows the library and removes the record |

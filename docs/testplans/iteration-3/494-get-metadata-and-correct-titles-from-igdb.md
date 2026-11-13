@@ -80,7 +80,7 @@ list entries "Metadaten" (T494-16 to T494-20). The owner's cases are collected b
 - [x] **T494-17** "Ersten nehmen": the first hit in IGDB's order is taken, its fields merged, a doubtful title replaced.
   Switching to "Ersten nehmen" while metadata and artwork entries wait: each takes its first hit at once, one toast for
   all (D7); switching back puts none back. · E2E: no (view model test)
-- [ ] **T494-18** The waiting screen with a metadata entry (D6): the games list marks each entry "Artwork" or
+- [x] **T494-18** The waiting screen with a metadata entry (D6): the games list marks each entry "Artwork" or
   "Metadaten", a game waiting for both is there twice; the hits side reads "Gesucht: Metadaten", tiles with IGDB's
   cover or the placeholder, name and year (none without a date); "Eigener Suchbegriff" searches IGDB's main games.
   Layout at 1920 × 1080; a click on an entry and on a hit work. · E2E: no (window)
@@ -180,3 +180,4 @@ History:
 | T494-16, -17, -19, -20, -31 (waiting list) | 2026-11-13 | Claude | branch of part 2's PR, Debug, Linux container, made-up data | ✅ | – |
 | T494-16, -19, -20 (red once) | 2026-11-13 | Claude | same, a waiting or skipped game searched by name again on purpose | ❌ as expected, ✅ again | – |
 | T494-18, -19 (look only) | 2026-11-13 | Claude | branch of part 2's PR, Debug, Linux Xvfb 1920 × 1080, `--demo` with two GOG games seeded as waiting, keys | ✅ row counts 2, entries "GOG Galaxy · Metadaten", "Gesucht: Metadaten", placeholders with name and year, A takes (file holds IGDB id), Y skips, "Alles erledigt."; QE's own run still checks T494-18 (covers, clicks) | – |
+| T494-18 | 2026-11-13 | QE (Claude) | branch of part 2's PR, Release, Linux Xvfb 1920 × 1080, `--demo`, a local fake Twitch/IGDB over HTTPS (made-up hits, three equal names, one without a cover, one without a date) and IGDB's real image host, keys and mouse | ✅ entries "GOG Galaxy · Metadaten", "Gesucht: Metadaten", IGDB's covers loaded, the placeholder for a hit without cover, no year for a hit without date; an own term shows IGDB's six main games; a click on an entry shows its hits, a click on a hit takes it; after a restart (artwork entries seeded) a game waiting for both is there twice, "Artwork" first, and without access the covers stay placeholders; "Ersten nehmen" gives one toast | – |

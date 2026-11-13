@@ -179,24 +179,67 @@ public sealed class UiTextTests : IDisposable
     }
 
     [Theory]
-    [Trait("TestCase", "T480-11")]
-    [InlineData("en-US")]
-    [InlineData("fr-FR")]
-    [InlineData("")]
-    public void Every_ui_culture_gets_the_German_texts(string culture)
+    [Trait("TestCase", "T554-16")]
+    [InlineData("de-DE", "Abbrechen")]
+    [InlineData("de-AT", "Abbrechen")]
+    [InlineData("en-US", "Cancel")]
+    [InlineData("en-GB", "Cancel")]
+    [InlineData("fr-FR", "Annuler")]
+    public void A_text_shows_in_the_ui_language(string culture, string expected) =>
+        InUiCulture(culture, () => Assert.Equal(expected, FallbackTestTexts.Plain));
+
+    [Fact]
+    [Trait("TestCase", "T554-16")]
+    public void A_text_English_has_shows_in_English_without_a_log_line() =>
+        InUiCulture("en-US", () =>
+        {
+            Assert.Equal("Opening “Hollow Crown” in Steam…", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
+            Assert.Empty(_logged);
+        });
+
+    [Fact]
+    [Trait("TestCase", "T554-16")]
+    public void A_text_a_translation_lacks_shows_in_English_not_in_German_with_one_log_line_per_key() =>
+        InUiCulture("fr-FR", () =>
+        {
+            Assert.Equal("Opening “Hollow Crown” in Steam…", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
+            Assert.Equal("Opening “Mossy Gate” in Epic…", FallbackTestTexts.GameOpening(game: "Mossy Gate", launcher: "Epic"));
+            Assert.Equal("UI-Text fehlt auf fr, Arcadia zeigt ihn auf Englisch: GameOpening", Assert.Single(_logged));
+        });
+
+    [Fact]
+    [Trait("TestCase", "T554-16")]
+    public void A_text_only_German_has_shows_in_German_rather_than_as_its_key() =>
+        InUiCulture("fr-FR", () => Assert.StartsWith("12,5 GB", FallbackTestTexts.Size(size: 12.5, count: 1, time: DateTime.Now), StringComparison.Ordinal), "de-DE");
+
+    [Fact]
+    [Trait("TestCase", "T554-17")]
+    public void Arcadia_s_own_texts_show_in_German_and_in_English() =>
+        InUiCulture("en-US", () =>
+        {
+            Assert.Equal("Steam account", Arcadia.Launchers.Steam.SteamTexts.SteamAccountTitle);
+            Assert.Equal("The name can’t be empty.", Arcadia.Core.CoreTexts.NameEmpty);
+            Assert.Empty(_logged);
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+            Assert.Equal("Steam-Konto", Arcadia.Launchers.Steam.SteamTexts.SteamAccountTitle);
+        });
+
+    private static void InUiCulture(string culture, Action test, string? formatCulture = null)
     {
-        var previous = CultureInfo.CurrentUICulture;
+        var (previousUi, previous) = (CultureInfo.CurrentUICulture, CultureInfo.CurrentCulture);
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+        if (formatCulture is not null)
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(formatCulture);
+        }
+
         try
         {
-            Assert.Equal("Abbrechen", FallbackTestTexts.Plain);
-            Assert.Equal("Steam-Konto", Arcadia.Launchers.Steam.SteamTexts.SteamAccountTitle);
-            Assert.Equal("Der Name darf nicht leer sein.", Arcadia.Core.CoreTexts.NameEmpty);
-            Assert.Empty(_logged);
+            test();
         }
         finally
         {
-            CultureInfo.CurrentUICulture = previous;
+            (CultureInfo.CurrentUICulture, CultureInfo.CurrentCulture) = (previousUi, previous);
         }
     }
 

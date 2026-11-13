@@ -2,10 +2,15 @@
   <!--
     UI texts (#480): a project that sets HasUiTexts gets typed classes for its *Texts.resx files from
     Arcadia.Texts.Generator. Each file is embedded under "<AssemblyName>.<FileName>", the name the generated class
-    reads it by, wherever in the project it sits.
+    reads it by, wherever in the project it sits. A translation beside it (AppTexts.en.resx) goes into the language's
+    satellite assembly under the same name plus the language; the neutral texts are German.
   -->
+  <PropertyGroup Condition="'$(HasUiTexts)' == 'true'">
+    <NeutralLanguage>de</NeutralLanguage>
+  </PropertyGroup>
   <ItemGroup Condition="'$(HasUiTexts)' == 'true'">
     <EmbeddedResource Update="**/*Texts.resx" LogicalName="$(AssemblyName).%(Filename).resources" />
+    <EmbeddedResource Update="**/*Texts.*.resx" LogicalName="$(AssemblyName).%(Filename).resources" />
     <AdditionalFiles Include="**/*Texts.resx" />
     <CompilerVisibleProperty Include="RootNamespace;ProjectDir;AssemblyName" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)src/Arcadia.Texts.Generator/Arcadia.Texts.Generator.csproj"

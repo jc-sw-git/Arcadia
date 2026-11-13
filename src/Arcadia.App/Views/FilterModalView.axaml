@@ -45,7 +45,7 @@
               <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="{Binding PageText}" IsVisible="{Binding PageText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding SearchText}" IsVisible="{Binding SearchText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="L3" Keys="C" Text="{Binding OrderText}" IsVisible="{Binding OrderText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptText}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
             </StackPanel>
           </Border>

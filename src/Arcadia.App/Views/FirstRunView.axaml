@@ -188,8 +188,8 @@
       <!-- Footer: ◀ ▶ switch, ≡ ends; B does nothing here. -->
       <Border Grid.Row="2" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsReady}">
-          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.OnOff}" />
-          <ctl:KeyHint Pad="≡" Keys="Enter" Alt="Klick" Text="{x:Static app:AppTexts.Done}" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.OnOff}" />
+          <ctl:KeyHint Pad="≡" Keys="Enter" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Done}" />
         </StackPanel>
       </Border>
     </Grid>

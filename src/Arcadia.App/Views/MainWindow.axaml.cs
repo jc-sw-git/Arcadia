@@ -404,7 +404,15 @@ public partial class MainWindow : Window
     private void OnSettingsRowPointerMoved(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);
-        if (_rowPointer is { } last && Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) <= PointerMoveThreshold)
+        if (_rowPointer is not { } last)
+        {
+            // The first event only says where the pointer rests: a window that opens under it (Arcadia restarted on
+            // "Sprache", #554) must keep the focus it opened with.
+            _rowPointer = position;
+            return;
+        }
+
+        if (Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) <= PointerMoveThreshold)
         {
             return;
         }

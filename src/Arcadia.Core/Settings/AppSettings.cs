@@ -9,6 +9,17 @@ namespace Arcadia.Core.Settings;
 /// <summary>User settings, stored as JSON in the user's application data folder.</summary>
 public sealed record AppSettings
 {
+    /// <summary>The format of <c>settings.json</c> this Arcadia writes; see <see cref="SchemaVersion"/>.</summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// The format the file was written in; a file without it is version 1. A change older files can't be read with (a
+    /// property changes its type) raises <see cref="CurrentSchemaVersion"/> and converts the older JSON in
+    /// <see cref="SettingsStore.Load"/> before it is parsed: otherwise one changed type would put every setting into
+    /// <c>settings.json.broken</c>.
+    /// </summary>
+    public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
     /// <summary>
     /// "Controller-Wächter (Pan)" (#242): Pan hides the real Steam Controller and Arcadia emulates it, for games (Xbox
     /// pad) and for Steam (a copy). Off, nothing is emulated and every program sees the real controllers. Off by default:
@@ -319,13 +330,24 @@ public sealed class SettingsStore(string path)
             try
             {
                 _keepUnreadFile = false;
-                return File.Exists(Path)
-                    ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings()
-                    : new AppSettings();
+                if (!File.Exists(Path))
+                {
+                    return new AppSettings();
+                }
+
+                var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings();
+                if (loaded.SchemaVersion > AppSettings.CurrentSchemaVersion)
+                {
+                    // Written by a newer Arcadia (the player went back a version): what this one doesn't know would be
+                    // lost with the next save, so the newer file is kept beside it.
+                    KeepCopy($".v{loaded.SchemaVersion}");
+                }
+
+                return loaded with { SchemaVersion = AppSettings.CurrentSchemaVersion };
             }
             catch (JsonException)
             {
-                KeepBrokenFile();
+                KeepCopy(".broken");
                 return new AppSettings();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -342,11 +364,11 @@ public sealed class SettingsStore(string path)
         }
     }
 
-    private void KeepBrokenFile()
+    private void KeepCopy(string suffix)
     {
         try
         {
-            File.Copy(Path, Path + ".broken", overwrite: true);
+            File.Copy(Path, Path + suffix, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -364,7 +386,16 @@ public sealed class SettingsStore(string path)
 
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
         var temp = Path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));
+
+        // On disk before the move: otherwise a power cut right after it can leave an empty settings.json behind the
+        // new name. The file is a few KB, so the flush stays in the milliseconds the UI thread can spare for a change
+        // the player made, and the caller still learns synchronously that it wasn't saved.
+        using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+        {
+            JsonSerializer.Serialize(file, settings, Json);
+            file.Flush(flushToDisk: true);
+        }
+
         File.Move(temp, Path, overwrite: true);
     }
 }

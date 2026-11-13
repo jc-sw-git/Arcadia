@@ -158,6 +158,7 @@ internal sealed class ArcadiaDriver : IDisposable
             UserData = UserData,
             Open = Open,
             Logs = Logs,
+            SystemLanguage = CultureInfo.GetCultureInfo(arguments.SystemLanguage ?? "de-DE"),
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
         });
         ControllerSupport = _app.ControllerSupport;
@@ -194,6 +195,15 @@ internal sealed class ArcadiaDriver : IDisposable
         {
             lock (Restarts) Restarts.Add(reason);
         };
+        Main.RestartForLanguage = () =>
+        {
+            lock (Restarts) Restarts.Add(LanguageRestart);
+        };
+        if (arguments.ShowsLanguageSetting)
+        {
+            Main.ShowLanguageSetting();
+        }
+
         ForGames.Routing.Update();
     }
 
@@ -228,6 +238,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Why Arcadia restarted itself, in order (#396): "Arcadia neu starten", or after a HidHide install.</summary>
     public List<string> Restarts { get; } = [];
+
+    /// <summary>What <see cref="Restarts"/> records for "Sprache anwenden" (#554).</summary>
+    public const string LanguageRestart = "Sprache anwenden";
 
     /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
     public FakeEmulationGuardian Pan { get; } = new();
@@ -798,7 +811,10 @@ internal sealed class ArcadiaDriver : IDisposable
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
 /// <param name="PanUnsupported">Pan can't run on this system, as on Linux (#242).</param>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool PanUnsupported = false);
+/// <param name="ShowsLanguageSetting"><c>--show-language-setting</c>, as after "Sprache anwenden" (#554).</param>
+/// <param name="SystemLanguage">The system's display language (#554); null: German, whatever the machine speaks.</param>
+internal readonly record struct StartArguments(
+    bool Demo = false, bool FirstRun = false, bool PanUnsupported = false, bool ShowsLanguageSetting = false, string? SystemLanguage = null);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

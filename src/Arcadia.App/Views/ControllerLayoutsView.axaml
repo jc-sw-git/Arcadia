@@ -81,7 +81,7 @@
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.Select}" />
               <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding CanChange}" />
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Apply}" IsVisible="{Binding IsApplyFocused}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Apply}" IsVisible="{Binding IsApplyFocused}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
             </StackPanel>
           </Border>

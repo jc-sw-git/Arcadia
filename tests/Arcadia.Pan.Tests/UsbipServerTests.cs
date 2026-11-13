@@ -184,6 +184,24 @@ public sealed class UsbipServerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_teardown_detaches_the_current_pad_before_a_leftover_server()
+    {
+        Start();
+        _cleanup.DetachFails = true;
+        await CrashAsync();
+        _cleanup.DetachFails = false;
+        const int currentPort = FakeCleanup.ServerPort + 1;
+        _cleanup.ListenersOverride = [new TcpListening(OwnViiper.Pid, IPAddress.Loopback, currentPort)];
+        _cleanup.ImportedFrom[currentPort] = [8];
+        Assert.Equal(PanReply.Started, Start(currentPort).Reply);
+
+        await CrashAsync();
+
+        // The leftover was journaled first; a hang there must not keep the game's current pad attached.
+        Assert.Equal([8, 3], _cleanup.Detached);
+    }
+
+    [Fact]
     [Trait("TestCase", "T304-7")]
     public void The_Pan_before_304_still_reads_a_journal_written_now_with_all_its_state()
     {

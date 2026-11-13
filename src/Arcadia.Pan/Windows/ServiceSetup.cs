@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.AccessControl;
@@ -234,14 +235,7 @@ public static class ServiceSetup
     private static void CreateAndStart(ServiceHandle manager, string target, Action<string> log)
     {
         var imagePath = $"\"{target}\"";
-        var service = Native.CreateServiceW(
-            manager.Handle, PanPaths.ServiceName, PanPaths.DisplayName, Native.ServiceAllAccess,
-            Native.ServiceWin32OwnProcess, Native.ServiceAutoStart, Native.ServiceErrorNormal,
-            imagePath, null, 0, null, null, null);
-        if (service == 0)
-        {
-            throw new Win32Exception();
-        }
+        var service = CreateService(manager, imagePath, log);
 
         using var created = new ServiceHandle(service);
         try
@@ -266,6 +260,46 @@ public static class ServiceSetup
 
         log("Service started");
     }
+
+    /// <summary>
+    /// A service just deleted (the rollback's <see cref="RemoveService"/>) is only marked for delete while a handle on it
+    /// is open, a services console for example, and Windows refuses a new one by its name meanwhile (1072): asked again
+    /// for a while, so the rollback can still bring the old Pan back.
+    /// </summary>
+    private static nint CreateService(ServiceHandle manager, string imagePath, Action<string> log)
+    {
+        var waited = Stopwatch.StartNew();
+        var told = false;
+        while (true)
+        {
+            var service = Native.CreateServiceW(
+                manager.Handle, PanPaths.ServiceName, PanPaths.DisplayName, Native.ServiceAllAccess,
+                Native.ServiceWin32OwnProcess, Native.ServiceAutoStart, Native.ServiceErrorNormal,
+                imagePath, null, 0, null, null, null);
+            if (service != 0)
+            {
+                return service;
+            }
+
+            var error = Marshal.GetLastPInvokeError();
+            if (error != Native.ErrorServiceMarkedForDelete || waited.Elapsed >= MarkedForDeleteWait)
+            {
+                throw new Win32Exception(error);
+            }
+
+            if (!told)
+            {
+                log("The previous service is still marked for delete; waiting for Windows to remove it");
+                told = true;
+            }
+
+            Thread.Sleep(MarkedForDeleteRetry);
+        }
+    }
+
+    private static readonly TimeSpan MarkedForDeleteWait = TimeSpan.FromSeconds(10);
+
+    private static readonly TimeSpan MarkedForDeleteRetry = TimeSpan.FromMilliseconds(500);
 
     /// <summary>Stops the installed service, if any; its stop is the full teardown.</summary>
     public static void StopInstalledService(Action<string> log)
@@ -445,6 +479,18 @@ public static class ServiceSetup
         }
 
         return setAside;
+    }
+
+    /// <summary>
+    /// <see cref="SecureDataDirectory"/> for a folder that went missing while Pan runs (the journal's save): what it set
+    /// aside goes to the log, as at the start.
+    /// </summary>
+    public static void SecureDataDirectoryLogged(Action<string> log)
+    {
+        foreach (var folder in SecureDataDirectory())
+        {
+            log($"Data folder not trusted: {folder}; made anew");
+        }
     }
 
     private static readonly SecurityIdentifier Users = new(WellKnownSidType.BuiltinUsersSid, null);

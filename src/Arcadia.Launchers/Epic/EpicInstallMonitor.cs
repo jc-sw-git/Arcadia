@@ -237,7 +237,7 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
             stream.Seek(_logOffset, SeekOrigin.Begin);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             var text = _partialLine + reader.ReadToEnd();
-            _logOffset = stream.Length;
+            _logOffset = stream.Position; // not Length: Epic may have appended after ReadToEnd
 
             var end = text.LastIndexOf('\n');
             _partialLine = end < 0 ? text : text[(end + 1)..];
@@ -388,11 +388,24 @@ public sealed partial class EpicInstallMonitor(string? dataDirectory = null, str
         return apps;
     }
 
+    /// <summary>
+    /// The download's share of the install size, from the files in its folder. Only for a full local path: the folder
+    /// comes from Epic's manifest, and a relative one would be walked from Arcadia's own folder, a share's could hang
+    /// every poll while the share is gone.
+    /// </summary>
     private static double? FractionOf(PendingManifest manifest)
     {
+        if (!IsLocalFolder(manifest.InstallLocation))
+        {
+            return null;
+        }
+
         var size = DirectorySize(manifest.InstallLocation);
         return size is null ? null : Math.Clamp((double)size.Value / manifest.InstallSize, 0, 1);
     }
+
+    internal static bool IsLocalFolder(string path) =>
+        Path.IsPathFullyQualified(path) && !path.StartsWith(@"\\", StringComparison.Ordinal) && !path.StartsWith("//", StringComparison.Ordinal);
 
     private static long? DirectorySize(string path)
     {

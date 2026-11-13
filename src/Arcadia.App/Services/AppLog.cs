@@ -20,21 +20,32 @@ public static class AppLog
     /// <summary>Set only by the App's tests, so they never write into the user's own log.</summary>
     public static string Directory { get; internal set; } = LogLocation.Directory;
 
+    /// <summary>
+    /// Opens the file per line and for itself alone, as another Arcadia process may append too (each line names its
+    /// process) and two writers at once would overwrite each other. The size for the move comes from that open file,
+    /// and the folder is made only when it is missing, so a line costs one open.
+    /// </summary>
     public static void Write(string message)
     {
         try
         {
+            var line = $"{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)} [{Environment.ProcessId}] {LogPrivacy.WithoutUserProfile(message, UserProfile)}{Environment.NewLine}";
+            var bytes = System.Text.Encoding.UTF8.GetBytes(line);
             lock (Gate)
             {
-                System.IO.Directory.CreateDirectory(Directory);
                 var path = Path.Combine(Directory, "arcadia.log");
-                if (File.Exists(path) && new FileInfo(path).Length > MaxSize)
+                var file = Open(path);
+                if (file.Length > MaxSize)
                 {
+                    file.Dispose();
                     File.Move(path, path + ".1", overwrite: true);
+                    file = Open(path);
                 }
 
-                var line = $"{DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)} [{Environment.ProcessId}] {LogPrivacy.WithoutUserProfile(message, UserProfile)}{Environment.NewLine}";
-                File.AppendAllText(path, line);
+                using (file)
+                {
+                    file.Write(bytes);
+                }
             }
         }
         catch (IOException)
@@ -45,4 +56,20 @@ public static class AppLog
         {
         }
     }
+
+    private static FileStream Open(string path)
+    {
+        try
+        {
+            return OpenForAppend(path);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            System.IO.Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            return OpenForAppend(path);
+        }
+    }
+
+    private static FileStream OpenForAppend(string path) =>
+        new(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize: 1);
 }

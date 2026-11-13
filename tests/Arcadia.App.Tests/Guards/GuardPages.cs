@@ -57,7 +57,7 @@ internal static class GuardPages
         new("Einstellungen › Über Arcadia", [typeof(AboutSettingsViewModel)], OpenCategoryAsync<AboutSettingsViewModel>, Rows) { IsSettingsPage = true },
         GuardPage.NotWalkedYet("Frage in den Einstellungen", [typeof(SettingsQuestionViewModel)], "Fragt nur nach Änderungen an Bildern oder Controller-Modi, die der Test erst anlegen müsste."),
         GuardPage.NotWalkedYet("Bearbeitungsfeld", [typeof(TextEditorViewModel)], "Ein Textfeld in einer Zeile; die Guards sehen es mit seiner Zeile."),
-        GuardPage.NotWalkedYet("Warteliste", [typeof(WaitingListViewModel), typeof(WaitingHitsViewModel)], "Braucht Spiele, die auf die Bildersuche warten."),
+        GuardPage.NotWalkedYet("Warteliste", [typeof(WaitingListViewModel), typeof(WaitingHitsViewModel), typeof(ArtworkHitsViewModel), typeof(MetadataHitsViewModel)], "Braucht Spiele, die auf die Bildersuche oder die Wahl bei IGDB warten."),
         new("Erster Start", [typeof(FirstRunViewModel)],
             Walk: arcadia => Down(arcadia, arcadia.Arcadia.Main.FirstRun!.Found.Count + arcadia.Arcadia.Main.FirstRun!.Missing.Count),
             Start: () => ArcadiaWindow.ShowAsync(settings: new AppSettings())),

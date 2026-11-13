@@ -23,7 +23,9 @@ public partial class MainViewModel
                 _artwork,
                 game => Session.Titles.Shown(game).Title,
                 new WaitingKeyboard(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack),
-                CloseWaitingList);
+                CloseWaitingList,
+                _metadata,
+                () => _settings.Current.Artwork.WithValidValues().IsOn(Arcadia.Core.Settings.ArtworkSourceKind.SteamGridDb));
         }
     }
 

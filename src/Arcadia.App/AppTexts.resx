@@ -1112,38 +1112,45 @@
   <data name="DataSourcesSeveralHitsSubtitle" xml:space="preserve"><value>Wenn ein Spiel nur über den Namen gefunden wird</value></data>
   <data name="DataSourcesSeveralHitsAsk" xml:space="preserve"><value>Selbst auswählen</value></data>
   <data name="DataSourcesSeveralHitsFirst" xml:space="preserve"><value>Ersten nehmen</value></data>
-  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>Steam- und Epic-Spiele findet SteamGridDB eindeutig. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen.</value></data>
-  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, bleibt das Launcher-Bild oder der Platzhalter.</value></data>
-  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Bild.</value></data>
+  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>Steam- und Epic-Spiele findet SteamGridDB eindeutig, IGDB nur Steam-Spiele. Mehrere Treffer gibt es nur, wenn ein Spiel über den Namen gesucht wird und mehrere Spiele passen. Das gilt für Artwork und Metadaten.</value></data>
+  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Die Spiele kommen auf die Warteliste darunter. Bis du wählst, behalten sie das Launcher-Bild oder den Platzhalter und die Daten des Launchers.</value></data>
+  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia nimmt sofort das erste passende Spiel. Das geht schneller, ist aber ab und zu das falsche Bild oder das falsche Spiel bei IGDB.</value></data>
   <data name="DataSourcesTookFirstHits" xml:space="preserve"><value>{count} Spiele: Arcadia hat jeweils den ersten Treffer genommen.</value></data>
   <data name="DataSourcesTookFirstHitOne" xml:space="preserve"><value>1 Spiel: Arcadia hat den ersten Treffer genommen.</value></data>
   <data name="DataSourcesWaiting" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
-  <data name="DataSourcesWaitingSubtitle" xml:space="preserve"><value>Bis dahin zeigen sie das Launcher-Bild oder den Platzhalter</value></data>
+  <data name="DataSourcesWaitingSubtitle" xml:space="preserve"><value>Bis dahin zeigen sie, was der Launcher hat</value></data>
   <data name="DataSourcesWaitingMore" xml:space="preserve"><value>und {count} weitere</value></data>
   <data name="DataSourcesWaitingNone" xml:space="preserve"><value>Kein Spiel wartet</value></data>
   <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Nur bei „Selbst auswählen“</value></data>
   <data name="DataSourcesWaitingSteamGridDbOff" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet</value></data>
   <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Auswählen</value></data>
-  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB hat diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. A öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es.</value></data>
+  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB oder IGDB haben diese Spiele nur über den Namen gefunden, und mehrere Spiele passen. A öffnet die Liste, dort wählst du je Spiel das richtige aus oder überspringst es. „Artwork“ oder „Metadaten“ sagt, wofür.</value></data>
   <data name="DataSourcesWaitingInfoNone" xml:space="preserve"><value>Gerade wartet kein Spiel. Findet die nächste Suche ein Spiel nur über den Namen und passen mehrere, erscheint es hier.</value></data>
   <data name="DataSourcesWaitingInfoOff" xml:space="preserve"><value>Die Warteliste gibt es nur, wenn bei „Bei mehreren Treffern“ „Selbst auswählen“ eingestellt ist. Mit „Ersten nehmen“ wählt Arcadia sofort selbst.</value></data>
   <data name="DataSourcesWaitingInfoSteamGridDbOff" xml:space="preserve"><value>Solange SteamGridDB aus ist, sucht Arcadia nicht nach Namen. Die wartenden Spiele bleiben auf der Liste und sind beim Einschalten wieder da.</value></data>
   <data name="WaitingGames" xml:space="preserve"><value>{count} SPIELE</value></data>
   <data name="WaitingGamesOne" xml:space="preserve"><value>1 SPIEL</value></data>
+  <data name="WaitingEntryLine" xml:space="preserve"><value>{launcher} · {marker}</value></data>
+  <data name="WaitingMarkerArtwork" xml:space="preserve"><value>Artwork</value></data>
+  <data name="WaitingMarkerMetadata" xml:space="preserve"><value>Metadaten</value></data>
   <data name="WaitingTitle" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
   <data name="WaitingQuestion" xml:space="preserve"><value>Welches Spiel ist gemeint?</value></data>
   <data name="WaitingPosition" xml:space="preserve"><value>Spiel {number} von {count}</value></data>
   <data name="WaitingIntro" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen. Nach deiner Wahl lädt Arcadia {loads} dieses Spiels.</value></data>
   <data name="WaitingIntroOwnTerm" xml:space="preserve"><value>SteamGridDB findet {count} Spiele mit Bild zu deinem Suchbegriff. Nach deiner Wahl lädt Arcadia {loads} dieses Spiels.</value></data>
+  <data name="WaitingIntroMetadata" xml:space="preserve"><value>IGDB kennt {count} Spiele mit diesem Namen. Nach deiner Wahl zeigt Arcadia Beschreibung, Genres, Erscheinungsjahr und Altersfreigabe dieses Spiels.</value></data>
+  <data name="WaitingIntroMetadataOwnTerm" xml:space="preserve"><value>IGDB findet {count} Spiele zu deinem Suchbegriff. Nach deiner Wahl zeigt Arcadia Beschreibung, Genres, Erscheinungsjahr und Altersfreigabe dieses Spiels.</value></data>
   <data name="WaitingLoadsBoth" xml:space="preserve"><value>Cover und Hintergrund</value></data>
   <data name="WaitingLoadsCover" xml:space="preserve"><value>das Cover</value></data>
   <data name="WaitingLoadsHero" xml:space="preserve"><value>den Hintergrund</value></data>
   <data name="WaitingSoughtBoth" xml:space="preserve"><value>Gesucht: Cover und Hintergrund</value></data>
   <data name="WaitingSoughtCover" xml:space="preserve"><value>Gesucht: Cover</value></data>
   <data name="WaitingSoughtHero" xml:space="preserve"><value>Gesucht: Hintergrund</value></data>
+  <data name="WaitingSoughtMetadata" xml:space="preserve"><value>Gesucht: Metadaten</value></data>
   <data name="WaitingChecking" xml:space="preserve"><value>Treffer werden geprüft …</value></data>
   <data name="WaitingNoHits" xml:space="preserve"><value>Keine Treffer</value></data>
   <data name="WaitingUnreachable" xml:space="preserve"><value>SteamGridDB nicht erreichbar</value></data>
+  <data name="WaitingIgdbUnreachable" xml:space="preserve"><value>IGDB nicht erreichbar</value></data>
   <data name="WaitingTerm" xml:space="preserve"><value>Eigener Suchbegriff</value></data>
   <data name="WaitingReset" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="WaitingTermTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
@@ -1151,6 +1158,7 @@
   <data name="WaitingChooseHitHint" xml:space="preserve"><value>Treffer wählen</value></data>
   <data name="WaitingSearchHint" xml:space="preserve"><value>Suchbegriff ändern</value></data>
   <data name="WaitingNote" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält das Launcher-Bild oder den Platzhalter und wird nicht mehr gefragt. Ein Bild kannst du jederzeit über „Artwork ändern“ selbst setzen.</value></data>
+  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Keins davon passt? Mit Y überspringst du das Spiel. Es behält die Daten des Launchers und wird bei IGDB nicht mehr nach dem Namen gesucht.</value></data>
   <data name="WaitingDoneTitle" xml:space="preserve"><value>Alles erledigt.</value></data>
   <data name="WaitingDoneText" xml:space="preserve"><value>Kein Spiel wartet mehr auf deine Auswahl.</value></data>
   <data name="WaitingChooseHint" xml:space="preserve"><value>Spiel wählen</value></data>

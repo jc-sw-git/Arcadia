@@ -84,7 +84,7 @@ public sealed class ChangeTitleAcrossTheAppTests
 
         Assert.Equal(["Aal Drift", "Golden Crown", "Iron Ember"], list.Games.Select(game => game.Title));
         Assert.Equal("Aal Drift", list.Hits!.Title);
-        Assert.Equal("Echo Drift", list.Hits.Waiting.Game.Title);
+        Assert.Equal("Echo Drift", ((ArtworkHitsViewModel)list.Hits).Waiting.Game.Title);
     }
 
     /// <summary>From the library: the detail page of the game titled <paramref name="title"/>.</summary>

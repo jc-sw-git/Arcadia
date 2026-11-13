@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Arcadia.Core.Library;
+using Arcadia.Core.Metadata.Igdb;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Metadata;
@@ -14,7 +15,9 @@ namespace Arcadia.Core.Metadata;
 /// <param name="Store">The store's answer; null while the game wasn't asked yet (or its answer was unusable).</param>
 /// <param name="StoreAt">When the store answered.</param>
 /// <param name="Igdb">IGDB's answer (#494); null while IGDB wasn't asked or found nothing by the game's name.</param>
-public sealed record CachedMetadata(string GameKey, string Source, GameMetadata? Local, GameMetadata? Store, DateTimeOffset? StoreAt, IgdbCached? Igdb = null)
+/// <param name="IgdbByName">IGDB's search by name while the game waits for the player's choice or after a skip; null otherwise.</param>
+public sealed record CachedMetadata(
+    string GameKey, string Source, GameMetadata? Local, GameMetadata? Store, DateTimeOffset? StoreAt, IgdbCached? Igdb = null, IgdbNameMatch? IgdbByName = null)
 {
     /// <summary>The provider's data: the local files' fields first, the store's for what they lack.</summary>
     public GameMetadata Data => (Local ?? GameMetadata.Empty).Or(Store);
@@ -25,6 +28,19 @@ public sealed record CachedMetadata(string GameKey, string Source, GameMetadata?
 /// data and is not searched by name, D3), that game's title and its data, unmerged.
 /// </summary>
 public sealed record IgdbCached(long? GameId, string? Title, GameMetadata Data, DateTimeOffset At);
+
+/// <summary>
+/// A search by name with several hits and "Selbst auswählen" (#494): the game waits on "Warten auf deine Auswahl" marked
+/// "Metadaten" with its hits (names and data checked, IGDB's order), or was skipped with Y and is never searched by name
+/// on IGDB again (D8).
+/// </summary>
+/// <param name="Position">While it waits: its place on the list, later games behind earlier ones.</param>
+public sealed record IgdbNameMatch(bool Skipped, IReadOnlyList<IgdbGame> Hits, long Position)
+{
+    public static IgdbNameMatch Skip { get; } = new(true, [], 0);
+
+    public static IgdbNameMatch Waiting(IReadOnlyList<IgdbGame> hits, long position) => new(false, hits, position);
+}
 
 /// <summary>
 /// The raw metadata per provider (#493): <c>%LOCALAPPDATA%\Arcadia\metadata\&lt;launcher&gt;\&lt;game&gt;.json</c>, one
@@ -132,7 +148,8 @@ public sealed class MetadataCache(string root)
                     igdb.GameId is > 0 ? igdb.GameId : null,
                     MetadataCheck.CheckedTitle(igdb.Title),
                     MetadataCheck.Checked(igdb.Data),
-                    at) : null);
+                    at) : null,
+                StoredByName.Valid(stored.IgdbByName));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or ArgumentException)
         {
@@ -166,6 +183,8 @@ public sealed class MetadataCache(string root)
 
         public StoredIgdb? Igdb { get; set; }
 
+        public StoredByName? IgdbByName { get; set; }
+
         public static Stored Of(CachedMetadata cached) => new()
         {
             Game = cached.GameKey,
@@ -180,13 +199,14 @@ public sealed class MetadataCache(string root)
                 Data = Escaped(igdb.Data),
                 At = igdb.At,
             } : null,
+            IgdbByName = StoredByName.Of(cached.IgdbByName),
         };
 
         /// <summary>
         /// The checked texts written as HTML text, the way a store would: reading checks them as markup again, and a
         /// "&lt;" or "&amp;amp;" in a description must come back as it was shown, not decoded a second time.
         /// </summary>
-        private static GameMetadata? Escaped(GameMetadata? metadata) => metadata is null ? null : metadata with
+        internal static GameMetadata? Escaped(GameMetadata? metadata) => metadata is null ? null : metadata with
         {
             Description = Escape(metadata.Description),
             ShortDescription = Escape(metadata.ShortDescription),
@@ -195,7 +215,7 @@ public sealed class MetadataCache(string root)
             Tags = [.. metadata.Tags.Select(tag => Escape(tag)!)],
         };
 
-        private static string? Escape(string? text) => text is null ? null : System.Net.WebUtility.HtmlEncode(text);
+        internal static string? Escape(string? text) => text is null ? null : System.Net.WebUtility.HtmlEncode(text);
     }
 
     private sealed class StoredIgdb
@@ -207,5 +227,82 @@ public sealed class MetadataCache(string root)
         public GameMetadata? Data { get; set; }
 
         public DateTimeOffset? At { get; set; }
+    }
+
+    /// <summary>
+    /// A waiting or skipped search by name as written (#494). Read back, each hit is checked on its own like an answer: an
+    /// id that isn't a plain positive number, a name that isn't one or a second hit of the same id is left out; a waiting
+    /// game with no hit left counts as not yet searched.
+    /// </summary>
+    private sealed class StoredByName
+    {
+        public bool? Skipped { get; set; }
+
+        public long? Position { get; set; }
+
+        public List<StoredHit>? Hits { get; set; }
+
+        public static StoredByName? Of(IgdbNameMatch? match) => match switch
+        {
+            null => null,
+            { Skipped: true } => new StoredByName { Skipped = true },
+            _ => new StoredByName
+            {
+                Position = match.Position,
+                Hits = [.. match.Hits.Select(hit => new StoredHit
+                {
+                    Id = JsonSerializer.SerializeToElement(hit.Id),
+                    Name = Stored.Escape(hit.Name),
+                    Year = hit.Year,
+                    Cover = hit.CoverId,
+                    Data = Stored.Escaped(hit.Data),
+                })],
+            },
+        };
+
+        public static IgdbNameMatch? Valid(StoredByName? stored)
+        {
+            if (stored is null)
+            {
+                return null;
+            }
+
+            if (stored.Skipped == true)
+            {
+                return IgdbNameMatch.Skip;
+            }
+
+            var hits = new List<IgdbGame>();
+            foreach (var hit in stored.Hits ?? [])
+            {
+                if (hits.Count < IgdbMatching.MaxHits
+                    && hit.Id is { ValueKind: JsonValueKind.Number } id && id.TryGetInt64(out var gameId) && gameId > 0 && hits.All(h => h.Id != gameId)
+                    && MetadataCheck.CheckedTitle(hit.Name) is { Length: > 0 } name)
+                {
+                    hits.Add(new IgdbGame(
+                        gameId,
+                        name,
+                        null,
+                        MetadataCheck.Checked(hit.Data),
+                        IgdbImages.IsImageId(hit.Cover) ? hit.Cover : null,
+                        hit.Year is > 0 and < 10000 ? hit.Year : null));
+                }
+            }
+
+            return hits.Count > 0 ? IgdbNameMatch.Waiting(hits, stored.Position is > 0 ? stored.Position.Value : 0) : null;
+        }
+    }
+
+    private sealed class StoredHit
+    {
+        public JsonElement? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public int? Year { get; set; }
+
+        public string? Cover { get; set; }
+
+        public GameMetadata? Data { get; set; }
     }
 }

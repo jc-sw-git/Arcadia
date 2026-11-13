@@ -213,12 +213,12 @@ public sealed partial class MetadataService : IDisposable
         return true;
     }
 
-    /// <summary>The run going on now and those queued behind it; for the tests.</summary>
+    /// <summary>The run going on now and those queued behind it, and the choices still being written; for the tests.</summary>
     public Task WhenIdleAsync()
     {
         lock (_gate)
         {
-            return _runner;
+            return Task.WhenAll(_runner, _saving);
         }
     }
 
@@ -268,6 +268,7 @@ public sealed partial class MetadataService : IDisposable
                 }
 
                 ReadLocal(pending.Libraries);
+                WaitingChanged?.Invoke(this, EventArgs.Empty);
                 var storesReached = await FetchAsync(pending.Libraries, pending.Reload, _shutdown.Token);
                 if (!HasPending())
                 {
@@ -626,6 +627,12 @@ public sealed partial class MetadataService : IDisposable
     private void Keep(CachedMetadata cached)
     {
         _records[cached.GameKey] = cached;
+        Persist(cached);
+    }
+
+    /// <summary>Writes the game's cache file; a disk that refuses is logged once.</summary>
+    private void Persist(CachedMetadata cached)
+    {
         try
         {
             _cache.Write(cached);

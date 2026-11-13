@@ -5,11 +5,10 @@ code. Automated tests use made-up games, names, ids and access values and a fake
 (`FakeIgdb`) that record every request; nothing reaches the real ones. Window cases (layout, real clicks) are
 `E2E: no (window)`: since #517 there are no window tests per feature, the quality engineer checks them in the own run.
 "Shown everywhere" means library tile, detail page and search hit. The cases follow the proposals D1 to D9 in #494; a
-changed decision changes its case. #494 comes in two PRs: this one (access, matching, order, titles), then the waiting
-list entries "Metadaten" (T494-16 to T494-20, struck here until that PR takes them up). The owner's cases are collected
-by the closing thread of #43.
+changed decision changes its case. #494 came in two PRs: access, matching, order and titles first, then the waiting
+list entries "Metadaten" (T494-16 to T494-20). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T494-2 to T494-15, T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
+**Status:** Automated: T494-2 to T494-17, T494-19 to T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-18, T494-22, T494-33 · Open for the owner: T494-34, T494-35, T494-36
 
 **IGDB access**
 
@@ -72,29 +71,27 @@ by the closing thread of #43.
   2021) or none equal but several → several hits (at most 8, IGDB's order); none → launcher data, no message, searched
   again at the next scan. · E2E: no (unit test)
 
-**"Bei mehreren Treffern" and the waiting list** (part 2 of #494, own PR; until then several hits keep the launcher
-data and are asked once per session, `Several_hits_with_selbst_auswaehlen_keep_the_launcher_data_and_are_asked_once`)
+**"Bei mehreren Treffern" and the waiting list**
 
-- [ ] ~~**T494-16** Scenario 4: "Selbst auswählen" and an Epic game with three main-game hits → on "Warten auf deine
+- [x] **T494-16** Scenario 4: "Selbst auswählen" and an Epic game with three main-game hits → on "Warten auf deine
   Auswahl" marked "Metadaten", the row counts it, the game keeps its launcher data (developer, doubtful title)
   everywhere; a rescan, "Alle Metadaten neu laden" or a restart neither adds it twice nor searches its name again while
-  it waits. · E2E: yes~~ (part 2)
-- [ ] ~~**T494-17** "Ersten nehmen": the first hit in IGDB's order is taken, its fields merged, a doubtful title replaced.
+  it waits. · E2E: yes
+- [x] **T494-17** "Ersten nehmen": the first hit in IGDB's order is taken, its fields merged, a doubtful title replaced.
   Switching to "Ersten nehmen" while metadata and artwork entries wait: each takes its first hit at once, one toast for
-  all (D7); switching back puts none back. · E2E: no (view model test)~~ (part 2; the first half is covered here by
-  `Several_hits_with_ersten_nehmen_take_the_first_in_igdbs_order_and_replace_a_doubtful_title`)
-- [ ] ~~**T494-18** The waiting screen with a metadata entry (D6): the games list marks each entry "Artwork" or
+  all (D7); switching back puts none back. · E2E: no (view model test)
+- [ ] **T494-18** The waiting screen with a metadata entry (D6): the games list marks each entry "Artwork" or
   "Metadaten", a game waiting for both is there twice; the hits side reads "Gesucht: Metadaten", tiles with IGDB's
   cover or the placeholder, name and year (none without a date); "Eigener Suchbegriff" searches IGDB's main games.
-  Layout at 1920 × 1080; a click on an entry and on a hit work. · E2E: no (window)~~ (part 2)
-- [ ] ~~**T494-19** A on a metadata hit: the entry leaves the list, the game's IGDB fields and corrected title are shown
+  Layout at 1920 × 1080; a click on an entry and on a hit work. · E2E: no (window)
+- [x] **T494-19** A on a metadata hit: the entry leaves the list, the game's IGDB fields and corrected title are shown
   everywhere without a rescan, its artwork entry (if any) stays. Y skips: launcher data stay, never searched by name on
   IGDB again, also not at the next scan, "Alle Metadaten neu laden" or a restart (D8). B closes, undecided entries stay
-  in their order. · E2E: yes~~ (part 2)
-- [ ] ~~**T494-20** Choice, skip and waiting metadata entries are kept per game across a restart and a game leaving the
+  in their order. · E2E: yes
+- [x] **T494-20** Choice, skip and waiting metadata entries are kept per game across a restart and a game leaving the
   library and coming back; the file is written as a temporary file and renamed; damaged or unreadable: one log line,
   games treated as not yet searched, Arcadia keeps running; an IGDB game id that isn't a plain number is ignored. ·
-  E2E: no (unit test)~~ (part 2)
+  E2E: no (unit test)
 
 **Order and merging**
 
@@ -133,7 +130,7 @@ data and are asked once per session, `Several_hits_with_selbst_auswaehlen_keep_t
 - [x] **T494-31** Controller only, B back (scenario 12): "Datenquellen" → "Client-ID" and "Client-Secret" typed →
   "Verbindung testen" → IGDB lifted to first and back → "Warten auf deine Auswahl" → a metadata entry → A on a hit → B;
   no mouse or keyboard needed. Only Twitch's developer console needs the mouse (named in the PR). · E2E: yes (the steps
-  up to the order are in `IgdbSettingsTests`; the waiting list steps come with part 2)
+  up to the order are in `IgdbControllerFlowTests`, the waiting list steps in `WaitingListMetadataTests`)
 - [x] **T494-32** Without access no request reaches IGDB or Twitch over a whole session with 1,000 games (start, scans,
   every page opened): the fakes count 0 (acceptance criterion of #43). · E2E: no (unit test over the composition)
 - [x] **T494-33** Release build, made-up data: 1,000 Epic games, each IGDB answer taking 2 s: library usable at once,
@@ -163,6 +160,9 @@ Automated tests:
 | T494-4, -11, -13 to -15, -27, -28 | `IgdbRulesTests`, `IgdbAccessTests`, `MetadataServiceIgdbTests` (Core) |
 | T494-7, -8 | `IgdbAccessTests` (Core), `IgdbSettingsTests.The_access_is_there_again_after_a_restart` (App) |
 | T494-12, -23, -24, -29, -30, -32 | `MetadataServiceIgdbTests` (Core); T494-32 also `IgdbSettingsTests` over the composition |
+| T494-16, -17, -19, -20 | `MetadataServiceIgdbTests.Waiting.cs` (Core); `WaitingListMetadataTests` (App: the row, the list's entries, A, ▶, Y, B, "Ersten nehmen", a restart) |
+| T494-18 (view models; layout and clicks: QE's run) | `WaitingListMetadataTests.A_game_with_several_igdb_hits_waits_marked_metadaten_beside_its_artwork_entry_and_keeps_its_launcher_data`, `….An_own_term_on_a_metadata_entry_searches_igdbs_main_games`; `MetadataServiceIgdbTests.An_own_term_finds_igdbs_main_games_only_and_without_access_sends_nothing` |
+| T494-31 (the waiting list) | `WaitingListMetadataTests.A_on_a_metadata_hit_shows_its_fields_and_title_everywhere_at_once_and_y_skips_for_good` |
 | T494-25 (merge, "Infos", library, search, sorting) | `MetadataServiceIgdbTests.A_doubtful_title_is_replaced_in_both_orders_and_a_title_without_a_question_mark_stays`, `IgdbSettingsTests.Igdbs_title_for_a_doubtful_launcher_title_shows_in_the_library_the_sorting_and_the_search` (#496's PR), `IgdbSettingsTests.Infos_names_igdb_for_its_fields_and_lists_the_broken_launcher_title_only_among_the_sources` |
 
 History:
@@ -177,3 +177,6 @@ History:
 | T494-33 | 2026-11-12 | QE (Claude) | same, a local fake Twitch/IGDB over HTTPS answering every request after 2 s, 1,031 demo games | ✅ library usable throughout; 15 focus and page moves during the fetch 1.4–14 ms (`Bild:`); settings operable; idle CPU after the run 0 %; managed heap after a full GC 296 MB with and without IGDB (RSS under Xvfb not comparable) | – |
 | T494-15 (QE finding 1, red once) | 2026-11-12 | Claude | branch of PR, Debug, Linux container | ❌ "Nordwind ? Die R?ckkehr" against "Nordwind – Die Rückkehr" before the fix, ✅ after | – |
 | T494-25 (library, search, sorting) | 2026-11-12 | Claude (#496) | branch of #496's PR, Debug, Linux container, made-up data | ✅ | – |
+| T494-16, -17, -19, -20, -31 (waiting list) | 2026-11-13 | Claude | branch of part 2's PR, Debug, Linux container, made-up data | ✅ | – |
+| T494-16, -19, -20 (red once) | 2026-11-13 | Claude | same, a waiting or skipped game searched by name again on purpose | ❌ as expected, ✅ again | – |
+| T494-18, -19 (look only) | 2026-11-13 | Claude | branch of part 2's PR, Debug, Linux Xvfb 1920 × 1080, `--demo` with two GOG games seeded as waiting, keys | ✅ row counts 2, entries "GOG Galaxy · Metadaten", "Gesucht: Metadaten", placeholders with name and year, A takes (file holds IGDB id), Y skips, "Alles erledigt."; QE's own run still checks T494-18 (covers, clicks) | – |

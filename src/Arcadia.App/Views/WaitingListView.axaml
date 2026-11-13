@@ -7,7 +7,7 @@
              x:Class="Arcadia.App.Views.WaitingListView"
              x:DataType="vm:WaitingListViewModel">
 
-  <!-- "Warten auf deine Auswahl" (#491, two levels since #506): left the games waiting, right the current game's hits. -->
+  <!-- "Warten auf deine Auswahl" (#491, two levels since #506, metadata entries since #494): left the entries waiting, right the current entry's hits. -->
   <Panel>
     <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
             Command="{Binding CloseCommand}" />
@@ -66,7 +66,7 @@
                               </Border>
                               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                 <TextBlock Classes="waitingGameName" Text="{Binding Title}" ToolTip.Tip="{Binding Title}" />
-                                <TextBlock Classes="waitingGameLauncher" Text="{Binding LauncherName}" />
+                                <TextBlock Classes="waitingGameLauncher" Text="{Binding Subline}" />
                               </StackPanel>
                             </Grid>
                           </Button>
@@ -106,7 +106,7 @@
               </StackPanel>
 
               <Border DockPanel.Dock="Bottom" Classes="waitingNote">
-                <TextBlock Text="{x:Static app:AppTexts.WaitingNote}" />
+                <TextBlock Text="{Binding Note}" />
               </Border>
 
               <Panel>

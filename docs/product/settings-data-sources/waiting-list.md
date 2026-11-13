@@ -36,3 +36,19 @@ Index and the category's frame: [README.md](README.md).
   "Artwork ändern" offers the chosen game's images; for a waiting or skipped game none from SteamGridDB.
 - The choice, a skip and the waiting list are kept per game across restarts and a game leaving the library and coming
   back.
+
+## Metadata entries (#494)
+
+- "Bei mehreren Treffern" and the waiting list are shared by artwork and metadata. A game IGDB finds only by name with
+  several hits waits marked "Metadaten" (the artwork entries "Artwork"), with its launcher data until chosen; a game
+  waiting for both is there twice, each entry decided on its own. The list shows the artwork entries first (only while
+  SteamGridDB is on), then the metadata entries (also while IGDB is switched off or its access is gone: a choice needs no
+  request and shows once IGDB is on), each in the order they came; the row counts the entries shown.
+- A metadata entry's hits: "Gesucht: Metadaten", IGDB's hits in its order with IGDB's cover (or the placeholder; only
+  while the access is usable), name and year (none without a date). "Eigener Suchbegriff" searches IGDB's main games
+  (the first 25). A takes the hit: its fields and a corrected title show everywhere at once, without a request; the game
+  is asked by that IGDB game from then on. Y skips: launcher data stay, never searched by name on IGDB again, also not
+  at "Alle Metadaten neu laden". While it waits it isn't searched again either.
+- Switching to "Ersten nehmen" gives every waiting entry of both kinds its first hit, with one toast counting the games.
+- Choice, skip and waiting entries are kept in the game's metadata cache file, across restarts and a game leaving the
+  library; a damaged file counts as not yet searched.

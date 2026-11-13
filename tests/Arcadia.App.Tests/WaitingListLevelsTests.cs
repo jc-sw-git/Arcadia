@@ -186,10 +186,10 @@ public sealed class WaitingListLevelsTests
 
         await WaitingListTests.ShownAsync(list);
 
-        Assert.Equal([501, 502], list.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([501, 502], list.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         Assert.Equal((false, false), (list.Hits.IsChecking, list.Hits.HasMessage));
         Assert.Equal(["grids/game/501", "grids/game/502", "grids/game/504"], arcadia.SteamGridDb.Asked().Where(a => a.StartsWith("grids/", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
-        Assert.Equal([501, 502], list.Games[0].Waiting.Hits.Select(h => h.Id));
+        Assert.Equal([501, 502], list.Games[0].Artwork!.Hits.Select(h => h.Id));
     }
 
     [AvaloniaFact]
@@ -229,7 +229,7 @@ public sealed class WaitingListLevelsTests
         arcadia.Press(UiAction.Back).Press(UiAction.Accept);
         var again = arcadia.Main.WaitingList!;
         await WaitingListTests.ShownAsync(again);
-        Assert.Equal([501, 502], again.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([501, 502], again.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
     }
 
     private static TextEditorEditing EditTerm(ArcadiaDriver arcadia, WaitingListViewModel list)
@@ -284,7 +284,7 @@ public sealed class WaitingListLevelsTests
 
         var hits = list.Hits!;
         Assert.Equal((false, "Echo Saga", true), (hits.IsEditing, hits.Term, hits.CanReset));
-        Assert.Equal(withCover.Take(SteamGridDbClient.MaxOwnTermHits), hits.Hits.Select(h => h.Hit.Id));
+        Assert.Equal(withCover.Take(SteamGridDbClient.MaxOwnTermHits), hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         var lastNeeded = Enumerable.Range(1001, 40).ToList().IndexOf(withCover[SteamGridDbClient.MaxOwnTermHits - 1]);
         Assert.DoesNotContain(arcadia.SteamGridDb.Asked(), a => Enumerable.Range(1001 + lastNeeded + 1, 40 - lastNeeded - 1).Any(id => a == $"grids/game/{id}"));
         Assert.Equal(AppTexts.WaitingIntroOwnTerm(count: 25, loads: AppTexts.WaitingLoadsBoth), hits.Intro);
@@ -299,7 +299,7 @@ public sealed class WaitingListLevelsTests
         await WaitingListTests.ShownAsync(list);
 
         Assert.Equal(("Echo Drift", false), (hits.Term, hits.CanReset));
-        Assert.Equal([501, 502], hits.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([501, 502], hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         Assert.Equal((WaitingHitsFocus.Grid, 0), (hits.Zone, FocusedHit(list)));
         Assert.Equal(searches, arcadia.SteamGridDb.Asked().Count(a => a.StartsWith("search/", StringComparison.Ordinal)));
     }
@@ -370,7 +370,7 @@ public sealed class WaitingListLevelsTests
         arcadia.SteamGridDb.Offline = false;
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
         await WaitingListTests.ShownAsync(list);
-        Assert.Equal([501, 502], list.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([501, 502], list.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         Assert.True(list.Hits.HasIntro);
         Assert.False(list.Hits.HasMessage);
     }
@@ -397,7 +397,7 @@ public sealed class WaitingListLevelsTests
         editing.Editor.Take();
         await WaitingListTests.ShownAsync(list);
 
-        Assert.Equal([1601, 1602], list.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([1601, 1602], list.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         Assert.Equal(0, FocusedHit(list));
     }
 
@@ -427,7 +427,7 @@ public sealed class WaitingListLevelsTests
         editing.Write("Golden Saga");
         editing.Editor.Take();
         await WaitingListTests.ShownAsync(list);
-        Assert.Equal([1601, 1602], list.Hits.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([1601, 1602], list.Hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
         await list.Loading;
         Dispatcher.UIThread.RunJobs();
@@ -470,7 +470,7 @@ public sealed class WaitingListLevelsTests
         var again = WaitingListTests.OpenList(restarted);
         await WaitingListTests.ShownAsync(again);
         Assert.Equal(before, restarted.Artwork.Waiting.Select(w => (w.Game.Key, string.Join(",", w.Hits.Select(h => h.Id)), w.Match.Checked.Count)));
-        Assert.Equal(before[0].Item2, string.Join(",", again.Hits!.Hits.Select(h => h.Hit.Id)));
+        Assert.Equal(before[0].Item2, string.Join(",", again.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id)));
         Assert.DoesNotContain(restarted.SteamGridDb.Asked(), a => a.StartsWith("search/", StringComparison.Ordinal));
     }
 
@@ -496,7 +496,7 @@ public sealed class WaitingListLevelsTests
         await Task.Delay(500);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal([1501, 1502], list.Hits!.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([1501, 1502], list.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
     }
 
     [AvaloniaFact]
@@ -517,7 +517,7 @@ public sealed class WaitingListLevelsTests
         moving.Stop();
 
         Assert.Equal("Iron Ember", list.Hits!.Title);
-        Assert.Equal([701, 702], list.Hits.Hits.Select(h => h.Hit.Id));
+        Assert.Equal([701, 702], list.Hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         Assert.True(moving.ElapsedMilliseconds < 500, $"{moving.ElapsedMilliseconds} ms für zwei Schritte");
         arcadia.SteamGridDb.Delay = TimeSpan.Zero;
         await WaitingListTests.ShownAsync(list);

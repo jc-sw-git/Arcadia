@@ -210,6 +210,7 @@ public sealed class IgdbSettingsTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T494-9")]
+    [Trait("TestCase", "T538-6")]
     public async Task A_rejected_access_warns_at_the_tab_the_row_and_the_status_chip_and_a_valid_secret_clears_them()
     {
         using var arcadia = await StartAsync();
@@ -222,6 +223,9 @@ public sealed class IgdbSettingsTests
         Assert.Equal(HealthSeverity.Warning, category.Marker);
         var row = Row(arcadia, IgdbAccessRows.ClientIdRowKey);
         Assert.Equal((AppTexts.DataSourcesIgdbRejected, HealthSeverity.Warning), (row.Subtitle, row.Severity));
+        Assert.Equal((RowLamp.Problem, true), (row.Lamp, row.HasTintedSubtitle));
+        Assert.Equal((AppTexts.DataSourcesIgdbRejected, RowLamp.Problem), (Row(arcadia, IgdbAccessRows.SecretRowKey).Subtitle, Row(arcadia, IgdbAccessRows.SecretRowKey).Lamp));
+        Assert.Equal([false, true], Assert.IsType<DataSourcesHeadViewModel>(category.Head).Tabs.Select(t => t.HasWarning));
         Assert.True(arcadia.Main.Status.HasIgdbWarning);
 
         arcadia.Press(UiAction.Back).Press(UiAction.Status);

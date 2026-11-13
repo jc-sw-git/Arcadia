@@ -333,6 +333,7 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-13")]
+    [Trait("TestCase", "T538-6")]
     public async Task An_invalid_key_warns_at_the_tab_the_row_and_the_status_chip_and_a_valid_one_clears_all_three()
     {
         var (arcadia, _) = await StartAsync();
@@ -346,6 +347,8 @@ public sealed partial class DataSourcesTests
         Assert.Equal(HealthSeverity.Warning, category.Marker);
         var key = Row(arcadia, SteamGridDbKeyRows.KeyRowKey);
         Assert.Equal((AppTexts.DataSourcesKeyRejected, HealthSeverity.Warning), (key.Subtitle, key.Severity));
+        Assert.Equal((RowLamp.Problem, true), (key.Lamp, key.HasTintedSubtitle));
+        Assert.Equal([true, false], Assert.IsType<DataSourcesHeadViewModel>(category.Head).Tabs.Select(t => t.HasWarning));
         Assert.Contains(key.Info, block => block is InfoSection { Title: var title } && title == AppTexts.DataSourcesNextStepsHeading);
         Assert.True(arcadia.Main.Status.HasSteamGridDbWarning);
         Assert.Equal("store-wide", Hero(arcadia));

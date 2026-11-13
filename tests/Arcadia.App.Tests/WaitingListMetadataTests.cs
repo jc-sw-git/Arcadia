@@ -115,6 +115,7 @@ public sealed class WaitingListMetadataTests
     [AvaloniaFact]
     [Trait("TestCase", "T494-19")]
     [Trait("TestCase", "T494-31")]
+    [Trait("TestCase", "T538-3")]
     public async Task A_on_a_metadata_hit_shows_its_fields_and_title_everywhere_at_once_and_y_skips_for_good()
     {
         using var arcadia = await StartAsync();
@@ -143,6 +144,8 @@ public sealed class WaitingListMetadataTests
         Assert.Single(arcadia.Artwork.Waiting);
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Main.WaitingList);
+        Assert.IsType<MetadataSourcesTab>(Assert.IsType<DataSourcesSettingsViewModel>(arcadia.Main.Settings!.Selected).ShownTab);
+        Assert.Equal(SeveralHitsRows.WaitingKey(WaitingKind.Metadata), arcadia.Main.Settings!.FocusedRow?.Key);
 
         // A reload asks the chosen game by its IGDB id, the skipped one not at all.
         arcadia.Igdb.ServeId(22, FakeIgdb.Game(22, "Köln", extra: "\"summary\":\"Second Köln.\""));

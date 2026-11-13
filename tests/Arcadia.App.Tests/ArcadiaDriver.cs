@@ -454,9 +454,28 @@ internal sealed class ArcadiaDriver : IDisposable
             Main.HandleGamepad(action);
             Main.Release(action);
             Dispatcher.UIThread.RunJobs();
+            AwaitFilterCounts();
         }
 
         return this;
+    }
+
+    /// <summary>The filter modal counts off the UI thread (#466): a press's counts show before the test looks.</summary>
+    private void AwaitFilterCounts()
+    {
+        if (Main.FilterModal is not { } filter)
+        {
+            return;
+        }
+
+        // Shown on the UI thread once counted: its jobs run while the count goes on.
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!filter.Counting.IsCompleted)
+        {
+            Assert.True(watch.Elapsed < WaitLimit, "Die Zählung des Filters wurde nicht fertig.");
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(1);
+        }
     }
 
     /// <summary>Arcadia's window loses the focus, e.g. to a launcher: held buttons are dropped, their release may never come.</summary>
@@ -499,6 +518,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Assert.True(command.CanExecute(null), "Der Klick wirkt nicht: der Befehl ist gesperrt.");
         command.Execute(null);
         Dispatcher.UIThread.RunJobs();
+        AwaitFilterCounts();
         return this;
     }
 

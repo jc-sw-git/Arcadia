@@ -24,8 +24,12 @@ public partial class MainViewModel
             // A corrected title (#494) shows in the library, the search and the sorting; the session rebuilds only on a change.
             Session.Titles.AutomaticTitlesChanged(keys);
             Detail?.ShowMetadata(keys);
+            // A filtered tab shows its new hits as the data arrives (#466 case 15).
+            _filterFacts.MetadataChanged(keys);
+            Library.FactsChanged();
             MetadataChanged?.Invoke(this, keys);
         });
+        metadata.ProgressChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => FilterModal?.ShowMetadataLoading(metadata.Progress.Running));
         metadata.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextMetadata));
         metadata.ReloadFailed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.DataSourcesMetadataReloadNoConnection));
         if (metadata.Igdb is { } igdb)

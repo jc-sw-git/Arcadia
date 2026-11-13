@@ -46,6 +46,12 @@ public sealed class OwnTags
     /// <summary>A tag was made, ticked, renamed, merged, deleted or put back after a failed write; raised on the thread that changed it.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// A tag got another name: renamed, merged into the kept tag, or deleted (<see cref="TagRenamed.To"/> null), so what
+    /// names it elsewhere (the library's filter, #466) follows. Raised after <see cref="Changed"/>, on the same thread.
+    /// </summary>
+    public event EventHandler<TagRenamed>? Renamed;
+
     /// <summary>Every tag alphabetically, ignoring case; none while the file is unreadable.</summary>
     public IReadOnlyList<OwnTag> All => CanChange ? [.. _store!.Tags.OrderBy(tag => tag.Name, _order)] : [];
 
@@ -85,7 +91,7 @@ public sealed class OwnTags
 
     /// <summary>Deletes the tag from every game, absent ones too. False when nothing can be changed.</summary>
     public bool Delete(string name) =>
-        CanChange && _store!.ChangeTags(tags => tags.Where(tag => !UserDataStore.TagNames.Equals(tag.Name, name)));
+        Followed(CanChange && _store!.ChangeTags(tags => tags.Where(tag => !UserDataStore.TagNames.Equals(tag.Name, name))), name, null);
 
     /// <summary>
     /// Renames the tag on every game, absent ones too. A name differing only in case renames without asking; the name of
@@ -104,7 +110,7 @@ public sealed class OwnTags
         }
 
         var renamed = _store!.ChangeTags(tags => tags.Select(t => UserDataStore.TagNames.Equals(t.Name, tag.Name) ? t with { Name = newName } : t));
-        return renamed ? TagRename.Renamed : TagRename.Unchanged;
+        return Followed(renamed, tag.Name, newName) ? TagRename.Renamed : TagRename.Unchanged;
     }
 
     /// <summary>
@@ -118,11 +124,27 @@ public sealed class OwnTags
             return false;
         }
 
-        return _store!.ChangeTags(tags => tags
-            .Where(tag => !UserDataStore.TagNames.Equals(tag.Name, from.Name))
-            .Select(tag => UserDataStore.TagNames.Equals(tag.Name, target.Name) ? tag with { Games = tag.Games.Union(from.Games) } : tag));
+        return Followed(
+            _store!.ChangeTags(tags => tags
+                .Where(tag => !UserDataStore.TagNames.Equals(tag.Name, from.Name))
+                .Select(tag => UserDataStore.TagNames.Equals(tag.Name, target.Name) ? tag with { Games = tag.Games.Union(from.Games) } : tag)),
+            from.Name,
+            target.Name);
+    }
+
+    private bool Followed(bool changed, string name, string? to)
+    {
+        if (changed)
+        {
+            Renamed?.Invoke(this, new TagRenamed(name, to));
+        }
+
+        return changed;
     }
 
     private static IEnumerable<OwnTag> WithGame(ImmutableList<OwnTag> tags, string name, string gameKey, bool has) =>
         tags.Select(tag => !UserDataStore.TagNames.Equals(tag.Name, name) ? tag : tag with { Games = has ? tag.Games.Add(gameKey) : tag.Games.Remove(gameKey) });
 }
+
+/// <summary>A tag's old name and the one it goes by now; null when it was deleted.</summary>
+public sealed record TagRenamed(string Name, string? To);

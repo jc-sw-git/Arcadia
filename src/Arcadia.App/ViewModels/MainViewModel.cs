@@ -42,6 +42,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private readonly RepeatGate _repeats = new();
     private readonly ArtworkService? _artwork;
     private readonly MetadataService? _metadata;
+    private readonly FilterFactsSource _filterFacts;
 
     private Func<ViewOptionsViewModel?>? _createViewOptions;
 
@@ -91,6 +92,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata, titles);
         WatchUserData(Session.Titles.UserData);
         Tags = new OwnTags(Session.Titles.UserData, Formatting.Culture);
+        _filterFacts = new FilterFactsSource(MetadataOf, Tags);
         WatchOwnTags();
         if (artwork is not null)
         {
@@ -118,7 +120,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ControllerMode = new ControllerModeViewModel(controllerSupport, settings, Status, _actions, this);
         PanDialogs = new PanDialogsViewModel(controllerSupport, settings, Toast, time, () => QuitRequested?.Invoke(this, EventArgs.Empty), CancelHold);
         PanDialogs.PropertyChanged += OnPanDialogsChanged;
-        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);
+        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders, _filterFacts);
         SearchKeyboard = CreateSharedKeyboard();
         SettingsKeyboard = CreateSharedKeyboard();
         Library.PropertyChanged += OnLibraryChanged;
@@ -530,6 +532,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         WaitingList?.Release(action);
         TagDialog?.Release(action);
         ChangeTitle?.Release(action);
+        FilterModal?.Release(action);
         foreach (var page in OpenPages())
         {
             page.Release(action);
@@ -545,6 +548,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         WaitingList?.CancelHeldButtons();
         TagDialog?.CancelHeldButtons();
         ChangeTitle?.CancelHeldButtons();
+        FilterModal?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
             page.CancelHeldButtons();
@@ -1409,6 +1413,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             FilterModal = null;
         }
     }
+
+    bool ILibraryHost.IsMetadataLoading => _metadata?.Progress.Running == true;
+
+    FilterKeyboard ILibraryHost.FilterKeyboard => new(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack);
 
     LauncherRegistry ILauncherSettingsHost.Launchers => Session.Launchers;
 

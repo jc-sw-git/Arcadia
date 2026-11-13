@@ -107,7 +107,7 @@ public sealed record AppSettings
     /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
     public bool SortsStatusByNewest { get; init; }
 
-    /// <summary>"Reihenfolge für Artwork" and "Zuschneiden erlaubt" in "Datenquellen" (#489).</summary>
+    /// <summary>"Reihenfolge für Artwork" and "Bei mehreren Treffern" in "Datenquellen" (#489, #491).</summary>
     public ArtworkSettings Artwork { get; init; } = new();
 
     /// <summary>

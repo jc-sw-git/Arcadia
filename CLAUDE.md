@@ -117,6 +117,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Area | File |
 |---|---|
 | Principles: vision, launchers opt-in, feature parity, controllers alike, platforms, performance, plugins | `docs/product/README.md` |
+| Design rules: glyphs, focus, B, fades, ✕ and "Schließen", minimum sizes, progress and failures, theme | `docs/product/design.md` |
 | Library, page sizes, sorting, header tab strip | `docs/product/library.md` |
 | Buttons and keys (gamepad, WASD), button hints, held buttons, dialogs | `docs/product/controls.md` |
 | Controllers in games: Pan's emulated pads, the Steam Controller, the per-game mode | `docs/product/controllers-in-games.md` |
@@ -127,7 +128,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Settings page, status messages | `docs/product/settings.md` |
 | Settings category "Lokalisierung": keyboard layouts, quick selection, clock, dates and numbers | `docs/product/localization.md` |
 | Settings category "Controller": Pan's switch and rows, "Controller zuordnen", SISR | `docs/product/settings-controller.md` |
-| Settings category "Datenquellen": SteamGridDB key, artwork order, crop tolerance, the artwork search, IGDB access, metadata order | `docs/product/settings-data-sources/` |
+| Settings category "Datenquellen": SteamGridDB key, artwork order, crop rule, the artwork search, IGDB access, metadata order | `docs/product/settings-data-sources/` |
 | Installing the drivers from the settings: questions first, the progress dialog | `docs/product/settings-controller-install.md` |
 | A driver change waiting for the PC restart, Pan paused, "PC neu starten" | `docs/product/settings-controller-restart.md` |
 | Launchers: activate and order, launcher page | `docs/product/launchers.md` |

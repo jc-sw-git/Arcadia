@@ -17,8 +17,8 @@ public sealed class ArtworkSourceRowViewModel(string key, string title, ArtworkS
 /// <summary>
 /// The groups "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" of "Datenquellen" (#489, #506): the sources in their order, each
 /// switched on or off, L3 or the mouse lift one, ▲ ▼ or dragging move it, L3 or letting go put it down, B puts it back, as
-/// in the launcher list; "Fehlende Cover und Hintergründe" with its progress, "Jetzt suchen" and "Suche abbrechen"; and
-/// "Zuschneiden erlaubt". A changed order, switch or tolerance applies at once to the images on disk and starts no search.
+/// in the launcher list; "Fehlende Cover und Hintergründe" with its progress, "Jetzt suchen" and "Suche abbrechen". A
+/// changed order or switch applies at once to the images on disk and starts no search.
 /// </summary>
 public sealed class ArtworkSourceRows
 {
@@ -34,7 +34,6 @@ public sealed class ArtworkSourceRows
     private readonly Action _orderChanged;
     private readonly Dictionary<ArtworkSourceKind, ArtworkSourceRowViewModel> _sources = [];
     private readonly ActionRowViewModel _missing;
-    private readonly ChoiceRowViewModel _crop;
 
     // "Jetzt suchen" was pressed and its run hasn't shown yet: the row says "Läuft …" at once.
     private bool _searchAsked;
@@ -72,30 +71,6 @@ public sealed class ArtworkSourceRows
         {
             Group = ArtworkGroup,
         };
-        _crop = new ChoiceRowViewModel(
-            "artwork-crop",
-            AppTexts.DataSourcesCrop,
-            () => (int)Settings.Crop,
-            value => Apply(s => s with { Crop = (CropAllowance)value }, AppTexts.DataSourcesCrop),
-            value => (CropAllowance)value switch
-            {
-                CropAllowance.Little => AppTexts.DataSourcesCropLittle,
-                CropAllowance.Much => AppTexts.DataSourcesCropMuch,
-                _ => AppTexts.DataSourcesCropNormal,
-            },
-            (int)CropAllowance.Little,
-            (int)CropAllowance.Much)
-        {
-            Group = ArtworkGroup,
-            Subtitle = AppTexts.DataSourcesCropSubtitle,
-            ValueInfos = [AppTexts.DataSourcesCropLittleInfo, AppTexts.DataSourcesCropNormalInfo, AppTexts.DataSourcesCropMuchInfo],
-            Info =
-            [
-                new InfoText(AppTexts.DataSourcesCropInfo),
-                new InfoText(AppTexts.DataSourcesCropInfoOrder),
-                new InfoSection(AppTexts.DataSourcesWhenHeading, [new InfoText(AppTexts.DataSourcesCropWhen)]),
-            ],
-        };
         Refresh();
     }
 
@@ -104,8 +79,6 @@ public sealed class ArtworkSourceRows
 
     /// <summary>"Fehlende Cover und Hintergründe", first in the group "ARTWORK".</summary>
     public SettingsRowViewModel MissingRow => _missing;
-
-    public SettingsRowViewModel CropRow => _crop;
 
     /// <summary>A source is lifted: ▲ ▼ move it until it is put down.</summary>
     public bool IsReordering => _order.IsLifted;
@@ -137,7 +110,6 @@ public sealed class ArtworkSourceRows
         launcher.Subtitle = launcher.IsDimmed ? AppTexts.DataSourcesSourceOffSubtitle : AppTexts.DataSourcesLauncherImagesSubtitle;
 
         RefreshMissing();
-        _crop.Refresh();
     }
 
     private void RefreshMissing()

@@ -14,7 +14,8 @@
     <Color x:Key="SurfaceColor">#151B23</Color>
     <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}" />
     <SolidColorBrush x:Key="SurfaceRaised" Color="#1E2630" />
-    <SolidColorBrush x:Key="SurfaceSunken" Color="#0F141A" />
+    <Color x:Key="SurfaceSunkenColor">#0F141A</Color>
+    <SolidColorBrush x:Key="SurfaceSunken" Color="{StaticResource SurfaceSunkenColor}" />
     <!-- "Was ist neu" in the settings: a card a shade lighter than its section, with a version pill. -->
     <SolidColorBrush x:Key="ChangelogSurface" Color="#141B23" />
     <SolidColorBrush x:Key="ChangelogBorder" Color="#243040" />

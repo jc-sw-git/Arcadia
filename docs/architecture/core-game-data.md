@@ -26,7 +26,7 @@ what the player set by hand and is never thrown away.
 - `ArtworkService.ByName.cs` (#491): a game SteamGridDB doesn't know by id is searched by name (`SteamGridDbNames`:
   search term, comparison, `Decide`); `NameMatchStore` keeps per game key Chosen (a SteamGridDB game id), Skipped or
   Waiting (hits, position) in `artwork/name-matches.json`. `Waiting`/`WaitingChanged`, `ChooseAsync`, `Skip`,
-  `TakeFirstForAllWaiting`, `HitCoverAsync` (a hit's cover for the waiting list, in `.suggestions/`).
+  `TakeFirstForAllWaiting`, `HitImageAsync` (a hit's cover or background for the waiting list, in `.suggestions/`).
 - `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), the own
   files as `own-cover|own-hero.*`, the image of a source switched off renamed to `off-cover|off-hero.*` (one per kind)
   and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never

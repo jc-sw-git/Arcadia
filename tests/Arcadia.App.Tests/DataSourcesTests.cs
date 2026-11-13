@@ -13,7 +13,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// #489: the settings category "Datenquellen": the SteamGridDB key by controller, its warning, the order of the sources,
-/// "Zuschneiden erlaubt" and the search for missing artwork, through the view models with a fake SteamGridDB.
+/// and the search for missing artwork, through the view models with a fake SteamGridDB.
 /// </summary>
 public sealed partial class DataSourcesTests
 {
@@ -106,6 +106,7 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T489-1")]
+    [Trait("TestCase", "T566-1")]
     [Trait("TestCase", "T538-1")]
     public async Task The_category_shows_its_groups_in_two_tabs_and_without_a_key_greys_out_what_needs_one()
     {
@@ -129,7 +130,6 @@ public sealed partial class DataSourcesTests
                 (ArtworkSourceRows.MissingKey, AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkReloadRows.ReloadKey, AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 1),
-                ("artwork-crop", AppTexts.DataSourcesArtworkGroup, 0),
                 (SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 0),
                 (SeveralHitsRows.WaitingKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 1),
             ],
@@ -171,7 +171,6 @@ public sealed partial class DataSourcesTests
         Assert.Equal(("2. SteamGridDB", AppTexts.DataSourcesSteamGridDbSkipped, true), (source.Title, source.Subtitle, source.IsDimmed));
         Assert.Equal("1. Launcher-Bilder", Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher)).Title);
         Assert.Equal(AppTexts.DataSourcesMissingCounts(covers: 1, heroes: 0), Row(arcadia, ArtworkSourceRows.MissingKey).Subtitle);
-        Assert.Equal(AppTexts.DataSourcesCropNormal, Assert.IsType<ChoiceRowViewModel>(Row(arcadia, "artwork-crop")).ValueText);
         Assert.Null(category.Marker);
 
         arcadia.Press(UiAction.Back);
@@ -455,24 +454,14 @@ public sealed partial class DataSourcesTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T489-16")]
-    public async Task The_tolerance_steps_round_and_a_wide_background_gives_way_to_steamgriddbs_hero_with_a_key()
+    [Trait("TestCase", "T566-2")]
+    public async Task A_wide_background_gives_way_to_steamgriddbs_hero_with_a_key()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
         // Without a key: the launcher's wide image, cropped.
         Assert.Equal("store-wide", Hero(arcadia));
         OpenDataSources(arcadia);
-
-        var crop = Assert.IsType<ChoiceRowViewModel>(arcadia.FocusRow("artwork-crop"));
-        arcadia.Press(UiAction.Right);
-        Assert.Equal((AppTexts.DataSourcesCropMuch, CropAllowance.Much), (crop.ValueText, arcadia.Settings.Current.Artwork.Crop));
-        arcadia.Press(UiAction.Right);
-        Assert.Equal(AppTexts.DataSourcesCropLittle, crop.ValueText);
-        arcadia.Press(UiAction.Left);
-        Assert.Equal(AppTexts.DataSourcesCropMuch, crop.ValueText);
-        arcadia.Press(UiAction.Left);
-        Assert.Equal(CropAllowance.Normal, arcadia.Settings.Current.Artwork.Crop);
 
         // With a key, the search after it finds SteamGridDB's hero; the game's tile shows it without the focus moving.
         var focused = arcadia.Main.Library.FocusedGame;

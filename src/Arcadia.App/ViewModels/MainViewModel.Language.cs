@@ -43,19 +43,37 @@ public partial class MainViewModel
     /// <summary>Everything "Sprache anwenden" waits for or warns of, followed from the start; the events may come off the UI thread.</summary>
     private void WatchLanguageRestart()
     {
-        void Changed(object? sender, EventArgs e) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshLanguageRestart);
-        _controllerSupport.Changed += Changed;
-        _updates.Changed += Changed;
+        _controllerSupport.Changed += OnLanguageRestartStateChanged;
+        _updates.Changed += OnLanguageRestartStateChanged;
         if (_artwork is not null)
         {
-            _artwork.SearchChanged += Changed;
+            _artwork.SearchChanged += OnLanguageRestartStateChanged;
         }
 
         if (_metadata is not null)
         {
-            _metadata.ProgressChanged += Changed;
+            _metadata.ProgressChanged += OnLanguageRestartStateChanged;
         }
     }
+
+    /// <summary>A closed window stops listening: the services outlive it in the tests.</summary>
+    private void StopWatchingLanguageRestart()
+    {
+        _controllerSupport.Changed -= OnLanguageRestartStateChanged;
+        _updates.Changed -= OnLanguageRestartStateChanged;
+        if (_artwork is not null)
+        {
+            _artwork.SearchChanged -= OnLanguageRestartStateChanged;
+        }
+
+        if (_metadata is not null)
+        {
+            _metadata.ProgressChanged -= OnLanguageRestartStateChanged;
+        }
+    }
+
+    private void OnLanguageRestartStateChanged(object? sender, EventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(RefreshLanguageRestart);
 
     private void RefreshLanguageRestart() =>
         Settings?.Categories.OfType<LocalizationSettingsViewModel>().FirstOrDefault()?.RestartStateChanged();

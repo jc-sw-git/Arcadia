@@ -1165,6 +1165,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // A title just changed is on disk before Arcadia ends (#496); the write takes milliseconds, a stuck disk doesn't hold the exit.
         Session.Titles.UserData?.WhenWrittenAsync().Wait(UserDataWriteLimit);
         AppErrors.Occurred -= OnAppError;
+        StopWatchingLanguageRestart();
         PanDialogs.Dispose();
         ControllerMode.Dispose();
         Status.Dispose();

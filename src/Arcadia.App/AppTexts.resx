@@ -1010,6 +1010,7 @@
   <data name="Active" xml:space="preserve"><value>Aktiv</value></data>
   <data name="FactListedAt" xml:space="preserve"><value>Stand</value></data>
   <data name="LoggingWarnings" xml:space="preserve"><value>Warnungen</value></data>
+  <data name="LoggingErrors" xml:space="preserve"><value>Fehler</value></data>
   <data name="Clear" xml:space="preserve"><value>Leeren</value></data>
   <data name="Folder" xml:space="preserve"><value>Ordner</value></data>
   <data name="Edit" xml:space="preserve"><value>Bearbeiten</value></data>

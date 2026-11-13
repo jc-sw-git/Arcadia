@@ -65,6 +65,16 @@ public sealed partial class DetailRowViewModel : ViewModelBase
 
     public bool HasValueBoxes => ValueBoxes.Count > 0;
 
+    /// <summary>
+    /// The own tags the game has, listed in the info box below <see cref="InfoText"/> (#533); null for a row that doesn't
+    /// list tags, empty for a game without any.
+    /// </summary>
+    public IReadOnlyList<string>? InfoTags { get; init; }
+
+    public bool HasInfoTags => InfoTags is { Count: > 0 };
+
+    public bool HasNoInfoTags => InfoTags is { Count: 0 };
+
     /// <summary>A value with ◀ ▶ beside it, not an action.</summary>
     public bool IsChoice { get; }
 

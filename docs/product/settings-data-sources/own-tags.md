@@ -3,9 +3,10 @@
 Own tags group games the player's way (later the filter uses them). They are global across launchers, stored in
 `user-data.json` beside the own titles, kept for games absent from the library, and never changed by a provider.
 
-- **Names:** trimmed; empty creates or renames nothing; at most 40 characters (the keyboard greys typing beyond);
-  control characters refused. Equal ignoring case, the first spelling stays. Alphabetical everywhere (German, ignoring
-  case). A tag without games stays ("0 Spiele"); only Y deletes a tag.
+- **Names:** trimmed; empty creates or renames nothing; at most 40 characters (the keyboard greys typing beyond,
+  and "Maximale Länge erreicht" stands below the field while it is full); control characters refused. Equal ignoring
+  case, the first spelling stays. Alphabetical everywhere (German, ignoring case). A tag without games stays
+  ("0 Spiele"); only Y deletes a tag.
 - **Tag window** ("Tags" on the detail page under "Verwalten" and in the context menu, also a quick-selection entry):
   head "Tags · <game>", "Neuer Tag" first, then every tag with a tick where the game has it. A ticks or unticks at once;
   "Neuer Tag" writes a name, made and ticked for the game (an existing name ticks that one). Y deletes after asking,
@@ -20,6 +21,8 @@ Own tags group games the player's way (later the filter uses them). They are glo
 - **Questions:** the confirmation dialog, focus on "Abbrechen", B = no: „<Name>“ löschen? with how many games lose
   it; Mit „<Name>“ zusammenführen?
 - **Detail page:** "Übersicht" shows own tags before the providers' (3, then "+n"); "Infos" lists them under
-  "EIGENE TAGS" above the providers' tags. A provider tag of an own tag's name shows once, as the own one.
+  "EIGENE TAGS" above the providers' tags; the info box of the row "Tags" lists the game's own tags below its text
+  ("Dieses Spiel hat noch keine eigenen Tags." without; nothing while the row is greyed). A provider tag of an own
+  tag's name shows once, as the own one.
 - **Unreadable `user-data.json`:** no own tags anywhere; "Tags" and "Eigene Tags" are greyed with the note that own
   tags and titles can't be read; read again at the next start.

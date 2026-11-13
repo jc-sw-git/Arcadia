@@ -65,6 +65,14 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
 
     public bool HasProblem => Problem is not null;
 
+    /// <summary>
+    /// Says the text is at its most characters, so a key that types nothing more isn't a mystery (#533); null below it.
+    /// Unlike <see cref="Problem"/> it doesn't stop the text being taken.
+    /// </summary>
+    public string? LimitNotice => IsFull ? AppTexts.TextAtMaxLength(_maxLength!.Value) : null;
+
+    public bool HasLimitNotice => IsFull;
+
     /// <summary>Set when it was taken with a problem: the old value stayed, this says why.</summary>
     public string? Rejection { get; private set; }
 
@@ -228,6 +236,8 @@ public sealed partial class TextEditorViewModel : ViewModelBase, IKeyboardTarget
         if (IsFull != wasFull)
         {
             ConfigureKeyboard();
+            OnPropertyChanged(nameof(LimitNotice));
+            OnPropertyChanged(nameof(HasLimitNotice));
         }
     }
 

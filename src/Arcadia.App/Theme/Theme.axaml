@@ -927,6 +927,12 @@
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
+  <!-- A name at its most characters (#533): a notice, not a problem; the name can still be taken. -->
+  <Style Selector="TextBlock.limitNotice">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <!-- The game's metadata (#493): the age rating badge, the tags as chips, the lines of "Infos". -->
   <Style Selector="Border.ageBadge">
     <Setter Property="BorderBrush" Value="{StaticResource TextMuted}" />

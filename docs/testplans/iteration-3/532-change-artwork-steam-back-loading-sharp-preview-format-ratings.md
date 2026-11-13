@@ -5,7 +5,7 @@
 - [x] **T532-1** A game shows its launcher's image (automatic). In "Artwork ändern" A on a SteamGridDB tile, then A on the launcher's tile again, without closing the modal: the launcher's image is used again (set by hand, ticked), no warning "konnte nicht geladen werden". · E2E: yes
 - [x] **T532-2** Detail page with several games with covers: RT twice quickly and once slowly, LT back: the cover in front is as sharp as when the detail page is opened directly on that game. · E2E: no (window: decode size; pinned by the guard `SharpCoverTests`)
 - [x] **T532-3** With a key and a slow SteamGridDB, "Artwork ändern" opens: the grid shows the loading state with one of the loading texts; after 2.5 s another one; when the images are there, the tiles replace it. · E2E: yes
-- [ ] **T532-4** The loading state is animated (frames light up in turn, the magnifier moves to and fro), centred in the grid, readable. · E2E: no (window: animation)
+- [x] **T532-4** The loading state is animated (frames light up in turn, the magnifier moves to and fro), centred in the grid, readable. · E2E: no (window: animation)
 - [x] **T532-5** The facts below the preview say "Format" (e.g. "600 × 900"), never "Größe". · E2E: yes
 - [x] **T532-6** SteamGridDB tiles carry no rating tag and the facts no "Bewertung". · E2E: yes
 - [x] **T532-7** The LB/RB glyphs beside "Cover" / "Hintergrund" are keycaps centred on the tabs' height, keyboard and controller glyphs; a click on one switches the tab. · E2E: no (window: layout)
@@ -33,4 +33,4 @@ History:
 | T532-4, T532-7, T532-9 | 2026-11-13 | Claude | branch, Linux container, Xvfb 1920 × 1080, `--demo`, keyboard | ✅ looked at (loading state with a delay put in by hand for the look) | – |
 | T532-2 | 2026-11-13 | QE (Claude) | branch, Linux container, headless guard (`WINDOW_GUARDS=1`) | ✅ (red with `RedrawImages` taken out) | – |
 | T532-7, T532-9 | 2026-11-13 | QE (Claude) | branch, Release, Linux container, Xvfb 1920 × 1080, `--demo`, keyboard | ✅ keycaps centred on the tabs, preview as the detail page, ring on cover / whole background | – |
-| T532-4 | 2026-11-13 | QE (Claude) | branch, Release, Linux container, Xvfb, `--demo` | open: the magnifier's animation writes a warning per other icon to `arcadia.log` (Review finding 1); look again after the fix | fix in this PR |
+| T532-4 | 2026-11-13 | QE (Claude) | a3a1d45f, Release, Linux container, Xvfb, `--demo`, loading held 30 s by a local delay | ✅ frames light up in turn, magnifier moves to and fro, text changes; no "Cannot find the appropriate transform" in `arcadia.log` | – |

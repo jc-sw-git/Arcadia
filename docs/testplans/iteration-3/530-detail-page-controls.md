@@ -3,7 +3,7 @@
 Findings of the owner's hand test of #43 (detail page from #498/#499/#500), changes 1 to 6 of the issue. The cases were written by the implementing thread from the issue's
 changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Open for the owner: T530-6, T530-7, T530-10
+**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Open for the owner: T530-6, T530-7, T530-10, T530-11
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B, Q/E = LT/RT, Shift+W/S = RS). "A jump" is the animation of one carousel turn: title, info line and
@@ -41,6 +41,8 @@ the panel's content fading in and rising a little.
   ("Vor 1 Woche · 84 St…"); say whether that is fine or the line should run under the glyph. · E2E: no (look and feel)
 - [ ] **T530-10** **Owner:** A renamed game: ⧉ shows and hides "Original-Titel" (the footer says "[⧉] Original-Titel"),
   R3 opens the filter instead. · E2E: no (the button's new place is the owner's choice to confirm in use)
+- [ ] **T530-11** **Owner:** Under "Davor"/"Danach" an arrow pointing left/right holds LT/RT (Q/E); it is easy to hit
+  with the mouse, lights up on hover, a click turns the carousel. · E2E: no (look and feel; added on the owner's wish)
 
 Earlier cases this changes: T493-2, T493-14 and T493-28 entered "Infos" with A and scrolled it with ▲ ▼; "Infos" is now
 read from the rail with RS (T530-4). T496-11 and the other "Original-Titel" cases toggle with ⧉ now, not R3 (T530-10).

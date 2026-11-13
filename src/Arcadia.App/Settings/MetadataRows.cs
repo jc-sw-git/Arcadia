@@ -56,8 +56,9 @@ public sealed class MetadataRows
 
         var searching = progress.Running || _progressAtAsk is not null;
         _missing.Subtitle = MissingText(progress);
-        _missing.IsEnabled = !searching && progress.Total > 0;
-        _missing.IsDimmed = !_missing.IsEnabled;
+        // Greyed when nothing is missing ("Alle Metadaten geladen"); while a run goes, the row works instead.
+        _missing.IsEnabled = !searching && progress.Missing > 0;
+        _missing.IsDimmed = !searching && progress.Missing == 0;
         _missing.IsWorking = searching;
         _missing.Progress = progress is { Running: true, Total: > 0 } ? 100.0 * (progress.Total - progress.Missing) / progress.Total : null;
 

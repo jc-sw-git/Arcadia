@@ -99,6 +99,8 @@ public sealed class MetadataSettingsTests
         Assert.Equal(Store.DisplayName, box.Name);
         Assert.Equal(["Made-up summary", "Made-up about"], box.Blocks.OfType<InfoText>().Select(t => t.Text));
         Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, Row(arcadia, MetadataRows.MissingKey).Subtitle);
+        Assert.True(Row(arcadia, MetadataRows.MissingKey).IsDimmed);
+        Assert.False(Row(arcadia, MetadataRows.MissingKey).CanActivate);
     }
 
     [AvaloniaFact]
@@ -119,6 +121,7 @@ public sealed class MetadataSettingsTests
 
         Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, missing.Subtitle);
         Assert.False(missing.IsWorking);
+        Assert.Equal((true, false), (missing.IsDimmed, missing.CanActivate));
         Assert.NotNull(arcadia.Metadata.Of(Store.Id + ":4000002").Description);
     }
 

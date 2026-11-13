@@ -171,7 +171,7 @@ public abstract partial class OwnTagsDialogViewModel : ViewModelBase, IDisposabl
 
     /// <summary>
     /// The settings' keyboard over the dialog for a name: ↵, Enter or ≡ hand it to <paramref name="take"/>, B or Esc
-    /// drop it. Longer names can't be typed (D1).
+    /// drop it. Longer names can't be typed (D1); at the limit a notice below the field says so (#533).
     /// </summary>
     protected void Write(string heading, string text, Action<string> take)
     {
@@ -179,7 +179,8 @@ public abstract partial class OwnTagsDialogViewModel : ViewModelBase, IDisposabl
         EditorHeading = heading;
         Editor = new TextEditorViewModel(
             text,
-            typed => typed.Trim().Length > UserDataStore.MaxTagLength ? AppTexts.ChangeTitleTooLong(UserDataStore.MaxTagLength) : null,
+            // The editor types no more than the limit and says when it is reached; nothing typed is too long.
+            _ => null,
             typed =>
             {
                 take(typed);

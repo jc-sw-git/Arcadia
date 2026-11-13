@@ -663,27 +663,29 @@
   <data name="ActionChangeTitleMore" xml:space="preserve"><value>Titel ändern …</value></data>
   <data name="ActionResetTitle" xml:space="preserve"><value>Titel zurücksetzen</value></data>
   <data name="DetailChangeTitleSubtitle" xml:space="preserve"><value>Eigenen Titel für dieses Spiel eingeben</value></data>
-  <data name="DetailChangeTitleInfo" xml:space="preserve"><value>Der eigene Titel gilt überall: in der Bibliothek, in der Suche und beim Sortieren nach Name. Ein leerer Titel stellt den automatischen wieder her.</value></data>
-  <data name="DetailResetTitleSubtitle" xml:space="preserve"><value>Zurück zum automatischen Titel</value></data>
+  <data name="DetailChangeTitleInfo" xml:space="preserve"><value>Der eigene Titel gilt überall: in der Bibliothek, in der Suche und beim Sortieren nach Name. Ein leerer Titel stellt den ursprünglichen wieder her.</value></data>
+  <data name="DetailResetTitleSubtitle" xml:space="preserve"><value>Zurück zum ursprünglichen Titel</value></data>
   <data name="DetailResetTitleInfo" xml:space="preserve"><value>Verwirft den eigenen Titel. Das Spiel heißt wieder so, wie es der Launcher oder eine Datenquelle nennt.</value></data>
   <data name="DetailNoOwnTitle" xml:space="preserve"><value>Das Spiel hat keinen eigenen Titel.</value></data>
   <data name="UserDataUnreadable" xml:space="preserve"><value>Eigene Tags und Titel sind gerade nicht lesbar: Arcadia überschreibt die Datei user-data.json nicht. Repariere oder lösche sie und starte Arcadia neu.</value></data>
   <data name="DetailOriginalTitle" xml:space="preserve"><value>Original-Titel: {title}</value></data>
   <data name="DetailOriginalTitleHint" xml:space="preserve"><value>Original-Titel</value></data>
-  <data name="ChangeTitleNote" xml:space="preserve"><value>Leer lassen oder „{title}“ eingeben stellt den automatischen Titel wieder her.</value></data>
+  <data name="ChangeTitleNote" xml:space="preserve"><value>Leer lassen oder „{title}“ eingeben stellt den ursprünglichen Titel wieder her.</value></data>
   <data name="ChangeTitleTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
+  <data name="TextAtMaxLength" xml:space="preserve"><value>Maximale Länge erreicht: höchstens {count} Zeichen</value></data>
   <data name="ChangeTitleTake" xml:space="preserve"><value>Übernehmen</value></data>
   <data name="UserDataStatus" xml:space="preserve"><value>Eigene Titel und Tags nicht lesbar</value></data>
   <data name="UserDataStatusShort" xml:space="preserve"><value>Ohne eigene Titel und Tags, bis user-data.json lesbar ist</value></data>
   <data name="DataSourcesUserDataGroup" xml:space="preserve"><value>EIGENE DATEN</value></data>
   <data name="DataSourcesUserData" xml:space="preserve"><value>Eigene Titel und Tags</value></data>
   <data name="DataSourcesUserDataUnreadable" xml:space="preserve"><value>user-data.json nicht lesbar</value></data>
-  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen automatischen Titel und keine eigenen Tags, und beides lässt sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
+  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen ursprünglichen Titel und keine eigenen Tags, und beides lässt sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
   <data name="ErrorContextUserData" xml:space="preserve"><value>Eigene Titel und Tags speichern</value></data>
   <data name="ActionTags" xml:space="preserve"><value>Tags</value></data>
   <data name="ActionTagsMore" xml:space="preserve"><value>Tags …</value></data>
   <data name="DetailTagsSubtitle" xml:space="preserve"><value>Eigene Tags vergeben oder entfernen</value></data>
-  <data name="DetailTagsInfo" xml:space="preserve"><value>Deine Tags wie „Couch-Koop“ gelten über alle Launcher hinweg und bleiben beim neuen Einlesen und beim Neuladen der Metadaten erhalten. Alle Tags verwaltest du unter Einstellungen → Datenquellen → Eigene Tags.</value></data>
+  <data name="DetailTagsInfo" xml:space="preserve"><value>Weise deinen Spielen eigene Tags zu, um besser nach ihnen filtern zu können. Du kannst deine Tags auch unter Einstellungen → Datenquellen verwalten.</value></data>
+  <data name="DetailTagsOfGameNone" xml:space="preserve"><value>Dieses Spiel hat noch keine eigenen Tags.</value></data>
   <data name="DetailTagsNone" xml:space="preserve"><value>Keine</value></data>
   <data name="DetailTagsOne" xml:space="preserve"><value>1 Tag</value></data>
   <data name="DetailTagsMany" xml:space="preserve"><value>{count} Tags</value></data>
@@ -1056,6 +1058,7 @@
   <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Verbunden · endet auf …{ending}</value></data>
   <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Endet auf …{ending} · noch nicht geprüft</value></data>
   <data name="DataSourcesKeyRejected" xml:space="preserve"><value>Schlüssel ungültig · SteamGridDB wird übersprungen</value></data>
+  <data name="DataSourcesKeyMissing" xml:space="preserve"><value>Kein Schlüssel hinterlegt · SteamGridDB wird übersprungen</value></data>
   <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Wird geprüft …</value></data>
   <data name="DataSourcesKeyEnter" xml:space="preserve"><value>Eingeben</value></data>
   <data name="DataSourcesKeyInfo" xml:space="preserve"><value>Mit dem Schlüssel lädt Arcadia Cover und Hintergründe von SteamGridDB, in der Reihenfolge, die du unter „Reihenfolge für Artwork“ festlegst. Der Schlüssel ist kostenlos. Melde dich auf steamgriddb.com an und kopiere ihn unter Einstellungen › API.</value></data>
@@ -1224,13 +1227,18 @@
   <data name="ArtworkTabCover" xml:space="preserve"><value>Cover</value></data>
   <data name="ArtworkTabHero" xml:space="preserve"><value>Hintergrund</value></data>
   <data name="ArtworkPreviewHeading" xml:space="preserve"><value>VORSCHAU AUF DER DETAILSEITE</value></data>
+  <data name="ArtworkLoading1" xml:space="preserve"><value>Durchstöbere die Bildergalerie …</value></data>
+  <data name="ArtworkLoading2" xml:space="preserve"><value>Staube die Bilderrahmen ab …</value></data>
+  <data name="ArtworkLoading3" xml:space="preserve"><value>Blättere durch alte Spielepackungen …</value></data>
+  <data name="ArtworkLoading4" xml:space="preserve"><value>Poliere die Pixel …</value></data>
+  <data name="ArtworkLoading5" xml:space="preserve"><value>Suche das schönste Motiv …</value></data>
+  <data name="ArtworkLoading6" xml:space="preserve"><value>Entwickle die Negative …</value></data>
   <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
-  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1 WIE DER KOPF DER DETAILSEITE</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1</value></data>
   <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} VORSCHLÄGE</value></data>
   <data name="ArtworkSourceRow" xml:space="preserve"><value>Quelle</value></data>
-  <data name="ArtworkScoreRow" xml:space="preserve"><value>Bewertung</value></data>
   <data name="ArtworkFileRow" xml:space="preserve"><value>Datei</value></data>
-  <data name="ArtworkSizeRow" xml:space="preserve"><value>Größe</value></data>
+  <data name="ArtworkFormatRow" xml:space="preserve"><value>Format</value></data>
   <data name="ArtworkSetRow" xml:space="preserve"><value>Gesetzt</value></data>
   <data name="ArtworkSourcePlaceholder" xml:space="preserve"><value>Platzhalter</value></data>
   <data name="ArtworkSourceLauncher" xml:space="preserve"><value>{launcher} (vom Launcher)</value></data>
@@ -1238,7 +1246,6 @@
   <data name="ArtworkSetByHand" xml:space="preserve"><value>von Hand</value></data>
   <data name="ArtworkSetAutomatically" xml:space="preserve"><value>automatisch (Standard)</value></data>
   <data name="ArtworkImageSize" xml:space="preserve"><value>{width} × {height}</value></data>
-  <data name="ArtworkScore" xml:space="preserve"><value>★ {score}</value></data>
   <data name="ArtworkOwnFile" xml:space="preserve"><value>Eigene Datei</value></data>
   <data name="ArtworkOwnFileTag" xml:space="preserve"><value>EIGENE DATEI</value></data>
   <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · bis 20&#160;MB</value></data>

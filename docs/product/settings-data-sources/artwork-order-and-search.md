@@ -51,5 +51,5 @@ Index and the category's frame: [README.md](README.md).
   switch; B changes nothing. It runs like "Jetzt suchen" over every game, also asking SteamGridDB again, keeps images
   set by hand unless the switch is on, and is greyed out while a search runs; while it runs ("Neu laden läuft · n von
   N") it reads "Neu laden abbrechen".
-- With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, best rated first) after the
+- With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, in SteamGridDB's order; its API rates every image 0, so no rating is shown) after the
   launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen ›" to the row "Schlüssel".

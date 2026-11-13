@@ -927,6 +927,12 @@
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
+  <!-- A name at its most characters (#533): a notice, not a problem; the name can still be taken. -->
+  <Style Selector="TextBlock.limitNotice">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource Warning}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <!-- The game's metadata (#493): the age rating badge, the tags as chips, the lines of "Infos". -->
   <Style Selector="Border.ageBadge">
     <Setter Property="BorderBrush" Value="{StaticResource TextMuted}" />
@@ -3281,54 +3287,149 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
+  <!-- The preview's parts are in the detail page's 1920 × 1080 places; the preview scales them by about a third. -->
   <Style Selector="Border.artworkMiniCover">
-    <Setter Property="Width" Value="118" />
-    <Setter Property="Height" Value="177" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Margin" Value="28,44,0,0" />
-    <Setter Property="HorizontalAlignment" Value="Left" />
-    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Width" Value="180" />
+    <Setter Property="Height" Value="270" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="ClipToBounds" Value="True" />
     <Setter Property="BoxShadow" Value="{StaticResource CoverShadow}" />
   </Style>
   <Style Selector="TextBlock.artworkMonogram">
-    <Setter Property="FontSize" Value="54" />
+    <Setter Property="FontSize" Value="88" />
     <Setter Property="FontWeight" Value="ExtraBold" />
-    <Setter Property="Margin" Value="12,8" />
+    <Setter Property="Margin" Value="18" />
   </Style>
   <Style Selector="TextBlock.artworkMiniTitle">
-    <Setter Property="FontSize" Value="30" />
-    <Setter Property="FontWeight" Value="Black" />
+    <Setter Property="FontSize" Value="66" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
-    <Setter Property="Margin" Value="172,150,24,0" />
-    <Setter Property="VerticalAlignment" Value="Top" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
-  <!-- The part being changed: a ring inside the hero, around the cover. -->
+  <Style Selector="Border.artworkMiniChip">
+    <Setter Property="Width" Value="150" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Border.artworkMiniLine">
+    <Setter Property="Width" Value="420" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <!-- The part being changed: a ring around the whole background, or around the cover. -->
   <Style Selector="Border.artworkMark">
     <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
-    <Setter Property="BorderThickness" Value="3" />
+    <Setter Property="BorderThickness" Value="9" />
     <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
+  <Style Selector="Border.artworkMark.hero">
+    <Setter Property="CornerRadius" Value="54" />
+  </Style>
   <Style Selector="Border.artworkMark.cover">
-    <Setter Property="Width" Value="130" />
-    <Setter Property="Height" Value="189" />
-    <Setter Property="CornerRadius" Value="11" />
-    <Setter Property="Margin" Value="22,38,0,0" />
-    <Setter Property="HorizontalAlignment" Value="Left" />
-    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Width" Value="216" />
+    <Setter Property="Height" Value="306" />
+    <Setter Property="CornerRadius" Value="24" />
   </Style>
   <Style Selector="Border.artworkMiniAction">
-    <Setter Property="Height" Value="36" />
-    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="32" />
     <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
   </Style>
   <Style Selector="Border.artworkMiniAction.accent">
     <Setter Property="Background" Value="{StaticResource Accent}" />
   </Style>
-  <Style Selector="Border.artworkMiniFact">
-    <Setter Property="Height" Value="60" />
-    <Setter Property="CornerRadius" Value="12" />
+  <Style Selector="Border.artworkMiniPanel">
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Background" Value="{StaticResource DetailSurface}" />
+  </Style>
+  <Style Selector="Border.artworkMiniRow">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Background" Value="{StaticResource Surface}" />
+  </Style>
+  <Style Selector="Border.artworkMiniRow.selected">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Border.artworkMiniStack">
+    <Setter Property="Canvas.Top" Value="470" />
+    <Setter Property="Width" Value="144" />
+    <Setter Property="Height" Value="216" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Opacity" Value="0.6" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <!-- "Artwork ändern" while it looks for images (#532): three frames light up in turn, a magnifier goes to and fro. -->
+  <Style Selector="StackPanel.artworkLoading">
+    <Setter Property="Spacing" Value="26" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,0,0,80" />
+  </Style>
+  <Style Selector="Border.artworkLoadingFrame">
+    <Setter Property="Width" Value="88" />
+    <Setter Property="Height" Value="122" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="Border.artworkLoadingFrame.first">
+    <Style.Animations>
+      <Animation Duration="0:0:1.8" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="25%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.artworkLoadingFrame.second">
+    <Style.Animations>
+      <Animation Duration="0:0:1.8" IterationCount="Infinite" Delay="0:0:0.3">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="25%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.artworkLoadingFrame.third">
+    <Style.Animations>
+      <Animation Duration="0:0:1.8" IterationCount="Infinite" Delay="0:0:0.6">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="25%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.35" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Moved by Canvas.Left: a transform animation in a style is tried on every Path and logs a warning for each one
+       without that transform. -->
+  <Style Selector="Path.artworkLoadingGlass">
+    <Setter Property="Data" Value="M10 3a7 7 0 1 1 0 14a7 7 0 1 1 0-14zM15 15l6 6" />
+    <Setter Property="Stroke" Value="{StaticResource Accent}" />
+    <Setter Property="StrokeThickness" Value="2.4" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="Width" Value="76" />
+    <Setter Property="Height" Value="76" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Style.Animations>
+      <Animation Duration="0:0:1.8" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Canvas.Left" Value="6" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Canvas.Left" Value="218" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="TextBlock.artworkLoadingText">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
   <Style Selector="Border.artworkFacts">
     <Setter Property="Margin" Value="0,22,0,0" />

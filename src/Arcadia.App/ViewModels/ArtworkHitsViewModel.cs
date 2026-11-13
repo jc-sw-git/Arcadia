@@ -132,7 +132,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         switch (search.Outcome)
         {
             case SteamGridDbOutcome.KeyRejected:
-                Done(AppTexts.DataSourcesKeyRejected);
+                Done(KeyFailure);
                 return;
             case SteamGridDbOutcome.NoConnection:
                 Done(AppTexts.WaitingUnreachable);
@@ -193,6 +193,11 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         Done(Hits.Count > 0 ? null : failure ?? AppTexts.WaitingNoHits);
     }
 
+    /// <summary>Why SteamGridDB isn't asked: a deleted key is no rejected one (#532).</summary>
+    private string KeyFailure => _artwork.SteamGridDb?.State is null or SteamGridDbKeyState.None
+        ? AppTexts.DataSourcesKeyMissing
+        : AppTexts.DataSourcesKeyRejected;
+
     private HashSet<int> ShownIds() => Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id).ToHashSet();
 
     private static async Task<(SteamGridDbHit Hit, HitCheck Check)> CheckOffThreadAsync(
@@ -216,7 +221,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
                 InsertHit(at, NewHit(result.Hit));
                 return null;
             case HitCheck.KeyRejected:
-                return AppTexts.DataSourcesKeyRejected;
+                return KeyFailure;
             case HitCheck.NoConnection:
                 return AppTexts.WaitingUnreachable;
             default:

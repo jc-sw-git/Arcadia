@@ -460,6 +460,26 @@
                     <views:ValueBoxesView Boxes="{Binding InfoRow?.ValueBoxes}" Classes.dimmed="{Binding InfoRow?.IsGreyed, TargetNullValue=False}" IsVisible="{Binding InfoRow?.HasValueBoxes, TargetNullValue=False}" />
                     <TextBlock Text="{Binding InfoRow?.InfoText, TargetNullValue=''}" IsVisible="{Binding InfoRow?.HasInfoText, TargetNullValue=False}"
                                FontSize="17" LineHeight="25" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
+                    <!-- The game's own tags below the text of "Tags" (#533), as the chips in "Infos". -->
+                    <StackPanel Spacing="10" IsVisible="{Binding InfoRow?.HasInfoTags, TargetNullValue=False}">
+                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" FontSize="13" />
+                      <ItemsControl ItemsSource="{Binding InfoRow?.InfoTags}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <WrapPanel ItemSpacing="8" LineSpacing="8" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <Border Classes="metadataTag own">
+                              <TextBlock Text="{Binding}" />
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                    <TextBlock Text="{x:Static app:AppTexts.DetailTagsOfGameNone}" IsVisible="{Binding InfoRow?.HasNoInfoTags, TargetNullValue=False}"
+                               FontSize="17" LineHeight="25" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                   </StackPanel>
                 </ScrollViewer>
                 <ctl:EdgeFade FadeColor="{StaticResource DetailInfoBoxColor}" Size="48" ScrollTarget="{Binding #InfoScroller}" />

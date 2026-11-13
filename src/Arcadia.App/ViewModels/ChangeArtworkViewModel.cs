@@ -23,7 +23,7 @@ public interface IChangeArtworkHost
     void Warn(string message);
 }
 
-/// <summary>One line below the preview: "Quelle", "Bewertung", "Datei", "Größe", "Gesetzt".</summary>
+/// <summary>One line below the preview: "Quelle", "Datei", "Format", "Gesetzt".</summary>
 public sealed record ArtworkFactViewModel(string Label, string Value);
 
 /// <summary>
@@ -35,21 +35,27 @@ public sealed record ArtworkFactViewModel(string Label, string Value);
 /// <remarks>UI thread only. The cache's work runs off it (<see cref="ArtworkService"/>); one choice at a time.</remarks>
 public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
 {
+    /// <summary>How long one loading text stays before another one comes.</summary>
+    public static readonly TimeSpan LoadingTextTime = TimeSpan.FromSeconds(2.5);
+
     private const int CoverColumns = 5;
     private const int HeroColumns = 2;
 
     private readonly ArtworkService _artwork;
     private readonly IChangeArtworkHost _host;
+    private readonly TimeProvider _time;
+    private ITimer? _loadingTexts;
     private readonly Dictionary<ArtworkKind, ArtworkChoices> _choices = [];
     private int _focus;
     private bool _busy;
     private CachedImage? _current;
 
-    public ChangeArtworkViewModel(GameTileViewModel tile, ArtworkService artwork, IChangeArtworkHost host)
+    public ChangeArtworkViewModel(GameTileViewModel tile, ArtworkService artwork, IChangeArtworkHost host, TimeProvider? time = null)
     {
         Tile = tile;
         _artwork = artwork;
         _host = host;
+        _time = time ?? TimeProvider.System;
         GameLine = AppTexts.ArtworkGameLine(game: tile.Title, launcher: tile.LauncherName);
         Notice = new ArtworkNoticeViewModel(() => _host.OpenDataSources(this));
         (HeroBackdrop, _) = Formatting.HeroBrushes(tile.Title);
@@ -57,10 +63,14 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         ShowTab(ArtworkKind.Cover);
     }
 
-    /// <summary>The modal closed: it no longer follows the game's images.</summary>
-    public void Dispose() => Tile.PropertyChanged -= OnTileChanged;
+    /// <summary>The modal closed: it no longer follows the game's images, and the loading texts stop.</summary>
+    public void Dispose()
+    {
+        Tile.PropertyChanged -= OnTileChanged;
+        StopLoadingTexts();
+    }
 
-    /// <summary>The cache's new image reaches the tile a moment after the choice: "Größe" follows it.</summary>
+    /// <summary>The cache's new image reaches the tile a moment after the choice: "Format" follows it.</summary>
     private void OnTileChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(GameTileViewModel.Artwork))
@@ -127,6 +137,23 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool CanPickOtherFile { get; private set; }
 
+    /// <summary>
+    /// The tab's images are still being looked for (SteamGridDB's downloads can take a while): the grid shows the loading
+    /// state with a text that changes at random every <see cref="LoadingTextTime"/>.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsLoading { get; private set; }
+
+    [ObservableProperty]
+    public partial string LoadingText { get; private set; } = string.Empty;
+
+    /// <summary>What the loading state says, one at a time.</summary>
+    public static IReadOnlyList<string> LoadingTexts =>
+    [
+        AppTexts.ArtworkLoading1, AppTexts.ArtworkLoading2, AppTexts.ArtworkLoading3,
+        AppTexts.ArtworkLoading4, AppTexts.ArtworkLoading5, AppTexts.ArtworkLoading6,
+    ];
+
     /// <summary>The choices of a tab are being read; the tests wait for it.</summary>
     public Task Loading { get; private set; } = Task.CompletedTask;
 
@@ -137,7 +164,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         {
             case UiAction.PreviousTab or UiAction.NextTab:
                 // Two tabs: either button goes to the other, round at both ends.
-                ShowTab(IsCoverTab ? ArtworkKind.Hero : ArtworkKind.Cover);
+                OtherTab();
                 break;
             case UiAction.Left:
                 Step(-1, 0);
@@ -169,6 +196,10 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void Close() => _host.Close(this);
 
+    /// <summary>A click on LB or RB beside the tabs: the other tab, as the buttons do.</summary>
+    [RelayCommand]
+    private void OtherTab() => ShowTab(IsCoverTab ? ArtworkKind.Hero : ArtworkKind.Cover);
+
     [RelayCommand]
     private void ShowCover() => ShowTab(ArtworkKind.Cover);
 
@@ -198,6 +229,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         Kind = kind;
         if (_choices.TryGetValue(kind, out var known))
         {
+            StopLoadingTexts();
             Show(known, focusInUse: true);
             return;
         }
@@ -207,18 +239,55 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         Facts = [];
         CanRestore = false;
         CanPickOtherFile = false;
+        StartLoadingTexts();
         Loading = LoadAsync(kind);
         Loading.Forget(AppTexts.ErrorContextChangeArtwork);
     }
 
     private async Task LoadAsync(ArtworkKind kind)
     {
-        var choices = await _artwork.ChoicesAsync(Tile.Game, kind);
-        _choices[kind] = choices;
-        if (Kind == kind)
+        try
         {
-            Show(choices, focusInUse: true);
+            var choices = await ChoicesOffUiThreadAsync(kind);
+            _choices[kind] = choices;
+            if (Kind == kind)
+            {
+                Show(choices, focusInUse: true);
+            }
         }
+        finally
+        {
+            // A failed load ends the loading state too: its error is a toast, and LB/RB read the tab again.
+            if (Kind == kind)
+            {
+                StopLoadingTexts();
+            }
+        }
+    }
+
+    // The launcher's image is picked and copied synchronously inside the service: off the UI thread, the focus stays smooth.
+    private Task<ArtworkChoices> ChoicesOffUiThreadAsync(ArtworkKind kind) => Task.Run(() => _artwork.ChoicesAsync(Tile.Game, kind));
+
+    private void StartLoadingTexts()
+    {
+        NextLoadingText();
+        IsLoading = true;
+        _loadingTexts ??= _time.CreateTimer(_ => Avalonia.Threading.Dispatcher.UIThread.Post(NextLoadingText), null, LoadingTextTime, LoadingTextTime);
+    }
+
+    private void StopLoadingTexts()
+    {
+        IsLoading = false;
+        _loadingTexts?.Dispose();
+        _loadingTexts = null;
+    }
+
+    /// <summary>Another text than the one shown, at random.</summary>
+    private void NextLoadingText()
+    {
+        var texts = LoadingTexts;
+        var others = texts.Where(text => text != LoadingText).ToList();
+        LoadingText = others[Random.Shared.Next(others.Count)];
     }
 
     /// <summary>Builds the tab's tiles and facts; the focus goes to the tile in use, or stays where it was.</summary>
@@ -277,11 +346,6 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
             }),
         };
 
-        if (current?.Source == ArtworkSource.SteamGridDb && Tiles.FirstOrDefault(t => t.IsInUse)?.Offer?.Score is { } score)
-        {
-            facts.Add(new(AppTexts.ArtworkScoreRow, AppTexts.ArtworkScore(score)));
-        }
-
         if (current?.Source == ArtworkSource.File)
         {
             facts.Add(new(AppTexts.ArtworkFileRow, current.Stamp));
@@ -289,7 +353,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
 
         if ((IsCoverTab ? Tile.Cover : Tile.Hero) is { } shown && current is not null)
         {
-            facts.Add(new(AppTexts.ArtworkSizeRow, AppTexts.ArtworkImageSize(width: shown.Size.Width, height: shown.Size.Height)));
+            facts.Add(new(AppTexts.ArtworkFormatRow, AppTexts.ArtworkImageSize(width: shown.Size.Width, height: shown.Size.Height)));
         }
 
         if (current is not null)
@@ -406,7 +470,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     /// <summary>The tab's choices again, after the own file or the launcher's image changed; the focus stays.</summary>
     private async Task ReloadAsync(ArtworkKind kind)
     {
-        var choices = await _artwork.ChoicesAsync(Tile.Game, kind);
+        var choices = await ChoicesOffUiThreadAsync(kind);
         _choices[kind] = choices;
         if (Kind == kind)
         {

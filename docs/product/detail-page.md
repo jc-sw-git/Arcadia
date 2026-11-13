@@ -68,7 +68,9 @@
 - "Artwork ändern" (#490, prototype in #13) works on the open game at once, nothing to confirm or cancel: A uses the
   focused tile, also the one in use (it becomes set by hand); Y gives only the open tab back to Arcadia's choice. An own
   file stays offered under "Eigene Datei" after another choice, until X replaces it; it is cropped centred like every
-  image. A file that isn't a readable PNG, JPEG or WebP of at most 20 MB is refused with a warning.
+  image. A file that isn't a readable PNG, JPEG or WebP of at most 20 MB is refused with a warning. While a tab's images
+  are looked for, the grid shows a loading state (frames under a magnifier) with a funny text that changes at random
+  every 2.5 s (#532). The preview draws the detail page as it is laid out; "Format" names the image's pixel size.
 - "Titel ändern" (#496) opens the on-screen keyboard over the page, prefilled with the shown title; ↵, Enter or ≡ take it,
   B or Esc keep the old one. Spaces around it are dropped; an empty title or the automatic one (the launcher's, or a
   provider's correction) clears the own title. The own title shows everywhere at once (library, search, sorting, the

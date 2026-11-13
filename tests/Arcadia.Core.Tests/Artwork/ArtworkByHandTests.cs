@@ -113,6 +113,26 @@ public sealed class ArtworkByHandTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T532-1")]
+    public async Task The_launchers_image_in_use_can_be_taken_back_after_another_offer_in_the_same_modal()
+    {
+        LauncherImages();
+        await ScanAsync();
+        _suggestions.KeyState = SuggestionKeyState.Valid;
+        _suggestions.Images = [new("steamgriddb", new Uri("https://grid.example/cover-a.png"))];
+        _server.Serve("https://grid.example/cover-a.png", TestImages.Png(300, 450));
+        var choices = await _service.ChoicesAsync(Game, ArtworkKind.Cover);
+        var launcher = choices.Offers.Single(o => o.Source == ArtworkSource.Launcher);
+        Assert.True(await _service.UseAsync(Game, ArtworkKind.Cover, choices.Offers.Single(o => o.Source == ArtworkSource.SteamGridDb)));
+
+        Assert.True(await _service.UseAsync(Game, ArtworkKind.Cover, launcher));
+
+        Assert.Equal(new ImageSize(600, 900), _service.Of(Key)!.Cover!.Size);
+        Assert.Equal((ArtworkSource.Launcher, true), (Stored.Cover!.Source, Stored.Cover.SetByHand));
+        Assert.True(launcher.Is(await _service.InUseAsync(Game, ArtworkKind.Cover)));
+    }
+
+    [Fact]
     [Trait("TestCase", "T490-6")]
     [Trait("TestCase", "T490-25")]
     public async Task An_offer_taken_is_set_by_hand_and_survives_a_changed_launcher_image_a_rescan_and_a_restart()
@@ -120,7 +140,7 @@ public sealed class ArtworkByHandTests : IDisposable
         LauncherImages();
         await ScanAsync();
         _suggestions.KeyState = SuggestionKeyState.Valid;
-        _suggestions.Images = [new("steamgriddb", new Uri("https://grid.example/cover-a.png"), 12)];
+        _suggestions.Images = [new("steamgriddb", new Uri("https://grid.example/cover-a.png"))];
         _server.Serve("https://grid.example/cover-a.png", TestImages.Png(300, 450));
         var offer = (await _service.ChoicesAsync(Game, ArtworkKind.Cover)).Offers.Single(o => o.Source == ArtworkSource.SteamGridDb);
 
@@ -136,7 +156,6 @@ public sealed class ArtworkByHandTests : IDisposable
         var again = await _service.ChoicesAsync(Game, ArtworkKind.Cover);
         Assert.True(again.Offers.Single(o => o.Source == ArtworkSource.SteamGridDb).Is(again.CurrentImage));
         Assert.Equal(again.CurrentImage, await _service.InUseAsync(Game, ArtworkKind.Cover));
-        Assert.Equal(12, again.Offers.Single(o => o.Source == ArtworkSource.SteamGridDb).Score);
     }
 
     [Fact]
@@ -381,7 +400,7 @@ public sealed class ArtworkByHandTests : IDisposable
     public async Task The_source_offers_at_most_20_images_and_leaves_out_those_it_cannot_load()
     {
         _suggestions.KeyState = SuggestionKeyState.Valid;
-        _suggestions.Images = [.. Enumerable.Range(1, 25).Select(n => new SuggestedImage("steamgriddb", new Uri($"https://grid.example/{n}.png"), 30 - n))];
+        _suggestions.Images = [.. Enumerable.Range(1, 25).Select(n => new SuggestedImage("steamgriddb", new Uri($"https://grid.example/{n}.png")))];
         foreach (var n in Enumerable.Range(1, 25).Where(n => n != 3))
         {
             _server.Serve($"https://grid.example/{n}.png", TestImages.Png(200, 300));
@@ -391,7 +410,7 @@ public sealed class ArtworkByHandTests : IDisposable
         var offers = (await _service.ChoicesAsync(Game, ArtworkKind.Cover)).Offers;
 
         Assert.Equal(19, offers.Count);
-        Assert.Equal([29, 28, 26], offers.Take(3).Select(o => o.Score!.Value));
+        Assert.Equal(["1", "2", "4"], offers.Take(3).Select(o => Path.GetFileNameWithoutExtension(new Uri(o.Stamp).AbsolutePath)));
     }
 
     [Fact]

@@ -31,7 +31,7 @@ Index and the category's frame: [README.md](README.md). The merge and the order:
   expansions, bundles, mods, episodes, seasons, packs, updates and forks are dropped before hits are counted. A hit
   whose name is the same (case, punctuation and ™ ® © ignored, each `?` one character beyond ASCII: a letter like "ö" or
   a dash, ellipsis or curly quote) is taken when it is the only one; one main game left of any name is taken too; two equal or several others are several hits (at most 8, IGDB's
-  order), handled by "Bei mehreren Treffern" (shared with the artwork, waiting list: #494 part 2); no hit: launcher
+  order), handled by "Bei mehreren Treffern" (shared with the artwork, waiting list: [waiting-list.md](waiting-list.md)); no hit: launcher
   data, searched again at the next scan. A game matched once is asked by its IGDB id from then on.
 - IGDB's fields: summary as description (English), genres onto the German list (Action from the theme "Action"),
   first release date, developers and publishers from the involved companies, USK/PEGI/ESRB by organization and rating

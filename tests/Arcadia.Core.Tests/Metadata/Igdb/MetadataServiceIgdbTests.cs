@@ -12,7 +12,7 @@ namespace Arcadia.Core.Tests.Metadata.Igdb;
 /// matching by AppID and by name, the order and the switch merged from the cache, doubtful titles, failures, the pace
 /// and the progress.
 /// </summary>
-public sealed class MetadataServiceIgdbTests : IDisposable
+public sealed partial class MetadataServiceIgdbTests : IDisposable
 {
     private static readonly LauncherInfo Steamish = new("madeup-steam", "Made-up Steam", "madeup-steam");
     private static readonly LauncherInfo Epicish = new("madeup-epic", "Made-up Epic", "madeup-epic");

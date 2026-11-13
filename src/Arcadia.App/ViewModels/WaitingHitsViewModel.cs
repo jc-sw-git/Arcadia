@@ -4,15 +4,13 @@ using Arcadia.App.Keyboard;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.Core.Artwork;
-using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Navigation;
-using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
-/// <summary>Where the focus is in the hits of a game: the grid, the field "Eigener Suchbegriff" or "Zurücksetzen".</summary>
+/// <summary>Where the focus is in the hits of an entry: the grid, the field "Eigener Suchbegriff" or "Zurücksetzen".</summary>
 public enum WaitingHitsFocus
 {
     Grid,
@@ -24,109 +22,71 @@ public enum WaitingHitsFocus
 public sealed record WaitingKeyboard(Func<IKeyboardTarget, OnScreenKeyboardViewModel> Take, Action<IKeyboardTarget> GiveBack);
 
 /// <summary>
-/// The hits of the game shown on "Warten auf deine Auswahl" (#506), right of the games: what is sought, the field
-/// "Eigener Suchbegriff" with "Zurücksetzen", and a grid of the hits that have an image of the sought kind. Hits known
-/// to have one show at once; once the focus rests on the game, the others are checked (a few at a time, filling the
-/// grid in SteamGridDB's order) and the tiles' images load. An own term searches SteamGridDB and shows the first
-/// <see cref="SteamGridDbClient.MaxOwnTermHits"/> results with images; nothing of it is kept.
+/// The hits of the entry shown on "Warten auf deine Auswahl", right of the games (#506): what is sought, the field
+/// "Eigener Suchbegriff" with "Zurücksetzen", and a grid of hits. The same for both kinds of entries; what is sought, where
+/// the hits come from and their images is the kind's own (<see cref="ArtworkHitsViewModel"/> for SteamGridDB,
+/// <see cref="MetadataHitsViewModel"/> for IGDB, #494). In the grid ◀ ▶ ▲ ▼ go round in rows and columns, the field's row
+/// counting as each column's top; A acts on what is focused.
 /// </summary>
-/// <remarks>UI thread only. Every request runs off it and is cancelled when another game is shown or the list closes.</remarks>
-public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
+/// <remarks>UI thread only. Every request runs off it and is cancelled when another entry is shown or the list closes.</remarks>
+public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 {
     /// <summary>Tiles a row: covers (2 : 3) and backgrounds (wide) fill the same width.</summary>
     public const int CoverColumns = 5;
 
     public const int HeroColumns = 3;
 
-    /// <summary>How many hits are checked at once: enough to fill the grid quickly, few enough not to be slowed down.</summary>
-    private const int ParallelChecks = 4;
-
-    /// <summary>How long the focus rests on a game before anything is asked or loaded for it.</summary>
+    /// <summary>How long the focus rests on an entry before anything is asked or loaded for it.</summary>
     internal static readonly TimeSpan RestDelay = TimeSpan.FromMilliseconds(150);
 
-    private readonly ArtworkService _artwork;
     private readonly WaitingKeyboard _keyboard;
     private readonly Action<WaitingHitViewModel> _take;
     private CancellationTokenSource _work = new();
     private readonly List<Task> _tileLoads = [];
-    private bool _tilesLoad;
     private int _focus;
     private int _column;
 
-    // Until the player moves, the focus stays on the first hit in SteamGridDB's order, however the checks finish.
-    private bool _playerMoved;
-    private bool _disposed;
-
-    /// <param name="take">A or a click on a hit: the list takes it.</param>
-    /// <param name="title">The title the game shows, its own one included (#496); the search term starts from the launcher's.</param>
-    public WaitingHitsViewModel(ArtworkService artwork, WaitingGame waiting, string title, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
+    protected WaitingHitsViewModel(string title, string originalTerm, WaitingKeyboard keyboard, Action<WaitingHitViewModel> take)
     {
         Title = title;
-        _artwork = artwork;
         _keyboard = keyboard;
         _take = take;
-        Waiting = waiting;
-        Sought = waiting.Match.Sought;
-        OriginalTerm = SteamGridDbNames.SearchTermOf(waiting.Game.Title);
-        Term = OriginalTerm;
-
-        // The tiles after the frame that shows the focus move: building them doesn't delay it (#506, scenario 20).
-        Avalonia.Threading.Dispatcher.UIThread.Post(
-            () =>
-            {
-                if (!_disposed && !_tilesLoad && Hits.Count == 0)
-                {
-                    ShowKnownHits(waiting.Match);
-                }
-            },
-            Avalonia.Threading.DispatcherPriority.Background);
+        OriginalTerm = originalTerm;
+        Term = originalTerm;
     }
 
     public void Dispose()
     {
-        _disposed = true;
+        IsDisposed = true;
         _work.Cancel();
         CloseEditor();
     }
-
-    public WaitingGame Waiting { get; }
 
     public string Title { get; }
 
     public ObservableCollection<WaitingHitViewModel> Hits { get; } = [];
 
-    /// <summary>The kinds SteamGridDB is to give the game after the choice; decided again once the focus rests on it.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SoughtText), nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns))]
-    public partial IReadOnlyList<ArtworkKind> Sought { get; private set; }
+    /// <summary>"Gesucht: …": what the choice gives the game.</summary>
+    public abstract string SoughtText { get; }
 
-    public string SoughtText => Sought.Count > 1 ? AppTexts.WaitingSoughtBoth
-        : Sought[0] == ArtworkKind.Cover ? AppTexts.WaitingSoughtCover
-        : AppTexts.WaitingSoughtHero;
+    /// <summary>How many hits there are and what A on one does.</summary>
+    public abstract string Intro { get; }
 
-    public string Intro
-    {
-        get
-        {
-            var loads = Sought.Count > 1 ? AppTexts.WaitingLoadsBoth : Sought[0] == ArtworkKind.Cover ? AppTexts.WaitingLoadsCover : AppTexts.WaitingLoadsHero;
-            return IsOwnTerm ? AppTexts.WaitingIntroOwnTerm(count: Hits.Count, loads: loads) : AppTexts.WaitingIntro(count: Hits.Count, loads: loads);
-        }
-    }
+    /// <summary>Below the grid: what Y does to the entry.</summary>
+    public abstract string Note { get; }
 
     /// <summary>
-    /// The intro's count says what SteamGridDB found; with the grid empty and a reason shown (no key, no connection, no
+    /// The intro's count says what the source found; with the grid empty and a reason shown (no key, no connection, no
     /// hits) the reason says it, and a count of 0 would claim an answer that may never have come.
     /// </summary>
     public bool HasIntro => Hits.Count > 0 || !HasMessage;
 
-    /// <summary>What the tiles show and the hits are checked for: the cover when both are sought.</summary>
-    public ArtworkKind TileKind => NameMatch.TileKindOf(Sought);
-
-    public bool IsHero => TileKind == ArtworkKind.Hero;
+    /// <summary>The tiles are backgrounds, three a row; covers otherwise.</summary>
+    public virtual bool IsHero => false;
 
     public int Columns => IsHero ? HeroColumns : CoverColumns;
 
-    /// <summary>The game's search name; "Zurücksetzen" brings it back.</summary>
+    /// <summary>The entry's search name; "Zurücksetzen" brings it back.</summary>
     public string OriginalTerm { get; }
 
     [ObservableProperty]
@@ -140,12 +100,12 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     /// <summary>"Treffer werden geprüft …": hits are being checked or searched.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMessage))]
-    public partial bool IsChecking { get; private set; }
+    public partial bool IsChecking { get; protected set; }
 
-    /// <summary>Why the grid is empty: no hits, SteamGridDB not reachable or the key turned down; null while it isn't.</summary>
+    /// <summary>Why the grid is empty: no hits, the source not reachable or its access turned down; null while it isn't.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMessage), nameof(HasIntro))]
-    public partial string? Message { get; private set; }
+    public partial string? Message { get; protected set; }
 
     public bool HasMessage => Message is not null && !IsChecking;
 
@@ -178,14 +138,28 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     /// <summary>The focused hit changed: the view brings it into sight.</summary>
     public event EventHandler? FocusMoved;
 
-    /// <summary>The focus rests on the game: what it seeks is decided again, its unchecked hits checked, the tiles loaded.</summary>
+    protected bool IsDisposed { get; private set; }
+
+    /// <summary>Until the player moves, the focus stays on the first hit in the source's order, however the checks finish.</summary>
+    protected bool PlayerMoved { get; set; }
+
+    /// <summary>The tiles' images load as tiles come; set once the focus rests on the entry.</summary>
+    protected bool TilesLoad { get; set; }
+
+    /// <summary>The token of what runs for the hits shown now.</summary>
+    protected CancellationToken WorkToken => _work.Token;
+
+    /// <summary>The longest own term the source takes.</summary>
+    protected abstract int MaxTermLength { get; }
+
+    /// <summary>The focus rests on the entry: the hits are brought up to date and the tiles loaded.</summary>
     public void Start() => Run(c => ShowOriginalAsync(RestDelay, c));
 
     /// <summary>A in the games list: the focus comes to the first hit, or to the field while there is none.</summary>
     public void Enter()
     {
         IsActive = true;
-        _playerMoved = false;
+        PlayerMoved = false;
         Zone = Hits.Count > 0 ? WaitingHitsFocus.Grid : WaitingHitsFocus.Term;
         _column = 0;
         FocusHit(0);
@@ -202,7 +176,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     public void Handle(UiAction action)
     {
         var held = HeldPress.IsRepeat;
-        _playerMoved |= action is UiAction.Left or UiAction.Right or UiAction.Up or UiAction.Down;
+        PlayerMoved |= action is UiAction.Left or UiAction.Right or UiAction.Up or UiAction.Down;
         switch (action)
         {
             case UiAction.Left:
@@ -223,6 +197,39 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    /// <summary>The entry's own hits, once <paramref name="rest"/> has passed: brought up to date, their tiles loaded.</summary>
+    protected abstract Task ShowOriginalAsync(TimeSpan rest, CancellationToken cancel);
+
+    /// <summary>An own term: the source's results replace the hits.</summary>
+    protected abstract Task SearchAsync(string term, CancellationToken cancel);
+
+    /// <summary>A hit's tile image off the UI thread; null keeps the placeholder.</summary>
+    protected abstract Task<ArtworkFile?> TileImageAsync(WaitingHitViewModel tile, CancellationToken cancel);
+
+    /// <summary>A new tile; its image loads when the tiles load.</summary>
+    protected WaitingHitViewModel Track(WaitingHitViewModel tile)
+    {
+        if (TilesLoad)
+        {
+            LoadTileAsync(tile, _work.Token).Forget(AppTexts.ErrorContextWaitingList);
+        }
+
+        return tile;
+    }
+
+    /// <summary>The images of every tile shown, once they may load.</summary>
+    protected void LoadShownTiles(CancellationToken cancel)
+    {
+        TilesLoad = true;
+        foreach (var tile in Hits)
+        {
+            LoadTileAsync(tile, cancel).Forget(AppTexts.ErrorContextWaitingList);
+        }
+    }
+
+    /// <summary>Takes the hit A or a click chose.</summary>
+    protected void Take(WaitingHitViewModel hit) => _take(hit);
+
     [RelayCommand]
     private void EditTerm()
     {
@@ -237,7 +244,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         TextEditorViewModel? editor = null;
         editor = new TextEditorViewModel(
             Term,
-            text => text.Trim().Length > SteamGridDbClient.MaxNameLength ? AppTexts.WaitingTermTooLong(SteamGridDbClient.MaxNameLength) : null,
+            text => text.Trim().Length > MaxTermLength ? AppTexts.WaitingTermTooLong(MaxTermLength) : null,
             text =>
             {
                 Search(text);
@@ -259,7 +266,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
         Term = OriginalTerm;
         Hits.Clear();
-        _playerMoved = false;
+        PlayerMoved = false;
         Zone = WaitingHitsFocus.Grid;
         Run(c => ShowOriginalAsync(TimeSpan.Zero, c));
         FocusHit(0);
@@ -290,7 +297,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>↵ on the keyboard: the term's results replace the hits; the game's own search name brings back its hits.</summary>
+    /// <summary>↵ on the keyboard: the term's results replace the hits; the entry's own search name brings back its hits.</summary>
     private void Search(string text)
     {
         var term = text.Trim();
@@ -302,7 +309,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
         Term = term;
         Hits.Clear();
-        _playerMoved = false;
+        PlayerMoved = false;
 
         // The first result to arrive takes the focus, so A takes it; with none the focus goes back to the field.
         Zone = WaitingHitsFocus.Grid;
@@ -383,7 +390,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         return indices.Count > 0 || Hits.Count == 0 ? indices : [Hits.Count - 1];
     }
 
-    private void FocusHit(int index)
+    protected void FocusHit(int index)
     {
         _focus = Math.Clamp(index, 0, Math.Max(Hits.Count - 1, 0));
         if (Zone == WaitingHitsFocus.Grid && Hits.Count > 0)
@@ -402,28 +409,28 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>The hits known to have an image of the tile kind, at once, without a request.</summary>
-    private void ShowKnownHits(NameMatch match)
+    /// <summary>A hit joins the grid at <paramref name="at"/>; the focus stays on the hit it is on once the player moved it, before that on the first.</summary>
+    protected void InsertHit(int at, WaitingHitViewModel tile)
     {
-        Hits.Clear();
-        foreach (var hit in match.Hits.Where(h => match.Checked.Contains(h.Id)))
+        var wasEmpty = Hits.Count == 0;
+        Hits.Insert(at, tile);
+        IntroChanged();
+        if (!PlayerMoved || wasEmpty)
         {
-            Hits.Add(NewHit(hit));
+            _focus = 0;
+        }
+        else if (at <= _focus)
+        {
+            _focus++;
         }
 
-        OnPropertyChanged(nameof(Intro));
-        OnPropertyChanged(nameof(HasIntro));
+        FocusHit(_focus);
     }
 
-    private WaitingHitViewModel NewHit(SteamGridDbHit hit)
+    protected void IntroChanged()
     {
-        var tile = new WaitingHitViewModel(hit, h => _take(h));
-        if (_tilesLoad)
-        {
-            LoadTileAsync(tile, _work.Token).Forget(AppTexts.ErrorContextWaitingList);
-        }
-
-        return tile;
+        OnPropertyChanged(nameof(Intro));
+        OnPropertyChanged(nameof(HasIntro));
     }
 
     /// <summary>Cancels what runs for the hits shown and starts <paramref name="work"/>.</summary>
@@ -437,7 +444,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         running.Forget(AppTexts.ErrorContextWaitingList);
     }
 
-    private async Task RunGuardedAsync(Func<CancellationToken, Task> work, CancellationToken cancel)
+    private static async Task RunGuardedAsync(Func<CancellationToken, Task> work, CancellationToken cancel)
     {
         try
         {
@@ -445,179 +452,23 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException) when (cancel.IsCancellationRequested)
         {
-            // Another game, another term, or the list closed.
+            // Another entry, another term, or the list closed.
         }
     }
 
-    /// <summary>The game's own hits: what it seeks now, the known ones with their tiles, the unchecked ones checked.</summary>
-    private async Task ShowOriginalAsync(TimeSpan rest, CancellationToken cancel)
-    {
-        await Task.Delay(rest, cancel);
-        var game = Waiting.Game;
-        if (await Task.Run(() => _artwork.WaitingMatchNow(game), cancel) is not { } match || _disposed)
-        {
-            return;
-        }
-
-        cancel.ThrowIfCancellationRequested();
-        if (!match.Sought.SequenceEqual(Sought))
-        {
-            var kindBefore = TileKind;
-            Sought = match.Sought;
-            if (TileKind != kindBefore)
-            {
-                // Other tiles: the hits shown were checked for the other kind.
-                ShowKnownHits(match);
-                FocusHit(0);
-            }
-        }
-
-        // Hits dropped meanwhile (no image, found on another screen) leave; the others stay where the focus is.
-        var current = match.Hits.Select(h => h.Id).ToHashSet();
-        for (var i = Hits.Count - 1; i >= 0; i--)
-        {
-            if (!current.Contains(Hits[i].Hit.Id))
-            {
-                Hits.RemoveAt(i);
-            }
-        }
-
-        _tilesLoad = true;
-        foreach (var tile in Hits)
-        {
-            LoadTileAsync(tile, cancel).Forget(AppTexts.ErrorContextWaitingList);
-        }
-
-        await CheckInOrderAsync(match.Hits, int.MaxValue, hit => _artwork.CheckWaitingHitAsync(game, hit, cancel), cancel);
-    }
-
-    /// <summary>An own term: SteamGridDB's results, the first with images up to <see cref="SteamGridDbClient.MaxOwnTermHits"/>.</summary>
-    private async Task SearchAsync(string term, CancellationToken cancel)
-    {
-        IsChecking = true;
-        Message = null;
-        _tilesLoad = true;
-        var search = await Task.Run(() => _artwork.SearchByTermAsync(term, cancel), cancel);
-        cancel.ThrowIfCancellationRequested();
-        switch (search.Outcome)
-        {
-            case SteamGridDbOutcome.KeyRejected:
-                Done(AppTexts.DataSourcesKeyRejected);
-                return;
-            case SteamGridDbOutcome.NoConnection:
-                Done(AppTexts.WaitingUnreachable);
-                return;
-        }
-
-        var kind = TileKind;
-        await CheckInOrderAsync(search.Hits, SteamGridDbClient.MaxOwnTermHits, hit => _artwork.CheckHitAsync(hit, kind, cancel), cancel);
-    }
-
-    /// <summary>
-    /// Checks the hits not shown yet, <see cref="ParallelChecks"/> at a time, and shows each with an image at its place in
-    /// <paramref name="hits"/>' order without moving the focus off the hit it is on. Stops at the first failure (a key
-    /// turned down or SteamGridDB not reachable): one request, not one per hit; the rest is checked the next time.
-    /// </summary>
-    private async Task CheckInOrderAsync(IReadOnlyList<SteamGridDbHit> hits, int most, Func<SteamGridDbHit, Task<HitCheck>> check, CancellationToken cancel)
-    {
-        var order = hits.Select((hit, index) => (hit.Id, index)).ToDictionary(e => e.Id, e => e.index);
-        var shown = Hits.Select(h => h.Hit.Id).ToHashSet();
-        var running = new List<Task<(SteamGridDbHit Hit, HitCheck Check)>>();
-        string? failure = null;
-        IsChecking = hits.Any(h => !shown.Contains(h.Id));
-        foreach (var hit in hits.Where(h => !shown.Contains(h.Id)))
-        {
-            while (running.Count > 0 && (running.Count >= ParallelChecks || Hits.Count + running.Count >= most))
-            {
-                var finished = Apply(await TakeFinishedAsync(running), order);
-                failure ??= finished;
-            }
-
-            if (failure is not null || Hits.Count >= most)
-            {
-                break;
-            }
-
-            running.Add(CheckOffThreadAsync(hit, check, cancel));
-        }
-
-        while (running.Count > 0)
-        {
-            var finished = Apply(await TakeFinishedAsync(running), order);
-            failure ??= finished;
-        }
-
-        cancel.ThrowIfCancellationRequested();
-        while (Hits.Count > most)
-        {
-            Hits.RemoveAt(Hits.Count - 1);
-        }
-
-        Done(Hits.Count > 0 ? null : failure ?? AppTexts.WaitingNoHits);
-    }
-
-    private static async Task<(SteamGridDbHit Hit, HitCheck Check)> CheckOffThreadAsync(
-        SteamGridDbHit hit, Func<SteamGridDbHit, Task<HitCheck>> check, CancellationToken cancel) =>
-        (hit, await Task.Run(() => check(hit), cancel));
-
-    private static async Task<(SteamGridDbHit Hit, HitCheck Check)> TakeFinishedAsync(List<Task<(SteamGridDbHit Hit, HitCheck Check)>> running)
-    {
-        var finished = await Task.WhenAny(running);
-        running.Remove(finished);
-        return await finished;
-    }
-
-    /// <summary>A hit's check shown: with an image it joins the grid; the failure's message, or null.</summary>
-    private string? Apply((SteamGridDbHit Hit, HitCheck Check) result, Dictionary<int, int> order)
-    {
-        switch (result.Check)
-        {
-            case HitCheck.HasImage:
-                Insert(result.Hit, order);
-                return null;
-            case HitCheck.KeyRejected:
-                return AppTexts.DataSourcesKeyRejected;
-            case HitCheck.NoConnection:
-                return AppTexts.WaitingUnreachable;
-            default:
-                return null;
-        }
-    }
-
-    private void Insert(SteamGridDbHit hit, Dictionary<int, int> order)
-    {
-        var at = Hits.Count(h => order.GetValueOrDefault(h.Hit.Id, int.MaxValue) < order[hit.Id]);
-        var wasEmpty = Hits.Count == 0;
-        Hits.Insert(at, NewHit(hit));
-        OnPropertyChanged(nameof(Intro));
-        OnPropertyChanged(nameof(HasIntro));
-
-        // The focus stays on the hit it is on once the player moved it; before that on the first hit.
-        if (!_playerMoved || wasEmpty)
-        {
-            _focus = 0;
-        }
-        else if (at <= _focus)
-        {
-            _focus++;
-        }
-
-        FocusHit(_focus);
-    }
-
-    private void Done(string? message)
+    /// <summary>Checking or searching ended: the grid's message, or null while it has hits.</summary>
+    protected void Done(string? message)
     {
         IsChecking = false;
         Message = message;
-        OnPropertyChanged(nameof(Intro));
-        OnPropertyChanged(nameof(HasIntro));
+        IntroChanged();
         if (Hits.Count == 0 && IsActive && Zone == WaitingHitsFocus.Grid)
         {
             Zone = WaitingHitsFocus.Term;
         }
     }
 
-    /// <summary>A tile's image off the UI thread; a game shown meanwhile cancels it.</summary>
+    /// <summary>A tile's image off the UI thread; an entry shown meanwhile cancels it.</summary>
     private Task LoadTileAsync(WaitingHitViewModel tile, CancellationToken cancel)
     {
         var loading = LoadTileImageAsync(tile, cancel);
@@ -627,10 +478,9 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     private async Task LoadTileImageAsync(WaitingHitViewModel tile, CancellationToken cancel)
     {
-        var kind = TileKind;
         try
         {
-            var image = await Task.Run(() => _artwork.HitImageAsync(Waiting.Game, tile.Hit, kind, cancel), cancel);
+            var image = await TileImageAsync(tile, cancel);
             if (!cancel.IsCancellationRequested)
             {
                 tile.Image = image;
@@ -638,7 +488,7 @@ public sealed partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException) when (cancel.IsCancellationRequested)
         {
-            // Another game is shown, or the list closed.
+            // Another entry is shown, or the list closed.
         }
     }
 }

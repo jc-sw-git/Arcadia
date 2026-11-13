@@ -46,7 +46,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
             key, artwork, host, editor => Editor = editor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
         _sourceRows = new ArtworkSourceRows(artwork, key, changes, Show);
         _reloadRows = new ArtworkReloadRows(artwork, changes, question => Dialog = question);
-        _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList);
+        _nameRows = new ArtworkNameRows(artwork, changes, host.Toast, host.OpenWaitingList, metadata);
         _metadata = metadata;
         _metadataRows = metadata is null ? null : new MetadataRows(metadata, question => Dialog = question);
         _igdbRows = metadata?.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
@@ -55,6 +55,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         if (metadata is not null)
         {
             metadata.ProgressChanged += OnChanged;
+            metadata.WaitingChanged += OnChanged;
             if (metadata.Igdb is { } access)
             {
                 access.Changed += OnChanged;
@@ -144,6 +145,7 @@ public sealed class DataSourcesSettingsViewModel : SettingsCategoryViewModel, ID
         if (_metadata is not null)
         {
             _metadata.ProgressChanged -= OnChanged;
+            _metadata.WaitingChanged -= OnChanged;
             if (_metadata.Igdb is { } access)
             {
                 access.Changed -= OnChanged;

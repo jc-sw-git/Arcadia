@@ -4,6 +4,7 @@ using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Metadata;
 using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,11 +12,13 @@ using CommunityToolkit.Mvvm.Input;
 namespace Arcadia.App.ViewModels;
 
 /// <summary>
-/// "Warten auf deine Auswahl" (#491, two levels since #506): the games SteamGridDB found only by name with several
-/// matching games, left, and the current game's hits, right (<see cref="WaitingHitsViewModel"/>). In the games list
+/// "Warten auf deine Auswahl" (#491, two levels since #506): the games SteamGridDB or IGDB (#494) found only by name with
+/// several matching games, left, each entry marked "Artwork" or "Metadaten" (a game waiting for both is there twice, the
+/// artwork entries first), and the current entry's hits, right (<see cref="WaitingHitsViewModel"/>). In the games list
 /// ▲ ▼ choose a game (round at the ends), A goes into its hits, B closes; in the hits the D-pad moves through the grid,
-/// A takes the hit and comes back to the games list on the next waiting game, B comes back without. Y skips the game in
-/// both. The list follows the service: games found by a later search come at the end, a game that left the library goes.
+/// A takes the hit and comes back to the games list on the next waiting entry, B comes back without. Y skips the entry in
+/// both. The list follows the services: entries found by a later search come at the end of their kind, a game that left
+/// the library goes.
 /// </summary>
 /// <remarks>
 /// UI thread only. Moving through the games only marks the game and shows the hits already known; nothing is asked or
@@ -24,6 +27,7 @@ namespace Arcadia.App.ViewModels;
 public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 {
     private readonly ArtworkService _artwork;
+    private readonly MetadataService? _metadata;
     private readonly Func<Game, string> _titleOf;
     private readonly WaitingKeyboard _keyboard;
     private readonly Action<WaitingListViewModel> _close;
@@ -32,20 +36,30 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     /// <param name="keyboard">The settings' on-screen keyboard, for "Eigener Suchbegriff".</param>
     /// <param name="close">B in the games list or the ✕: back to the row "Warten auf deine Auswahl".</param>
     /// <param name="titleOf">The title a game shows, its own one included (#496).</param>
-    public WaitingListViewModel(ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close)
+    /// <param name="metadata">The metadata entries (#494); null: only artwork entries.</param>
+    /// <param name="artworkShown">The artwork entries are on the list: SteamGridDB is switched on.</param>
+    public WaitingListViewModel(
+        ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close, MetadataService? metadata = null,
+        Func<bool>? artworkShown = null)
     {
         _artwork = artwork;
+        _metadata = metadata;
+        _artworkShown = artworkShown ?? (() => true);
         _titleOf = titleOf;
         _keyboard = keyboard;
         _close = close;
         _artwork.WaitingChanged += OnWaitingChanged;
+        _metadata?.WaitingChanged += OnWaitingChanged;
         Refresh();
     }
+
+    private readonly Func<bool> _artworkShown;
 
     public void Dispose()
     {
         _disposed = true;
         _artwork.WaitingChanged -= OnWaitingChanged;
+        _metadata?.WaitingChanged -= OnWaitingChanged;
         Hits?.Dispose();
     }
 
@@ -139,7 +153,15 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     {
         if (CurrentGame is { } game)
         {
-            _artwork.Skip(game.Waiting.Game);
+            if (game.IsMetadata)
+            {
+                _metadata?.Skip(game.Game);
+            }
+            else
+            {
+                _artwork.Skip(game.Game);
+            }
+
             InHits = false;
             Refresh();
         }
@@ -172,11 +194,22 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var choosing = _artwork.ChooseAsync(game.Waiting.Game, hit.Hit);
-        InHits = false;
-        Refresh();
-        Loading = choosing;
-        choosing.Forget(AppTexts.ErrorContextWaitingList);
+        switch (hit)
+        {
+            case MetadataHitViewModel metadataHit:
+                // In memory at once, so the entry leaves now; the file is written in the background.
+                _metadata?.Choose(game.Game, metadataHit.Hit);
+                InHits = false;
+                Refresh();
+                break;
+            case ArtworkHitViewModel artworkHit:
+                var choosing = _artwork.ChooseAsync(game.Game, artworkHit.Hit);
+                InHits = false;
+                Refresh();
+                Loading = choosing;
+                choosing.Forget(AppTexts.ErrorContextWaitingList);
+                break;
+        }
     }
 
     private void OnWaitingChanged(object? sender, EventArgs e) =>
@@ -189,20 +222,21 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         });
 
     /// <summary>
-    /// The games as the service has them now; the current one stays, or the one after it when it left (the first after
+    /// The entries as the services have them now; the current one stays, or the one after it when it left (the first after
     /// the last). Only what changed is removed, moved or added, so a press on a long list doesn't rebuild it.
     /// </summary>
     private void Refresh()
     {
-        var waiting = _artwork.Waiting;
+        var waiting = Entries();
         var currentKey = CurrentGame?.Key;
         var currentIndex = CurrentGame is null ? 0 : Games.IndexOf(CurrentGame);
-        var wanted = waiting.ToDictionary(w => w.Game.Key, StringComparer.Ordinal);
+        var wanted = waiting.ToDictionary(w => w.Key, StringComparer.Ordinal);
         for (var i = Games.Count - 1; i >= 0; i--)
         {
             if (wanted.TryGetValue(Games[i].Key, out var now))
             {
-                Games[i].Waiting = now;
+                Games[i].Artwork = now.Artwork;
+                Games[i].Metadata = now.Metadata;
             }
             else
             {
@@ -213,7 +247,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         var known = Games.ToDictionary(g => g.Key, StringComparer.Ordinal);
         for (var i = 0; i < waiting.Count; i++)
         {
-            var key = waiting[i].Game.Key;
+            var key = waiting[i].Key;
             if (i < Games.Count && Games[i].Key == key)
             {
                 continue;
@@ -225,7 +259,9 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             }
             else
             {
-                Games.Insert(i, new WaitingGameViewModel(waiting[i], _titleOf(waiting[i].Game), ShowGame));
+                Games.Insert(i, waiting[i].Artwork is { } artwork
+                    ? new WaitingGameViewModel(artwork, _titleOf(artwork.Game), ShowGame)
+                    : new WaitingGameViewModel(waiting[i].Metadata!, _titleOf(waiting[i].Metadata!.Game), ShowGame));
             }
         }
 
@@ -256,8 +292,20 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         CurrentGame = game;
         InHits = false;
         Hits?.Dispose();
-        Hits = game is null ? null : new WaitingHitsViewModel(_artwork, game.Waiting, game.Title, _keyboard, Take);
+        Hits = game switch
+        {
+            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, _artwork, metadata, game.Title, _keyboard, Take),
+            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take),
+            _ => null,
+        };
         Hits?.Start();
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>The artwork entries (while SteamGridDB is on), then the metadata entries, each kind in the order it came on the list.</summary>
+    private List<(string Key, WaitingGame? Artwork, WaitingMetadataGame? Metadata)> Entries() =>
+    [
+        .. (_artworkShown() ? _artwork.Waiting : []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: false), (WaitingGame?)w, (WaitingMetadataGame?)null)),
+        .. (_metadata?.Waiting ?? []).Select(w => (WaitingGameViewModel.KeyOf(w.Game, metadata: true), (WaitingGame?)null, (WaitingMetadataGame?)w)),
+    ];
 }

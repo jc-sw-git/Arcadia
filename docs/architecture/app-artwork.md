@@ -37,10 +37,12 @@ buffers (`MALLOC_MMAP_THRESHOLD_=131072` keeps it flat); no managed or native le
 `MainViewModel.ChangeArtwork.cs` opens it from the game action (`IGameActionHost.ChangeArtwork`) as a dialog over the
 page and gives it the file dialog (`ISystemDialogs`, mouse mode meanwhile) and the warning toast.
 
-"Warten auf deine Auswahl" (#491): `Settings/ArtworkNameRows` ("Bei mehreren Treffern", the waiting row with its count)
-in "Datenquellen"; `ViewModels/WaitingListViewModel` (the games list and the two levels) and `WaitingHitsViewModel` (one
-game's hits: what is sought, the hit checks and tile images off the UI thread once the focus rests, "Eigener
-Suchbegriff" with the settings' on-screen keyboard) over `ArtworkService.ByName` (`CheckWaitingHitAsync`,
-`SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`); `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens
+"Warten auf deine Auswahl" (#491, metadata entries #494): `Settings/ArtworkNameRows` ("Bei mehreren Treffern", the
+waiting row with its count of both kinds) in "Datenquellen"; `ViewModels/WaitingListViewModel` (the entries, marked
+"Artwork" or "Metadaten", and the two levels) and `WaitingHitsViewModel` (one entry's hits: the grid, "Eigener
+Suchbegriff" with the settings' on-screen keyboard, tile images off the UI thread once the focus rests), with
+`ArtworkHitsViewModel` (what is sought, the hit checks) over `ArtworkService.ByName` (`CheckWaitingHitAsync`,
+`SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`) and `MetadataHitsViewModel` over `MetadataService.Waiting.cs`
+(IGDB's covers through `ArtworkService.OfferedCoverAsync`); `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens
 it over the settings; while open it takes every press before the settings, and real keys go to its field
 (`MainViewModel.OpenTextEditor`).

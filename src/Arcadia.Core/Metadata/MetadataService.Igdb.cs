@@ -9,16 +9,14 @@ namespace Arcadia.Core.Metadata;
 /// IGDB's part of the run (#494): after the stores, every game IGDB hasn't answered for is asked, a Steam game by its AppID
 /// (never by name, D3), every other game by its launcher title; without a usable access, with IGDB switched off or before
 /// the first scan nothing goes. A rejected access, no network, a timeout or a broken answer leave IGDB out for the rest of
-/// the run (the next scan tries again); several hits follow "Bei mehreren Treffern".
+/// the run (the next scan tries again); several hits follow "Bei mehreren Treffern": the first is taken, or the game waits
+/// for the player (MetadataService.Waiting.cs).
 /// </summary>
 public sealed partial class MetadataService
 {
     private static string IgdbName => CoreTexts.MetadataSourceIgdb;
 
     private readonly HashSet<string> _igdbReloadLeft = new(StringComparer.Ordinal);
-
-    // Games with several hits while "Selbst auswählen" holds: asked once per session, they wait with their launcher data.
-    private readonly HashSet<string> _igdbSeveral = new(StringComparer.Ordinal);
 
     /// <summary>IGDB is asked at all: there is a usable access and IGDB is switched on.</summary>
     private bool IgdbIsAsked => Igdb is { IsUsable: true } && (Settings() ?? new MetadataSettings()).WithValidValues().IsOn(MetadataSourceKind.Igdb);
@@ -31,8 +29,13 @@ public sealed partial class MetadataService
                 .SelectMany(l => l.Library.Games.Where(g => g.Type == GameType.Game).Select(g => (g, SafeStoreIdOf(l.Source, g), l.Library.Launcher.DisplayName)))
                 .DistinctBy(g => g.g.Key, StringComparer.Ordinal);
 
+    /// <summary>
+    /// IGDB still has to answer for the game: never asked, or a reload goes on. A game waiting for the player's choice or
+    /// skipped is not searched by name again, also not by a reload (D8).
+    /// </summary>
     private bool IsIgdbMissing(string gameKey) =>
-        _igdbReloadLeft.Contains(gameKey) || (_records.GetValueOrDefault(gameKey)?.Igdb is null && !_igdbSeveral.Contains(gameKey));
+        _records.GetValueOrDefault(gameKey) is var known && known?.IgdbByName is null
+        && (_igdbReloadLeft.Contains(gameKey) || known?.Igdb is null);
 
     private static ArtworkStoreId? SafeStoreIdOf(ILauncherMetadata? source, Game game)
     {
@@ -116,7 +119,7 @@ public sealed partial class MetadataService
             {
                 if (match.IsSeveral)
                 {
-                    _igdbSeveral.Add(game.Key);
+                    Wait(known ?? new CachedMetadata(game.Key, source, null, null, null), match.Hits);
                     summary.Several++;
                 }
                 else

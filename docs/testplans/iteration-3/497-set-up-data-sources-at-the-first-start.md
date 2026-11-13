@@ -11,7 +11,7 @@ panel, on-screen keyboard and browser pages are the settings' own. T497-12 says 
 step does what the settings' "Datenquellen" do (greyed rows keep the focus, T494-1, `docs/product/controls.md` says
 "passed over"): the contradiction is for the owner to decide, the step follows the settings.
 
-**Status:** Automated: T497-1 to T497-12 · QE: T497-13 · Open for the owner: T497-14 (first start, moved to the acceptance review of the iteration, I#267), T497-15 (on the release candidate)
+**Status:** Automated: T497-1 to T497-12 · QE: T497-13 · Open for the owner: T497-15 on the release candidate (T497-14 passed)
 
 - [x] **T497-1** Fresh first start (settings without `ActiveLaunchers`), controller only: "Fertig" on "Welche Launcher
   soll Arcadia nutzen?" leads to the step "Datenquellen" in place of the library, same frame as the launcher page (header
@@ -65,7 +65,7 @@ step does what the settings' "Datenquellen" do (greyed rows keep the focus, T494
 - [x] **T497-13** Window, QE's run: the step at 1920×1080 in Big Picture and in a small desktop window: rows, info panel
   and the skip button unclipped, focus ring whole, button hints match the step; a mouse click on a row, on "Einfügen" and
   on the skip button does what A does; every text German and per `docs/product/ui-texts.md`. · E2E: no (window)
-- [ ] **T497-14** **Owner:** start the own Arcadia with `--first-run` and only the Steam Controller: walk the launcher
+- [x] **T497-14** **Owner:** start the own Arcadia with `--first-run` and only the Steam Controller: walk the launcher
   page and the step "Datenquellen"; "Schlüssel-Seite öffnen", copy the SteamGridDB key by mouse, back, "Einfügen":
   "Verbunden"; "Zugang anlegen", copy client id and secret from Twitch's console, back, paste both: "Verbunden"; end the
   step: the library is usable at once, covers and descriptions arrive while you move, the mouse mode is off. · E2E: no
@@ -89,3 +89,4 @@ History:
 | T497-13 | 2026-11-13 | Claude (QE) | PR branch 93ea8eb, Release, Xvfb 1920×1080 and window 1280×720, `--demo --first-run` and a fresh first start without `--demo`, keys and mouse | ❌ | Fresh step fine (rows, info panel, hints, texts, clicks on a row, "Einfügen", wrap to "Überspringen"). After a restart on the step the list doesn't follow the focus: "Überspringen" focused but out of sight (the window never follows a settings page set before it binds); back to the architect |
 | T497-9, T497-13 (resumed step scrolls with the focus) | 2026-11-13 | Claude | PR #527 after the QE finding, Linux Xvfb 1920 × 1080, real app resumed on "Datenquellen", ▲ from the first row | ✅ "Überspringen" scrolled into view | – |
 | T497-13 | 2026-11-13 | Claude (QE) | PR branch f8899ee, Release, Xvfb 1920×1080, fresh first start without `--demo`, killed on the step and restarted | ✅ | Resumed step scrolls with the focus to "Überspringen"; with a pasted key the last row is "Fertig" with its own info text; ending it shows the library and removes the record |
+| T497-14 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller | ✅ final test of #43 | – |

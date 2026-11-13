@@ -98,6 +98,22 @@ public sealed class DepthSlot : Decorator
         else if (change.Property == PositionProperty || change.Property == StackDepthProperty)
         {
             Place(Position);
+            if (change.Property == PositionProperty && Position == Slot)
+            {
+                RedrawImages();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The cover arrived at its slot: its image is drawn again, so it decodes at its new size. A changed render transform
+    /// alone redraws nothing, and a cover that came to the front from a stack would stay as blurry as it was there (#532).
+    /// </summary>
+    private void RedrawImages()
+    {
+        foreach (var image in this.GetVisualDescendants().OfType<ArtworkImage>())
+        {
+            image.InvalidateVisual();
         }
     }
 

@@ -14,10 +14,10 @@ public enum SuggestionKeyState
     Valid,
 }
 
-/// <summary>One image the source offers for a game, with its rating there (higher is better), if it has one.</summary>
+/// <summary>One image the source offers for a game, best first.</summary>
 /// <param name="Origin">Short and stable, e.g. <c>steamgriddb</c>; kept in the cache's metadata.</param>
 /// <param name="Download">An <c>https</c> address of the image.</param>
-public sealed record SuggestedImage(string Origin, Uri Download, int? Score = null);
+public sealed record SuggestedImage(string Origin, Uri Download);
 
 /// <summary>
 /// More images for "Artwork ändern" than the launcher has (#13: SteamGridDB, by rating, up to 20). The source is wired by

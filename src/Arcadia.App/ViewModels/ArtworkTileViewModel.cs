@@ -57,9 +57,8 @@ public sealed partial class ArtworkTileViewModel : ViewModelBase
     {
         Offer = offer,
         File = offer.File,
-        Tag = offer.Source == ArtworkSource.SteamGridDb
-            ? offer.Score is { } score ? AppTexts.ArtworkScore(score) : string.Empty
-            : launcherName.ToUpperInvariant(),
+        // SteamGridDB's API gives every image the rating 0, whatever its likes on the site: its tiles carry no tag (#532).
+        Tag = offer.Source == ArtworkSource.SteamGridDb ? string.Empty : launcherName.ToUpperInvariant(),
         Caption = offer.Source != ArtworkSource.SteamGridDb ? launcherName
             : offer.File.Kind == Launchers.Abstractions.ArtworkKind.Hero
                 ? AppTexts.ArtworkSuggestionHero(AppTexts.ArtworkImageSize(width: offer.File.Size.Width, height: offer.File.Size.Height))

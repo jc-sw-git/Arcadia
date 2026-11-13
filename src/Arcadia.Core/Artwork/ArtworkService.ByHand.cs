@@ -6,8 +6,7 @@ namespace Arcadia.Core.Artwork;
 /// <summary>An image "Artwork ändern" offers (#490): the launcher's, or one of the source of more images.</summary>
 /// <param name="File">The image to show on its tile.</param>
 /// <param name="Source">Where it comes from, kept in the cache once it is taken.</param>
-/// <param name="Score">Its rating at the source, if it has one.</param>
-public sealed record ArtworkOffer(ArtworkFile File, ArtworkSource Source, string Origin, string Stamp, int? Score)
+public sealed record ArtworkOffer(ArtworkFile File, ArtworkSource Source, string Origin, string Stamp)
 {
     /// <summary>The offer is <paramref name="image"/>: the tile of the image in use gets the tick.</summary>
     public bool Is(CachedImage? image) => image is not null && image.Source == Source && image.Origin == Origin && image.Stamp == Stamp;
@@ -348,12 +347,37 @@ public sealed partial class ArtworkService
         switch (pick)
         {
             case Pick.Keep when fromLauncher is not null && currentFile is not null:
-                return new ArtworkOffer(currentFile, ArtworkSource.Launcher, fromLauncher.Origin, fromLauncher.Stamp, null);
+                // Offered as a copy: the file in use is overwritten when another tile is taken, and the launcher's tile
+                // must still be takeable afterwards (#532).
+                return CopyOfInUse(currentFile) is { } copy
+                    ? new ArtworkOffer(copy, ArtworkSource.Launcher, fromLauncher.Origin, fromLauncher.Stamp)
+                    : null;
             case Pick.Take take:
                 var path = _cache.WriteSuggestion(game.Key, kind, take.Content, ArtworkCache.ExtensionOf(take.Content)!);
-                return new ArtworkOffer(new ArtworkFile(game.Key, kind, path, take.Size, 0), ArtworkSource.Launcher, take.Candidate.Origin, take.Stamp, null);
+                return new ArtworkOffer(new ArtworkFile(game.Key, kind, path, take.Size, 0), ArtworkSource.Launcher, take.Candidate.Origin, take.Stamp);
             default:
                 return null;
+        }
+    }
+
+    /// <summary>The image in use, copied to the offers waiting in the cache; null if it can't be read any more.</summary>
+    private ArtworkFile? CopyOfInUse(ArtworkFile inUse)
+    {
+        try
+        {
+            var content = File.ReadAllBytes(inUse.Path);
+            if (ArtworkCache.ExtensionOf(content) is not { } extension)
+            {
+                return null;
+            }
+
+            var path = _cache.WriteSuggestion(inUse.GameKey, inUse.Kind, content, extension);
+            return inUse with { Path = path, Version = 0 };
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log($"Artwork: {Name(inUse.Kind)} von {inUse.GameKey} nicht als Angebot kopiert: {e.GetType().Name}");
+            return null;
         }
     }
 
@@ -373,7 +397,7 @@ public sealed partial class ArtworkService
                     && ImageCheck.Of(new MemoryStream(content)) is { } size && ArtworkCache.ExtensionOf(content) is { } extension)
                 {
                     var path = _cache.WriteSuggestion(game.Key, kind, content, extension);
-                    offers[index] = new ArtworkOffer(new ArtworkFile(game.Key, kind, path, size, 0), ArtworkSource.SteamGridDb, image.Origin, image.Download.AbsoluteUri, image.Score);
+                    offers[index] = new ArtworkOffer(new ArtworkFile(game.Key, kind, path, size, 0), ArtworkSource.SteamGridDb, image.Origin, image.Download.AbsoluteUri);
                 }
             }
             finally

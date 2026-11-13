@@ -36,7 +36,8 @@
   (`detail-page.md`).
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
-  it fades out where more tabs follow. Dividers also stand between a status message and the search chip and
+  it fades out where more tabs follow: the cut-off tab itself turns transparent, nothing is laid over it, so over the
+  detail page's artwork no dark block shows (#531). Dividers also stand between a status message and the search chip and
   between the settings chip and the date.
 - Entry types (#141): Spiel, Software, Werkzeug, Soundtrack (`Game.Type`). A launcher
   says which it delivers and offers a switch per kind on its page (`docs/product/launchers.md`); games are always shown.

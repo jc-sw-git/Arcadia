@@ -87,9 +87,9 @@
             Command="{Binding PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-          <TextBlock Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+          <TextBlock Classes="onArt" Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailBefore}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <TextBlock Classes="label onArt" Text="{x:Static app:AppTexts.DetailBefore}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" />
@@ -106,9 +106,9 @@
             Command="{Binding NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-          <TextBlock Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+          <TextBlock Classes="onArt" Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailAfter}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <TextBlock Classes="label onArt" Text="{x:Static app:AppTexts.DetailAfter}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" RenderTransform="scaleX(-1)" />
@@ -151,13 +151,14 @@
           </StackPanel>
         </Border>
       </StackPanel>
-      <TextBlock Name="Title" Margin="0,10,0,0" Text="{Binding Tile.Title}" FontSize="66" FontWeight="ExtraBold" TextWrapping="Wrap" MaxLines="2"
-                 TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
+      <!-- A long title shrinks to half its size before it wraps (#531), so the button row stays in place. -->
+      <ctl:ShrinkingTitle Name="Title" Classes="onArt" Margin="0,10,0,0" Text="{Binding Tile.Title}" LargestSize="66" SmallestSize="33" FontWeight="ExtraBold"
+                          TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
       <!-- "Original-Titel: …" (#496): R3 shows it under an own title in place of the info line, one line cut with "…", so
            a two-line title doesn't push the button row down. -->
-      <TextBlock Name="OriginalTitle" Classes="detailOriginalTitle" Text="{Binding OriginalTitleLine}" IsVisible="{Binding ShowsOriginalTitle}" />
+      <TextBlock Name="OriginalTitle" Classes="detailOriginalTitle onArt" Text="{Binding OriginalTitleLine}" IsVisible="{Binding ShowsOriginalTitle}" />
       <!-- The info line (#493): genres · developer · year in one line, cut with "…", and the first age rating. -->
-      <StackPanel Name="InfoLine" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+      <StackPanel Name="InfoLine" Classes="onArt" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
         <StackPanel.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
             <Binding Path="GameInfo.HasInfoLine" />
@@ -180,7 +181,7 @@
           </ItemsControl.ItemsPanel>
         </ItemsControl>
         <!-- The quiet note: an icon and text, no surface or border; the focus never lands on it. -->
-        <StackPanel Name="Note" Margin="28,0,0,0" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding HasNotes}">
+        <StackPanel Name="Note" Classes="onArt" Margin="28,0,0,0" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding HasNotes}">
           <DockPanel IsVisible="{Binding HasUpdateNote}">
             <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 4v12M6 10l6 6 6-6M5 20h14" Margin="0,0,12,0" />
             <StackPanel Spacing="1" VerticalAlignment="Center">
@@ -254,15 +255,18 @@
                           <Path Classes="quickIcon" Data="{Binding QuickIcon}" Width="24" Height="24" Stretch="None" />
                         </Viewbox>
                         <!-- ◀ value ▶: the arrows change it with the mouse, as on the row. -->
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" Margin="12,0,-10,0" IsVisible="{Binding IsChoice}">
-                          <Button Classes="plain valueArrow quickArrow" Command="{Binding StepBackCommand}">
-                            <Path Classes="chevronLeft" />
-                          </Button>
-                          <TextBlock Classes="quickValue" Text="{Binding ValueText}" />
-                          <Button Classes="plain valueArrow quickArrow" Command="{Binding StepOnCommand}">
-                            <Path Classes="chevronRight" />
-                          </Button>
-                        </StackPanel>
+                        <!-- In its own, darker chip (#531), as the settings' value pill. -->
+                        <Border DockPanel.Dock="Right" Classes="quickChip" Margin="12,0,-12,0" VerticalAlignment="Center" IsVisible="{Binding IsChoice}">
+                          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Button Classes="plain valueArrow quickArrow" Command="{Binding StepBackCommand}">
+                              <Path Classes="chevronLeft" />
+                            </Button>
+                            <TextBlock Classes="quickValue" Text="{Binding ValueText}" />
+                            <Button Classes="plain valueArrow quickArrow" Command="{Binding StepOnCommand}">
+                              <Path Classes="chevronRight" />
+                            </Button>
+                          </StackPanel>
+                        </Border>
                         <TextBlock DockPanel.Dock="Right" Classes="quickValue" Margin="12,0,0,0" Text="{Binding ValueText}" IsVisible="{Binding HasActionValue}" />
                         <TextBlock Classes="quickTitle" Text="{Binding Title}" />
                       </DockPanel>
@@ -308,35 +312,41 @@
                 <TextBlock Text="{Binding GameInfo.MoreTags, TargetNullValue=''}" />
               </Border>
             </StackPanel>
-            <StackPanel Spacing="16">
-              <!-- The short description (#493): four lines at most, then "…"; the whole text is in "Infos". -->
-              <TextBlock Name="ShortDescription" Text="{Binding GameInfo.ShortDescription, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasShortDescription}"
-                         FontSize="20" LineHeight="30" Foreground="{StaticResource Text}" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
-              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+            <StackPanel Spacing="14">
+              <!-- The title once more above the description (#531), whole on one line or cut with "…". -->
+              <StackPanel Spacing="8">
+                <TextBlock Name="OverviewTitle" Text="{Binding Tile.Title}" FontSize="24" FontWeight="ExtraBold" Foreground="{StaticResource TextStrong}"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Tile.Title}" />
+                <!-- The short description (#493): four lines at most, then "…"; the whole text is in "Infos". -->
+                <TextBlock Name="ShortDescription" Text="{Binding GameInfo.ShortDescription, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasShortDescription}"
+                           FontSize="20" LineHeight="30" Foreground="{StaticResource Text}" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
+                <TextBlock Name="NoShortDescription" Classes="detailNoDescription" Text="{Binding GameInfo.MissingDescription, TargetNullValue=''}" IsVisible="{Binding !GameInfo.HasDescription}" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                 <Border Classes="detailStat">
-                  <StackPanel Spacing="6">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="13" />
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="12" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
                     <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Classes="detailStat">
-                  <StackPanel Spacing="6">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="13" />
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="12" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
                     <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Row="1" Classes="detailStat">
-                  <StackPanel Spacing="6">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="13" />
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="12" />
                     <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
                     <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Row="1" Grid.Column="1" Classes="detailStat">
-                  <StackPanel Spacing="6">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="13" />
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="12" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
                     <TextBlock Classes="statSource" Text="{Binding DriveText}" />
                   </StackPanel>
@@ -362,12 +372,15 @@
             <Panel IsVisible="{Binding !GameInfo.IsEmpty}">
               <ScrollViewer Name="InfosScroller" VerticalScrollBarVisibility="Hidden">
                 <Grid ColumnDefinitions="*,500" ColumnSpacing="44">
-                  <StackPanel Spacing="16" IsVisible="{Binding GameInfo.HasDescription}">
+                  <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                       <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailDescriptionCaption}" FontSize="13" VerticalAlignment="Center" />
-                      <TextBlock Classes="metadataSource" Text="{Binding GameInfo.DescriptionSource, TargetNullValue=''}" VerticalAlignment="Center" />
+                      <TextBlock Classes="metadataSource" Text="{Binding GameInfo.DescriptionSource, TargetNullValue=''}" VerticalAlignment="Center" IsVisible="{Binding GameInfo.HasDescription}" />
                     </StackPanel>
-                    <TextBlock Name="Description" Text="{Binding GameInfo.Description, TargetNullValue=''}" FontSize="21" LineHeight="32" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                    <TextBlock Name="Description" Text="{Binding GameInfo.Description, TargetNullValue=''}" FontSize="21" LineHeight="32" Foreground="{StaticResource Text}" TextWrapping="Wrap"
+                               IsVisible="{Binding GameInfo.HasDescription}" />
+                    <!-- Without one, a line says so instead of an empty column (#531). -->
+                    <TextBlock Name="NoDescription" Classes="detailNoDescription" Text="{Binding GameInfo.MissingDescription, TargetNullValue=''}" IsVisible="{Binding !GameInfo.HasDescription}" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="22">
                     <ItemsControl Name="Facts" ItemsSource="{Binding GameInfo.Facts}" IsVisible="{Binding GameInfo.HasFacts}">
@@ -526,13 +539,19 @@
 
   <UserControl.Styles>
     <Style Selector="TextBlock.statValue">
-      <Setter Property="FontSize" Value="24" />
+      <Setter Property="FontSize" Value="21" />
       <Setter Property="FontWeight" Value="Bold" />
       <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
+    <Style Selector="TextBlock.detailNoDescription">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="LineHeight" Value="30" />
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style Selector="TextBlock.statSource">
-      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontSize" Value="14" />
       <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>

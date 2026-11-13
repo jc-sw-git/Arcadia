@@ -113,6 +113,29 @@
     <SolidColorBrush x:Key="DetailActionOnArt" Color="#990B0F14" />
     <SolidColorBrush x:Key="DetailActionOnArtHover" Color="#CC1E2630" />
     <SolidColorBrush x:Key="DetailRailIconOpen" Color="#1F3A5C" />
+    <!-- Raised buttons (#531): lit from above, a light top edge, a darker lower edge and a shadow beneath. -->
+    <LinearGradientBrush x:Key="RaisedOnArt" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#F2343F4C" />
+      <GradientStop Offset="1" Color="#F2161C24" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedOnArtHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#F2414D5C" />
+      <GradientStop Offset="1" Color="#F21E2630" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedAccent" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#6CB9FF" />
+      <GradientStop Offset="1" Color="#2A88E8" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RaisedAccentHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#86C6FF" />
+      <GradientStop Offset="1" Color="#3B9EFF" />
+    </LinearGradientBrush>
+    <!-- The facts' boxes and the quick selection's entries share one surface (#531); a choice's value sits in a darker
+         chip on it, as in the settings, and the chip turns darker still while its entry has the focus. -->
+    <SolidColorBrush x:Key="DetailValueSurface" Color="#1A212B" />
+    <SolidColorBrush x:Key="DetailValueSurfaceHover" Color="#232C37" />
+    <SolidColorBrush x:Key="DetailValueChip" Color="#0F141A" />
+    <SolidColorBrush x:Key="DetailValueChipFocused" Color="#0B0F14" />
     <LinearGradientBrush x:Key="DetailScrimSide" StartPoint="0%,0%" EndPoint="100%,0%">
       <GradientStop Offset="0" Color="#D10B0F14" />
       <GradientStop Offset="0.45" Color="#800B0F14" />
@@ -127,6 +150,9 @@
       <GradientStop Offset="0.25" Color="#FF0B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
+    <!-- Text straight on the artwork (#531): title, info line, notes and the stacks' names get a soft dark halo, so they
+         read over a bright image too. -->
+    <DropShadowEffect x:Key="TextOnArtShadow" OffsetX="0" OffsetY="2" BlurRadius="14" Color="#000000" Opacity="0.95" />
 
     <!-- Focus rings and shadows. -->
     <BoxShadows x:Key="FocusRing">0 0 0 3 #F2F5F8</BoxShadows>
@@ -141,6 +167,9 @@
     <BoxShadows x:Key="ToastShadow">0 20 50 0 #8C000000</BoxShadows>
     <!-- Detail page: buttons on the page's surface get a gap between button and ring. -->
     <BoxShadows x:Key="FocusRingGap">0 0 0 7 #F2F5F8, 0 0 0 4 #121820</BoxShadows>
+    <!-- A raised button's edges and shadow (#531); with the focus the ring with its gap comes on top. -->
+    <BoxShadows x:Key="RaisedEdges">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000</BoxShadows>
+    <BoxShadows x:Key="RaisedEdgesFocused">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000, 0 0 0 7 #F2F5F8, 0 0 0 4 #121820</BoxShadows>
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
@@ -870,32 +899,43 @@
     <Setter Property="Height" Value="60" />
     <Setter Property="CornerRadius" Value="30" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
+    <Setter Property="Background" Value="{StaticResource RaisedOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
+  <Style Selector="Button.detailAction /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
   <Style Selector="Button.detailAction:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailActionOnArtHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedOnArtHover}" />
   </Style>
   <Style Selector="Button.detailAction.primary">
     <Setter Property="Height" Value="64" />
     <Setter Property="CornerRadius" Value="32" />
     <Setter Property="Padding" Value="18,0,34,0" />
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="ExtraBold" />
   </Style>
   <Style Selector="Button.detailAction.primary:pointerover">
-    <Setter Property="Background" Value="{StaticResource AccentHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccentHover}" />
   </Style>
+  <!-- A greyed button lies flat: nothing to press. -->
   <Style Selector="Button.detailAction:disabled">
     <Setter Property="Background" Value="{StaticResource DetailActionOnArt}" />
     <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
   </Style>
+  <Style Selector="Button.detailAction:disabled /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
   <Style Selector="Button.detailAction.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRingGap}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocused}" />
+  </Style>
+  <!-- Text and notes on the artwork (#531). -->
+  <Style Selector=":is(Control).onArt">
+    <Setter Property="Effect" Value="{StaticResource TextOnArtShadow}" />
   </Style>
   <Style Selector="Border.detailChip">
     <Setter Property="Background" Value="{StaticResource DetailChip}" />
@@ -906,10 +946,11 @@
     <Setter Property="Background" Value="{StaticResource Running}" />
     <Setter Property="Padding" Value="10,6,14,6" />
   </Style>
+  <!-- The game's facts in "Übersicht" (#531: smaller, so the title fits above the description). -->
   <Style Selector="Border.detailStat">
-    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
-    <Setter Property="CornerRadius" Value="14" />
-    <Setter Property="Padding" Value="24,20" />
+    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,12" />
   </Style>
   <!-- "Original-Titel: …" under an own title (#496), shown with R3; one line like the info line. -->
   <Style Selector="TextBlock.detailOriginalTitle">
@@ -1132,13 +1173,23 @@
     <Setter Property="Height" Value="56" />
     <Setter Property="CornerRadius" Value="28" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.quickEntry:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailActionHover}" />
+    <Setter Property="Background" Value="{StaticResource DetailValueSurfaceHover}" />
+  </Style>
+  <!-- A choice's ◀ value ▶ in its own chip (#531). -->
+  <Style Selector="Border.quickChip">
+    <Setter Property="Height" Value="38" />
+    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="Background" Value="{StaticResource DetailValueChip}" />
+  </Style>
+  <Style Selector="Button.quickEntry.focused Border.quickChip">
+    <Setter Property="Background" Value="{StaticResource DetailValueChipFocused}" />
   </Style>
   <Style Selector="Button.quickEntry.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
@@ -1150,7 +1201,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.quickEntry.customize:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailAction}" />
+    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
   </Style>
   <Style Selector="TextBlock.quickTitle">
     <Setter Property="FontSize" Value="17" />

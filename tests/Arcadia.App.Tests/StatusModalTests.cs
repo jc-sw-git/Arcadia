@@ -240,6 +240,23 @@ public sealed class StatusModalTests
     }
 
     [AvaloniaFact]
+    public async Task A_download_that_gets_no_further_is_cancelled_with_a_message()
+    {
+        using var arcadia = await StartAsync(new FakeSteam(), new FakeReleases("0.1.0", ("0.3.0", ["Neu"])) { StallsDownload = true });
+        await arcadia.Updates.CheckIfDueAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasArcadiaUpdate, "das Update im Header");
+
+        var install = arcadia.Updates.InstallAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Updates.Progress == 40, "der Fortschritt");
+        arcadia.Time.Advance(ArcadiaUpdateService.DownloadStall);
+        await install;
+
+        Assert.Equal(AppTexts.UpdateDownloadStalled((int)ArcadiaUpdateService.DownloadStall.TotalMinutes), arcadia.Updates.LastError);
+        Assert.Null(arcadia.Updates.Progress);
+        Assert.Empty(arcadia.Restarts);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T166-9")]
     public async Task Zu_den_Einstellungen_on_the_update_opens_Ueber_Arcadia_on_Jetzt_aktualisieren()
     {

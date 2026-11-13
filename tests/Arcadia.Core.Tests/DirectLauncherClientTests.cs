@@ -27,4 +27,22 @@ public sealed class DirectLauncherClientTests
     [InlineData("", false)]
     public void An_app_id_has_only_the_characters_Windows_allows(string id, bool startable) =>
         Assert.Equal(startable, DirectLauncherClient.IsStartable(new LaunchTarget.ShellAppsFolder(id)));
+
+    [Fact]
+    public async Task A_refused_target_is_reported_as_such_and_never_handed_on()
+    {
+        var handed = false;
+        var client = new DirectLauncherClient(_ => handed = true);
+        var stages = new List<LaunchStage>();
+
+        await client.StartAsync(new Game { Id = "x", LauncherId = "demo", Title = "X", Launch = new LaunchTarget.ProtocolUri("file:///C:/Games/x.exe") }, new Recorded(stages));
+
+        Assert.False(handed);
+        Assert.Equal([LaunchStage.Refused], stages);
+    }
+
+    private sealed class Recorded(List<LaunchStage> stages) : IProgress<LaunchStage>
+    {
+        public void Report(LaunchStage value) => stages.Add(value);
+    }
 }

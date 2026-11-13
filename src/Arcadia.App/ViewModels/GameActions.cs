@@ -397,6 +397,11 @@ public sealed class GameActions : IGameActionHost
                 StartFailed(tile);
                 _toast.Show(HealthSeverity.Info, AppTexts.DemoWouldStart(tile.Title));
                 break;
+            case LaunchStage.Refused:
+                StartFailed(tile);
+                AppLog.Write($"{tile.Game.Key} nicht gestartet: Startziel abgelehnt ({tile.Game.Launch.GetType().Name})");
+                _toast.Show(HealthSeverity.Warning, AppTexts.GameNotStartedCheckLauncher(game: tile.Title, launcher: tile.LauncherName));
+                break;
             case LaunchStage.NotConfirmed:
                 StartFailed(tile);
                 _toast.Show(HealthSeverity.Warning, AppTexts.GameNotStartedCheckLauncher(game: tile.Title, launcher: tile.LauncherName));

@@ -180,7 +180,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
         // Only the launchers of the pending games are read again: a whole scan every 15 s would read every library
         // for as long as a launcher without an install monitor (demo, plugins) keeps an install open.
-        var libraries = _scanned;
+        var rescans = new Dictionary<string, LauncherLibrary>(StringComparer.Ordinal);
         var finished = new List<Game>();
         foreach (var launcherId in _installs.PendingLauncherIds)
         {
@@ -190,7 +190,7 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             }
 
             finished.AddRange(done);
-            libraries = libraries.Select(l => l.Launcher.Id == launcherId ? rescanned : l).ToList();
+            rescans[launcherId] = rescanned;
         }
 
         if (finished.Count == 0)
@@ -198,7 +198,13 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        Show(libraries);
+        // Merged into what is shown now, not what was shown before the awaits; a full reload that started meanwhile
+        // shows its own, newer scan.
+        if (!IsLoading)
+        {
+            Show(_scanned.Select(l => rescans.GetValueOrDefault(l.Launcher.Id, l)).ToList());
+        }
+
         Noticed?.Invoke(this, new LibraryNotice.PendingInstallsFinished(finished));
     }
 

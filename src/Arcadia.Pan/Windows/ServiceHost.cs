@@ -118,7 +118,7 @@ public static class ServiceHost
         }
 
         var cleanup = new WindowsCleanup(log.Write);
-        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath, _ => ServiceSetup.SecureDataDirectory()), cleanup, log.Write, hiding: WindowsHiding.Create())
+        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath, _ => ServiceSetup.SecureDataDirectoryLogged(log.Write)), cleanup, log.Write, hiding: WindowsHiding.Create())
         {
             // The vendors' firmware tools: no controller of theirs is hidden while one runs (#238 D8).
             ProcessRuns = ProcessRuns,

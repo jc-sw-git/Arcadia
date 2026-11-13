@@ -481,6 +481,18 @@ public static class ServiceSetup
         return setAside;
     }
 
+    /// <summary>
+    /// <see cref="SecureDataDirectory"/> for a folder that went missing while Pan runs (the journal's save): what it set
+    /// aside goes to the log, as at the start.
+    /// </summary>
+    public static void SecureDataDirectoryLogged(Action<string> log)
+    {
+        foreach (var folder in SecureDataDirectory())
+        {
+            log($"Data folder not trusted: {folder}; made anew");
+        }
+    }
+
     private static readonly SecurityIdentifier Users = new(WellKnownSidType.BuiltinUsersSid, null);
 
     /// <summary>SYSTEM and administrators may do anything, users only read and list.</summary>

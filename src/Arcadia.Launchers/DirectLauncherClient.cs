@@ -17,7 +17,9 @@ public sealed partial class DirectLauncherClient(Func<LaunchTarget, bool>? start
 
     public Task StartAsync(Game game, IProgress<LaunchStage>? progress = null, CancellationToken cancellationToken = default)
     {
-        progress?.Report(_start(game.Launch) ? LaunchStage.Starting : LaunchStage.NotStartable);
+        progress?.Report(game.Launch is not LaunchTarget.None && !IsStartable(game.Launch) ? LaunchStage.Refused
+            : _start(game.Launch) ? LaunchStage.Starting
+            : LaunchStage.NotStartable);
         return Task.CompletedTask;
     }
 

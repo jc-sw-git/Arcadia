@@ -24,6 +24,9 @@ public enum LaunchStage
     /// <summary>Nothing to start (demo data).</summary>
     NotStartable,
 
+    /// <summary>A target Arcadia doesn't hand to the system (<c>DirectLauncherClient.IsStartable</c>): a file, a share, an odd app id.</summary>
+    Refused,
+
     /// <summary>The game's process did not appear in time; the launcher may need attention.</summary>
     NotConfirmed,
 }

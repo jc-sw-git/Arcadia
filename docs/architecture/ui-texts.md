@@ -39,7 +39,7 @@ description is translated by Windows' own means (`ServiceDescriptions`).
 - The neutral resources are German (`NeutralLanguage` de). A translation sits beside each file as
   `<File>.<language>.resx` (`AppTexts.en.resx`) and is built into the language's satellite assembly
   (`en/Arcadia.resources.dll`); `Arcadia.Core.Localization.UiLanguages` lists the languages.
-- `UiText` reads the UI culture's texts (en-GB → en), German for German. A text a translation lacks shows in English,
+- `UiText` reads the UI culture's texts (en-GB → en), German for German. A text a translation lacks shows in English (one log line per key and language),
   never German; a text missing altogether shows its key. The App sets the UI culture once at start, from the setting
   "Sprache", before the first text is read (`UiLanguage.Use`, which keeps the system's display language as
   `UiLanguage.System`); dates and numbers keep the system's region (`CurrentCulture`). A change applies through a

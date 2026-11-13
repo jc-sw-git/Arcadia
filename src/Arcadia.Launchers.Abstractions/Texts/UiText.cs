@@ -35,6 +35,10 @@ public static class UiText
         {
             // A text a translation lacks shows in English, the language every player is most likely to read.
             text = TextsOf(resources, English)?.GetString(key);
+            if (text is not null && culture.TwoLetterISOLanguageName != "de")
+            {
+                ReportOnce($"translation\n{culture.TwoLetterISOLanguageName}\n{key}", $"UI-Text fehlt auf {culture.TwoLetterISOLanguageName}, Arcadia zeigt ihn auf Englisch: {key}"); // not a UI text (log)
+            }
         }
 
         // Last the plain lookup, which also serves a ResourceManager that brings its texts its own way (a test's).

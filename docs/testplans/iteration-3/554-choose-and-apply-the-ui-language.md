@@ -3,7 +3,7 @@
 Part 2 of #14; scenarios 1 to 9 and the failure cases there. The cases were derived from the specification before any
 code; the quality engineer checks them again in the review.
 
-**Status:** Automated: T554-1 to T554-11, T554-13 to T554-15, T554-17, T554-18 · QE: T554-7, T554-12 · Open: T554-16 (log line, finding), T554-19 (finding) · Open for the owner: T554-20, T554-21, T554-22, T554-23
+**Status:** Automated: T554-1 to T554-11, T554-13 to T554-18 · QE: T554-7, T554-12, T554-19 · Open for the owner: T554-20, T554-21, T554-22, T554-23
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B). "System language" is the Windows display language, faked in the tests; "region" is the regional
@@ -59,7 +59,7 @@ their texts in #555/#556.
 - [x] **T554-15** The restart fails (Arcadia can't end): an error toast, `arcadia.log` has the stack trace, the old
   language stays in this session, "Sprache anwenden" stays active for a retry; the saved choice holds, so the next
   start uses it. · E2E: yes
-- [ ] **T554-16** A text missing in English (or a later language) shows the English text, never the German one and
+- [x] **T554-16** A text missing in English (or a later language) shows the English text, never the German one and
   never the key; one log line per key. · E2E: yes
 
 **Texts**
@@ -69,7 +69,7 @@ their texts in #555/#556.
 - [x] **T554-18** `ButtonGlyphTextTests` per language: LB, RB, LT, RT, L3, R3, LS, RS and D-Pad written out fail in
   every language, A, B, X, Y only in German; each entry of the exception list has a reason. `check-ui-texts.sh` fails
   on a forbidden English spelling from the English glossary. · E2E: yes
-- [ ] **T554-19** Every page, dialog and settings category of the guard page list (`Guards/GuardPages.cs`) in
+- [x] **T554-19** Every page, dialog and settings category of the guard page list (`Guards/GuardPages.cs`) in
   English, plus the first start, toasts and the status modal: nothing cut off, no German left. · E2E: no (window:
   screenshots of the drawn layout)
 - [ ] **T554-20** **Owner:** Read the English texts (the screenshots of T554-19 and the list in the PR): wording,
@@ -85,7 +85,7 @@ their texts in #555/#556.
   "already running" message; the Steam Controller works in Arcadia and in a game started afterwards. Back to
   "Deutsch" the same way. · E2E: no (real process restart, real controller)
 - [ ] **T554-23** **Owner:** Desktop mode with the mouse: the same switch with clicks only; Arcadia comes back in
-  desktop mode, same window size and place. · E2E: no (real process restart, real window)
+  desktop mode. ~~Same window size and place~~: not carried yet, #576. · E2E: no (real process restart, real window)
 - [ ] **T554-24** On the installed release candidate, after an update to it: "Sprache anwenden" restarts the
   installed version just updated to, not the old one. · E2E: no (installed Arcadia and its update) · RC
 
@@ -96,11 +96,12 @@ Automated tests:
 | T554-1, T554-5, T554-6 | `UiLanguageSettingsTests` (App): rows, order, wrapping, saving, when "Sprache anwenden" is active, clicks on the view model (T554-12 itself: QE run) |
 | T554-2, T554-3, T554-11 | `UiLanguageSettingsTests.System_language_is_used_…`, `The_info_names_…`; `UiLanguagesTests` (Core) |
 | T554-4 | `LocalizationSettingsTests.The_UI_language_comes_from_the_display_language_…`, `With_an_English_US_region_…` (App) |
+| T554-7 | `CommandLineTests` (App): start arguments kept, fullscreen as the window is now, not carried into an update restart |
 | T554-7, T554-14, T554-15 | `UiLanguageSettingsTests.Apply_restarts_…`: saved before the restart, the new start on "Sprache", a failed restart |
 | T554-8, T554-9 | `UiLanguageSettingsTests.Apply_waits_for_a_running_game_…`, `Apply_waits_for_a_game_that_is_starting`, `Apply_waits_for_the_driver_installation_…`, `Apply_during_a_metadata_reload_…` |
 | T554-10 | `UiLanguageSettingsTests.The_info_names_the_system_language_…` |
 | T554-13 | `LocalizationSettingsTests.An_unknown_language_is_the_system_language_…` (Core) |
-| T554-16, T554-17 | `UiTextTests`, `TranslationsTests` (Core), `EveryUiTextTests` (App, de-DE, de-AT, en-US, en-GB) |
+| T554-16, T554-17 | `UiTextTests` (incl. one log line per key and language), `TranslationsTests` (Core), `EveryUiTextTests` (App, de-DE, de-AT, en-US, en-GB) |
 | T554-18 | `ButtonGlyphTextTests` (Core), `tools/ci/check-ui-texts.sh` |
 
 History:
@@ -116,3 +117,5 @@ History:
 | T554-3, T554-7, T554-12 | 2026-11-13 | QE | Debug, Linux cloud container, Xvfb, `--demo` (system language it-IT, de-DE) | it-IT: English, info names “Italian”; de-DE: ◀ ▶ and clicks on arrows and value box choose, a click on the greyed row does nothing, a click on the active one restarts into English on “Language” with `--demo --fullscreen` carried | – |
 | T554-19 | 2026-11-13 | QE | Debug, Linux cloud container, Xvfb, `--demo`, English | library, game menu, view dialog, search, detail page, first start, all settings categories: no German left; after the restart the category chip at the top right shows only “⇧” without “E” (also in German) | QE finding F1, to the implementer |
 | T554-16 | 2026-11-13 | QE | code review | a text missing in a translation shows in English but logs nothing (`UiTextTests` asserts no log line) | QE finding F3, to the implementer |
+| F1 (T554-19) | 2026-11-13 | Implementer | Debug, Linux cloud container, Xvfb, `--demo --show-language-setting` | red before the fix (chip “⇧” only, its text arranged at the width of “RB”), “⇧ E” after | `KeyText` re-arranges in its presenter when its text changes |
+| F2, F3 | 2026-11-13 | Implementer | Debug, Linux cloud container | `CommandLineTests` and the log line test new, green | – |

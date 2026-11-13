@@ -44,29 +44,6 @@ public partial class App : Application
     /// <summary>How often Arcadia asks its update service; the service itself checks GitHub only every few hours.</summary>
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromMinutes(30);
 
-    /// <summary>Demo libraries for every launcher without an integration; skips the first start's question and saves no launchers.</summary>
-    private const string DemoArgument = "--demo";
-
-    /// <summary>With <see cref="DemoArgument"/>: this many demo games in all, e.g. 5000 to measure a large library.</summary>
-    private const string DemoGamesArgument = "--demo-games";
-
-    /// <summary>Shows the first start's question again, even after it was answered (#139), e.g. to try it out.</summary>
-    private const string FirstRunArgument = "--first-run";
-
-    /// <summary>Set on the restart after an update while Arcadia wasn't in front (e.g. a game was).</summary>
-    private const string BackgroundArgument = "--background";
-
-    /// <summary>Passed by Arcadia before #214 on an update restart; dropped, there is no SISR to pause anymore.</summary>
-    private const string SisrPausedArgument = "--sisr-paused-for";
-
-    /// <summary>Hands a game started from Arcadia over to the Arcadia started after an update, so its end brings Arcadia back (#94).</summary>
-    private const string StartedGameArgument = "--started-game";
-
-    /// <summary>After "Sprache anwenden" (#554): the settings open on "Sprache", in the new language.</summary>
-    private const string ShowLanguageArgument = "--show-language-setting";
-
-    private const string FullscreenArgument = "--fullscreen";
-
     private IGamepadSource? _gamepad;
 
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
@@ -100,16 +77,16 @@ public partial class App : Application
 
             // Before the first text is read: a change of "Sprache" applies after a restart (#554).
             UiLanguage.Use(settings.Current.Localization.Language);
-            var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
+            var demo = args.Contains(CommandLine.DemoArgument, StringComparer.OrdinalIgnoreCase);
             var firstRun = new FirstRunSetup(
-                settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
+                settings, demo, forced: args.Contains(CommandLine.FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
 
             // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
             var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
             // instead of the library (#297).
-            var integrations = BuiltInLaunchers.Create(time, demo, DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder);
+            var integrations = BuiltInLaunchers.Create(time, demo, CommandLine.DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder);
             // Steam the program holds the Steam Controller: the launcher that owns Steam Input, active or not.
             var steamInput = LauncherRegistry.SteamInputOwnerOf(integrations);
             var app = ArcadiaComposition.Build(new ArcadiaParts(
@@ -137,7 +114,7 @@ public partial class App : Application
             var viewModel = app.Main;
             for (var i = 0; i < args.Length - 1; i++)
             {
-                if (args[i] == StartedGameArgument)
+                if (args[i] == CommandLine.StartedGameArgument)
                 {
                     runningGames.ResumeStartedFromArcadia(args[i + 1]);
                 }
@@ -146,12 +123,12 @@ public partial class App : Application
             var window = new MainWindow { DataContext = viewModel };
             viewModel.Clipboard = new WindowClipboard(window);
             viewModel.ForegroundRequested += (_, _) => window.BringToFront();
-            if (args.Contains(FullscreenArgument, StringComparer.OrdinalIgnoreCase))
+            if (args.Contains(CommandLine.FullscreenArgument, StringComparer.OrdinalIgnoreCase))
             {
                 window.WindowState = Avalonia.Controls.WindowState.FullScreen;
             }
 
-            if (args.Contains(BackgroundArgument))
+            if (args.Contains(CommandLine.BackgroundArgument))
             {
                 // Come back behind whatever is in front (a game), as Arcadia was before the update.
                 window.ShowActivated = false;
@@ -161,10 +138,10 @@ public partial class App : Application
             desktop.MainWindow = window;
             viewModel.RestartForLanguage = () => RestartSelf(
                 "Sprache anwenden", // not a UI text (logged)
-                LanguageRestartArguments(RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), window.WindowState == Avalonia.Controls.WindowState.FullScreen),
+                CommandLine.LanguageRestart(CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), window.WindowState == Avalonia.Controls.WindowState.FullScreen),
                 desktop,
                 message => viewModel.Toast.Show(HealthSeverity.Error, message));
-            if (args.Contains(ShowLanguageArgument))
+            if (args.Contains(CommandLine.ShowLanguageArgument))
             {
                 viewModel.ShowLanguageSetting();
             }
@@ -173,7 +150,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             // The downloaded update installs once Arcadia has exited.
-            updates.RestartArguments = () => RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia);
+            updates.RestartArguments = () => CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia);
             updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
 
@@ -211,7 +188,7 @@ public partial class App : Application
             // "Arcadia neu starten" and the restart after a HidHide install (#396): HidHide lets only a new process see
             // what Pan hides. The new Arcadia waits until this one has exited.
             controllerSupport.RestartArcadia = reason => Dispatcher.UIThread.Post(() =>
-                RestartSelf(reason, RestartArguments(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(HealthSeverity.Error, message)));
+                RestartSelf(reason, CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(HealthSeverity.Error, message)));
             viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
             // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
             // to read why it fails. Not while a game is in front: a toast says it there (PanDialogsViewModel.ShowFirmwareAttempt).
@@ -369,55 +346,4 @@ public partial class App : Application
     }
 
     public static string RestartFailedText => AppTexts.RestartFailed;
-
-    private static int? DemoGames(string[] args)
-    {
-        var at = Array.FindIndex(args, a => a.Equals(DemoGamesArgument, StringComparison.OrdinalIgnoreCase));
-        return at >= 0 && at + 1 < args.Length && int.TryParse(args[at + 1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var count)
-            && count is > 0 and <= 100_000
-            ? count
-            : null;
-    }
-
-    /// <summary>
-    /// After "Sprache anwenden" (#554): the settings open on "Sprache", in fullscreen exactly when the window is now, whatever
-    /// the first start said.
-    /// </summary>
-    private static string[] LanguageRestartArguments(string[] kept, bool fullscreen) =>
-    [
-        .. kept.Where(a => !a.Equals(FullscreenArgument, StringComparison.OrdinalIgnoreCase)),
-        .. fullscreen ? [FullscreenArgument] : Array.Empty<string>(),
-        ShowLanguageArgument,
-    ];
-
-    /// <summary>Arcadia's own arguments for the start after an update, plus the state to carry over.</summary>
-    private static string[] RestartArguments(string[] args, bool inFront, IEnumerable<string> startedGames)
-    {
-        var kept = new List<string>();
-        for (var i = 0; i < args.Length; i++)
-        {
-            if (args[i] is SisrPausedArgument or StartedGameArgument)
-            {
-                i++;
-            }
-            // --first-run asked once; the start after an update must not ask again, nor open the settings again.
-            else if (args[i] != BackgroundArgument && args[i] != ShowLanguageArgument && !args[i].Equals(FirstRunArgument, StringComparison.OrdinalIgnoreCase))
-            {
-                kept.Add(args[i]);
-            }
-        }
-
-        if (!inFront)
-        {
-            kept.Add(BackgroundArgument);
-        }
-
-        foreach (var gameKey in startedGames)
-        {
-            kept.Add(StartedGameArgument);
-            kept.Add(gameKey);
-        }
-
-        return [.. kept];
-    }
 }

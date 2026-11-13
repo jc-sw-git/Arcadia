@@ -188,15 +188,23 @@ public sealed class UiTextTests : IDisposable
     public void A_text_shows_in_the_ui_language(string culture, string expected) =>
         InUiCulture(culture, () => Assert.Equal(expected, FallbackTestTexts.Plain));
 
-    [Theory]
+    [Fact]
     [Trait("TestCase", "T554-16")]
-    [InlineData("fr-FR")]
-    [InlineData("en-US")]
-    public void A_text_a_translation_lacks_shows_in_English_not_in_German(string culture) =>
-        InUiCulture(culture, () =>
+    public void A_text_English_has_shows_in_English_without_a_log_line() =>
+        InUiCulture("en-US", () =>
         {
             Assert.Equal("Opening “Hollow Crown” in Steam…", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
             Assert.Empty(_logged);
+        });
+
+    [Fact]
+    [Trait("TestCase", "T554-16")]
+    public void A_text_a_translation_lacks_shows_in_English_not_in_German_with_one_log_line_per_key() =>
+        InUiCulture("fr-FR", () =>
+        {
+            Assert.Equal("Opening “Hollow Crown” in Steam…", FallbackTestTexts.GameOpening(game: "Hollow Crown", launcher: "Steam"));
+            Assert.Equal("Opening “Mossy Gate” in Epic…", FallbackTestTexts.GameOpening(game: "Mossy Gate", launcher: "Epic"));
+            Assert.Equal("UI-Text fehlt auf fr, Arcadia zeigt ihn auf Englisch: GameOpening", Assert.Single(_logged));
         });
 
     [Fact]

@@ -161,11 +161,12 @@
     <SolidColorBrush x:Key="AgeRatingBlue" Color="#1A9FE0" />
     <SolidColorBrush x:Key="AgeRatingOrange" Color="#F7A600" />
     <SolidColorBrush x:Key="AgeRatingRed" Color="#E3000F" />
-    <!-- Behind the detail page's quiet note (#541): dark in the middle, fading out evenly towards every edge. -->
+    <!-- Behind the detail page's quiet note (#541): dark in the middle, fading out evenly towards every edge; half as dark as
+         a solid shade (#546), so the image still shows through. -->
     <RadialGradientBrush x:Key="DetailNoteScrim" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
-      <GradientStop Offset="0" Color="#E00B0F14" />
-      <GradientStop Offset="0.55" Color="#B30B0F14" />
-      <GradientStop Offset="0.8" Color="#4D0B0F14" />
+      <GradientStop Offset="0" Color="#700B0F14" />
+      <GradientStop Offset="0.55" Color="#5A0B0F14" />
+      <GradientStop Offset="0.8" Color="#270B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
     <LinearGradientBrush x:Key="DetailScrimSide" StartPoint="0%,0%" EndPoint="100%,0%">

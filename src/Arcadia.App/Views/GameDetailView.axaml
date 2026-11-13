@@ -122,68 +122,72 @@
       </DockPanel>
     </Button>
 
-    <!-- Title, button row and the quiet note under it, on the artwork right of the front cover. -->
-    <StackPanel Name="Heading" Canvas.Left="496" Canvas.Top="116" Width="1164" DataContext="{Binding Current}" x:DataType="vm:GameDetailPageViewModel">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <Border Classes="detailChip">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <ctl:LauncherLogo Badge="{Binding Tile.LauncherBadge}" Width="18" Height="18" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding LauncherUpper}" FontSize="14" FontWeight="Bold" LetterSpacing="1.7" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
-        <!-- What the entry is, when it is no game (#141). -->
-        <Border Classes="detailChip" IsVisible="{Binding Tile.HasTypeIcon}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <ctl:LineIcon Icon="{Binding Tile.TypeIconKey}" Width="18" Height="18" StrokeThickness="2.2" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Tile.TypeNameUpper}" FontSize="14" FontWeight="Bold" LetterSpacing="1.7" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
-        <Border Classes="detailChip running" IsVisible="{Binding Tile.IsRunning}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource OnRunning}" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnRunning}" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
-        <Border Classes="detailChip" IsVisible="{Binding Tile.IsStarting}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
+    <!-- Title, button row and the quiet note under it, on the artwork right of the front cover. The heading reaches down to the
+         panel (Canvas.Top 116 + 308 = the panel's 424), so the note can sit in the middle of the space below the buttons. -->
+    <DockPanel Name="Heading" Canvas.Left="496" Canvas.Top="116" Width="1164" Height="308" DataContext="{Binding Current}" x:DataType="vm:GameDetailPageViewModel">
+      <!-- Drawn above the note's cloud (ZIndex), which reaches up under the buttons, so the cloud never dims a button or its ring. -->
+      <StackPanel Name="HeadingTop" DockPanel.Dock="Top" ZIndex="1">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Border Classes="detailChip">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ctl:LauncherLogo Badge="{Binding Tile.LauncherBadge}" Width="18" Height="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding LauncherUpper}" FontSize="14" FontWeight="Bold" LetterSpacing="1.7" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <!-- What the entry is, when it is no game (#141). -->
+          <Border Classes="detailChip" IsVisible="{Binding Tile.HasTypeIcon}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ctl:LineIcon Icon="{Binding Tile.TypeIconKey}" Width="18" Height="18" StrokeThickness="2.2" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Tile.TypeNameUpper}" FontSize="14" FontWeight="Bold" LetterSpacing="1.7" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Border Classes="detailChip running" IsVisible="{Binding Tile.IsRunning}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource OnRunning}" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" Foreground="{StaticResource OnRunning}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Border Classes="detailChip" IsVisible="{Binding Tile.IsStarting}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.4" StrokeJoin="Round" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding RunStateUpper}" FontSize="14" FontWeight="ExtraBold" LetterSpacing="0.8" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+        <!-- A long title shrinks to half its size before it wraps (#531), so the button row stays in place. -->
+        <ctl:ShrinkingTitle Name="Title" Classes="onArt" Margin="0,10,0,0" Text="{Binding Tile.Title}" LargestSize="66" SmallestSize="33" FontWeight="ExtraBold"
+                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
+        <!-- "Original-Titel: …" (#496): R3 shows it under an own title in place of the info line, one line cut with "…", so
+             a two-line title doesn't push the button row down. -->
+        <TextBlock Name="OriginalTitle" Classes="detailOriginalTitle onArt" Text="{Binding OriginalTitleLine}" IsVisible="{Binding ShowsOriginalTitle}" />
+        <!-- The info line (#493): genres · developer · year in one line, cut with "…", and the first age rating. -->
+        <StackPanel Name="InfoLine" Classes="onArt" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+          <StackPanel.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="GameInfo.HasInfoLine" />
+              <Binding Path="!ShowsOriginalTitle" />
+            </MultiBinding>
+          </StackPanel.IsVisible>
+          <TextBlock Text="{Binding GameInfo.InfoLine, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"
+                     MaxWidth="1040" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          <ctl:AgeRatingBadge Classes="ageBadge" Tone="{Binding GameInfo.BadgeTone}" IsVisible="{Binding GameInfo.HasBadge}">
+            <TextBlock Text="{Binding GameInfo.Badge, TargetNullValue=''}" />
+          </ctl:AgeRatingBadge>
+        </StackPanel>
+        <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). -->
+        <ItemsControl Name="ButtonRow" Margin="0,20,0,0" HorizontalAlignment="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="16" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
       </StackPanel>
-      <!-- A long title shrinks to half its size before it wraps (#531), so the button row stays in place. -->
-      <ctl:ShrinkingTitle Name="Title" Classes="onArt" Margin="0,10,0,0" Text="{Binding Tile.Title}" LargestSize="66" SmallestSize="33" FontWeight="ExtraBold"
-                          TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextStrong}" />
-      <!-- "Original-Titel: …" (#496): R3 shows it under an own title in place of the info line, one line cut with "…", so
-           a two-line title doesn't push the button row down. -->
-      <TextBlock Name="OriginalTitle" Classes="detailOriginalTitle onArt" Text="{Binding OriginalTitleLine}" IsVisible="{Binding ShowsOriginalTitle}" />
-      <!-- The info line (#493): genres · developer · year in one line, cut with "…", and the first age rating. -->
-      <StackPanel Name="InfoLine" Classes="onArt" Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
-        <StackPanel.IsVisible>
-          <MultiBinding Converter="{x:Static BoolConverters.And}">
-            <Binding Path="GameInfo.HasInfoLine" />
-            <Binding Path="!ShowsOriginalTitle" />
-          </MultiBinding>
-        </StackPanel.IsVisible>
-        <TextBlock Text="{Binding GameInfo.InfoLine, TargetNullValue=''}" IsVisible="{Binding GameInfo.HasInfoText}" FontSize="21" Foreground="{StaticResource Text}"
-                   MaxWidth="1040" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-        <ctl:AgeRatingBadge Classes="ageBadge" Tone="{Binding GameInfo.BadgeTone}" IsVisible="{Binding GameInfo.HasBadge}">
-          <TextBlock Text="{Binding GameInfo.Badge, TargetNullValue=''}" />
-        </ctl:AgeRatingBadge>
-      </StackPanel>
-      <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). Drawn above the note's cloud (ZIndex),
-           which reaches up under the buttons, so the cloud never dims a button or its ring. -->
-      <ItemsControl Name="ButtonRow" ZIndex="1" Margin="0,20,0,0" HorizontalAlignment="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="16" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-      </ItemsControl>
-      <!-- The quiet note under "Spielen" (#541): an icon and text, no surface or border; the focus never lands on it. A soft
-           dark cloud behind it, wider than the text and fading out at every edge, keeps it readable on a bright image. -->
-      <Panel Name="NoteArea" HorizontalAlignment="Left" Margin="4,10,0,0" IsVisible="{Binding HasNotes}">
-        <Border Classes="detailNoteScrim" Margin="-48,-22,-140,-30" IsHitTestVisible="False" />
+      <!-- The quiet note under "Spielen" (#541): an icon and text, no surface or border; the focus never lands on it. It sits
+           in the middle between the buttons and the panel (#546). A soft dark cloud behind it, wider than the text by the
+           same amount on each side and fading out at every edge, keeps it readable on a bright image. -->
+      <Panel Name="NoteArea" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding HasNotes}">
+        <Border Classes="detailNoteScrim" Margin="-72,-26" IsHitTestVisible="False" />
         <StackPanel Name="Note" Classes="onArt" Spacing="4" MaxWidth="900">
           <DockPanel IsVisible="{Binding HasUpdateNote}">
             <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 4v12M6 10l6 6 6-6M5 20h14" Margin="0,0,12,0" />
@@ -202,7 +206,7 @@
           </DockPanel>
         </StackPanel>
       </Panel>
-    </StackPanel>
+    </DockPanel>
 
     <!-- The panel: the rail of areas on the left, the open area beside it. -->
     <Border Name="Panel" Canvas.Left="260" Canvas.Top="424" Width="1400" Height="572" Background="{StaticResource DetailSurface}" CornerRadius="20"

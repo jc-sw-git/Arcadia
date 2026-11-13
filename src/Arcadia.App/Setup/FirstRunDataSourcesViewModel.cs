@@ -44,8 +44,10 @@ public sealed class FirstRunDataSourcesViewModel : SettingsCategoryViewModel
             key, artwork, host, editor => Editor = editor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
         _igdb = metadata?.Igdb;
         _igdbRows = metadata is { Igdb: { } igdb } ? new IgdbAccessRows(igdb, metadata, host, editor => Editor = editor, time) : null;
+        // Its own group (#546), set apart from the IGDB rows above it.
         _finish = new ActionRowViewModel(FinishRowKey, AppTexts.FirstRunSkip, finish)
         {
+            Group = AppTexts.FirstRunFinishGroup,
             IsPrimary = true,
             ShortcutPad = "≡",
             ShortcutKeys = "Enter",

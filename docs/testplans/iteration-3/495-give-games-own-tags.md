@@ -47,7 +47,7 @@ Deviations from the cases, for the owner's look in #43's final test:
       is shown once, as the own one. · E2E: yes (acceptance test across a restart)
 - [x] **T495-11** Tags are global across launchers: "Couch-Koop" on a Steam and an Epic game is one tag ("· 2 Spiele"),
       ticked in both windows; the same game in two launchers are two games. · E2E: yes
-- [ ] **T495-12** Look at 1920 × 1080: tag window and the row "Tags" as the design canvas (artboard of the detail
+- [x] **T495-12** Look at 1920 × 1080: tag window and the row "Tags" as the design canvas (artboard of the detail
       page), long names (40 characters) cut with "…" not overlapping, colours from `Theme.axaml`, one focus ring. · E2E: no (window)
 
 **Tag list in "Datenquellen"**
@@ -66,7 +66,7 @@ Deviations from the cases, for the owner's look in #43's final test:
       the one before, none left: "Neuer Tag"). · E2E: yes
 - [x] **T495-19** Hints in the tag list "A Spiele zeigen", "X Umbenennen", "Y Löschen", "B Zurück"; on "Neuer Tag" X and
       Y greyed. ▲ ▼ round at the ends, held repeat. · E2E: no (view model test)
-- [ ] **T495-20** Mouse and keyboard: the ✕ closes window and list; a click on a tag ticks it (window) or opens its games
+- [x] **T495-20** Mouse and keyboard: the ✕ closes window and list; a click on a tag ticks it (window) or opens its games
       (list); a click on a hint does what its button does; keys as elsewhere (Space = A, Esc = B, F = X, V = Y). · E2E: no (window)
 
 **Store and failures**
@@ -91,13 +91,13 @@ Deviations from the cases, for the owner's look in #43's final test:
 - [x] **T495-27** Controller only, B back: detail page → "Verwalten" → "Tags" → "Neuer Tag" (keyboard) → tick → Y on
       another tag, yes → B; then ≡ → "Datenquellen" → "Eigene Tags" → X rename into a merge, yes → A games → A detail
       page → B, B, B. No mouse or keyboard needed. · E2E: yes
-- [ ] **T495-28** Release build, made-up data: 5,000 games, 200 tags, 2,000 games with 1 to 10 tags: start to usable
+- [x] **T495-28** Release build, made-up data: 5,000 games, 200 tags, 2,000 games with 1 to 10 tags: start to usable
       library still < 2 s, opening the tag window and the tag list and every focus move < 50 ms (`Bild:` lines), a tick
       never blocks the UI thread, RAM within budget. · E2E: no (Release timings; quality engineer's run)
-- [ ] **T495-29** Own run of the app with `--demo`: the controller path of T495-27 and T495-12, T495-20 looked at,
+- [x] **T495-29** Own run of the app with `--demo`: the controller path of T495-27 and T495-12, T495-20 looked at,
       the store file after a restart read back. · E2E: no (window; quality engineer's run)
 - [x] **T495-30** The tag window and the tag list are in the shared page list the window guards walk (#518). · E2E: no (guard on `main`)
-- [ ] **T495-31** A store made unreadable by hand while Arcadia is closed: at the start the status message shows,
+- [x] **T495-31** A store made unreadable by hand while Arcadia is closed: at the start the status message shows,
       "Tags" and "Eigene Tags" are greyed out with the note (D9), the copy lies beside the file. · E2E: no (window; quality engineer's run)
 
 **Owner** (own PC, real library, Steam Controller; collected with the other #43 slices at the end)
@@ -132,3 +132,8 @@ History:
 |---|---|---|---|---|---|
 | All automated tests (`dotnet test`, window guards included) | 2026-11-13 | implementer | Debug, Linux cloud container | passed after adapting the tests that counted "Verwalten"'s rows, the menu and the quick selection's defaults | — |
 | App look: tag window from the menu, detail page ("Übersicht", "Verwalten"), "Eigene Tags (1)", tag list, a tag's games | 2026-11-13 | implementer | Debug, Linux cloud container (Xvfb, `--demo`, keys) | passed after one fix | "1 Tags" over the list → "1 Tag" |
+| T495-12, T495-20, T495-29 | 2026-11-13 | QE (Claude) | PR #529, Release, Linux Xvfb 1920 × 1080, `--demo`, keys and mouse | ✅ tag window and list as designed, 40-character names cut with "…", one focus ring; ✕, clicks on rows and hints, Space/Esc/F/V; controller path of T495-27 with B, B, B; `user-data.json` read back after a restart (tags, merged spellings, a game outside the library kept); ❌ the rail line of "Verwalten" is cut ("… Deinstallie…") while the area is focused | Review finding 1 |
+| T495-26 | 2026-11-13 | QE (Claude) | as above, tag written into `user-data.json` by hand | ✅ umlauts, ß, Japanese, emoji, quotes, `/`, `\`, `..`, `%`, `<b>` shown as typed; `couch-KOOP` merged into "Couch-Koop" | – |
+| T495-28 | 2026-11-13 | QE (Claude) | PR #529, Release, Linux Xvfb (cloud container, slower than the owner's PC), `--demo --demo-games 5000`, 200 tags, 2,000 games with 1–10 tags | ✅ start to library 3.7 s with and without the tags (same as `main`'s baseline in this container, no cost of the tags), RAM 368 MB vs 364 MB; tag window open 40–47 ms warm (130 ms the first time), tag list 64 ms the first time, focus moves 1–5 ms, ticks 15–17 ms on the UI thread (writing in the background) | Start time to be judged on the owner's PC (container is above the budget for `main` too) |
+| T495-30 | 2026-11-13 | QE (Claude) | PR #529, Release, Linux, window guards run locally (`Arcadia.App.Tests.Guards`) | ✅ 43 green, "Tags eines Spiels", "Eigene Tags", "Eigene Tags › Spiele" included | – |
+| T495-31 | 2026-11-13 | QE (Claude) | as T495-12 | ✅ status message, "Tags" (context menu, detail page) and "Eigene Tags" greyed with the note, `user-data.json.broken` beside the file, file not overwritten; after repairing it the message is gone at the next start | Review finding 3 (count "(0)") |

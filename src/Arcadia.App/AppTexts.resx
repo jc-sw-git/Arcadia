@@ -1224,11 +1224,11 @@
   <data name="WaitingChosenCover" xml:space="preserve"><value>DEIN COVER</value></data>
   <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB hat zu diesem Spiel keine weiteren Angaben.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
-  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
+  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Cover wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>
   <data name="DataSourcesCropNormal" xml:space="preserve"><value>Normal · bis 15 %</value></data>
   <data name="DataSourcesCropMuch" xml:space="preserve"><value>Viel · bis 30 %</value></data>
-  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Bilder bleiben fast vollständig, kommen dafür öfter von einer Quelle weiter unten.</value></data>
+  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Cover bleiben fast vollständig, kommen dafür öfter von einer Quelle weiter unten.</value></data>
   <data name="DataSourcesCropNormalInfo" xml:space="preserve"><value>Ein Mittelweg: Arcadia schneidet etwas zu, bevor es die nächste Quelle fragt.</value></data>
   <data name="DataSourcesCropMuchInfo" xml:space="preserve"><value>Arcadia bleibt öfter bei der ersten Quelle, schneidet aber auch Schrift oder Figuren am Rand ab.</value></data>
   <data name="DataSourcesCropInfo" xml:space="preserve"><value>Cover haben das Hochformat 2:3. Passt ein Cover nicht genau, schneidet Arcadia es mittig zu. Hier legst du fest, wie viel dabei höchstens wegfallen darf. Hintergründe passen in 16:9 wie die Detailseite oder im flachen Format von Steam und SteamGridDB, das Arcadia mittig auf 16:9 zuschneidet.</value></data>

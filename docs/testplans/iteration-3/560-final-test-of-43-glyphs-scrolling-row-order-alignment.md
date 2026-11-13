@@ -7,8 +7,9 @@
   key "Enter" as text, which was never broken)
 - [x] **T560-2** Detail page: "Spielen" shows A's glyph while it has the focus; with the focus in the rail or the other
   buttons it shows its play icon ("Installieren": a download arrow) and no button shows A. · E2E: yes
-- [x] **T560-3** "Warten auf deine Auswahl" (metadata): RS (Shift+W/S) scrolls the marked hit's facts up and down; the
-  list's game stays and the list stays open. · E2E: yes
+- [x] **T560-3** "Warten auf deine Auswahl" (metadata): RS (Shift+W/S) scrolls the marked hit's facts up and down
+  while they overflow their box, and only then the footer names RS; facts that fit ignore RS; the list's game stays and
+  the list stays open. · E2E: yes
 - [x] **T560-4** Settings, "Artwork": "Von Hand gesetzte Artworks überschreiben" sits right under "Alle Artworks neu
   laden", indented; "Zuschneiden erlaubt" follows. · E2E: yes
 - [x] **T560-5** Detail page, quick selection: the note under the fifth place has its icon centred on the first line and
@@ -23,7 +24,7 @@ Automated tests:
 | Test cases | Tests |
 |---|---|
 | T560-2 | `DetailControlsTests.The_play_button_shows_As_glyph_only_while_it_has_the_focus` |
-| T560-3 | `WaitingListMetadataTests.Rs_scrolls_the_facts_of_a_metadata_hit_and_nothing_else_on_the_list` |
+| T560-3 | `WaitingListMetadataTests.Rs_scrolls_the_facts_of_a_metadata_hit_only_while_they_overflow_and_nothing_else_on_the_list` |
 | T560-4 | `DataSourcesTests` (the rows of both tabs, with their indents) |
 
 History:

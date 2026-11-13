@@ -31,6 +31,7 @@
           <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Right" VerticalAlignment="Center">
             <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding ChooseHint}" IsVisible="{Binding HasGames}" />
             <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Text="{x:Static app:AppTexts.ArtworkTabsHint}" IsVisible="{Binding HasArtworkTabs}" />
+            <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding FactsOverflow}" />
             <Button Classes="plain" Command="{Binding SkipCommand}" IsVisible="{Binding HasGames}">
               <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.WaitingSkipHint}" />
             </Button>
@@ -214,7 +215,7 @@
                 <!-- The marked metadata hit's facts (#539): what the player decides by. -->
                 <!-- RS and the mouse wheel scroll a long description (#560); a new hit starts at the top. -->
                 <Border Grid.Column="1" Classes="waitingFacts" IsVisible="{Binding ShowsFacts}">
-                  <ScrollViewer Name="FactsScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <ScrollViewer Name="FactsScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" ScrollChanged="OnFactsScrollChanged">
                   <ContentControl Name="Facts" Content="{Binding MarkedHit}">
                     <ContentControl.DataTemplates>
                       <DataTemplate x:DataType="vm:MetadataHitViewModel">

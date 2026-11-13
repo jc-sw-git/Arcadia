@@ -225,7 +225,7 @@ public sealed class WaitingListMetadataTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T560-3")]
-    public async Task Rs_scrolls_the_facts_of_a_metadata_hit_and_nothing_else_on_the_list()
+    public async Task Rs_scrolls_the_facts_of_a_metadata_hit_only_while_they_overflow_and_nothing_else_on_the_list()
     {
         using var arcadia = await StartAsync();
         WaitingListTests.OpenDataSources(arcadia);
@@ -237,6 +237,10 @@ public sealed class WaitingListMetadataTests
         list.FactsScrollRequested += steps.Add;
         var game = list.CurrentGame;
 
+        // Facts that fit their box ignore RS (the view says when they overflow; then the footer names RS).
+        arcadia.Press(UiAction.SecondaryDown);
+        Assert.Empty(steps);
+        list.FactsOverflow = true;
         arcadia.Press(UiAction.SecondaryDown);
         arcadia.Press(UiAction.SecondaryDown);
         arcadia.Press(UiAction.SecondaryUp);

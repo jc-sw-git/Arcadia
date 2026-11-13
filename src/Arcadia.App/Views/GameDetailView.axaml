@@ -42,13 +42,14 @@
         <Ellipse Width="1300" Height="1300" Stroke="{Binding Current.Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-300,-160,0" />
         <Ellipse Width="660" Height="660" Stroke="{Binding Current.Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,20,240,0" />
         <Ellipse Width="220" Height="220" Stroke="{Binding Current.Ring}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,250,500,0" />
-        <ctl:ArtworkImage Name="HeroArt" File="{Binding Current.Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+        <ctl:ArtworkImage Name="HeroArt" Fit="DetailPage" File="{Binding Current.Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
       </Panel>
     </Border>
-    <!-- Scrims: the text on the left, the header's tabs and the footer's hints stay readable over any image. -->
-    <Border Width="1920" Height="1080" Background="{StaticResource DetailScrimSide}" IsHitTestVisible="False" />
-    <Border Width="1920" Height="150" Background="{StaticResource DetailScrimTop}" IsHitTestVisible="False" />
-    <Border Canvas.Top="820" Width="1920" Height="260" Background="{StaticResource DetailScrimBottom}" IsHitTestVisible="False" />
+    <!-- Scrims only behind title and buttons, the header's tabs and the footer's hints (#565): they stay readable over any
+         image, which shows almost uncovered elsewhere. -->
+    <Border Width="1920" Height="440" Background="{StaticResource DetailScrimTitle}" IsHitTestVisible="False" />
+    <Border Width="1920" Height="110" Background="{StaticResource DetailScrimTop}" IsHitTestVisible="False" />
+    <Border Canvas.Top="1000" Width="1920" Height="80" Background="{StaticResource DetailScrimBottom}" IsHitTestVisible="False" />
 
     <!-- The covers: the shown game's in front, the others in the stacks; ctl:DepthSlot moves them when the carousel turns. -->
     <ItemsControl Name="CoverList" ItemsSource="{Binding Covers}" Width="1920" Height="1080" IsHitTestVisible="False">

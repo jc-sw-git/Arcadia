@@ -73,6 +73,7 @@ internal static class GuardPages
         GuardPage.NotWalkedYet("Anmeldung im Browser", [typeof(WebPageViewModel)], "Zeigt den Browser des Systems, den das Fenster ohne Bildschirm nicht zeichnet."),
         GuardPage.NotWalkedYet("Firmware-Hinweis", [typeof(FirmwareAttemptViewModel)], "Erscheint nur, wenn Steam die Firmware des Steam Controllers schreiben will."),
         GuardPage.NotWalkedYet("Pan-Update", [typeof(PanUpdatePageViewModel)], "Erscheint nur beim Start mit einem fremden Pan."),
+        GuardPage.NotWalkedYet("Bild ansehen", [typeof(ImageShowViewModel)], "Hat keinen Fokus und keine Knöpfe: jede Eingabe beendet es."),
     ];
 
     /// <summary>Every part missing: the controller page shows all its part rows and "Treiber installieren".</summary>

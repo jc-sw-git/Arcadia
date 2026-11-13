@@ -11,8 +11,11 @@
   the buttons below the grid) turn the page and go round the same way; a page number goes straight to its page.
 - Covers are 2 : 3 wherever one is shown: library tile 146 × 219 (its height follows the column's width), search hit
   190 × 285, detail page 210 × 315.
-- Covers and backgrounds (#13, #487): the cover fills the tile, the search hit and the detail page's cover; the background
-  (hero) fills the detail page's header and the preview's top (400 × 180), each cropped centred, never stretched. Until
+- Covers and backgrounds (#13, #487): the cover fills the tile, the search hit and the detail page's cover, cropped
+  centred. A background (hero) shows almost whole wherever it is shown (#565): at most 10 % of it is cut, centred, and the
+  rest of the frame is a blurred, darkened copy of the same image (the preview's top 400 × 180, the tiles and previews of
+  "Artwork ändern" and "Warten auf deine Auswahl"); the detail page: [detail-page/page.md](detail-page/page.md). Never
+  stretched. Until
   an image is there the placeholder (hue, monogram, title) shows; with it, monogram and title hide, badges and the
   "not installed" shade stay on top. A launcher's images are checked again at every scan, so an image changed in the
   launcher (e.g. an own cover set in Steam) shows after the next scan; an image set by hand is never replaced by that.

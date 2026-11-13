@@ -66,10 +66,10 @@
             <Border Classes="artworkMini" Width="620" Height="349">
               <Viewbox Stretch="Uniform">
                 <Canvas Width="1920" Height="1080" Background="{Binding HeroBackdrop}">
-                  <ctl:ArtworkImage Width="1920" Height="1080" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                  <Border Width="1920" Height="1080" Background="{StaticResource DetailScrimSide}" />
-                  <Border Width="1920" Height="150" Background="{StaticResource DetailScrimTop}" />
-                  <Border Canvas.Top="820" Width="1920" Height="260" Background="{StaticResource DetailScrimBottom}" />
+                  <ctl:ArtworkImage Width="1920" Height="1080" Fit="DetailPage" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                  <Border Width="1920" Height="440" Background="{StaticResource DetailScrimTitle}" />
+                  <Border Width="1920" Height="110" Background="{StaticResource DetailScrimTop}" />
+                  <Border Canvas.Top="1000" Width="1920" Height="80" Background="{StaticResource DetailScrimBottom}" />
                   <Border Classes="artworkMark hero" Width="1920" Height="1080" IsVisible="{Binding IsCurrentHeroMarked}" />
 
                   <Border Classes="artworkMiniStack" Canvas.Left="40" />

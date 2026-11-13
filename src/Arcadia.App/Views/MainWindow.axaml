@@ -2180,6 +2180,18 @@
         </Grid>
       </Panel>
 
+      <!-- "Bild ansehen" (#565): after a while without input the page fades out and the background shows whole, then other
+           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. -->
+      <Panel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
+             DataContext="{Binding ImageShow}" x:DataType="vm:ImageShowViewModel">
+        <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding ShowsFirst}" Fit="Whole" File="{Binding FirstImage?.File}"
+                          Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+        <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding !ShowsFirst}" Fit="Whole" File="{Binding SecondImage?.File}"
+                          Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+        <Border Height="120" VerticalAlignment="Bottom" Background="{StaticResource ImageShowTitleScrim}" />
+        <TextBlock Name="ImageShowTitle" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
+      </Panel>
+
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">

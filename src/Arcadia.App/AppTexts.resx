@@ -7,6 +7,7 @@
   <data name="PanJournalUnreadable" xml:space="preserve"><value>Pan konnte sein Journal nicht lesen – Details stehen in pan.log unter %ProgramData%\Arcadia\Pan</value></data>
   <data name="ErrorContextUi" xml:space="preserve"><value>Oberfläche</value></data>
   <data name="ErrorContextArtwork" xml:space="preserve"><value>Cover und Hintergründe</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>Bild ansehen</value></data>
   <data name="ErrorContextControllerWatch" xml:space="preserve"><value>Controller-Überwachung</value></data>
   <data name="ErrorContextXboxPadForGames" xml:space="preserve"><value>Xbox-Pad für Spiele</value></data>
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Installationen prüfen</value></data>

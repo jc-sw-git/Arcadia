@@ -66,7 +66,7 @@ public sealed class MouseModeRows
             AppTexts.PointerSpeed,
             () => Current.PointerSpeed,
             value => Change(s => s with { PointerSpeed = value }),
-            value => value.ToString(Formatting.Culture),
+            Formatting.Number,
             MouseModeSettings.Min,
             MouseModeSettings.Max)
         {

@@ -22,7 +22,7 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
     public partial string Title { get; set; } = title;
 
     /// <summary>The heading of the info panel: the title in capitals, like the group headings, or <see cref="PanelTitle"/>.</summary>
-    public virtual string InfoTitle => PanelTitle ?? Title.ToUpper(System.Globalization.CultureInfo.GetCultureInfo("de-DE"));
+    public virtual string InfoTitle => PanelTitle ?? Title.ToUpper(Services.Formatting.Culture);
 
     /// <summary>
     /// A heading of the info panel other than the title, for rows that show the same panel (e.g. "LETZTE MELDUNGEN" on its
@@ -160,9 +160,22 @@ public abstract partial class SettingsRowViewModel(string key, string title) : V
 
     public bool IsError => Severity == HealthSeverity.Error;
 
-    /// <summary>What the info panel shows while the row has the focus, below <see cref="ValueBoxes"/>.</summary>
-    [ObservableProperty]
-    public partial IReadOnlyList<InfoBlock> Info { get; set; } = [];
+    /// <summary>
+    /// What the info panel shows while the row has the focus, below <see cref="ValueBoxes"/>. The same blocks again announce
+    /// nothing: a run refreshes the rows every few seconds and the panel must keep where it was scrolled (#547).
+    /// </summary>
+    public IReadOnlyList<InfoBlock> Info
+    {
+        get;
+        set
+        {
+            if (!field.SequenceEqual(value))
+            {
+                field = value;
+                OnPropertyChanged();
+            }
+        }
+    } = [];
 
     /// <summary>One box per value below the row's name in the info panel (#506), the current one highlighted; empty: none.</summary>
     public virtual IReadOnlyList<ValueBox> ValueBoxes => [];
@@ -269,6 +282,9 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
     private IReadOnlyList<ValueBox> _valueBoxes = [];
     private bool _boxesShown;
 
+    // The value text last announced by Refresh.
+    private string? _shownValueText;
+
     public ChoiceRowViewModel(string key, string title, Func<int> get, Action<int> set, Func<int, string> format, int min, int max)
         : base(key, title)
     {
@@ -334,10 +350,19 @@ public partial class ChoiceRowViewModel : SettingsRowViewModel
 
     public override void Activate() => Change(1);
 
-    /// <summary>The value changed elsewhere (or a value it is shown with), so it is read again.</summary>
+    /// <summary>
+    /// The value changed elsewhere (or a value it is shown with), so it is read again. <see cref="ValueText"/> is announced
+    /// only when it reads differently: the info panel goes back to its top on it, and a run refreshing the rows every few
+    /// seconds must not pull it there while it is scrolled (#547).
+    /// </summary>
     public void Refresh()
     {
-        OnPropertyChanged(nameof(ValueText));
+        if (ValueText != _shownValueText)
+        {
+            _shownValueText = ValueText;
+            OnPropertyChanged(nameof(ValueText));
+        }
+
         OnPropertyChanged(nameof(CanDecrease));
         OnPropertyChanged(nameof(CanIncrease));
         ShowCurrentBox();
@@ -459,7 +484,7 @@ public sealed class HoldRowViewModel : ActionRowViewModel, IDisposable
 
     public HoldButtonViewModel Hold { get; }
 
-    public override string ActivateText => AppTexts.HoldToAct(action: ActionText, seconds: Hold.HoldTime.TotalSeconds.ToString("0", Services.Formatting.Culture));
+    public override string ActivateText => AppTexts.HoldToAct(action: ActionText, seconds: Services.Formatting.Number((int)Math.Round(Hold.HoldTime.TotalSeconds)));
 
     public override void Activate() => Hold.Press();
 

@@ -16,7 +16,7 @@ saved as `src/Arcadia.Launchers/Steam/steam-tags-german.json` (no request beside
 Metadaten neu laden" runs, the old data stays visible until the new one is there. A5 with no game missing, the
 progress row reads "Alle Metadaten geladen" (greyed).
 
-**Status:** Automated: T493-1 to -11, T493-14 to -31, T493-41 · QE: T493-12, T493-13, T493-32 to -36 · Open for the owner: T493-37, T493-38, T493-39, T493-40
+**Status:** Automated: T493-1 to -11, T493-14 to -31, T493-41 · QE: T493-12, T493-13, T493-32 to -36 · Open for the owner: T493-40, offline test, moved to the acceptance review of the iteration, I#267 (T493-37, T493-38, T493-39 passed)
 
 **Steam data from `appinfo.vdf` and the store page**
 
@@ -135,11 +135,11 @@ progress row reads "Alle Metadaten geladen" (greyed).
 
 **Owner** (real Steam store, own library; collected by the closing thread of #43)
 
-- [ ] **T493-37** **Owner:** own Steam library: after a scan, open a few detail pages (an older game, a new one, one
+- [x] **T493-37** **Owner:** own Steam library: after a scan, open a few detail pages (an older game, a new one, one
       only in English, one with USK 18): info line, USK badge, German description and tags match the game's Steam
       store page; no page shows another game's data. · E2E: no (real Steam store, own library)
-- [ ] **T493-38** **Owner:** an Epic game shows only its developer, nothing broken, no error. · E2E: no (real Epic catalog)
-- [ ] **T493-39** **Owner:** the first fetch over the own library: "Fehlende Metadaten" counts down sensibly, the time
+- [x] **T493-38** **Owner:** an Epic game shows only its developer, nothing broken, no error. · E2E: no (real Epic catalog)
+- [x] **T493-39** **Owner:** the first fetch over the own library: "Fehlende Metadaten" counts down sensibly, the time
       estimate is plausible, the library and a running game stay fluid, Steam keeps working (no sign-out, no block
       by Steam). · E2E: no (real Steam store and limit, own library)
 - [ ] **T493-40** **Owner:** network off, start Arcadia: the metadata loaded before is all there, no message.
@@ -168,3 +168,4 @@ History:
 | QE run, `--demo`, 1920 × 1080, keys and mouse (T493-12, -13, -33 to -36) | 2026-11-12 | Claude (QE) | `ff1494b`, Debug, Linux cloud container (Xvfb) | ✅ info line with and without badge, two genres, long developer name (fits, so "…" checked only in the view's `MaxWidth`/`TextTrimming`); "Übersicht" four lines then "…", tags "+n"; "Infos" long (W/S and wheel scroll, B back to the rail), short, English, "laut Battle.net", "Noch keine Infos"; markup, link, image and emoji in the demo text show as plain text; click on "Infos" opens it; METADATEN rows in "Datenquellen". The reload question isn't reachable in `--demo` (no store, button greyed): its text is checked in `MetadataSettingsTests`, the dialog is the shared settings question | rail value line of "Infos" cut for long genres ("Karten- und Brettspiel · 2011 · U…"), optional |
 | Start, RAM, idle CPU (T493-32), `--demo --demo-games 1000/5000` | 2026-11-12 | Claude (QE) | `ff1494b`, Release, Linux cloud container (Xvfb) | start to library 2.9 s / 3.0 s (container; the implementer's `main` comparison 2.7 s), 282 / 326 MB, 0 CPU ticks in 5 s idle | the demo's metadata is local, so 5,000 cached store answers weren't loaded; the owner's PC numbers come with #43's final test |
 | Code review, `MetadataCheck` on a cached value | 2026-11-12 | Claude (QE) | `ff1494b`, unit test | ❌ a description with an escaped `<` ("Drücke &lt;E&gt;", "3 &lt; 5 Spieler") loses text when the cache is read again after a restart | finding F1 in the PR's Review |
+| T493-37, T493-38, T493-39 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

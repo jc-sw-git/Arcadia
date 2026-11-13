@@ -21,7 +21,8 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
   the mouse wheel and the scroll bars stop at the ends.
 - RS (Shift+W/S, the wheel over it) scrolls an info box that doesn't fit, on the settings page and the detail page
-  (#506), and the text of "Infos" while it has the focus in the detail page's rail (#530); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
+  (#506), the text of "Infos" while it has the focus in the detail page's rail (#530), and a metadata hit's facts on
+  "Warten auf deine Auswahl" (#560); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
   again. The footer names RS only while the box overflows.
 - Held buttons repeat (#476): the D-pad and both sticks after 400 ms, then every 90 ms; LT/RT and LB/RB, wherever
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every
@@ -49,8 +50,9 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   a text (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]"). Never a bare "A" or
   "B" in a text: `ButtonGlyphTextTests` fails on one in the App's strings and `AppTexts.resx` (tooltips, plain text for
   the mouse, and the mouse mode's button lists aside). While the keyboard is in use a button in prose shows the key that
-  does the same (`KeyNames`: [A] Leertaste, [B] Esc, [Y] V, …; #539); a text about one controller only and the sticks
-  and Guide keep the button.
+  does the same (`KeyNames`: [A] Leertaste, [B] Esc, [Y] V, …; #539); a text about one controller only, a text about
+  something only a controller does ([R3] on the on-screen keyboard; in the printing of the controller last used, Xbox
+  without one) and the sticks and Guide keep the button.
 - Every button hint follows the input in use (#127): after a controller button the controller's buttons, after a key
   or a click the keyboard's keys and the mouse (`KeyHint`, `KeyText`; the mouse merely moving changes nothing).
   Controller buttons are round or a pill, keys square with rounded corners, both with a darker lower edge. An element

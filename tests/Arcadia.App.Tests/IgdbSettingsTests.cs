@@ -198,7 +198,7 @@ public sealed class IgdbSettingsTests
         arcadia.FocusRow("igdb-test");
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesIgdbTestOkToast, "Test ok");
-        Assert.Equal(AppTexts.DataSourcesIgdbTestOk(arcadia.Time.GetLocalNow()), Row(arcadia, "igdb-test").Subtitle);
+        Assert.Equal(AppTexts.DataSourcesIgdbTestOk(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), Row(arcadia, "igdb-test").Subtitle);
 
         arcadia.Igdb.Offline = true;
         arcadia.Press(UiAction.Accept);

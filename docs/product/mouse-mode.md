@@ -42,7 +42,7 @@ Its own setting: View held alone (1–9 s, default 1; no "at once", since a tap 
   "Zurück zu Arcadia" and ⧉ + ≡ as always, both close it; triggers and sticks stay the mouse.
 - Laid out like the real keyboard (`docs/product/on-screen-keyboard.md`; right block: layout, edge, hide, arrows). On the
   foreground window's monitor, centred at the last edge unless the caret Windows knows would lie under it; scales like
-  the Big Picture layout. Shares the layout last chosen with the search.
+  the Big Picture layout. Opens in the default layout, like every on-screen keyboard (`docs/product/localization.md`).
 - Closes when a game comes to the front or the mouse mode ends. With Arcadia's search in front, Y doesn't open a second
   keyboard: the search's takes the mouse mode's buttons (≡ = ↵ starts the hit) until B, the search closes or Arcadia
   leaves the front.

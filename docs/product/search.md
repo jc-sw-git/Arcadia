@@ -25,7 +25,7 @@ Search (#12).
   down in the last row to the first row; in the row up/down do nothing.
 - X erases (held: repeats), Y space, LB shift and RB AltGr (each: tap on/off, held only while held; one at a time).
 - L3 "Filter und Sortierung": launchers (any number) and the library's sort orders plus relevance, the default; not
-  saved. The library's filter (#44) doesn't apply to the search. R3 layout menu (all five, the last chosen saved globally).
+  saved. The library's filter (#44) doesn't apply to the search. R3 layout menu (the quick selection, `docs/product/localization.md`).
 - ≡ starts the focused hit, ≡ held 1 s opens its details, ⧉ its menu; with a real keyboard Enter and Enter held do the
   same.
 

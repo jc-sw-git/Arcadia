@@ -24,12 +24,12 @@ public sealed partial class DataSourcesTests
     }
 
     /// <summary>
-    /// The launcher's background (2560 wide, <paramref name="launcherHeroHeight"/> high) is on disk, SteamGridDB's fitting
-    /// one in use, after the first key.
+    /// The launcher's background (2560 × 1080, fitting neither 16 : 9 nor flat) is on disk, SteamGridDB's fitting one in
+    /// use, after the first key; with <paramref name="coverWidth"/> the launcher's cover too, SteamGridDB's if it doesn't fit.
     /// </summary>
-    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartWithBothHeroesAsync(int launcherHeroHeight = 1440)
+    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartWithBothHeroesAsync(int? coverWidth = null)
     {
-        var (arcadia, images) = await StartAsync(wideHeroHeight: launcherHeroHeight);
+        var (arcadia, images) = await StartAsync(coverWidth: coverWidth);
         OpenDataSources(arcadia);
         await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
         await SettledAsync(arcadia);
@@ -98,25 +98,27 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T506-50")]
+    [Trait("TestCase", "T562-3")]
     public async Task A_changed_crop_tolerance_picks_again_among_the_images_on_disk_at_once_without_a_request()
     {
-        // The launcher's background cuts 20 %: more than "Normal" allows, within "Viel".
-        var (arcadia, images) = await StartWithBothHeroesAsync(launcherHeroHeight: 1033);
+        // The launcher's cover (750 × 900) cuts 20 %: more than "Normal" allows, within "Viel".
+        var (arcadia, images) = await StartWithBothHeroesAsync(coverWidth: 750);
         using var _ = arcadia;
+        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cover(arcadia));
 
-        // "Viel": the launcher's background, first in the order, fits now and is shown at once.
+        // "Viel": the launcher's cover, first in the order, fits now and is shown at once; the background stays, as
+        // "Zuschneiden erlaubt" applies to covers only (#562).
         var crop = Assert.IsType<ChoiceRowViewModel>(arcadia.FocusRow("artwork-crop"));
         arcadia.Press(UiAction.Right);
         Assert.Equal(CropAllowance.Much, arcadia.Settings.Current.Artwork.Crop);
         await SettledAsync(arcadia);
-        Assert.Equal("store-wide", Hero(arcadia));
-        Assert.NotNull(ShownHero(arcadia));
+        Assert.Equal(("store-cover", ArtworkService.SteamGridDbOrigin), (Cover(arcadia), Hero(arcadia)));
 
         // Back to "Normal": SteamGridDB's again, at once.
         arcadia.Press(UiAction.Left);
         Assert.Equal(AppTexts.DataSourcesCropNormal, crop.ValueText);
         await SettledAsync(arcadia);
-        Assert.Equal(ArtworkService.SteamGridDbOrigin, Hero(arcadia));
+        Assert.Equal((ArtworkService.SteamGridDbOrigin, ArtworkService.SteamGridDbOrigin), (Cover(arcadia), Hero(arcadia)));
 
         Assert.Equal(0, Requests(arcadia, images));
     }

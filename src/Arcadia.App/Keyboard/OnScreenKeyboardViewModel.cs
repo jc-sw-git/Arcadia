@@ -42,6 +42,7 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     private const int StartRow = 2;
     private const int StartColumn = 1;
 
+    private KeyboardLayoutChoice _layouts;
     private int _row = StartRow;
     private int _column = StartColumn;
 
@@ -50,11 +51,13 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
     /// so the legend follows. Without it, <see cref="UsesController"/> is the user's to set.
     /// </param>
     /// <param name="post">Reaches the UI thread from the repeat timers.</param>
-    public OnScreenKeyboardViewModel(KeyboardLayout layout, IKeyboardTarget target, TimeProvider time, Action<Action> post, Func<bool>? controllerInUse = null)
+    /// <param name="layouts">The layout it opens with and those R3 offers (#553).</param>
+    public OnScreenKeyboardViewModel(KeyboardLayoutChoice layouts, IKeyboardTarget target, TimeProvider time, Action<Action> post, Func<bool>? controllerInUse = null)
     {
         _target = target;
         _controllerInUse = controllerInUse;
-        _board = FullKeyboard.For(layout);
+        _layouts = layouts;
+        _board = FullKeyboard.For(layouts.Default);
         _levels = new KeyboardLevels(() => _board.Layout.HasAltGr, time);
         _levels.Changed += ShowLevel;
         _move = new RepeatGesture(MoveRepeatDelay, MoveRepeatInterval, time, post);
@@ -62,12 +65,9 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         _move.Repeated += () => Move(_moveDirection, held: _moveSteps++ > 0);
         _erase = new RepeatGesture(EraseRepeatDelay, EraseRepeatInterval, time, post);
         _erase.Repeated += Erase;
-        LayoutMenu = new LayoutMenuViewModel(layout, ChooseLayout);
+        LayoutMenu = new LayoutMenuViewModel(layouts.Default, layouts.Quick, ChooseLayout);
         BuildKeys();
     }
-
-    /// <summary>A layout was picked; it counts everywhere the keyboard shows.</summary>
-    public event Action<KeyboardLayout>? LayoutChosen;
 
     public ObservableCollection<BoardKeyViewModel> Keys { get; } = [];
 
@@ -101,16 +101,25 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         ShowLevel();
     }
 
-    /// <summary>Shown again: the layout may have changed elsewhere meanwhile.</summary>
-    public void Open(KeyboardLayout layout, bool atTop)
+    /// <summary>
+    /// Shown again, in the default layout: a layout picked with R3 held only while it was open (#553), and the settings
+    /// may have changed meanwhile.
+    /// </summary>
+    public void Open(KeyboardLayoutChoice layouts, bool atTop)
     {
         Closed();
         AtTop = atTop;
         UpdateDockKey();
         UsesController = true;
-        if (layout != _board.Layout)
+        _layouts = layouts;
+        LayoutMenu.Offer(layouts.Quick);
+        if (layouts.Default != _board.Layout)
         {
-            SetLayout(layout);
+            SetLayout(layouts.Default);
+        }
+        else
+        {
+            ShowStates();
         }
     }
 
@@ -340,12 +349,12 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         _target.Hide();
     }
 
+    /// <summary>A pick with R3 holds until the keyboard closes; nothing is saved (#553, scenario 11).</summary>
     private void ChooseLayout(KeyboardLayout layout)
     {
         if (layout != _board.Layout)
         {
             SetLayout(layout);
-            LayoutChosen?.Invoke(layout);
         }
     }
 
@@ -385,15 +394,48 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         }
     }
 
+    /// <summary>
+    /// The keys of <see cref="_board"/>. A key that stands where one of the old layout stood stays and only types something
+    /// else: building every key's controls anew made a layout switch take most of a second (#553).
+    /// </summary>
     private void BuildKeys()
     {
-        Keys.Clear();
+        var old = new Dictionary<(int Row, double Left), BoardKeyViewModel>();
+        foreach (var key in Keys)
+        {
+            old.TryAdd((key.Key.Row, key.Key.Left), key);
+        }
+
         _keyViews.Clear();
+        var shown = new List<BoardKeyViewModel>(_board.Keys.Count);
         for (var i = 0; i < _board.Keys.Count; i++)
         {
-            var key = new BoardKeyViewModel(_board.Keys[i], i, Click);
-            Keys.Add(key);
-            _keyViews[key.Key] = key;
+            var boardKey = _board.Keys[i];
+            BoardKeyViewModel key;
+            if (old.Remove((boardKey.Row, boardKey.Left), out var kept) && kept.Fits(boardKey))
+            {
+                kept.StandFor(boardKey, i);
+                key = kept;
+            }
+            else
+            {
+                key = new BoardKeyViewModel(boardKey, i, Click);
+            }
+
+            shown.Add(key);
+            _keyViews[boardKey] = key;
+        }
+
+        var stays = shown.ToHashSet();
+        foreach (var gone in Keys.Where(key => !stays.Contains(key)).ToList())
+        {
+            Keys.Remove(gone);
+        }
+
+        var present = Keys.ToHashSet();
+        foreach (var added in shown.Where(key => !present.Contains(key)))
+        {
+            Keys.Add(added);
         }
 
         UpdateDockKey();
@@ -407,7 +449,8 @@ public sealed partial class OnScreenKeyboardViewModel : ViewModelBase, IDisposab
         {
             var state = _stateOf(key.Key);
             key.IsHidden = state == BoardKeyState.Hidden;
-            key.IsUnavailable = state == BoardKeyState.Disabled || !Offers(key.Key);
+            key.IsUnavailable = state == BoardKeyState.Disabled || !Offers(key.Key)
+                || key.Key.Kind == BoardKeyKind.Layout && !_layouts.CanSwitch;
         }
     }
 

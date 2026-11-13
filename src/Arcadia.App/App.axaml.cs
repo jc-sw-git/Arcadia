@@ -91,7 +91,7 @@ public partial class App : Application
             var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
 
             var settingsStore = SettingsStore.CreateDefault();
-            var settings = new SettingsService(settingsStore);
+            var settings = new SettingsService(settingsStore, AppLog.Write);
             var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
             var firstRun = new FirstRunSetup(
                 settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));

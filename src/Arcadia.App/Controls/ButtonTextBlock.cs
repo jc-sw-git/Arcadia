@@ -24,21 +24,35 @@ public static class ButtonTextBlock
     public static readonly AttachedProperty<ButtonSymbols?> SymbolsProperty =
         AvaloniaProperty.RegisterAttached<TextBlock, ButtonSymbols?>("Symbols", typeof(ButtonTextBlock));
 
+    /// <summary>
+    /// The text is about something only a controller does, e.g. [R3] on the on-screen keyboard: its badges show the
+    /// controller's button also while the keyboard is in use, in the printing of the controller last used (Xbox without one).
+    /// </summary>
+    public static readonly AttachedProperty<bool> KeepsButtonsProperty =
+        AvaloniaProperty.RegisterAttached<TextBlock, bool>("KeepsButtons", typeof(ButtonTextBlock));
+
     static ButtonTextBlock()
     {
         TextProperty.Changed.AddClassHandler<TextBlock>((block, change) => Fill(block, change.NewValue as string, namesToo: false));
         ButtonsProperty.Changed.AddClassHandler<TextBlock>((block, change) => Fill(block, change.NewValue as string, namesToo: true));
-        SymbolsProperty.Changed.AddClassHandler<TextBlock>((block, _) =>
+        SymbolsProperty.Changed.AddClassHandler<TextBlock>((block, _) => ShowSymbols(block));
+        KeepsButtonsProperty.Changed.AddClassHandler<TextBlock>((block, _) => ShowSymbols(block));
+    }
+
+    private static void ShowSymbols(TextBlock block)
+    {
+        foreach (var glyph in (block.Inlines ?? []).OfType<InlineUIContainer>().Select(container => container.Child).OfType<PadGlyph>())
         {
-            foreach (var glyph in (block.Inlines ?? []).OfType<InlineUIContainer>().Select(container => container.Child).OfType<PadGlyph>())
-            {
-                glyph.Symbols = GetSymbols(block);
-                glyph.Keys = KeysOf(block, glyph.Button ?? string.Empty, namesToo: GetText(block) is null);
-            }
-        });
+            glyph.Symbols = GetSymbols(block);
+            glyph.Keys = KeysOf(block, glyph.Button ?? string.Empty, namesToo: GetText(block) is null);
+        }
     }
 
     public static ButtonSymbols? GetSymbols(TextBlock block) => block.GetValue(SymbolsProperty);
+
+    public static bool GetKeepsButtons(TextBlock block) => block.GetValue(KeepsButtonsProperty);
+
+    public static void SetKeepsButtons(TextBlock block, bool value) => block.SetValue(KeepsButtonsProperty, value);
 
     public static void SetSymbols(TextBlock block, ButtonSymbols? value) => block.SetValue(SymbolsProperty, value);
 
@@ -52,10 +66,11 @@ public static class ButtonTextBlock
 
     /// <summary>
     /// The key a badge in prose shows while the keyboard is in use (#539); none in a list of a controller's buttons (the
-    /// mouse mode's help) or in a text about one controller only, which name that controller's buttons on purpose.
+    /// mouse mode's help), in a text about one controller only, which names that controller's buttons on purpose, or in one
+    /// about something only a controller does (<see cref="KeepsButtonsProperty"/>).
     /// </summary>
     private static string? KeysOf(TextBlock block, string button, bool namesToo) =>
-        namesToo || GetSymbols(block) is not null ? null : Input.KeyNames.Of(button);
+        namesToo || GetSymbols(block) is not null || GetKeepsButtons(block) ? null : Input.KeyNames.Of(button);
 
     private static void Fill(TextBlock block, string? text, bool namesToo)
     {

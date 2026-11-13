@@ -52,7 +52,7 @@ public sealed class ArtworkSourcesTab : IDataSourcesTab
         _severalHits.Refresh();
         Rows =
         [
-            .. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _sourceRows.CropRow, _reloadRows.OverwriteRow,
+            .. _keyRows.Rows, .. _sourceRows.OrderRows, _sourceRows.MissingRow, _reloadRows.ReloadRow, _reloadRows.OverwriteRow, _sourceRows.CropRow,
             .. _severalHits.Rows,
         ];
     }

@@ -77,7 +77,7 @@ public sealed class FocusRingTests
         foreach (var (moves, where) in new[] { (0, "erster Tab"), (tabs.Count / 2, "Tab in der Mitte"), (tabs.Count - 1 - (tabs.Count / 2), "letzter Tab") })
         {
             arcadia.Press(UiAction.NextTab, times: moves);
-            arcadia.AssertDrawnWhole(TabButton(arcadia, arcadia.Arcadia.SelectedTab!), $"{where} ({arcadia.Arcadia.SelectedTab!.Name})", "TextStrong");
+            arcadia.AssertDrawnWhole(TabButton(arcadia, arcadia.Arcadia.SelectedTab!), $"{where} ({arcadia.Arcadia.SelectedTab!.Name})", "RaisedLight");
         }
 
         Assert.Same(tabs[^1], arcadia.Arcadia.SelectedTab);

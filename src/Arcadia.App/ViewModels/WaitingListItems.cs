@@ -79,7 +79,7 @@ public abstract partial class WaitingHitViewModel(Action<WaitingHitViewModel> ma
     public abstract string Name { get; }
 
     /// <summary>The year it came out, empty when the source doesn't know it.</summary>
-    public string YearText => Year?.ToString(Formatting.Culture) ?? string.Empty;
+    public string YearText => Year is { } year ? Formatting.Number(year) : string.Empty;
 
     public bool HasYear => Year is not null;
 

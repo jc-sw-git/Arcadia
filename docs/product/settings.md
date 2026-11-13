@@ -12,6 +12,8 @@
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows
   explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses it.
+  It starts at its top for another row or when the row's value or greying changes, never because a run in the
+  background refreshes the rows (#547).
   A row with named values gets one box per value below its name, the current one highlighted (#506; a number range,
   e.g. a hold time, gets none); a greyed row with a reason shows it as the blue note at the very top.
 - Rows that don't fit fade into the page at an edge where more rows follow, none where everything fits (#237, same
@@ -66,6 +68,10 @@ installed, rescans, every "Demo-Spiel: …"), **Warning** when the action didn't
 failures ("… konnte nicht gestartet werden …", unexpected errors, a failed save or install, a file that won't open,
 controllers not recognised). Pan's notices take the level of their source. The UI never says "Toast": a toast is a
 "Meldung", a status message a "Status".
+
+## Category "Lokalisierung"
+
+Between "Datenquellen" and "Über Arcadia": [localization.md](localization.md).
 
 ## Category "Über Arcadia"
 

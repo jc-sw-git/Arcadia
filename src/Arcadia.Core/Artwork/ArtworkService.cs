@@ -971,8 +971,8 @@ public sealed partial class ArtworkService : IDisposable
     }
 
     /// <summary>
-    /// SteamGridDB's image for the game (#489): its best rated that fits by the size SteamGridDB names, else its best rated
-    /// at all, so only one is downloaded. Asked by the store id, else by the game it matched by name (#491,
+    /// SteamGridDB's image for the game (#489): its best rated in 16 : 9 for a background (#562), else
+    /// its best rated that fits by the size SteamGridDB names, else its best rated at all, so only one is downloaded. Asked by the store id, else by the game it matched by name (#491,
     /// ArtworkService.ByName.cs). None without a usable key, with SteamGridDB switched off, while the cache holds a fitting
     /// image, for a game this run doesn't search (#506), or once SteamGridDB failed in this run.
     /// </summary>
@@ -990,7 +990,7 @@ public sealed partial class ArtworkService : IDisposable
             return [];
         }
 
-        var best = answer.Images.FirstOrDefault(i => ArtworkFormat.Fits(new ImageSize(i.Width, i.Height), kind, run.Tolerance)) ?? answer.Images.FirstOrDefault();
+        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind, run.Tolerance));
         return best is null ? [] : [new ArtworkCandidate(SteamGridDbOrigin, Download: best.Url)];
     }
 

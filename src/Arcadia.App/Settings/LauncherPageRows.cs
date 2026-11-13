@@ -58,10 +58,18 @@ public sealed partial class TextRowViewModel(string key, string title, Func<stri
         }
     }
 
-    /// <summary>The value changed: it is read again.</summary>
+    // The value text last announced by Refresh.
+    private string? _shownValueText;
+
+    /// <summary>The value changed: it is read again, announced only when it reads differently (#547, as a choice row).</summary>
     public void Refresh()
     {
-        OnPropertyChanged(nameof(ValueText));
+        if (ValueText != _shownValueText)
+        {
+            _shownValueText = ValueText;
+            OnPropertyChanged(nameof(ValueText));
+        }
+
         NotifyActionsChanged();
     }
 }

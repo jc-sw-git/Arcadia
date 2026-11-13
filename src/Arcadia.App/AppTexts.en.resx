@@ -110,7 +110,7 @@
   <data name="AboutChecking" xml:space="preserve"><value>Checking for updates…</value></data>
   <data name="AboutLoadedRestarting" xml:space="preserve"><value>Version {version} is downloaded – Arcadia restarts…</value></data>
   <data name="AboutAvailable" xml:space="preserve"><value>Version {version} is available.</value></data>
-  <data name="AboutUpToDateCheckedAt" xml:space="preserve"><value>Arcadia is up to date. Last checked: {time:HH:mm}.</value></data>
+  <data name="AboutUpToDateCheckedAt" xml:space="preserve"><value>Arcadia is up to date. Last checked: {time}.</value></data>
   <data name="AboutUpToDate" xml:space="preserve"><value>Arcadia is up to date.</value></data>
   <data name="AboutCheckRunning" xml:space="preserve"><value>Checking…</value></data>
   <data name="AboutCheck" xml:space="preserve"><value>Check</value></data>
@@ -991,6 +991,9 @@
   <data name="SortRelevance" xml:space="preserve"><value>Relevance</value></data>
   <data name="MinutesAgo" xml:space="preserve"><value>{minutes} min ago</value></data>
   <data name="AtTime" xml:space="preserve"><value>at {time}</value></data>
+  <data name="TimeWithUnit" xml:space="preserve"><value>{time}</value></data>
+  <data name="StatusSince" xml:space="preserve"><value>since {time}</value></data>
+  <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
   <data name="MessageResolvedAt" xml:space="preserve"><value>Resolved {time}</value></data>
   <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
   <data name="LevelWarning" xml:space="preserve"><value>Warning</value></data>
@@ -1107,8 +1110,8 @@
   <data name="DataSourcesTestAction" xml:space="preserve"><value>Test</value></data>
   <data name="DataSourcesTestNeedsKey" xml:space="preserve"><value>Only possible with a key</value></data>
   <data name="DataSourcesTestNotYet" xml:space="preserve"><value>Asks SteamGridDB whether the key is valid</value></data>
-  <data name="DataSourcesTestOk" xml:space="preserve"><value>Last checked at {time:HH:mm} · OK</value></data>
-  <data name="DataSourcesTestRejected" xml:space="preserve"><value>Checked at {time:HH:mm} · SteamGridDB rejects the key</value></data>
+  <data name="DataSourcesTestOk" xml:space="preserve"><value>Last checked at {time} · OK</value></data>
+  <data name="DataSourcesTestRejected" xml:space="preserve"><value>Checked at {time} · SteamGridDB rejects the key</value></data>
   <data name="DataSourcesTestNoConnection" xml:space="preserve"><value>No connection</value></data>
   <data name="DataSourcesTestInfo" xml:space="preserve"><value>Asks SteamGridDB once whether the key is valid.</value></data>
   <data name="DataSourcesTestInfoTimeout" xml:space="preserve"><value>If no answer comes within 10 seconds, this says “No connection”. The key then stays as it is.</value></data>
@@ -1118,7 +1121,7 @@
   <data name="DataSourcesLauncherImagesSubtitle" xml:space="preserve"><value>The launchers’ own images, no key</value></data>
   <data name="DataSourcesLauncherImagesInfo" xml:space="preserve"><value>The launchers’ official images. They don’t need a key.</value></data>
   <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>WHO PROVIDES WHAT</value></data>
-  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam provides cover and background. Epic Games provides a cover for most games, but as a background only a 16:9 landscape image that doesn’t fit the flat header of the detail page. The other launchers provide no images.</value></data>
+  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam provides cover and background. Epic Games provides a cover and a 16:9 background for most games. The other launchers provide no images.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>ORDER</value></data>
   <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia asks the sources from top to bottom. If one has no fitting image, the next one is asked. What fitting means is set by “Cropping allowed”.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] lifts a source, ▲ ▼ move it, [L3] drops it, [B] cancels. With the mouse, you drag it.</value></data>
@@ -1228,14 +1231,14 @@
   <data name="WaitingChosenCover" xml:space="preserve"><value>YOUR COVER</value></data>
   <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB has no further details on this game.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Cropping allowed</value></data>
-  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>How much of an image may be cut off so it fits the format</value></data>
+  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>How much of a cover may be cut off so it fits the format</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Little · up to 5 %</value></data>
   <data name="DataSourcesCropNormal" xml:space="preserve"><value>Normal · up to 15 %</value></data>
   <data name="DataSourcesCropMuch" xml:space="preserve"><value>Much · up to 30 %</value></data>
-  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Images stay almost whole but come more often from a source further down.</value></data>
+  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Covers stay almost whole but come more often from a source further down.</value></data>
   <data name="DataSourcesCropNormalInfo" xml:space="preserve"><value>A middle way: Arcadia crops a little before it asks the next source.</value></data>
   <data name="DataSourcesCropMuchInfo" xml:space="preserve"><value>Arcadia stays with the first source more often, but also cuts off text or figures at the edge.</value></data>
-  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Covers are 2:3 portrait, backgrounds have the flat format of the detail page’s header. If an image doesn’t fit exactly, Arcadia crops it around the center. Here you set how much may be cut off at most.</value></data>
+  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Covers are 2:3 portrait. If a cover doesn’t fit exactly, Arcadia crops it around the center. Here you set how much may be cut off at most. Backgrounds fit in 16:9 like the detail page, or in the flat format of Steam and SteamGridDB, which Arcadia crops to 16:9 around the center.</value></data>
   <data name="DataSourcesCropInfoOrder" xml:space="preserve"><value>The order of the sources always applies: if more would have to be cut off at one source, Arcadia asks the next. If no source has a fitting image, Arcadia crops the image of the first source that has one at all. Only without any image does the placeholder stay.</value></data>
   <data name="DataSourcesWhenHeading" xml:space="preserve"><value>WHEN IT APPLIES</value></data>
   <data name="DataSourcesCropWhen" xml:space="preserve"><value>At once for the images already there and the launchers’ images; this doesn’t start a search. SteamGridDB is asked with the new value for new games and on the next “Search now”. Images set by hand stay as they are.</value></data>
@@ -1253,7 +1256,7 @@
   <data name="ArtworkLoading5" xml:space="preserve"><value>Looking for the nicest shot…</value></data>
   <data name="ArtworkLoading6" xml:space="preserve"><value>Developing the negatives…</value></data>
   <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
-  <data name="ArtworkHeroHeading" xml:space="preserve"><value>BACKGROUND · 3.1 : 1</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>BACKGROUND · 16 : 9</value></data>
   <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} SUGGESTIONS</value></data>
   <data name="ArtworkSourceRow" xml:space="preserve"><value>Source</value></data>
   <data name="ArtworkFileRow" xml:space="preserve"><value>File</value></data>
@@ -1279,7 +1282,7 @@
   <data name="ArtworkLauncherImagesOffText" xml:space="preserve"><value>While they’re off, Arcadia shows no launcher image here. You turn them back on under “Data sources”.</value></data>
   <data name="ArtworkSourcesOffTitle" xml:space="preserve"><value>Launcher images and SteamGridDB are turned off</value></data>
   <data name="ArtworkSourcesOffText" xml:space="preserve"><value>There are only your own files here until you turn a source back on under “Data sources”.</value></data>
-  <data name="ArtworkToDataSources" xml:space="preserve"><value>To the data sources ›</value></data>
+  <data name="ArtworkToDataSources" xml:space="preserve"><value>To the data sources</value></data>
   <data name="ArtworkTabsHint" xml:space="preserve"><value>Cover / Background</value></data>
   <data name="ArtworkChooseHint" xml:space="preserve"><value>Choose image</value></data>
   <data name="ArtworkUseHint" xml:space="preserve"><value>Use</value></data>
@@ -1350,8 +1353,8 @@
   <data name="DataSourcesIgdbConsoleFailed" xml:space="preserve"><value>Twitch’s developer console couldn’t be opened in the browser.</value></data>
   <data name="DataSourcesIgdbNeedsAccess" xml:space="preserve"><value>Only possible with client ID and client secret</value></data>
   <data name="DataSourcesIgdbTestNotYet" xml:space="preserve"><value>Asks Twitch whether the access is valid</value></data>
-  <data name="DataSourcesIgdbTestOk" xml:space="preserve"><value>Checked at {time:HH:mm} · Connected</value></data>
-  <data name="DataSourcesIgdbTestRejected" xml:space="preserve"><value>Checked at {time:HH:mm} · Twitch rejects the access</value></data>
+  <data name="DataSourcesIgdbTestOk" xml:space="preserve"><value>Checked at {time} · Connected</value></data>
+  <data name="DataSourcesIgdbTestRejected" xml:space="preserve"><value>Checked at {time} · Twitch rejects the access</value></data>
   <data name="DataSourcesIgdbTestInfo" xml:space="preserve"><value>Asks Twitch once whether the access is valid.</value></data>
   <data name="DataSourcesIgdbTestInfoTimeout" xml:space="preserve"><value>If no answer comes within 10 seconds, this says “No connection”. The access then stays as it is.</value></data>
   <data name="DataSourcesIgdbTestOkToast" xml:space="preserve"><value>The connection to IGDB is OK.</value></data>
@@ -1374,4 +1377,27 @@
   <data name="DataSourcesMetadataOrderWhen" xml:space="preserve"><value>At once, without a new request: Arcadia puts the fields together again from the data already loaded.</value></data>
   <data name="DataSourcesMetadataSourceOffInfo" xml:space="preserve"><value>Arcadia doesn’t ask the source and hides its fields and corrected titles until you turn it on. What’s loaded stays saved.</value></data>
   <data name="DataSourcesMetadataSourceOffSubtitle" xml:space="preserve"><value>Off · not asked, its fields are hidden</value></data>
+  <data name="LocalizationTitle" xml:space="preserve"><value>Localization</value></data>
+  <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>ON-SCREEN KEYBOARD</value></data>
+  <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Default layout</value></data>
+  <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>The on-screen keyboard opens with this layout</value></data>
+  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Key arrangement {kind}. Every on-screen keyboard opens with this layout: in the search, in text fields and in mouse mode.</value></data>
+  <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>With [R3] you switch to another layout of the quick selection on the on-screen keyboard. The switch holds until the on-screen keyboard closes; the next time it opens, the default layout is back.</value></data>
+  <data name="LocalizationLayoutName" xml:space="preserve"><value>{name} · {kind}</value></data>
+  <data name="LocalizationQuickLayout" xml:space="preserve"><value>Quick selection</value></data>
+  <data name="LocalizationQuickLayoutSubtitle" xml:space="preserve"><value>In the on-screen keyboard’s quick selection</value></data>
+  <data name="LocalizationQuickLayoutOff" xml:space="preserve"><value>The open on-screen keyboard doesn’t offer this layout to switch to.</value></data>
+  <data name="LocalizationQuickLayoutOn" xml:space="preserve"><value>The open on-screen keyboard offers this layout to switch to.</value></data>
+  <data name="LocalizationQuickLayoutInfo" xml:space="preserve"><value>If only the default layout is in the quick selection, “Layout” on the keyboard is grayed out.</value></data>
+  <data name="LocalizationDefaultAlwaysIn" xml:space="preserve"><value>The default layout is always included.</value></data>
+  <data name="LocalizationClockGroup" xml:space="preserve"><value>TIME</value></data>
+  <data name="LocalizationClock" xml:space="preserve"><value>Time</value></data>
+  <data name="LocalizationClockSubtitle" xml:space="preserve"><value>For every time Arcadia shows</value></data>
+  <data name="LocalizationClockSystem" xml:space="preserve"><value>As in the system</value></data>
+  <data name="LocalizationClock24" xml:space="preserve"><value>24 hours</value></data>
+  <data name="LocalizationClock12" xml:space="preserve"><value>12 hours</value></data>
+  <data name="LocalizationClockSystemInfo" xml:space="preserve"><value>Arcadia shows the time the way the system shows it.</value></data>
+  <data name="LocalizationClock24Info" xml:space="preserve"><value>From 00:00 to 23:59, for example 21:58.</value></data>
+  <data name="LocalizationClock12Info" xml:space="preserve"><value>With AM and PM, for example 9:58 PM.</value></data>
+  <data name="LocalizationClockInfo" xml:space="preserve"><value>Applies at once to the clock at the top, “since” in the status, the recent messages, “Last played” and every other time. Date and numbers follow the system’s regional format.</value></data>
 </root>

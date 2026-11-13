@@ -19,7 +19,7 @@ Index and the category's frame: [README.md](README.md).
   "Ersten nehmen". A opens the screen with two levels, only with the games of its tab's kind. Games list (left; each
   game's name and launcher, no hit count): ▲ ▼ choose a game, round at the ends; A goes into its hits; B closes (undecided games stay in their order). Hits (right): "Gesucht: Cover und Hintergrund" /
   "Gesucht: Cover" / "Gesucht: Hintergrund" (decided again when shown), the field "Eigener Suchbegriff" with
-  "Zurücksetzen", and a grid of the hits' images of that kind (five covers or three backgrounds a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).
+  "Zurücksetzen", and a grid of the hits' images of that kind (five covers or three backgrounds (16 : 9) a row; names wrap to two lines, the focused hit shows its name in full, a mouse hover shows it as a tooltip).
   ◀ ▶ ▲ ▼ go round in rows and columns, the field's row counts as each column's top; A takes the hit and goes back to
   the games list on the next waiting game, B goes back without; Y skips the game on both levels. Until chosen a game
   keeps its launcher image or placeholder.

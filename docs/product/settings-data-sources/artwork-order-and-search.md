@@ -13,13 +13,16 @@ Index and the category's frame: [README.md](README.md).
   out with its count, "Jetzt suchen" greyed out with the reason in the info box, the key stays stored, a first key
   starts no search; "Artwork ändern" offers none of an off source's images and its notice says it is off and leads to
   that source's row.
-- "Zuschneiden erlaubt" (group "ARTWORK"): Wenig · bis 5 %, Normal · bis 15 % (default), Viel · bis 30 %. Each image
-  is checked against it in the order; the first that fits wins, none fitting: the first source with any image, cropped
-  (an image SteamGridDB gave stands as its image then).
+- Formats: a cover 2 : 3; a background 16 : 9, the full-screen detail page's shape, or flat (about 3.1 : 1, Steam's and
+  SteamGridDB's), which the detail page crops to 16 : 9 (#562). Of one source's images whose sizes are known before the
+  download (SteamGridDB's), a 16 : 9 background comes before a flat one.
+- "Zuschneiden erlaubt" (group "ARTWORK", covers only): Wenig · bis 5 %, Normal · bis 15 % (default), Viel · bis 30 %;
+  backgrounds always 15 %. Each image is checked in the order; the first that fits wins, none fitting: the first source
+  with any image, cropped (an image SteamGridDB gave stands as its image then).
 - Changing the order, a switch or "Zuschneiden erlaubt" starts no search: the images on disk and the launchers' own are
   picked again at once; SteamGridDB is asked with the new setting for new games and at the next "Jetzt suchen".
 - SteamGridDB is asked only for a game and kind whose current image doesn't fit, so a key arriving later also
-  replaces fallback images (e.g. a 16 : 9 background), never an image set by hand; an image it gave holds SteamGridDB's
+  replaces fallback images (e.g. a 21 : 9 background), never an image set by hand; an image it gave holds SteamGridDB's
   place in the order. It is asked by the launcher's id (Steam's AppID, Epic's `AppName` on `egs`); a game without one, or
   whose id SteamGridDB doesn't know, is searched by name (below), also in launchers without images of their own. Of its
   images the best-rated one that fits (static only, no NSFW or humour) is downloaded; only one per game and kind.
@@ -46,10 +49,10 @@ Index and the category's frame: [README.md](README.md).
 
 ## Images set by hand and "Alle Artworks neu laden" (#490)
 
-- Group "ARTWORK" also holds "Alle Artworks neu laden" (below the missing images) and the switch "Von Hand gesetzte
-  Artworks überschreiben" (default off, saved in `settings.json`). "Neu laden" asks first, with the text matching the
+- Group "ARTWORK" also holds "Alle Artworks neu laden" (below the missing images) and, indented right under it, the
+  switch "Von Hand gesetzte Artworks überschreiben" (default off, saved in `settings.json`). "Neu laden" asks first, with the text matching the
   switch; B changes nothing. It runs like "Jetzt suchen" over every game, also asking SteamGridDB again, keeps images
   set by hand unless the switch is on, and is greyed out while a search runs; while it runs ("Neu laden läuft · n von
   N") it reads "Neu laden abbrechen".
 - With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, in SteamGridDB's order; its API rates every image 0, so no rating is shown) after the
-  launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen ›" to the row "Schlüssel".
+  launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen" to the row "Schlüssel".

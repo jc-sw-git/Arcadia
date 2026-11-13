@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
@@ -69,8 +70,17 @@ public sealed record AppSettings
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 
-    /// <summary>The on-screen keyboard's layout the user picked last; null for the default (German).</summary>
-    public string? KeyboardLayout { get; init; }
+    /// <summary>The category "Lokalisierung" (#553): the on-screen keyboard's default layout and quick selection, the clock.</summary>
+    public LocalizationSettings Localization { get; init; } = new();
+
+    /// <summary>
+    /// The layout older versions saved when R3 picked one; read once to become "Standard-Layout" (#553, A4), never written
+    /// again: an R3 pick holds only while the keyboard is open now.
+    /// </summary>
+    [JsonPropertyName("KeyboardLayout")]
+    [JsonConverter(typeof(LocalizationSettings.Lenient.Text))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? LegacyKeyboardLayout { get; init; }
 
     /// <summary>The controller as a mouse (#64).</summary>
     public MouseModeSettings MouseMode { get; init; } = new();
@@ -133,6 +143,18 @@ public sealed record AppSettings
 
     /// <summary>Replaces a quick selection written as <c>null</c> by hand with an empty one, so every game shows the defaults.</summary>
     public AppSettings WithValidQuickSelection() => this with { QuickSelection = QuickSelection ?? new() };
+
+    /// <summary>Like <see cref="WithValidLibraryView"/> for "Lokalisierung", with one log line per value replaced.</summary>
+    public AppSettings WithValidLocalization(Action<string> log)
+    {
+        var localization = Localization ?? new();
+        if (LegacyKeyboardLayout is { } legacy && localization.KeyboardLayout is null)
+        {
+            localization = localization with { KeyboardLayout = legacy };
+        }
+
+        return this with { Localization = localization.WithValidValues(log), LegacyKeyboardLayout = null };
+    }
 
     /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>
     public GameFilter FilterOf(string launcherId) =>

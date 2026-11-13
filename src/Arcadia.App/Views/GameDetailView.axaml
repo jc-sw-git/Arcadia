@@ -17,9 +17,9 @@
               IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}"
               ToolTip.Tip="{Binding DisabledReason}" ToolTip.ShowOnDisabled="True">
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsDark="True" IsVisible="{Binding IsPrimary}" />
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsDark="True" IsVisible="{Binding ShowsPressGlyph}" />
           <!-- The icons are drawn in a 24 px box; scaled to 20 px like the design. -->
-          <Viewbox Width="20" Height="20" IsVisible="{Binding !IsPrimary}" VerticalAlignment="Center">
+          <Viewbox Width="20" Height="20" IsVisible="{Binding ShowsIcon}" VerticalAlignment="Center">
             <Path Data="{Binding Icon}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round"
                   Width="24" Height="24" Stretch="None" />
           </Viewbox>
@@ -271,7 +271,8 @@
                             <Button Classes="plain valueArrow quickArrow" Command="{Binding StepBackCommand}">
                               <Path Classes="chevronLeft" />
                             </Button>
-                            <TextBlock Classes="quickValue" Text="{Binding ValueText}" />
+                            <!-- One width for every value (#560), so the arrows of all rows stand in the same columns. -->
+                            <TextBlock Classes="quickValue inChip" Text="{Binding ValueText}" />
                             <Button Classes="plain valueArrow quickArrow" Command="{Binding StepOnCommand}">
                               <Path Classes="chevronRight" />
                             </Button>
@@ -285,11 +286,12 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <Panel Grid.Row="2">
-                <!-- Why the focused entry is greyed out: "Übersicht" has no info box. -->
-                <DockPanel Name="QuickNote" Margin="4,6,0,0" IsVisible="{Binding HasQuickNote}">
+                <!-- Why the focused entry is greyed out: "Übersicht" has no info box. A third of the way from the fifth place to
+                     "Übersicht anpassen" (#560); the icon centred on the first line (20 px line, 18 px icon). -->
+                <DockPanel Name="QuickNote" Margin="4,18,0,0" VerticalAlignment="Top" IsVisible="{Binding HasQuickNote}">
                   <Path DockPanel.Dock="Left" Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="18" Height="18"
-                        VerticalAlignment="Top" Margin="0,2,10,0" />
-                  <TextBlock Text="{Binding QuickNote}" FontSize="15" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                        VerticalAlignment="Top" Margin="0,1,10,0" />
+                  <TextBlock Text="{Binding QuickNote}" FontSize="15" LineHeight="20" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
                 <Button Name="Customize" Classes="plain quickEntry customize" Classes.focused="{Binding IsCustomizeFocused}" VerticalAlignment="Center" Margin="0,0,0,-28"
                         Command="{Binding CustomizeCommand}">

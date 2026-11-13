@@ -5,7 +5,7 @@ what the player set by hand and is never thrown away.
 
 **Artwork** (`Artwork/`, #13, #487, #489, #491, #506)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
-  launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
+  launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3; background 16 : 9 or flat 3.1 : 1; 15 %
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
   another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
   the run stops downloading at the first network failure; keeps the images of games that left a library, so they come back with them. `Of(key)` is

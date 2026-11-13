@@ -60,6 +60,7 @@ internal static class GuardPages
             arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Entries.Count)),
         new("Eigene Tags › Spiele", [typeof(TagListViewModel)], OpenTagGamesAsync,
             arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Games!.Items.Count)),
+        new("Einstellungen › Lokalisierung", [typeof(LocalizationSettingsViewModel)], OpenCategoryAsync<LocalizationSettingsViewModel>, Rows) { IsSettingsPage = true },
         new("Einstellungen › Über Arcadia", [typeof(AboutSettingsViewModel)], OpenCategoryAsync<AboutSettingsViewModel>, Rows) { IsSettingsPage = true },
         GuardPage.NotWalkedYet("Frage in den Einstellungen", [typeof(SettingsQuestionViewModel)], "Fragt nur nach Änderungen an Bildern oder Controller-Modi, die der Test erst anlegen müsste."),
         GuardPage.NotWalkedYet("Bearbeitungsfeld", [typeof(TextEditorViewModel)], "Ein Textfeld in einer Zeile; die Guards sehen es mit seiner Zeile."),

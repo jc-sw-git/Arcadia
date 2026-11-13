@@ -447,8 +447,9 @@ public sealed partial class FilterListPane : FilterPane
             value.IsFocused = IsActive && !IsWriting;
         }
 
-        // The focused row stays in sight with two rows below it where the list goes on (design T44Modal).
-        if (_focusRow < _firstRow)
+        // The focused row stays in sight with two rows below it where the list goes on (design T44Modal) and one above,
+        // so it never stands under a fade.
+        if (_focusRow <= _firstRow)
         {
             _firstRow = Math.Max(0, _focusRow - 1);
         }

@@ -122,3 +122,6 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
+| T466-1 to -5, -7 to -15, -17 to -20, -22 | 2026-11-13 | Claude (implementation) | branch of the PR, `dotnet test`, Linux container | ✅ | – |
+| T466-25 (rings only) | 2026-11-13 | Claude (implementation) | `RingGeometryTests` (window guard), Linux container | ✅ | – |
+| T466-25 (look, part) | 2026-11-13 | Claude (implementation) | Debug build under Xvfb, `--demo`, keyboard only | ✅ after fixes | ring of the first value was clipped by the pane, the categories didn't fit beside the keyboard, the match note didn't follow the search: fixed; with `--demo-games 5000` the demo's metadata took about 2 min to arrive here, before that the tab has only "Installiert" |

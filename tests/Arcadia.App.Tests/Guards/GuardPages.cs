@@ -31,7 +31,8 @@ internal static class GuardPages
         new("Spielmenü", [typeof(GameMenuViewModel)], Pressing(UiAction.Options),
             arcadia => Down(arcadia, arcadia.Arcadia.Main.GameMenu!.Actions.Count)),
         new("Bilder ändern", [typeof(ChangeArtworkViewModel)], OpenChangeArtwork),
-        new("Filter", [typeof(FilterModalViewModel)], Pressing(UiAction.KeyboardLayout),
+        // The demo walks the categories; the metadata panes' edges: RingGeometryTests (T466-25).
+        new("Filter", [typeof(FilterModalViewModel), typeof(FilterOptionsPane), typeof(FilterListPane), typeof(FilterYearPane), typeof(FilterRatingPane)], Pressing(UiAction.KeyboardLayout),
             arcadia => Down(arcadia, arcadia.Arcadia.Main.FilterModal!.Categories.Count)),
         new("Statusmeldungen", [typeof(StatusModalViewModel)], OpenStatusModalAsync, Start: StartWithEveryControllerPartMissingAsync),
         new("Detailseite", [typeof(GameDetailViewModel), typeof(GameDetailPageViewModel)], OpenDetail,

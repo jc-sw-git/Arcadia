@@ -18,9 +18,9 @@ public sealed class LibraryMetadataFilterTests
 {
     private static readonly DateTimeOffset Day = ArcadiaDriver.Now.AddDays(-10);
 
-    private sealed record Entry(string Title, GameMetadata Metadata, bool Installed = false);
+    internal sealed record Entry(string Title, GameMetadata Metadata, bool Installed = false);
 
-    private static GameMetadata Meta(
+    internal static GameMetadata Meta(
         Genre[]? genres = null, string[]? tags = null, string? developer = null, string? publisher = null, int? year = null, params AgeRating[] ratings) => new()
     {
         Genres = genres ?? [],
@@ -37,9 +37,9 @@ public sealed class LibraryMetadataFilterTests
         : TestGames.NotInstalled(KnownLaunchers.Steam, entry.Title)) with { Id = id };
 
     /// <summary>A Steam tab whose games bring <paramref name="entries"/>' metadata from the launcher's own files.</summary>
-    private static (LauncherSpec Spec, FakeMetadataSource Source, List<Game> Games) SteamWith(params Entry[] entries) => SteamWith(withStorePages: false, entries);
+    internal static (LauncherSpec Spec, FakeMetadataSource Source, List<Game> Games) SteamWith(params Entry[] entries) => SteamWith(withStorePages: false, entries);
 
-    private static (LauncherSpec Spec, FakeMetadataSource Source, List<Game> Games) SteamWith(bool withStorePages, params Entry[] entries)
+    internal static (LauncherSpec Spec, FakeMetadataSource Source, List<Game> Games) SteamWith(bool withStorePages, params Entry[] entries)
     {
         var source = new FakeMetadataSource();
         var games = new List<Game>();
@@ -54,7 +54,7 @@ public sealed class LibraryMetadataFilterTests
     }
 
     /// <summary>Six games: genres, tags, developers in two spellings, years and USK / PEGI ratings; "Ohne" has nothing.</summary>
-    private static Entry[] Library() =>
+    internal static Entry[] Library() =>
     [
         new("Asche", Meta([Genre.Shooter], ["Koop", "Horror"], "CD PROJEKT RED", "Nordlicht", 2024, new AgeRating(AgeRatingBoard.Usk, "16")), Installed: true),
         new("Brandung", Meta([Genre.RolePlaying], ["Koop", "Gemütlich"], "CD PROJEKT RED", "Nordlicht", 2015, new AgeRating(AgeRatingBoard.Usk, "12"))),
@@ -65,7 +65,7 @@ public sealed class LibraryMetadataFilterTests
     ];
 
     /// <summary>Lets fake time pass until the metadata run is idle, the UI thread following.</summary>
-    private static async Task RunToIdleAsync(ArcadiaDriver arcadia)
+    internal static async Task RunToIdleAsync(ArcadiaDriver arcadia)
     {
         for (var i = 0; i < 3000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
         {

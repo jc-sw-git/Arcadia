@@ -38,14 +38,19 @@ public sealed class MetadataSettingsTests
             }
         });
 
-    /// <summary>Lets fake time pass until the metadata run is idle, the UI thread following.</summary>
+    /// <summary>
+    /// Lets fake time pass until the metadata run is idle, the UI thread following. First the scan reaches the service, or
+    /// a run not started yet looks idle. Small steps: under load a store answer can take longer than a step in real time,
+    /// and steps of a second let the request's 10 s timeout run out before the answer is read (#547).
+    /// </summary>
     private static async Task RunToIdleAsync(ArcadiaDriver arcadia)
     {
-        for (var i = 0; i < 3000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
+        await arcadia.WaitUntilAsync(() => arcadia.Metadata.GameCount > 0, "Bibliothek beim Metadaten-Dienst");
+        for (var i = 0; i < 30000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
         {
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(1);
-            arcadia.Time.Advance(TimeSpan.FromSeconds(1));
+            arcadia.Time.Advance(TimeSpan.FromMilliseconds(100));
         }
 
         await arcadia.Metadata.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(5));

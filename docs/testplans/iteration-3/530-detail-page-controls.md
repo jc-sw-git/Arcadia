@@ -1,10 +1,9 @@
 # #530 Detail page controls: focus glyphs, scrolling the info box, switching games and the overview dialog
 
-Findings 1 to 5 of the owner's hand test of #43 (detail page from #498/#499/#500). Change 6 (filtering from the detail
-page) is open in the issue and not covered here yet. The cases were written by the implementing thread from the issue's
+Findings of the owner's hand test of #43 (detail page from #498/#499/#500), changes 1 to 6 of the issue. The cases were written by the implementing thread from the issue's
 changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T530-1 to -4 · QE: T530-5 · Open for the owner: T530-6, T530-7
+**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Open for the owner: T530-6, T530-7, T530-10
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B, Q/E = LT/RT, Shift+W/S = RS). "A jump" is the animation of one carousel turn: title, info line and
@@ -27,23 +26,34 @@ the panel's content fading in and rising a little.
   game, it scrolls the text under it where there is more; over the background (artwork, stacks) one notch turns one
   game as before (T506-5). · E2E: no (window: the wheel's target is the drawn layout)
 - [ ] **T530-6** **Owner:** On your PC with the Steam Controller, hold RT (and LT) for about two seconds on the detail
-  page and let go: the title jumps at the first turn and again when you let go, never in between. · E2E: no (real
-  controller and real rendering: in the container and the tests both jumps already came before this change)
+  page and let go: the title jumps at the first turn and again when you let go, never in between. `arcadia.log` says
+  "Detailseite: LT/RT losgelassen, Seite folgt mit Sprung" for each release. · E2E: no (real controller and real
+  rendering: in the container and the tests both jumps already came before this change, and the owner's log of the
+  test shows ordinary holds)
+- [x] **T530-8** Detail page opened from a tab: R3 (G) opens the tab's filter over the page, the funnel chip beside the
+  sort at the foot does the same with a click; the filter's choice is the tab's filter in the library as well; B
+  closes it and the carousel turns through the hits only. · E2E: yes
+- [x] **T530-9** The shown game drops out of the filter: the page shows the next hit after it in the order before (not
+  the game at its old index), area and focus kept; a filter that keeps it keeps it shown; with no hit left the page
+  closes to the library. · E2E: yes
 - [ ] **T530-7** **Owner:** With the controller, the glyph inside the rail's focus ring reads as "press A to enter" and
   doesn't crowd the value line. · E2E: no (look and feel)
+- [ ] **T530-10** **Owner:** A renamed game: ⧉ shows and hides "Original-Titel" (the footer says "[⧉] Original-Titel"),
+  R3 opens the filter instead. · E2E: no (the button's new place is the owner's choice to confirm in use)
 
 Earlier cases this changes: T493-2, T493-14 and T493-28 entered "Infos" with A and scrolled it with ▲ ▼; "Infos" is now
-read from the rail with RS (T530-4), and their tests follow.
+read from the rail with RS (T530-4). T496-11 and the other "Original-Titel" cases toggle with ⧉ now, not R3 (T530-10).
+Their tests follow.
 
 Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| T530-1 to -4 | `DetailControlsTests`; T493-2, -14, -28 in `DetailMetadataTests` follow the new reading of "Infos" |
+| T530-1 to -4, -8, -9 | `DetailControlsTests`; `CarouselTests` (Core) for the next hit; T493-2, -14, -28 in `DetailMetadataTests` follow the new reading of "Infos", the #496 tests in `ChangeTitleTests` and `ChangeTitleAcrossTheAppTests` press ⧉ |
 
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T530-1 to -4 | 2026-11-13 | Claude | PR branch, Debug, Linux cloud container, deliberately broken builds | ✅ each red once except T530-2: ◀ ▶ ignored in the dialog (T530-1), glyph never shown (T530-3), "Infos" entered with A (T530-4). T530-2 was green on `main` too: the view model already jumped on release | owner's run on his PC (T530-6) |
+| T530-1 to -4 | 2026-11-13 | Claude | PR branch, Debug, Linux cloud container, deliberately broken builds | ✅ each red once except T530-2: ◀ ▶ ignored in the dialog (T530-1), glyph never shown (T530-3), "Infos" entered with A (T530-4), the filter refused over the detail page (T530-8), the old index kept instead of the next hit (T530-9). T530-2 was green on `main` too: the view model already jumped on release | owner's run on his PC (T530-6) |
 | T530-2, -3, -4, -5, dialog | 2026-11-13 | Claude | PR branch, Debug, Linux cloud container (Xvfb), keys and mouse, `--demo` | ✅ held E: the release fades the title in; glyph in the ring of "Übersicht"/"Controller", none on "Infos", footer "⇧W ⇧S / Mausrad Infotext"; Shift+S scrolls "Infos" from the rail; wheel over the panel keeps the game, over the background turns it; dialog: D moves to "Verwalten", footer "WASD Wählen" | – |

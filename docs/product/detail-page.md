@@ -43,7 +43,10 @@
   games the other on both sides; one: no stacks). LT/RT turn it, LB/RB switch the tab and stay on the detail page
   (first game), L3 re-sorts with the shown game kept; all of them keep the open area and the focused button, area or
   row. Held LT/RT turn only the covers, the page follows on release with a jump: a hold jumps at its first turn and at its
-  last, never in between (#530). The wheel turns only over the background; over the panel it scrolls what is under it
+  last, never in between (#530). Opened from a tab, R3 (G, the funnel beside the sort at the foot) opens the tab's
+  filter over the page, the same as in the library (#530); the carousel then turns through the hits only. A shown game
+  that drops out gives way to the next hit after it in the order before; with no hit left the page closes to the
+  library. From the search R3 does nothing. The wheel turns only over the background; over the panel it scrolls what is under it
   and never turns (#530). A turn on its own lets title and content jump
   in; a turn during that jump or as quickly after it (LT/RT tapped, the wheel spun) stops it and shows the game at once,
   so nothing is replayed after the last press (#506). B from the buttons or the rail returns to the
@@ -71,9 +74,9 @@
   provider's correction) clears the own title. The own title shows everywhere at once (library, search, sorting, the
   carousel's order) and outlives rescans, "Alle Metadaten neu laden" and the game's absence from the library. Like
   every game action also in the context menu; from there the focus follows the game to its new place in the sort.
-  "Titel zurücksetzen" is greyed without an own title. While the game has one, R3 shows and hides "Original-Titel:
+  "Titel zurücksetzen" is greyed without an own title. While the game has one, ⧉ (R) shows and hides "Original-Titel:
   <automatic title>" under the title in place of the info line (so a two-line title keeps the button row in place), the
-  hint "[R3] Original-Titel" only then; every page shown anew (another game, the page left) starts without the line.
+  hint "[⧉] Original-Titel" only then (R3 is the filter there, as in the library, #530); every page shown anew (another game, the page left) starts without the line.
   While `user-data.json` is unreadable both rows are greyed with the reason, the header has a warning, and its entry
   opens "Eigene Titel" in "Datenquellen", which says why (damaged, locked, from a newer Arcadia) and what to do.
 - "Tags" (#495) opens the tag window of the game; own tags show before the providers' tags

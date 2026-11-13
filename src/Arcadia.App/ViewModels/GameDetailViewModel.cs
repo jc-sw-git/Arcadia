@@ -24,6 +24,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     private readonly LauncherTabsViewModel _tabs;
     private readonly Func<ViewOptionsViewModel?>? _createViewOptions;
     private readonly Func<string, DetailMetadata> _metadataOf;
+    private readonly Action? _openFilter;
 
     // A held LT/RT turns only the covers; the page follows on release (#499).
     private bool _pageBehind;
@@ -32,6 +33,7 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// <param name="createViewOptions">The library's "Ansicht" dialog for L3; null from the search, whose hits keep their order.</param>
     /// <param name="focus">The focus of the page this one replaces (another tab, #499); null starts on "Spielen".</param>
     /// <param name="metadataOf">What the page shows of a game's metadata and own tags by its key (#493, #495); none without it.</param>
+    /// <param name="openFilter">The tab's filter, as in the library (#530); null from the search, whose hits have none.</param>
     public GameDetailViewModel(
         string? tabName,
         IReadOnlyList<Game> games,
@@ -44,9 +46,11 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         Func<ViewOptionsViewModel?>? createViewOptions,
         TimeProvider time,
         DetailFocus? focus = null,
-        Func<string, DetailMetadata>? metadataOf = null)
+        Func<string, DetailMetadata>? metadataOf = null,
+        Action? openFilter = null)
     {
         _metadataOf = metadataOf ?? (_ => DetailMetadata.None);
+        _openFilter = openFilter;
         TabName = tabName;
         _jump = new TurnJump(time, JumpTime);
         _createTile = createTile;
@@ -165,15 +169,19 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
                 OpenViewOptions();
                 break;
             case UiAction.KeyboardLayout:
-                // R3: "Original-Titel" of a renamed game (#496).
+                // R3: the tab's filter, as in the library (#530); the page then turns through its hits only.
+                _openFilter?.Invoke();
+                break;
+            case UiAction.Options:
+                // ⧉: "Original-Titel" of a renamed game (#496); R3 went to the filter (#530). No context menu here: its
+                // actions are buttons on the page (owner, 2026-10-17).
                 Current.ToggleOriginalTitle();
                 break;
             case UiAction.SecondaryUp or UiAction.SecondaryDown when InfoOverflows:
                 // RS (Shift+W/S) scrolls the info box (#506); the focus stays where it is.
                 InfoScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);
                 break;
-            case UiAction.PreviousTab or UiAction.NextTab or UiAction.Options:
-                // No context menu here: its actions are buttons on the page (owner, 2026-10-17).
+            case UiAction.PreviousTab or UiAction.NextTab:
                 break;
             case UiAction.Settings or UiAction.Search:
                 return false;
@@ -254,12 +262,13 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     }
 
     /// <summary>
-    /// Takes over a re-sorted or rescanned list. The shown game stays in the middle, its neighbours follow the new order,
-    /// and the page keeps its area and focus. False if the list is empty and the page has nothing to show.
+    /// Takes over a re-sorted, filtered or rescanned list. The shown game stays in the middle, or, if it dropped out, the
+    /// next one of the old order still in the list (#530); its neighbours follow the new order, and the page keeps its
+    /// area and focus. False if the list is empty and the page has nothing to show.
     /// </summary>
     public bool Update(IReadOnlyList<Game> games, string? sortLabel)
     {
-        var index = Carousel.Find(games, Current.Tile.Game.Key, Index);
+        var index = Carousel.FindOrNext(games, Games, Index);
         if (index < 0)
         {
             return false;
@@ -307,18 +316,23 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         if (_pageBehind)
         {
             _pageBehind = false;
-            ShowFront();
+            // The release should jump as the hold's first turn did (#530); the line shows on a player's PC whether it did.
+            var jumped = ShowFront();
+            Services.AppLog.Write($"Detailseite: LT/RT losgelassen, Seite folgt {(jumped ? "mit" : "ohne")} Sprung");
         }
     }
 
-    /// <summary>The page of the game in front, with the focus of the page before.</summary>
-    private void ShowFront()
+    /// <summary>The page of the game in front, with the focus of the page before; true if title and content jump in.</summary>
+    private bool ShowFront()
     {
         ShowPage(Current.Focus);
-        if (_jump.Turn() is { } jump)
+        if (_jump.Turn() is not { } jump)
         {
-            Jumped?.Invoke(jump);
+            return false;
         }
+
+        Jumped?.Invoke(jump);
+        return true;
     }
 
     private void ShowPage(DetailFocus focus)

@@ -32,7 +32,8 @@
   "Alle Filter zurücksetzen" clears it too). The funnel is neutral without a filter,
   with one the chip stays neutral, only the funnel fills and "19 von 412" shows in the soft accent;
   the count line keeps counting the whole tab. No hits: "Keine
-  Einträge passen zu deinen Filtern." with "[R3] Filter ändern" (A too). The detail page turns through the hits only.
+  Einträge passen zu deinen Filtern." with "[R3] Filter ändern" (A too). The detail page turns through the hits only and opens the filter too
+  (`detail-page.md`).
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
   it fades out where more tabs follow. Dividers also stand between a status message and the search chip and

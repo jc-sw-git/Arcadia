@@ -1,6 +1,7 @@
 using Arcadia.App.Input;
 using Arcadia.App.ViewModels;
 using Arcadia.Input;
+using Arcadia.Launchers;
 using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
@@ -127,5 +128,53 @@ public sealed class DetailControlsTests
         // The page keeps reading "Infos" from the rail across a turn: a focus carried in its rows (an older page) can't be.
         arcadia.Press(UiAction.NextPage);
         Assert.True(detail.Current.IsReadingInfos);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T530-8")]
+    [Trait("TestCase", "T530-9")]
+    public async Task R3_filters_the_tab_from_the_detail_page_and_a_game_that_drops_out_gives_way_to_the_next_hit()
+    {
+        var gog = KnownLaunchers.Gog;
+        var day = ArcadiaDriver.Now.AddDays(-10);
+        Game[] games =
+        [
+            TestGames.Installed(gog, "Alpha", day),
+            TestGames.NotInstalled(gog, "Bravo"),
+            TestGames.NotInstalled(gog, "Charlie"),
+            TestGames.Installed(gog, "Delta", day),
+            TestGames.Installed(gog, "Echo", day),
+        ];
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(gog, games)]);
+        arcadia.Press(UiAction.Right, times: 2);
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var detail = arcadia.Detail!;
+        Assert.Equal("Charlie", detail.Current.Tile.Title);
+
+        // R3 opens the tab's filter over the page; "Nur installierte", B on the values, B closes and applies.
+        arcadia.Press(UiAction.KeyboardLayout);
+        Assert.NotNull(arcadia.Main.FilterModal);
+        arcadia.Press(UiAction.Right).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Back).Press(UiAction.Back);
+        Assert.Null(arcadia.Main.FilterModal);
+
+        // Charlie dropped out: the page shows the next hit after it, Delta, and turns through the hits only.
+        Assert.Same(detail, arcadia.Detail);
+        Assert.Equal("Delta", detail.Current.Tile.Title);
+        Assert.Equal(["Alpha", "Delta", "Echo"], detail.Games.Select(game => game.Title));
+        Assert.True(arcadia.Main.Library.IsFiltered);
+        arcadia.Press(UiAction.NextPage, times: 2);
+        Assert.Equal("Alpha", detail.Current.Tile.Title);
+
+        // "Alle Filter zurücksetzen" above the categories, R3 closes: the shown game stays, all games are back.
+        arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.Up).Press(UiAction.Accept).Press(UiAction.KeyboardLayout);
+        Assert.Null(arcadia.Main.FilterModal);
+
+        Assert.Equal("Alpha", detail.Current.Tile.Title);
+        Assert.Equal(5, detail.Games.Count);
+
+        // B returns to the library on the game shown last, with the tab's filter as set here.
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsDetailOpen);
+        Assert.Equal("Alpha", arcadia.Main.Library.FocusedGame?.Title);
     }
 }

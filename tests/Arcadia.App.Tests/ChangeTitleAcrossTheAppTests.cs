@@ -51,14 +51,14 @@ public sealed class ChangeTitleAcrossTheAppTests
             [new LauncherSpec(KnownLaunchers.Gog, gog.Length, Library: gog), new LauncherSpec(KnownLaunchers.Epic, epic.Length, Library: epic)]);
         OpenDetailOf(arcadia, "Zebra");
         TypeTitle(arcadia, "Zebra", "Aal");
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.True(arcadia.Detail!.Current.ShowsOriginalTitle);
 
         // RB to Epic's tab: its game has no own title, R3 does nothing there; LB back to GOG and to the renamed game.
         arcadia.Press(UiAction.NextTab);
         Assert.Equal("Epic Eins", arcadia.Detail!.Current.Tile.Title);
         Assert.False(arcadia.Detail.Current.HasOriginalTitle);
-        arcadia.Press(UiAction.KeyboardLayout);
+        arcadia.Press(UiAction.Options);
         Assert.False(arcadia.Detail.Current.ShowsOriginalTitle);
         arcadia.Press(UiAction.PreviousTab);
         while (arcadia.Detail!.Current.Tile.Title != "Aal")

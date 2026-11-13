@@ -5,7 +5,7 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 ## Buttons and keys
 
 - One "Ansicht" modal (L3) for sort + page size; Y = the header's status messages in a modal (`settings.md`). X = search (all launchers, on-screen keyboard, `/steam-epic term`
-  prefix, keyword per launcher), R3 = the library's filter (#44), on the detail page a renamed game's original title (#496), keyboard layout switch where a keyboard is open, View/⧉ or right click = context menu, Menu/☰ = settings.
+  prefix, keyword per launcher), R3 = the library's filter (#44), on the detail page too (#530), ⧉ there a renamed game's original title (#496), keyboard layout switch where a keyboard is open, View/⧉ or right click = context menu, Menu/☰ = settings.
   The context menu stands beside the cover after a right click on it, over the preview's "Optionen" button after ⧉, R
   or a click on that button. No "all launchers" tab. No dedicated favourite button.
 - The keyboard plays like a game, one hand on WASD: WASD move, Space = A (held: details), Esc = B, F = X, V = Y, C = L3, G = R3,

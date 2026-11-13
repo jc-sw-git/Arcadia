@@ -20,6 +20,7 @@ of the acceptance review.
 | #166 | T166-8 (the update from the status modal on the installed release candidate) |
 | #423 | T407-1, then T407-2 (uninstall with Ja and UAC accepted; reinstall before restarting); T423-1 with T422-4 |
 | #382 | T382-30, then T382-31 (Windows unrestarted in between), T382-32, T382-33, T382-34 (the update end to end) |
+| #497 | T497-15 (the first start on a PC or Windows user without Arcadia settings) |
 
 ## Exploratory test
 

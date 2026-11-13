@@ -90,9 +90,11 @@ public partial class App : Application
             var http = new HttpClient();
             var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
 
-            var settings = new SettingsService(SettingsStore.CreateDefault());
+            var settingsStore = SettingsStore.CreateDefault();
+            var settings = new SettingsService(settingsStore);
             var demo = args.Contains(DemoArgument, StringComparer.OrdinalIgnoreCase);
-            var firstRun = new FirstRunSetup(settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase));
+            var firstRun = new FirstRunSetup(
+                settings, demo, forced: args.Contains(FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
 
             // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
             var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;

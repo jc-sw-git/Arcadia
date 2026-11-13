@@ -160,8 +160,9 @@ public sealed class UserDataStoreTests : IAsyncDisposable
         store.WriteFailed += (_, e) => failures.Add(e);
         store.Changed += (_, keys) => changed.AddRange(keys);
 
+        // The failing write runs in the background and may put "Aal" back before Change returns, so "Zander" is seen
+        // only through the first Changed (the keys below), never by reading the store here.
         store.Change(Key, data => data with { Title = "Zander" });
-        Assert.Equal("Zander", store.Of(Key).Title);
         await store.WhenWrittenAsync();
 
         Assert.Equal("Aal", store.Of(Key).Title);

@@ -8,7 +8,7 @@ Decisions that hold across areas; the files beside this one hold the decisions p
   dismissable by controller and hides the launcher where it can; what forces mouse or keyboard is named in the PR.
   Desktop mode is secondary.
 - **Launchers are opt-in.** Arcadia never activates a launcher just because it is installed
-  ([launchers.md](launchers.md) → First start).
+  ([first-start.md](first-start.md)).
 - **Feature parity.** A feature for one launcher is built for every launcher unless it is truly specific to one. A
   launcher integration fills every `Game` field its launcher can supply (playtime, last played, install date, size,
   update, owned but not installed, install action); a field it can't supply is said so, with a proposed way.

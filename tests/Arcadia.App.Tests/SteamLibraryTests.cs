@@ -83,9 +83,7 @@ public sealed class SteamLibraryTests
         var firstRun = arcadia.Main.FirstRun!;
         Assert.Equal(["Epic Games"], firstRun.Found.Select(row => row.Name));
         Assert.Contains(firstRun.Missing, row => row.Name == "Steam" && !row.IsOn);
-
-        arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.FinishFirstRunAsync();
 
         Assert.Equal(["Epic Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(arcadia.Main.Toast.Text);

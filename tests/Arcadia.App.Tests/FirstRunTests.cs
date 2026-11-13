@@ -51,9 +51,7 @@ public sealed class FirstRunTests
             Assert.False(firstRun.Missing.Single().IsOn, $"{action} hat den nicht gefundenen Launcher eingeschaltet.");
             Assert.Equal("Amazon Games", firstRun.FocusedRow?.Name);
         }
-
-        arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.FinishFirstRunAsync();
         Assert.Equal(["GOG Galaxy", "Xbox"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
@@ -64,13 +62,13 @@ public sealed class FirstRunTests
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
 
         // Xbox (second row) off, then "Fertig" with ≡.
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        await arcadia.FinishFirstRunAsync();
 
         Assert.Equal(["GOG Galaxy"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
 
         using var restarted = await arcadia.RestartAsync();
-        Assert.False(restarted.Main.IsFirstRunShown);
+        Assert.False(restarted.Main.IsInFirstRun);
         Assert.Equal(["GOG Galaxy"], restarted.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 
@@ -121,8 +119,7 @@ public sealed class FirstRunTests
         using var arcadia = await ArcadiaDriver.StartAsync(settings: beforeTheQuestion);
 
         Assert.True(arcadia.Main.IsFirstRunShown);
-        arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.FinishFirstRunAsync();
 
         var saved = new SettingsStore(arcadia.SettingsPath).Load();
         Assert.Equal(["gog", "xbox", "amazon"], saved.ActiveLaunchers);
@@ -135,7 +132,7 @@ public sealed class FirstRunTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new StartArguments(Demo: true));
 
-        Assert.False(arcadia.Main.IsFirstRunShown);
+        Assert.False(arcadia.Main.IsInFirstRun);
         Assert.Equal(["GOG Galaxy", "Xbox", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(new SettingsStore(arcadia.SettingsPath).Load().ActiveLaunchers);
     }
@@ -157,8 +154,8 @@ public sealed class FirstRunTests
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new StartArguments(Demo: true, FirstRun: true));
         Assert.True(arcadia.Main.IsFirstRunShown);
 
-        arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown && arcadia.Main.LauncherTabs.Items.Count > 0, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        arcadia.Press(UiAction.Down).Press(UiAction.Accept);
+        await arcadia.FinishFirstRunAsync();
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
         Assert.Null(new SettingsStore(arcadia.SettingsPath).Load().ActiveLaunchers);
 
@@ -172,9 +169,9 @@ public sealed class FirstRunTests
     {
         using var arcadia = await ArcadiaDriver.StartAsync(TwoFoundOneMissing, new AppSettings());
 
-        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Settings);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept);
+        await arcadia.FinishFirstRunAsync();
 
-        Assert.False(arcadia.Main.IsFirstRunShown);
         Assert.Empty(arcadia.Main.LauncherTabs.Items);
         Assert.Equal(AppTexts.NoLauncherActive, arcadia.Main.Library.EmptyTab?.Title);
     }
@@ -187,9 +184,8 @@ public sealed class FirstRunTests
         using var arcadia = await ArcadiaDriver.StartAsync(noneFound, new AppSettings());
         Assert.Empty(arcadia.Main.FirstRun!.Found);
 
-        arcadia.Press(UiAction.Settings);
+        await arcadia.FinishFirstRunAsync();
 
-        Assert.False(arcadia.Main.IsFirstRunShown);
         Assert.Equal(AppTexts.NoLauncherActive, arcadia.Main.Library.EmptyTab?.Title);
     }
 

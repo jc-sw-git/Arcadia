@@ -136,4 +136,121 @@ public sealed class FirstRunSetupTests : IDisposable
 
         Assert.Equal(["steam", "epic", "ea"], FirstRunSetup.Preselected(["steam", "epic", "gog", "ea", "xbox"], found.Contains));
     }
+
+    private string RecordPath => Path.Combine(_directory, FirstRunProgressFile.FileName);
+
+    private FirstRunSetup WithRecord(bool demo = false, bool forced = false, List<string>? log = null) =>
+        new(Settings(), demo, forced, FirstRunProgressFile.Beside(SettingsPath, line => log?.Add(line)));
+
+    [Fact]
+    [Trait("TestCase", "T497-9")]
+    public void Continues_on_the_data_sources_step_with_the_launchers_chosen_after_a_restart()
+    {
+        var setup = WithRecord();
+        setup.SwitchedOff(["gog"]);
+        setup.ChooseLaunchers(["steam", "epic"]);
+
+        var restarted = WithRecord();
+
+        Assert.True(restarted.IsPending);
+        Assert.Equal(FirstRunStep.DataSources, restarted.Progress.Step);
+        Assert.Equal(["gog"], restarted.Progress.SwitchedOff);
+        Assert.Equal(["steam", "epic"], restarted.ChosenLaunchers());
+        Assert.False(File.Exists(RecordPath + ".tmp"));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T497-9")]
+    public void Back_on_the_launcher_page_reads_every_launcher_again_and_keeps_the_switches()
+    {
+        var setup = WithRecord();
+        setup.SwitchedOff(["gog"]);
+        setup.ChooseLaunchers(["steam"]);
+
+        setup.BackToLaunchers();
+
+        Assert.Null(setup.ChosenLaunchers());
+        var restarted = WithRecord();
+        Assert.Equal(FirstRunStep.Launchers, restarted.Progress.Step);
+        Assert.Equal(["gog"], restarted.Progress.SwitchedOff);
+        Assert.Null(restarted.Progress.Chosen);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T497-9")]
+    public void Ending_it_deletes_the_record_and_a_left_over_record_is_deleted_at_the_next_start()
+    {
+        var setup = WithRecord();
+        setup.ChooseLaunchers(["steam"]);
+        setup.Complete(["steam"]);
+        Assert.False(File.Exists(RecordPath));
+
+        // As if Arcadia had stopped between saving the launchers and deleting the record.
+        new FirstRunProgressFile(RecordPath).Save(new FirstRunProgress(FirstRunStep.DataSources, [], ["epic"]));
+        var restarted = WithRecord();
+
+        Assert.False(restarted.IsPending);
+        Assert.Equal(["steam"], restarted.ChosenLaunchers());
+        Assert.False(File.Exists(RecordPath));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T497-9")]
+    [InlineData("{ \"Step\": \"DataSo")]
+    [InlineData("{ \"Step\": \"Somewhere\", \"SwitchedOff\": [] }")]
+    [InlineData("{ \"Step\": \"DataSources\", \"SwitchedOff\": [] }")]
+    [InlineData("null")]
+    public void An_unreadable_or_incomplete_record_begins_again_with_one_log_line(string content)
+    {
+        File.WriteAllText(RecordPath, content);
+        var log = new List<string>();
+
+        var setup = WithRecord(log: log);
+
+        Assert.True(setup.IsPending);
+        Assert.Equal(FirstRunProgress.Start, setup.Progress);
+        Assert.Null(setup.ChosenLaunchers());
+        Assert.Single(log);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T497-9")]
+    public void A_record_that_cant_be_written_is_logged_and_the_first_start_goes_on()
+    {
+        // A folder where the record belongs: writing it fails on every platform.
+        Directory.CreateDirectory(RecordPath);
+        var log = new List<string>();
+        var setup = WithRecord(log: log);
+
+        setup.ChooseLaunchers(["steam"]);
+
+        Assert.Equal(["steam"], setup.ChosenLaunchers());
+        Assert.Contains(log, line => line.Contains("nicht gespeichert", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T497-10")]
+    public void Demo_keeps_no_record_also_with_first_run()
+    {
+        var setup = WithRecord(demo: true, forced: true);
+
+        setup.SwitchedOff(["gog"]);
+        setup.ChooseLaunchers(["steam"]);
+
+        Assert.Equal(["steam"], setup.ChosenLaunchers());
+        Assert.False(File.Exists(RecordPath));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T497-10")]
+    public void A_saved_choice_of_launchers_ignores_any_record()
+    {
+        Settings().Update(settings => settings with { ActiveLaunchers = ["epic"] });
+        new FirstRunProgressFile(RecordPath).Save(new FirstRunProgress(FirstRunStep.DataSources, [], ["steam"]));
+
+        var setup = WithRecord();
+
+        Assert.False(setup.IsPending);
+        Assert.Equal(["epic"], setup.ChosenLaunchers());
+    }
 }

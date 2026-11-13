@@ -103,7 +103,7 @@ internal sealed class ArcadiaDriver : IDisposable
 
         Settings = new SettingsService(new SettingsStore(SettingsPath));
         var demo = arguments.Demo || files?.Demo == true;
-        var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun);
+        var firstRun = new FirstRunSetup(Settings, demo, arguments.FirstRun, FirstRunProgressFile.Beside(SettingsPath, AppLog.Write));
         // The Steam account (#83) over the fake web API and Steam's fake store pages in Arcadia's browser (the window's
         // web page, answered by TestBrowser); its sign-in is kept unencrypted in the test's folder.
         var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));

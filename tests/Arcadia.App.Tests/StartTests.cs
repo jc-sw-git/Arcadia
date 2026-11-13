@@ -30,8 +30,7 @@ public sealed class StartTests
         Assert.Empty(arcadia.Main.FirstRun!.Found);
 
         // "Fertig" with ≡.
-        arcadia.Press(UiAction.Settings);
-        await arcadia.WaitUntilAsync(() => !arcadia.Main.IsFirstRunShown, "die Bibliothek soll nach \"Fertig\" erscheinen");
+        await arcadia.FinishFirstRunAsync();
 
         var empty = Assert.IsType<Arcadia.App.ViewModels.EmptyTabViewModel>(arcadia.Main.Library.EmptyTab);
         Assert.True(empty.HasNoLauncher);

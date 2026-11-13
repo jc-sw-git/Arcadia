@@ -892,6 +892,15 @@
   <data name="Done" xml:space="preserve"><value>Fertig</value></data>
   <data name="ChangeableLater" xml:space="preserve"><value>Später änderbar</value></data>
   <data name="FirstRunLaterInfo" xml:space="preserve"><value>Unter Einstellungen › Launcher gibt es weitere Optionen, etwa die Reihenfolge der Tabs oder die Anmeldung bei einem Launcher.</value></data>
+  <data name="FirstRunDataSourcesQuestion" xml:space="preserve"><value>Woher sollen Bilder und Infos kommen?</value></data>
+  <data name="FirstRunDataSourcesExplanation" xml:space="preserve"><value>Mit einem Schlüssel für SteamGridDB und einem Zugang für IGDB bekommen auch Spiele ohne Cover und Beschreibung beides. Kostenlos, und jederzeit später möglich</value></data>
+  <data name="FirstRunSkip" xml:space="preserve"><value>Überspringen</value></data>
+  <data name="FirstRunSkipSubtitle" xml:space="preserve"><value>Ohne Schlüssel weiter zur Bibliothek</value></data>
+  <data name="FirstRunDataSourcesDoneSubtitle" xml:space="preserve"><value>Weiter zur Bibliothek, der Rest lädt im Hintergrund</value></data>
+  <data name="FirstRunDataSourcesWithoutInfo" xml:space="preserve"><value>Ohne Schlüssel und Zugang zeigt Arcadia, was die Launcher selbst liefern: ihre Cover, bei Steam auch Beschreibung, Genres und Erscheinungsdatum, so langsam, wie es der Shop erlaubt. SteamGridDB und IGDB bekommen dann keine einzige Anfrage. Die Bibliothek ist sofort da; was noch fehlt, lädt im Hintergrund.</value></data>
+  <data name="FirstRunDataSourcesDoneInfo" xml:space="preserve"><value>Die Bibliothek ist sofort da. Was den Spielen der gewählten Launcher noch fehlt, lädt im Hintergrund, so schnell, wie SteamGridDB, IGDB und der Shop es erlauben; den Fortschritt zeigt Einstellungen › Datenquellen.</value></data>
+  <data name="FirstRunDataSourcesLaterHeading" xml:space="preserve"><value>SPÄTER ÄNDERBAR</value></data>
+  <data name="FirstRunDataSourcesLaterInfo" xml:space="preserve"><value>Schlüssel und Zugang lassen sich jederzeit unter Einstellungen › Datenquellen eintragen, prüfen oder löschen.</value></data>
   <data name="OnOff" xml:space="preserve"><value>An / Aus</value></data>
   <data name="KeyboardWindowTitle" xml:space="preserve"><value>Arcadia Bildschirmtastatur</value></data>
   <data name="ChooseKeys" xml:space="preserve"><value>Tasten wählen</value></data>

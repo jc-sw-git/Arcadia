@@ -33,8 +33,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   the UI thread. Rejects an integration with a broken id, parts of another launcher or a throwing identity;
   `SteamInputOwner` is the launcher that owns Steam Input, which the App and the controller support ask instead of
   naming Steam. `LauncherSelection`: active and inactive launchers from `AppSettings.ActiveLaunchers`.
-- `FirstRunSetup`: the first start's question which launchers are active (#139): due while no list is saved,
-  `--first-run`, `--demo`.
+- `FirstRunSetup`: the first start (#139, #497): due while no list is saved, `--first-run`, `--demo`; its
+  `FirstRunProgress` (page, switches, launchers chosen) in `FirstRunProgressFile` so it continues after a restart.
 - `LauncherNames` (rules for a launcher's own name and keyword), `LogoFile` (a picked logo checked
   by its content; an SVG may not load or run anything).
 

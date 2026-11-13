@@ -129,7 +129,8 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Settings category "Datenquellen": SteamGridDB key, artwork order, crop tolerance, the artwork search, IGDB access, metadata order | `docs/product/settings-data-sources/` |
 | Installing the drivers from the settings: questions first, the progress dialog | `docs/product/settings-controller-install.md` |
 | A driver change waiting for the PC restart, Pan paused, "PC neu starten" | `docs/product/settings-controller-restart.md` |
-| Launchers: activate and order, launcher page, first start | `docs/product/launchers.md` |
+| Launchers: activate and order, launcher page | `docs/product/launchers.md` |
+| First start: launcher page, step "Datenquellen", continuing where it stopped | `docs/product/first-start.md` |
 | Running games, Arcadia back to the front | `docs/product/running-games.md` |
 | UI texts: wording, length, listing new texts in the PR | `docs/product/ui-texts.md` |
 

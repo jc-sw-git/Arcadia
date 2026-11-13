@@ -152,6 +152,10 @@
     </LinearGradientBrush>
     <!-- Text straight on the artwork (#531): title, info line, notes and the stacks' names get a soft dark halo, so they
          read over a bright image too. -->
+    <!-- A raised button's label (#531): light text casts a small dark shadow, dark text on blue a light edge below,
+         so the label looks pressed into the raised surface. -->
+    <DropShadowEffect x:Key="RaisedLabelShadow" OffsetX="0" OffsetY="1.5" BlurRadius="3" Color="#000000" Opacity="0.75" />
+    <DropShadowEffect x:Key="RaisedLabelShadowOnAccent" OffsetX="0" OffsetY="1.2" BlurRadius="1" Color="#FFFFFF" Opacity="0.45" />
     <DropShadowEffect x:Key="TextOnArtShadow" OffsetX="0" OffsetY="2" BlurRadius="14" Color="#000000" Opacity="0.95" />
 
     <!-- Focus rings and shadows. -->
@@ -906,6 +910,15 @@
   </Style>
   <Style Selector="Button.detailAction /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
+  <Style Selector="Button.detailAction /template/ ContentPresenter">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
+  </Style>
+  <Style Selector="Button.detailAction.primary /template/ ContentPresenter">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
+  </Style>
+  <Style Selector="Button.detailAction:disabled /template/ ContentPresenter">
+    <Setter Property="Effect" Value="{x:Null}" />
   </Style>
   <Style Selector="Button.detailAction:pointerover">
     <Setter Property="Background" Value="{StaticResource RaisedOnArtHover}" />

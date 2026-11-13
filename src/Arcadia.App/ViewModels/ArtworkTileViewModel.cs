@@ -70,7 +70,7 @@ public sealed partial class ArtworkTileViewModel : ViewModelBase
 }
 
 /// <summary>
-/// The notice in "Artwork ändern" without a working key (#490): how to get more images, and "Zu den Datenquellen ›",
+/// The notice in "Artwork ändern" without a working key (#490): how to get more images, and "Zu den Datenquellen",
 /// reachable with the D-pad after the tiles.
 /// </summary>
 public sealed partial class ArtworkNoticeViewModel(Action openDataSources) : ViewModelBase

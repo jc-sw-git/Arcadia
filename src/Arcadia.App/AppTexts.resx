@@ -1275,7 +1275,7 @@
   <data name="ArtworkLauncherImagesOffText" xml:space="preserve"><value>Solange sie aus sind, zeigt Arcadia hier kein Bild des Launchers. Unter „Datenquellen“ schaltest du sie wieder an.</value></data>
   <data name="ArtworkSourcesOffTitle" xml:space="preserve"><value>Launcher-Bilder und SteamGridDB sind ausgeschaltet</value></data>
   <data name="ArtworkSourcesOffText" xml:space="preserve"><value>Hier gibt es nur eigene Dateien, bis du unter „Datenquellen“ eine Quelle wieder anschaltest.</value></data>
-  <data name="ArtworkToDataSources" xml:space="preserve"><value>Zu den Datenquellen ›</value></data>
+  <data name="ArtworkToDataSources" xml:space="preserve"><value>Zu den Datenquellen</value></data>
   <data name="ArtworkTabsHint" xml:space="preserve"><value>Cover / Hintergrund</value></data>
   <data name="ArtworkChooseHint" xml:space="preserve"><value>Bild wählen</value></data>
   <data name="ArtworkUseHint" xml:space="preserve"><value>Verwenden</value></data>

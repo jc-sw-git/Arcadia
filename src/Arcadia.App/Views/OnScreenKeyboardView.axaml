@@ -111,8 +111,8 @@
                   <Border DockPanel.Dock="Left" Width="44" Height="30" CornerRadius="6" Background="{StaticResource Line}" VerticalAlignment="Center" Margin="0,0,14,0">
                     <TextBlock Text="{Binding Layout.Code}" FontSize="13" FontWeight="ExtraBold" LetterSpacing="0.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
-                  <Path DockPanel.Dock="Right" IsVisible="{Binding IsSelected}" Data="M5 12l5 5 9-10" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
-                        StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center" />
+                  <Path DockPanel.Dock="Right" IsVisible="{Binding IsSelected}" Data="{StaticResource CheckMarkIcon}" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                        StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="14.3" Stretch="Uniform" VerticalAlignment="Center" />
                   <StackPanel Spacing="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Layout.Name}" FontSize="17" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Layout.Kind}" FontSize="13" Foreground="{StaticResource TextMuted}" />

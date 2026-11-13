@@ -441,6 +441,7 @@ public sealed class OwnTagsTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T495-24")]
+    [Trait("TestCase", "T533-2")]
     [Trait("TestCase", "T495-31")]
     public async Task An_unreadable_file_greys_Tags_and_Eigene_Tags_with_the_note_and_changes_nothing()
     {
@@ -460,6 +461,7 @@ public sealed class OwnTagsTests
         Assert.True(row.IsGreyed);
         Assert.Equal(AppTexts.UserDataUnreadable, row.Note);
         Assert.StartsWith("Eigene Tags und Titel sind gerade nicht lesbar", row.Note);
+        Assert.Equal((false, false), (row.HasInfoTags, row.HasNoInfoTags));
         Assert.Empty(restarted.Detail!.Current.GameInfo.OwnTags);
         restarted.Press(UiAction.Accept);
         Assert.Null(restarted.Main.TagWindow);

@@ -115,14 +115,16 @@ public static class DetailAreas
         GameTileViewModel tile, IReadOnlyList<GameActionViewModel> actions, IGameActionHost host, Action<DetailRowViewModel> point)
     {
         var ownTags = host.OwnTagsOf(tile.Game);
+        var tags = Find(actions, GameActionKind.Tags);
         return
         [
             new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
                 Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
             new(GameActionKind.Tags, AppTexts.ActionTags, AppTexts.DetailTagsSubtitle, AppTexts.DetailTagsInfo,
-                Find(actions, GameActionKind.Tags), greyedReason: null, value: TagsLine(ownTags.Count), point)
+                tags, greyedReason: null, value: TagsLine(ownTags.Count), point)
             {
-                InfoTags = ownTags,
+                // Greyed (an unreadable user-data.json) nothing is known about the game's tags, so none are listed.
+                InfoTags = tags is { IsEnabled: true } ? ownTags : null,
             },
             new(GameActionKind.ChangeTitle, AppTexts.ActionChangeTitle, AppTexts.DetailChangeTitleSubtitle, AppTexts.DetailChangeTitleInfo,
                 Find(actions, GameActionKind.ChangeTitle), greyedReason: null, value: null, point),

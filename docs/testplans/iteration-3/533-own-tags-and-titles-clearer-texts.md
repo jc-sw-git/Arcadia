@@ -10,7 +10,7 @@ in the tag window and in the tag list and for renaming in the tag list alike.
       nach ihnen filtern zu können. Du kannst deine Tags auch unter Einstellungen → Datenquellen verwalten.“ · E2E: yes
 - [x] **T533-2** Below it the info box lists the game's own tags alphabetically under "EIGENE TAGS", following a change in
       the tag window at once; a game without own tags shows „Dieses Spiel hat noch keine eigenen Tags.“; other rows list
-      no tags. · E2E: yes
+      no tags; while `user-data.json` is unreadable the greyed row lists neither chips nor that line. · E2E: yes
 - [x] **T533-3** "Titel ändern" and "Titel zurücksetzen" speak of the original title: info box „… Ein leerer Titel stellt
       den ursprünglichen wieder her.“, subtitle „Zurück zum ursprünglichen Titel“, dialog note „Leer lassen oder „<Titel>“
       eingeben stellt den ursprünglichen Titel wieder her.“, and the note of an unreadable `user-data.json` says
@@ -27,7 +27,7 @@ Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| T533-1, -2 | `Arcadia.App.Tests/OwnTagsAndTitleTextsTests.The_info_box_of_Tags_explains_them_and_lists_the_games_own_tags` |
+| T533-1, -2 | `Arcadia.App.Tests/OwnTagsAndTitleTextsTests.The_info_box_of_Tags_explains_them_and_lists_the_games_own_tags`; the unreadable file in `OwnTagsTests.An_unreadable_file_greys_Tags_and_Eigene_Tags_with_the_note_and_changes_nothing` |
 | T533-3 | `Arcadia.App.Tests/OwnTagsAndTitleTextsTests.Titel_aendern_speaks_of_the_original_title` |
 | T533-4 | `Arcadia.App.Tests/OwnTagsAndTitleTextsTests.A_new_tags_name_at_its_most_characters_says_so_and_can_still_be_taken` |
 
@@ -37,3 +37,4 @@ History:
 |---|---|---|---|---|---|
 | All automated tests (`dotnet test`) | 2026-11-13 | implementer | Debug, Linux cloud container | ✅ | – |
 | T533-5 | 2026-11-13 | implementer | Debug, Linux cloud container (Xvfb 1920 × 1080, `--demo`, keys) | ✅ notice in warning colour below the field, keys greyed at 40; info box with "Keine"-line, then two chips after adding tags | – |
+| T533-2 (unreadable file) | 2026-11-13 | implementer | Debug, Linux cloud container | ✅ after the fix | QE finding 1: the greyed row said „keine eigenen Tags“ → lists nothing now |

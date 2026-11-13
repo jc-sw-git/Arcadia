@@ -2,6 +2,8 @@ using Arcadia.App.Input;
 using Arcadia.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.VisualTree;
 
 namespace Arcadia.App.Controls;
 
@@ -54,5 +56,12 @@ public sealed class KeyText : TextBlock
     private void OnInputChanged(object? sender, EventArgs e) => Update();
 
     // Only pills stand here (LB, RT, …), so the symbol is always text.
-    private void Update() => Text = InputHints.UsesController ? ButtonSymbolSets.Symbol(Pad ?? string.Empty, InputHints.Symbols).Text : Keys;
+    private void Update()
+    {
+        Text = InputHints.UsesController ? ButtonSymbolSets.Symbol(Pad ?? string.Empty, InputHints.Symbols).Text : Keys;
+
+        // A pill held at its MinWidth keeps its size when the text grows ("RB" to "⇧ E"), and its content presenter then kept
+        // arranging the text at the old, narrower width: only the "⇧" showed (#554, settings open at the start).
+        (this.GetVisualParent() as Layoutable)?.InvalidateArrange();
+    }
 }

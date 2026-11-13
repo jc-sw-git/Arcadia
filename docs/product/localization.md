@@ -1,7 +1,22 @@
 # Product decisions: Localization
 
-Category "Lokalisierung" in the settings (#14, #553), between "Datenquellen" and "Über Arcadia", in the row pattern of
-`settings.md`. The language (group SPRACHE) comes with #554.
+Category "Lokalisierung" in the settings (#14, #553, #554), between "Datenquellen" and "Über Arcadia", in the row
+pattern of `settings.md`.
+
+## Group SPRACHE
+
+- "Sprache": "Systemsprache" (default) · "English" · "Deutsch"; a language is offered only once all its texts exist
+  (Français, Español with #555, #556). Each language is named in its own language, only "Systemsprache" in the UI
+  language. ◀ ▶ save the choice at once and change nothing else: the language applies from the next start.
+- "Systemsprache" is the Windows display language, not the regional format; one Arcadia doesn't speak gives English,
+  never German. The info names the system language (in the UI language) or says it isn't supported and English is
+  used, and that metadata stay in the language they were loaded in until "Alle Metadaten neu laden".
+- Indented below, "Sprache anwenden" restarts Arcadia into the choice and opens the settings on "Sprache" again, in
+  fullscreen exactly when the window is now. Active only when the choice gives another language than the one in use
+  (compared by language: "Deutsch" on a German system changes nothing); greyed out, with the reason in its subtitle and
+  a blue note, while a game runs or starts, the driver installation runs or an Arcadia update downloads or installs.
+  An artwork or metadata reload doesn't hold it up; its info says the reload stops.
+- No language step at the first start. Texts and the glossary per language: `ui-texts.md`, `ui-texts-english.md`.
 
 ## Group BILDSCHIRMTASTATUR
 
@@ -33,6 +48,7 @@ Category "Lokalisierung" in the settings (#14, #553), between "Datenquellen" and
 
 ## Failure cases
 
-An unknown or unreadable layout, quick selection entry or clock value in `settings.json` (also of the wrong type) becomes
-the default (system layout, the known layouts of the list or all five, "Wie im System") with one log line each; the
-rest of the file is kept.
+An unknown or unreadable language, layout, quick selection entry or clock value in `settings.json` (also of the wrong
+type) becomes the default ("Systemsprache", system layout, the known layouts of the list or all five, "Wie im System")
+with one log line each; the rest of the file is kept. A failed restart for the language is an error toast: this Arcadia
+stays in its language, the saved choice applies at the next start. A text missing in a language shows the English one.

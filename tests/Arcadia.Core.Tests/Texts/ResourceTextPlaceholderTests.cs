@@ -7,7 +7,7 @@ using Arcadia.Launchers.Abstractions.Texts;
 namespace Arcadia.Core.Tests.Texts;
 
 /// <summary>
-/// #339: every text of every resource file, filled with a sample value per placeholder, comes out whole: no brace left,
+/// #339: every text of every resource file, translations included (#554), filled with a sample value per placeholder, comes out whole: no brace left,
 /// no key shown, nothing logged. A broken placeholder would otherwise reach the player as "{game}" or a raw brace and
 /// only show up in <c>arcadia.log</c>. It runs for every PR, contributors' included, as a normal test.
 /// </summary>
@@ -27,7 +27,7 @@ public sealed class ResourceTextPlaceholderTests : IDisposable
     [Trait("TestCase", "T339-3")]
     public void Every_resource_text_filled_with_sample_values_comes_out_whole()
     {
-        var files = Directory.EnumerateFiles(Path.Combine(RepositoryFiles.Root(), "src"), "*Texts.resx", SearchOption.AllDirectories)
+        var files = Directory.EnumerateFiles(Path.Combine(RepositoryFiles.Root(), "src"), "*Texts*.resx", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .ToList();
 

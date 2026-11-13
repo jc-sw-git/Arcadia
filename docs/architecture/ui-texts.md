@@ -36,12 +36,22 @@ description is translated by Windows' own means (`ServiceDescriptions`).
 - Placeholders are English names in braces, with an optional .NET format: `{count}`, `{seconds:0}`, `{time:HH:mm}`.
   Numbers and dates are formatted with the current culture, as string interpolation does. A value is inserted as it
   is, so a game called `{launcher} Edition` stays that.
-- The neutral resources are German; there is no satellite assembly yet, so every UI culture gets German.
+- The neutral resources are German (`NeutralLanguage` de). A translation sits beside each file as
+  `<File>.<language>.resx` (`AppTexts.en.resx`) and is built into the language's satellite assembly
+  (`en/Arcadia.resources.dll`); `Arcadia.Core.Localization.UiLanguages` lists the languages.
+- `UiText` reads the UI culture's texts (en-GB → en), German for German. A text a translation lacks shows in English (one log line per key and language),
+  never German; a text missing altogether shows its key. The App sets the UI culture once at start, from the setting
+  "Sprache", before the first text is read (`UiLanguage.Use`, which keeps the system's display language as
+  `UiLanguage.System`); dates and numbers keep the system's region (`CurrentCulture`). A change applies through a
+  restart (`MainViewModel.RestartForLanguage`, `--show-language-setting`); the acceptance tests fake the system
+  language through `ArcadiaParts.SystemLanguage`. The test projects set German
+  (`GermanUiLanguage`), whatever language the machine speaks.
 - A test can swap a class's `Resources` for a `ResourceManager` of its own, e.g. one with a broken text.
 
 ## Adding or changing a text
 
-1. Add a `<data name="Key" xml:space="preserve"><value>…</value></data>` to the project's `*Texts.resx`. The key
+1. Add a `<data name="Key" xml:space="preserve"><value>…</value></data>` to the project's `*Texts.resx` and, with
+   the same key and placeholders, to every translation beside it (`docs/product/ui-texts-english.md`). The key
    is an English C# identifier saying what the text is (`SearchNoHit`, `ErrorContextLoadLibrary`).
 2. Use it: `AppTexts.Key` or `AppTexts.Key(game: title)` in code, `{x:Static app:AppTexts.Key}` in a view
    (`xmlns:app="using:Arcadia.App"`).
@@ -49,4 +59,8 @@ description is translated by Windows' own means (`ServiceDescriptions`).
    sentences where possible, so a translation can change word order.
 
 `UiTextsStayInResourcesTests` fails on a German text left in code or written into a view (log calls exempt, and any
-line marked `// not a UI text`); `UiTextTests` covers the fallback.
+line marked `// not a UI text`); `TranslationsTests` on a language lacking a text or with other placeholders than the
+German one; `UiTextTests` covers the fallback.
+
+A new language: its `*Texts.<language>.resx` beside every file, its code in `UiLanguages.Translations` and `Choices`,
+its glossary beside `docs/product/ui-texts-english.md` and its rules in `tools/ci/check-ui-texts.sh`.

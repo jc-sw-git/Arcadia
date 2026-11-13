@@ -55,6 +55,9 @@ internal sealed record ArcadiaParts(
 
     /// <summary>What the player set by hand for games, own titles (#496); not opened yet. Null: nothing can be set.</summary>
     public Core.UserData.UserDataStore? UserData { get; init; }
+
+    /// <summary>The system's display language, which "Systemsprache" follows (#554); null: the PC's, as the App set it.</summary>
+    public System.Globalization.CultureInfo? SystemLanguage { get; init; }
 }
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
@@ -188,7 +191,14 @@ internal sealed class ArcadiaComposition
             parts.FolderCheck,
             parts.Artwork,
             parts.Metadata,
-            titles);
+            titles)
+        {
+            // The App set its language from the settings before the first text (UiLanguage.Use); a test says only which
+            // language its system speaks, and the same choice gives the language it runs in.
+            Languages = parts.SystemLanguage is { } system
+                ? (Core.Localization.UiLanguages.Resolve(settings.Current.Localization.Language, system), system)
+                : (Services.UiLanguage.Culture, Services.UiLanguage.System),
+        };
         if (parts.Logs is { } logs)
         {
             main.Logs = logs;

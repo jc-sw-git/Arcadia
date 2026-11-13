@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Arcadia.Core.Localization;
 using Arcadia.Core.Search;
 
 namespace Arcadia.Core.Settings;
@@ -18,11 +19,19 @@ public enum ClockFormat
 }
 
 /// <summary>
-/// The category "Lokalisierung" (#14, #553): the on-screen keyboard's layouts and the clock. Each value is read leniently
+/// The category "Lokalisierung" (#14, #553, #554): the UI language, the on-screen keyboard's layouts and the clock. Each value is read leniently
 /// (<see cref="Lenient"/>): one of the wrong type, written by hand, must not cost the player the rest of settings.json.
 /// </summary>
 public sealed record LocalizationSettings
 {
+    /// <summary>
+    /// "Sprache": <see cref="UiLanguages.System"/> or a language's code (<see cref="UiLanguages.Choices"/>); null until the
+    /// player chooses one, which is the system language too. Read at the start only: a change applies after a restart.
+    /// </summary>
+    [JsonConverter(typeof(Lenient.Choice))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] // a null written out would read back as unreadable
+    public string? Language { get; init; }
+
     /// <summary>"Standard-Layout": the id of the layout every on-screen keyboard opens with; null until the player chooses one.</summary>
     [JsonConverter(typeof(Lenient.Text))]
     public string? KeyboardLayout { get; init; }
@@ -44,6 +53,13 @@ public sealed record LocalizationSettings
     /// </summary>
     public LocalizationSettings WithValidValues(Action<string> log)
     {
+        var language = Language;
+        if (language is not null && !UiLanguages.IsChoice(language))
+        {
+            log($"Lokalisierung: unbekannte Sprache „{Shorten(language)}“, Arcadia nimmt die Systemsprache"); // not a UI text (log)
+            language = null;
+        }
+
         var layout = KeyboardLayout;
         if (layout is not null && Search.KeyboardLayout.TryFind(layout) is null)
         {
@@ -71,7 +87,7 @@ public sealed record LocalizationSettings
             clock = ClockFormat.System;
         }
 
-        return this with { KeyboardLayout = layout, QuickLayouts = quick, Clock = clock };
+        return this with { Language = language, KeyboardLayout = layout, QuickLayouts = quick, Clock = clock };
     }
 
     /// <summary>
@@ -118,6 +134,26 @@ public sealed record LocalizationSettings
                     return null;
                 }
 
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    return reader.GetString();
+                }
+
+                reader.Skip();
+                return Unreadable;
+            }
+
+            public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options) =>
+                JsonSerializer.Serialize(writer, value, options);
+        }
+
+        /// <summary>Like <see cref="Text"/>, but a null written out is unreadable too: only a missing value is "not chosen".</summary>
+        public sealed class Choice : JsonConverter<string?>
+        {
+            public override bool HandleNull => true;
+
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
                 if (reader.TokenType == JsonTokenType.String)
                 {
                     return reader.GetString();

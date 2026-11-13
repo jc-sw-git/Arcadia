@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="DemoToolsInfo" xml:space="preserve"><value>Shows the tools of the demo library.</value></data>
+  <data name="DemoSoftwareInfo" xml:space="preserve"><value>Shows the software of the demo library.</value></data>
+  <data name="DemoSoundtracksInfo" xml:space="preserve"><value>Shows the soundtracks of the demo library.</value></data>
+  <data name="DemoToolsTitle" xml:space="preserve"><value>Include tools</value></data>
+  <data name="DemoSoftwareTitle" xml:space="preserve"><value>Include software</value></data>
+  <data name="DemoSoundtracksTitle" xml:space="preserve"><value>Include soundtracks</value></data>
+  <data name="DemoToolsSubtitle" xml:space="preserve"><value>Demo tools</value></data>
+  <data name="DemoSoftwareSubtitle" xml:space="preserve"><value>Demo software</value></data>
+  <data name="DemoSoundtracksSubtitle" xml:space="preserve"><value>Demo soundtracks</value></data>
+  <data name="DemoLocation" xml:space="preserve"><value>Demo data</value></data>
+  <data name="DemoMetadataDescriptionLong" xml:space="preserve"><value>&lt;h2&gt;About the game&lt;/h2&gt;Explore a made-up world full of abandoned cities, mysterious machines and quiet forests. You collect parts, build your own camp and meet characters who each have a story of their own.&lt;br&gt;&lt;br&gt;&lt;ul class='bb_ul'&gt;&lt;li&gt;&lt;strong&gt;Large world:&lt;/strong&gt; more than twenty areas you can visit in any order.&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Your own camp:&lt;/strong&gt; build, furnish and invite friends.&lt;/li&gt;&lt;li&gt;Calm music and weather that changes over time 🌧️&lt;/li&gt;&lt;/ul&gt;&lt;img src='https://example.invalid/bild.png'&gt;&lt;a href='https://example.invalid'&gt;Learn more&lt;/a&gt;&lt;br&gt;Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. Every section of this made-up description is only here to show a long text that is read in the “Info” area and has to be scrolled. </value></data>
+  <data name="DemoMetadataShortLong" xml:space="preserve"><value>Explore a made-up world full of abandoned cities and mysterious machines, build your own camp and meet characters with stories of their own. A calm journey that stays with you as long as you like and shows you many small secrets along the way.</value></data>
+  <data name="DemoMetadataDescriptionShort" xml:space="preserve"><value>A short made-up racing game for two on one screen.</value></data>
+  <data name="DemoMetadataDescriptionEnglish" xml:space="preserve"><value>You explore a made-up island with your friends and the weather that changes over the day. This game exists only in English, so its description is English too.</value></data>
+  <data name="DemoMetadataDeveloper1" xml:space="preserve"><value>Made-up Studio</value></data>
+  <data name="DemoMetadataDeveloper2" xml:space="preserve"><value>Pixelwerk Games with a rather long name for the info line Ltd.</value></data>
+  <data name="DemoMetadataDeveloper3" xml:space="preserve"><value>Nordlicht Games</value></data>
+  <data name="DemoMetadataPublisher" xml:space="preserve"><value>Made-up Publisher</value></data>
+  <data name="DemoMetadataTag1" xml:space="preserve"><value>Singleplayer</value></data>
+  <data name="DemoMetadataTag2" xml:space="preserve"><value>Atmospheric</value></data>
+  <data name="DemoMetadataTag3" xml:space="preserve"><value>Exploration</value></data>
+  <data name="DemoMetadataTag4" xml:space="preserve"><value>Co-op</value></data>
+  <data name="DemoMetadataTag5" xml:space="preserve"><value>Great Story</value></data>
+  <data name="DemoMetadataTag6" xml:space="preserve"><value>Relaxing</value></data>
+  <data name="DemoMetadataTag7" xml:space="preserve"><value>Pixel Graphics</value></data>
+  <data name="DemoMetadataSummary" xml:space="preserve"><value>The demo’s made-up metadata</value></data>
+  <data name="DemoMetadataAbout" xml:space="preserve"><value>The demo library brings made-up descriptions, genres, tags and age ratings. Arcadia doesn’t ask anywhere for them.</value></data>
+</root>

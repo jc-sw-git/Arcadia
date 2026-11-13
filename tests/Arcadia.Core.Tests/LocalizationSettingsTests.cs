@@ -138,6 +138,43 @@ public sealed class LocalizationSettingsTests : IDisposable
     }
 
     [Theory]
+    [Trait("TestCase", "T554-13")]
+    [InlineData("""{ "Localization": { "Language": "xx" } }""")]
+    [InlineData("""{ "Localization": { "Language": "fr" } }""")] // not offered yet (#555)
+    [InlineData("""{ "Localization": { "Language": "" } }""")]
+    [InlineData("""{ "Localization": { "Language": 42 } }""")]
+    [InlineData("""{ "Localization": { "Language": null } }""")]
+    [InlineData("""{ "Localization": { "Language": ["en"] } }""")]
+    public void An_unknown_language_is_the_system_language_with_one_log_line_and_isnt_written_back(string json)
+    {
+        File.WriteAllText(SettingsPath, json);
+
+        var service = new SettingsService(new SettingsStore(SettingsPath), _log.Add);
+
+        Assert.Null(service.Current.Localization.Language);
+        Assert.StartsWith("Lokalisierung: unbekannte Sprache", Assert.Single(_log), StringComparison.Ordinal);
+        Assert.DoesNotContain("Localization", _log[0], StringComparison.Ordinal);
+        service.Update(s => s);
+        _log.Clear();
+        _ = new SettingsService(new SettingsStore(SettingsPath), _log.Add);
+        Assert.Empty(_log);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T554-5")]
+    [InlineData("system")]
+    [InlineData("en")]
+    [InlineData("de")]
+    public void A_chosen_language_is_saved_and_read_back(string language)
+    {
+        var service = new SettingsService(new SettingsStore(SettingsPath), _log.Add);
+        service.Update(s => s with { Localization = s.Localization with { Language = language } });
+
+        Assert.Equal(language, new SettingsService(new SettingsStore(SettingsPath), _log.Add).Current.Localization.Language);
+        Assert.Empty(_log);
+    }
+
+    [Theory]
     [Trait("TestCase", "T553-17")]
     [InlineData("""{ "Localization": { "QuickLayouts": "fr" } }""")]
     [InlineData("""{ "Localization": { "QuickLayouts": 5 } }""")]

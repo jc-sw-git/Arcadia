@@ -105,6 +105,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             WatchMetadata(metadata);
         }
 
+        WatchLanguageRestart();
+
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
         Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
         Session.InstallStatesChanged += (_, _) => UpdateInstallStates();
@@ -801,6 +803,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
 
         Settings?.Categories.OfType<ControllerSettingsViewModel>().FirstOrDefault()?.RunningGamesChanged();
+        RefreshLanguageRestart();
     }
 
     private void ShowNotice(LibraryNotice notice)
@@ -1040,7 +1043,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
             .. CreateDataSources(changes) is { } dataSources ? [dataSources] : Array.Empty<SettingsCategoryViewModel>(),
-            new LocalizationSettingsViewModel(changes, ApplyClock),
+            new LocalizationSettingsViewModel(changes, ApplyClock, CreateLanguageRestart()),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget(AppTexts.ErrorContextOpenLog)),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -1162,6 +1165,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // A title just changed is on disk before Arcadia ends (#496); the write takes milliseconds, a stuck disk doesn't hold the exit.
         Session.Titles.UserData?.WhenWrittenAsync().Wait(UserDataWriteLimit);
         AppErrors.Occurred -= OnAppError;
+        StopWatchingLanguageRestart();
         PanDialogs.Dispose();
         ControllerMode.Dispose();
         Status.Dispose();

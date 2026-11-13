@@ -31,7 +31,7 @@
           <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Right" VerticalAlignment="Center">
             <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding ChooseHint}" IsVisible="{Binding HasGames}" />
             <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Text="{x:Static app:AppTexts.ArtworkTabsHint}" IsVisible="{Binding HasArtworkTabs}" />
-            <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding FactsOverflow}" />
+            <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding FactsOverflow}" />
             <Button Classes="plain" Command="{Binding SkipCommand}" IsVisible="{Binding HasGames}">
               <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.WaitingSkipHint}" />
             </Button>
@@ -39,7 +39,7 @@
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding AcceptCommand}" IsVisible="{Binding HasGames}">
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptHint}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptHint}" />
             </Button>
           </StackPanel>
         </Border>

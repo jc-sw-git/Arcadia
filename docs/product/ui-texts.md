@@ -1,7 +1,8 @@
 # Product decisions: UI texts
 
 Read before writing or changing any text the user sees. Controller buttons in texts: `docs/product/controls.md`.
-Where texts live and how to add one (resource files, placeholders): `docs/architecture/ui-texts.md`.
+Where texts live and how to add one (resource files, placeholders, translations): `docs/architecture/ui-texts.md`.
+These are the German rules; English: `ui-texts-english.md`.
 
 - German UI terms, no English loan words where a German one exists: "Steam-Eingabe", not "Steam Input".
 - Arcadia doesn't speak as "Wir" in its messages; say what happens or what to do.
@@ -40,4 +41,4 @@ Where texts live and how to add one (resource files, placeholders): `docs/archit
 - **Typography:** „…“ quotes, en dash with spaces (" – "), ellipsis with a space before ("Wird geladen …"),
   *neu starten* as two words.
 - The CI check `UI texts` (`tools/ci/check-ui-texts.sh`) finds the forbidden spellings in the resource files on the
-  owner's PRs; the rest of this file is checked by review.
+  owner's PRs, per language; the rest of this file is checked by review.

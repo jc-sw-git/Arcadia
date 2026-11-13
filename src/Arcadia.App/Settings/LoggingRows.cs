@@ -41,7 +41,7 @@ public sealed class LoggingRows
         _list = new InfoRowViewModel("logging-list", ListTitle) { Group = Group, ScrollText = AppTexts.Browse };
         _info = Filter("logging-info", AppTexts.LevelInfo, AppTexts.LoggingInfoSubtitle, s => s.ListsInfoMessages, (s, on) => s with { ListsInfoMessages = on });
         _warnings = Filter("logging-warnings", AppTexts.LoggingWarnings, AppTexts.LoggingWarningSubtitle, s => s.ListsWarnings, (s, on) => s with { ListsWarnings = on });
-        _errors = Filter("logging-errors", AppTexts.LevelError, AppTexts.LoggingErrorSubtitle, s => s.ListsErrors, (s, on) => s with { ListsErrors = on });
+        _errors = Filter("logging-errors", AppTexts.LoggingErrors, AppTexts.LoggingErrorSubtitle, s => s.ListsErrors, (s, on) => s with { ListsErrors = on });
         _clear = new ActionRowViewModel("logging-clear", AppTexts.LoggingClearList, messages.Clear)
         {
             Group = Group,

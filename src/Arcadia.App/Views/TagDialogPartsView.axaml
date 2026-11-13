@@ -56,7 +56,7 @@
           <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
               <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
             </StackPanel>
           </Border>

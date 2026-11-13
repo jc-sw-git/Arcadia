@@ -9,7 +9,7 @@ the review.
 Every case runs on the detail page with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 "A bright artwork" is a game whose background is light behind the title and the button row.
 
-- [ ] **T531-1** A not installed game with a bright artwork: the title, the info line (genres · developer · year), the
+- [x] **T531-1** A not installed game with a bright artwork: the title, the info line (genres · developer · year), the
   note beside the buttons ("Die Installation wird in … geöffnet"), "Original-Titel: …" (⧉) and the names under
   "Davor"/"Danach" each have a soft dark shadow and read clearly; text on a surface (chips, panel) has none.
   · E2E: no (window: the shadow is drawn)
@@ -19,18 +19,18 @@ Every case runs on the detail page with the gamepad alone unless it says otherwi
   a dialog ("Deinstallieren?", "Steam beenden?"), "Fertig" at the first start, Pan's held buttons and "Für alle Spiele
   übernehmen". A greyed button, rows, tabs, chips and value pills stay flat; the focus ring sits around the raised
   button. · E2E: no (look and feel; the owner approves the design)
-- [ ] **T531-3** A title too long for one line shrinks (down to half the size) until it fits one line; one still too long
+- [x] **T531-3** A title too long for one line shrinks (down to half the size) until it fits one line; one still too long
   at half the size wraps into two lines and is cut with "…". With a short, a shrunk and a two-line title the button row
   stays at the same height. Rename a game with "Titel ändern" to try it. · E2E: no (window: the measured text; the
   choice of size is automated)
-- [ ] **T531-4** "Übersicht" shows the title (the own title, if any) above the short description, in one line cut with
+- [x] **T531-4** "Übersicht" shows the title (the own title, if any) above the short description, in one line cut with
   "…"; description, value boxes and tags still fit the panel without overlapping. · E2E: no (window: layout)
-- [ ] **T531-5** The boxes "Zuletzt gespielt", "Spielzeit", "Installiert am" and "Größe" are smaller than before; caption,
+- [x] **T531-5** The boxes "Zuletzt gespielt", "Spielzeit", "Installiert am" and "Größe" are smaller than before; caption,
   value and source each still read in one line. · E2E: no (window: layout)
 - [x] **T531-6** A game with metadata but no description: "Übersicht" and "Infos" say "Es liegt keine Beschreibung zu
   dem Spiel vor." where the description would be; once the store brings one, the description shows instead. A game
   without any metadata keeps "Noch keine Infos" in "Infos". · E2E: yes
-- [ ] **T531-7** The quick selection's entries have the colour of the value boxes; a choice ("Steam-Controller-Modus")
+- [x] **T531-7** The quick selection's entries have the colour of the value boxes; a choice ("Steam-Controller-Modus")
   shows ◀ value ▶ in its own, darker chip, darker still while the entry has the focus; ◀ ▶ and a click on the arrows
   still change it. The rows of "Controller" and "Verwalten" look as before. · E2E: no (window: colours)
 - [ ] **T531-8** **Owner:** On your PC with more launcher tabs than fit the header: open a game's detail page with a
@@ -55,3 +55,4 @@ History:
 |---|---|---|---|---|---|
 | T531-1, -3, -4, -5, -7 | 2026-11-13 | Claude (implementer) | branch, Debug, Linux/Xvfb, `--demo --demo-games 60` with bright made-up artworks | ✅ looked at, title renamed to 66 characters | – |
 | T531-8 | 2026-11-13 | Claude (implementer) | as above, tab spacing widened locally so the strip overflows | ✅ cut-off names fade, no block | the owner's case stays open for his tabs |
+| T531-1, -3, -4, -5, -7, T500-25 (QE run) | 2026-11-13 | Claude (QE) | branch at 34ef9b7, Release, Linux/Xvfb 1920 × 1080, `--demo` and `--demo --first-run`, keys by xdotool; headless frames for Pan's firmware dialog, the status messages and three made-up titles (9, 41, 103 characters) | ✅ T531-1: shadow on title, info line and the stacks' names (demo artworks are dark; bright ones only in the implementer's run); T531-3: 66 pt, shrunk to 61 pt, two lines at 33 pt, button row at the same height in all three; T531-4/-5: title above the description, smaller boxes, nothing cut; T531-7: ◀ value ▶ in its own darker chip (demo greys both entries, so the darker chip with the focus only mechanically); raised buttons with whole rings in the detail page, library preview, „Fertig“, Pan's dialog, the status messages; T500-25: under „Ansicht“ the page's ring was visible at a1bed43, gone at 34ef9b7 | ring finding fixed in 34ef9b7 |

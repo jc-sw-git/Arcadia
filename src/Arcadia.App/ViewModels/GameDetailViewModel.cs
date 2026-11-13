@@ -72,12 +72,13 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
     /// </summary>
     public event Action<CancellationToken>? Jumped;
 
-    /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506); in "Infos" ▲ ▼ too, its text (#493).</summary>
+    /// <summary>RS or Shift+W/S: the view scrolls the info box, -1 up, 1 down (#506); on "Infos" in the rail its text (#530).</summary>
     public event Action<int>? InfoScrollRequested;
 
     /// <summary>
-    /// Set by the view: the focus is on a row and its info box has more than it shows, so RS scrolls it and the footer
-    /// names RS. In the rail and the button row the box isn't the focused thing's, so RS does nothing there.
+    /// Set by the view: the focus is on a row and its info box has more than it shows, or on "Infos" in the rail and its
+    /// text has more (#530), so RS scrolls it and the footer names RS. On the other areas in the rail and in the button row
+    /// the box isn't the focused thing's, so RS does nothing there.
     /// </summary>
     [ObservableProperty]
     public partial bool InfoOverflows { get; set; }
@@ -326,15 +327,10 @@ public sealed partial class GameDetailViewModel : ViewModelBase, IPage
         if (Current is { } shown)
         {
             shown.Detach();
-            shown.ReadScrollRequested -= OnReadScrollRequested;
         }
 
-        var page = new GameDetailPageViewModel(front, _actions, focus, _metadataOf(front.Game.Key));
-        page.ReadScrollRequested += OnReadScrollRequested;
-        Current = page;
+        Current = new GameDetailPageViewModel(front, _actions, focus, _metadataOf(front.Game.Key));
     }
-
-    private void OnReadScrollRequested(int direction) => InfoScrollRequested?.Invoke(direction);
 
     private GameTileViewModel? Neighbour(int side) =>
         Games.Count < 2 ? null : Covers.FirstOrDefault(c => c.Offset == side)?.Tile;

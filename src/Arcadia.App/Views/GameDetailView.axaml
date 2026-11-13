@@ -201,6 +201,8 @@
               <DataTemplate x:DataType="vm:DetailAreaViewModel">
                 <Button Classes="plain detailRail" Classes.open="{Binding IsOpen}" Classes.focused="{Binding IsFocused}" Command="{Binding OpenCommand}">
                   <DockPanel>
+                    <!-- A's glyph in the ring (#530): a press enters the area, ◀ ▶ don't. -->
+                    <ctl:KeyHint DockPanel.Dock="Right" Pad="A" Keys="Leertaste" IsVisible="{Binding ShowsEnterHint}" VerticalAlignment="Center" Margin="10,0,0,0" />
                     <Border DockPanel.Dock="Left" Classes="railIcon" Margin="0,0,14,0" VerticalAlignment="Center">
                       <Path Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />

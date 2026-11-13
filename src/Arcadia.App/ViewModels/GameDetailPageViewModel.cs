@@ -31,8 +31,8 @@ public readonly record struct DetailFocus(DetailZone Zone, GameActionKind Button
 /// note beside it, and the rail of areas ("Übersicht", "Infos", "Controller", "Verwalten") with the open area's content and
 /// the info box. ▼ leads from the buttons into the rail, A into the area's rows, B back; ◀ ▶ change a value at once, A starts an
 /// action, as on the settings page. "Übersicht" holds the game's quick selection (#500): up to five rows of the other
-/// areas that act as their rows do, and below them "Übersicht anpassen". "Infos" has no rows: A leads into its text,
-/// which ▲ ▼ scroll (#493).
+/// areas that act as their rows do, and below them "Übersicht anpassen". "Infos" has no rows and isn't entered: RS
+/// scrolls its text while it has the focus in the rail (#530).
 /// </summary>
 public sealed partial class GameDetailPageViewModel : ViewModelBase
 {
@@ -74,12 +74,6 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     /// <summary>The game's metadata (#493): the info line, the short description and tags, and the content of "Infos".</summary>
     [ObservableProperty]
     public partial DetailMetadata GameInfo { get; private set; }
-
-    /// <summary>
-    /// ▲ ▼ while the focus is in "Infos" (#493, A2): the view scrolls its text, -1 up, 1 down. Kept to this one event, so
-    /// another way of reading it changes only here and in the view.
-    /// </summary>
-    public event Action<int>? ReadScrollRequested;
 
     /// <summary>The automatic title while the game has an own one (#496); null without one, then R3 does nothing here.</summary>
     public string? OriginalTitle { get; }
@@ -130,6 +124,7 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     /// <summary>The area whose content stands beside the rail.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsReadingInfos))]
     public partial DetailAreaViewModel OpenArea { get; private set; }
 
     /// <summary>The row the info box explains: the focused one, or the area's first while the focus is in the rail.</summary>
@@ -137,12 +132,15 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
     public partial DetailRowViewModel? InfoRow { get; private set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOnButtons), nameof(IsInRows), nameof(BackHint), nameof(ShowsAreasHint))]
+    [NotifyPropertyChangedFor(nameof(IsOnButtons), nameof(IsInRows), nameof(BackHint), nameof(ShowsAreasHint), nameof(IsReadingInfos))]
     public partial DetailZone Zone { get; private set; }
 
     public bool IsOnButtons => Zone == DetailZone.Buttons;
 
     public bool IsInRows => Zone == DetailZone.Rows;
+
+    /// <summary>"Infos" has the focus in the rail: RS scrolls its text there, without A first (#530).</summary>
+    public bool IsReadingInfos => Zone == DetailZone.Rail && OpenArea.IsInfos;
 
     /// <summary>What the footer says A does here; null where A does nothing.</summary>
     [ObservableProperty]
@@ -237,9 +235,6 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
                 // "Übersicht" always has "Übersicht anpassen", also with an empty quick selection (#500).
                 _row = 0;
                 SetZone(DetailZone.Rows);
-                break;
-            case (DetailZone.Rows, UiAction.Up or UiAction.Down) when OpenArea.IsInfos:
-                ReadScrollRequested?.Invoke(action == UiAction.Up ? -1 : 1);
                 break;
             case (DetailZone.Rows, UiAction.Up or UiAction.Down):
                 _row = ListFocus.Cycle(_row, action == UiAction.Up ? -1 : 1, FocusableRowCount, HeldPress.IsRepeat);
@@ -337,8 +332,11 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
 
     private DetailAreaViewModel Area(string key) => Areas.First(area => area.Key == key);
 
-    /// <summary>A leads from the rail into the area: to its rows, or to reading "Infos" when there is something to read.</summary>
-    private bool CanEnter(DetailAreaViewModel area) => area.HasRows || area.IsOverview || (area.IsInfos && !GameInfo.IsEmpty);
+    /// <summary>
+    /// A leads from the rail into the area's rows. "Infos" has none: its text scrolls with RS from the rail, so A there would
+    /// only be a step in between (#530).
+    /// </summary>
+    private static bool CanEnter(DetailAreaViewModel area) => area.HasRows || area.IsOverview;
 
     private void Restore(DetailFocus focus)
     {
@@ -419,6 +417,8 @@ public sealed partial class GameDetailPageViewModel : ViewModelBase
         {
             area.IsOpen = area == OpenArea;
             area.IsFocused = Zone == DetailZone.Rail && area == OpenArea;
+            // The glyph in the ring says a press enters it, so ◀ ▶ aren't tried (#530).
+            area.ShowsEnterHint = area.IsFocused && CanEnter(area);
             for (var r = 0; r < area.Rows.Count; r++)
             {
                 area.Rows[r].IsFocused = Zone == DetailZone.Rows && area == OpenArea && r == _row;

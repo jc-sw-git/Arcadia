@@ -58,6 +58,10 @@ public sealed partial class DetailAreaViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsFocused { get; set; }
 
+    /// <summary>It has the focus and A leads into its rows: the ring shows A's glyph (#530). Never on "Infos", which has no rows.</summary>
+    [ObservableProperty]
+    public partial bool ShowsEnterHint { get; set; }
+
     /// <summary>A click in the rail opens it, with the focus on it.</summary>
     [RelayCommand]
     private void Open() => _open(this);

@@ -44,9 +44,11 @@ public sealed partial class ButtonGlyphTextTests
     }
 
     /// <summary>
-    /// The same in the resource files, per language (#554): LB, RB, LT, RT, L3, R3, LS, RS and D-Pad are a word in no
-    /// language, so they are checked in every one; A, B, X and Y only in German, since in English "A story" or "X marks
-    /// the spot" is prose.
+    /// The same in the resource files (#539: "Mit Y überspringst du" slipped through there), per language (#554): LB,
+    /// RB, LT, RT, L3, R3, LS, RS and D-Pad are a word in no language, so they are checked in every one; A, B, X and Y
+    /// only in German, since in English "A story" or "X marks the spot" is prose. Tooltips (<c>…Tip</c>) are plain text
+    /// that can't draw a badge and name a key beside the button for the mouse; a help row's input ("RT oder A") is a
+    /// list of buttons drawn with <c>ButtonTextBlock.Buttons</c>.
     /// </summary>
     [Fact]
     [Trait("TestCase", "T554-18")]
@@ -80,7 +82,7 @@ public sealed partial class ButtonGlyphTextTests
         {
             var key = (string?)data.Attribute("name") ?? string.Empty;
             var text = (string?)data.Element("value") ?? string.Empty;
-            if (NotDrawnAsGlyphs.ContainsKey(key) || !Prose().IsMatch(text))
+            if (key.EndsWith("Tip", StringComparison.Ordinal) || ButtonListText().IsMatch(key) || !Prose().IsMatch(text))
             {
                 continue;
             }
@@ -91,18 +93,6 @@ public sealed partial class ButtonGlyphTextTests
             }
         }
     }
-
-    /// <summary>Texts that name buttons where no glyph can be drawn, each with the reason.</summary>
-    private static readonly Dictionary<string, string> NotDrawnAsGlyphs = new(StringComparer.Ordinal)
-    {
-        ["MouseModeHelpRtOrA"] = "a help row's input, drawn by ButtonTextBlock.Buttons, which takes button names",
-        ["MouseModeHelpLtOrX"] = "a help row's input, drawn by ButtonTextBlock.Buttons, which takes button names",
-        ["NotInstalledATip"] = "a tooltip: plain text, which draws no badges",
-        ["FilterAndSortTip"] = "a tooltip: plain text, which draws no badges",
-        ["PreviousHitsTip"] = "a tooltip: plain text, which draws no badges",
-        ["MoreHitsTip"] = "a tooltip: plain text, which draws no badges",
-        ["CancelTip"] = "a tooltip: plain text, which draws no badges",
-    };
 
     /// <summary>
     /// A controller button in a view is drawn by <c>PadGlyph</c>, <c>KeyText</c> or <c>KeyHint</c>, which show the symbols of
@@ -136,6 +126,9 @@ public sealed partial class ButtonGlyphTextTests
 
     [GeneratedRegex(@"<TextBlock[^>]*\bText=""(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad|⧉|≡)""")]
     private static partial Regex PlainButtonText();
+
+    [GeneratedRegex(@"^MouseModeHelp\w+Or\w+$")]
+    private static partial Regex ButtonListText();
 
     [GeneratedRegex(@"\$?""((?:[^""\\]|\\.)*)""")]
     private static partial Regex StringLiteral();

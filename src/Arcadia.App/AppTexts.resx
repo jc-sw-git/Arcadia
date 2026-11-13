@@ -1213,6 +1213,16 @@
   <data name="WaitingChooseHint" xml:space="preserve"><value>Spiel wählen</value></data>
   <data name="WaitingSkipHint" xml:space="preserve"><value>Überspringen</value></data>
   <data name="WaitingTakeHint" xml:space="preserve"><value>Übernehmen, weiter zum nächsten</value></data>
+  <data name="WaitingTakeCoverHint" xml:space="preserve"><value>Cover nehmen, weiter zum Hintergrund</value></data>
+  <data name="WaitingTakeHeroHint" xml:space="preserve"><value>Hintergrund nehmen, weiter zum Cover</value></data>
+  <data name="WaitingIntroCoverTab" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen und einem Cover. Cover und Hintergrund wählst du je in ihrem Tab, gern von verschiedenen Spielen.</value></data>
+  <data name="WaitingIntroCoverTabOwnTerm" xml:space="preserve"><value>SteamGridDB findet {count} Spiele mit Cover zu deinem Suchbegriff. Cover und Hintergrund wählst du je in ihrem Tab, gern von verschiedenen Spielen.</value></data>
+  <data name="WaitingIntroHeroTab" xml:space="preserve"><value>SteamGridDB kennt {count} Spiele mit diesem Namen und einem Hintergrund. Cover und Hintergrund wählst du je in ihrem Tab, gern von verschiedenen Spielen.</value></data>
+  <data name="WaitingIntroHeroTabOwnTerm" xml:space="preserve"><value>SteamGridDB findet {count} Spiele mit Hintergrund zu deinem Suchbegriff. Cover und Hintergrund wählst du je in ihrem Tab, gern von verschiedenen Spielen.</value></data>
+  <data name="WaitingChosenHero" xml:space="preserve"><value>DEIN HINTERGRUND</value></data>
+  <data name="WaitingNotChosen" xml:space="preserve"><value>Noch nicht gewählt</value></data>
+  <data name="WaitingChosenCover" xml:space="preserve"><value>DEIN COVER</value></data>
+  <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB hat zu diesem Spiel keine weiteren Angaben.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
   <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>

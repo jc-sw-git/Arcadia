@@ -6,7 +6,7 @@ using Avalonia.Threading;
 namespace Arcadia.App.Views;
 
 /// <summary>
-/// "Warten auf deine Auswahl" (#491, #506): keeps the current game and the focused hit in sight and out of the edge
+/// "Warten auf deine Auswahl" (#491, #506): a double click takes a hit (#539); keeps the current game and the focused hit in sight and out of the edge
 /// fades when the list or the grid is taller than its place.
 /// </summary>
 public partial class WaitingListView : UserControl
@@ -17,6 +17,18 @@ public partial class WaitingListView : UserControl
     public WaitingListView()
     {
         InitializeComponent();
+
+        // The tile's Button handles the press; the double tap comes after its two clicks marked the hit (#539).
+        HitGrid.AddHandler(DoubleTappedEvent, OnHitDoubleTapped, handledEventsToo: true);
+    }
+
+    private void OnHitDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if ((e.Source as Control)?.DataContext is WaitingHitViewModel hit)
+        {
+            hit.TakeCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     protected override void OnDataContextChanged(EventArgs e)

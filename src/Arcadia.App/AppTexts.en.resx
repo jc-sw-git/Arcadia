@@ -1213,6 +1213,16 @@
   <data name="WaitingChooseHint" xml:space="preserve"><value>Choose game</value></data>
   <data name="WaitingSkipHint" xml:space="preserve"><value>Skip</value></data>
   <data name="WaitingTakeHint" xml:space="preserve"><value>Apply, on to the next</value></data>
+  <data name="WaitingTakeCoverHint" xml:space="preserve"><value>Take cover, on to the background</value></data>
+  <data name="WaitingTakeHeroHint" xml:space="preserve"><value>Take background, on to the cover</value></data>
+  <data name="WaitingIntroCoverTab" xml:space="preserve"><value>SteamGridDB knows {count} games with this name and a cover. You choose cover and background each in its own tab, from different games if you like.</value></data>
+  <data name="WaitingIntroCoverTabOwnTerm" xml:space="preserve"><value>SteamGridDB finds {count} games with a cover for your search term. You choose cover and background each in its own tab, from different games if you like.</value></data>
+  <data name="WaitingIntroHeroTab" xml:space="preserve"><value>SteamGridDB knows {count} games with this name and a background. You choose cover and background each in its own tab, from different games if you like.</value></data>
+  <data name="WaitingIntroHeroTabOwnTerm" xml:space="preserve"><value>SteamGridDB finds {count} games with a background for your search term. You choose cover and background each in its own tab, from different games if you like.</value></data>
+  <data name="WaitingChosenHero" xml:space="preserve"><value>YOUR BACKGROUND</value></data>
+  <data name="WaitingNotChosen" xml:space="preserve"><value>Not chosen yet</value></data>
+  <data name="WaitingChosenCover" xml:space="preserve"><value>YOUR COVER</value></data>
+  <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB has no further details on this game.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Cropping allowed</value></data>
   <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>How much of an image may be cut off so it fits the format</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Little · up to 5 %</value></data>

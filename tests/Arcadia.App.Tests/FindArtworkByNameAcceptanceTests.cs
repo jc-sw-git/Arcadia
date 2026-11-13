@@ -278,8 +278,8 @@ public sealed class FindArtworkByNameAcceptanceTests
         var list = WaitingListTests.OpenList(arcadia);
         await WaitingListTests.ShownAsync(list);
         Assert.Equal(chosen.Title, list.Hits!.Title);
-        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
-        await list.Loading;
+        arcadia.Press(UiAction.Accept).Press(UiAction.Right);
+        await WaitingListTests.TakeCoverAndItsBackgroundAsync(arcadia, list);
         Assert.Equal(skipped.Title, list.Hits!.Title);
         arcadia.Press(UiAction.Status).Press(UiAction.Back);
         await SettledAsync(arcadia);

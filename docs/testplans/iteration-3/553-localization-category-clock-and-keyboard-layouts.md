@@ -18,14 +18,14 @@ A7 Region decides order and separators of dates and numbers; day and month names
 follow the UI language.
 A8 R3 stays a menu; it lists the quick selection in the order of the settings rows, the layout in use marked.
 
-**Status:** Automated: T553-1, T553-3 to T553-18 · QE: – (planned: T553-2, T553-19) · Open for the owner: T553-20, T553-21 (T553-22 · RC on the release candidate)
+**Status:** Automated: T553-1, T553-3 to T553-18 · QE: T553-2, T553-19 · Open for the owner: T553-20, T553-21 (T553-22 · RC on the release candidate)
 
 - [x] **T553-1** Settings, controller only: LB/RB reach the tab "Lokalisierung" between "Datenquellen" and "Über Arcadia";
   it opens on its first row, scrolled to the top. Groups BILDSCHIRMTASTATUR ("Standard-Layout" with ◀ ▶; indented one
   switch per layout: DE QWERTZ, EN-US, EN-UK, FR AZERTY, ES, in this order) and UHRZEIT ("Uhrzeit"); no group SPRACHE.
   "Standard-Layout" and "Uhrzeit" show one value box per value in the info panel, the current one highlighted; the
   footer names the focused row's buttons; B leaves the settings to where they were opened. · E2E: yes
-- [ ] **T553-2** Look at 1920 × 1080: indents, the greyed default switch with the blue note "Das Standard-Layout ist
+- [x] **T553-2** Look at 1920 × 1080: indents, the greyed default switch with the blue note "Das Standard-Layout ist
   immer dabei" at the top of the info panel, fades and focus ring (#237), no text cut off, nothing over the edge. ·
   E2E: no (window)
 - [x] **T553-3** "Standard-Layout": ◀ ▶ step through the five in the order above and wrap (ES ▶ → DE QWERTZ, DE QWERTZ ◀
@@ -77,7 +77,7 @@ A8 R3 stays a menu; it lists the quick selection in the order of the settings ro
   settings are kept; the next change writes valid values. · E2E: no (unit test)
 - [x] **T553-18** Speed: opening the keyboard and a ◀ ▶ on the rows stay within 50 ms; the header clock reads no system
   setting per tick (idle CPU as before). · E2E: no (unit test that the tick reads cached values; timing by hand)
-- [ ] **T553-19** Mouse and keyboard: in the desktop mode a click on ◀ ▶, on a switch and on the keyboard's "Layout" key
+- [x] **T553-19** Mouse and keyboard: in the desktop mode a click on ◀ ▶, on a switch and on the keyboard's "Layout" key
   works as by controller; W/S, A/D, G (R3) and Esc (B) on a real keyboard as well. · E2E: no (window)
 - [ ] **T553-20** **Owner:** on your PC, with the Windows region and time format as they are: the clock and dates look
   like the rest of Windows. Then set Windows to time format 12 hours and region English (US), restart Arcadia: header
@@ -102,3 +102,5 @@ History:
 | Owner's PC check (Run-Check-14.ps1) | 2026-11-13 | Owner | Windows, before implementation | Region de-DE, time "HH:mm", keyboard 04070407 read as expected | Arcadia reads `CultureInfo.CurrentCulture` and `GetKeyboardLayout(0)` |
 | T553-1, T553-3 to T553-18 | 2026-11-13 | Implementer | Debug, Linux cloud container, `dotnet test` | Passed | – |
 | Look at the category, the greyed default switch, 12 hours in the header | 2026-11-13 | Implementer | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys | Rows, indents, blue note, footer without actions on the default switch, "7:54 PM" | – |
+| T553-2, T553-19 (QE run) | 2026-11-13 | QE | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys and mouse | Failed: value boxes with the [R3] glyph cut off, "Español · QWERTY con Ñ" shortened in the pill, "12 Stunden (9:58 PM)" touching the arrows; in the search B then X kept the R3 layout (T553-7); a quick selection of the wrong type left only the default (T553-17) | Fixed in 5075b3c (texts without glyph, shorter pill values, keyboard reopens in the default, unreadable list = all five) |
+| T553-2, T553-19 (QE rerun) | 2026-11-13 | QE | Release, Linux, Xvfb 1920 × 1080, `--demo`, keys and mouse | Passed: nothing cut off, focus ring and greyed switch fine; clicks on ◀ ▶, switches and the "Layout" key, W/S/A/D, Esc work; G in the search types (a real keyboard types there) | – |

@@ -21,7 +21,7 @@ public partial class MainViewModel
     {
         if (_artwork is not null)
         {
-            ChangeArtwork = new ChangeArtworkViewModel(tile, _artwork, this);
+            ChangeArtwork = new ChangeArtworkViewModel(tile, _artwork, this, _time);
         }
     }
 

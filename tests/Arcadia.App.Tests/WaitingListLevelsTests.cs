@@ -232,6 +232,19 @@ public sealed class WaitingListLevelsTests
         Assert.Equal([501, 502], again.Hits!.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T532-8")]
+    public async Task After_the_key_is_deleted_a_waiting_entry_says_there_is_no_key_not_that_it_is_invalid()
+    {
+        var (arcadia, list) = await OldListAsync(501, 502, 503, 504);
+        using var _ = arcadia;
+        arcadia.Artwork.SteamGridDb!.Clear();
+        await WaitingListTests.ShownAsync(list);
+
+        Assert.Equal(AppTexts.DataSourcesKeyMissing, list.Hits!.Message);
+        Assert.Empty(arcadia.SteamGridDb.Requests);
+    }
+
     private static TextEditorEditing EditTerm(ArcadiaDriver arcadia, WaitingListViewModel list)
     {
         arcadia.Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Accept);

@@ -1058,6 +1058,7 @@
   <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Verbunden · endet auf …{ending}</value></data>
   <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Endet auf …{ending} · noch nicht geprüft</value></data>
   <data name="DataSourcesKeyRejected" xml:space="preserve"><value>Schlüssel ungültig · SteamGridDB wird übersprungen</value></data>
+  <data name="DataSourcesKeyMissing" xml:space="preserve"><value>Kein Schlüssel hinterlegt · SteamGridDB wird übersprungen</value></data>
   <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Wird geprüft …</value></data>
   <data name="DataSourcesKeyEnter" xml:space="preserve"><value>Eingeben</value></data>
   <data name="DataSourcesKeyInfo" xml:space="preserve"><value>Mit dem Schlüssel lädt Arcadia Cover und Hintergründe von SteamGridDB, in der Reihenfolge, die du unter „Reihenfolge für Artwork“ festlegst. Der Schlüssel ist kostenlos. Melde dich auf steamgriddb.com an und kopiere ihn unter Einstellungen › API.</value></data>
@@ -1226,13 +1227,18 @@
   <data name="ArtworkTabCover" xml:space="preserve"><value>Cover</value></data>
   <data name="ArtworkTabHero" xml:space="preserve"><value>Hintergrund</value></data>
   <data name="ArtworkPreviewHeading" xml:space="preserve"><value>VORSCHAU AUF DER DETAILSEITE</value></data>
+  <data name="ArtworkLoading1" xml:space="preserve"><value>Durchstöbere die Bildergalerie …</value></data>
+  <data name="ArtworkLoading2" xml:space="preserve"><value>Staube die Bilderrahmen ab …</value></data>
+  <data name="ArtworkLoading3" xml:space="preserve"><value>Blättere durch alte Spielepackungen …</value></data>
+  <data name="ArtworkLoading4" xml:space="preserve"><value>Poliere die Pixel …</value></data>
+  <data name="ArtworkLoading5" xml:space="preserve"><value>Suche das schönste Motiv …</value></data>
+  <data name="ArtworkLoading6" xml:space="preserve"><value>Entwickle die Negative …</value></data>
   <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
-  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1 WIE DER KOPF DER DETAILSEITE</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1</value></data>
   <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} VORSCHLÄGE</value></data>
   <data name="ArtworkSourceRow" xml:space="preserve"><value>Quelle</value></data>
-  <data name="ArtworkScoreRow" xml:space="preserve"><value>Bewertung</value></data>
   <data name="ArtworkFileRow" xml:space="preserve"><value>Datei</value></data>
-  <data name="ArtworkSizeRow" xml:space="preserve"><value>Größe</value></data>
+  <data name="ArtworkFormatRow" xml:space="preserve"><value>Format</value></data>
   <data name="ArtworkSetRow" xml:space="preserve"><value>Gesetzt</value></data>
   <data name="ArtworkSourcePlaceholder" xml:space="preserve"><value>Platzhalter</value></data>
   <data name="ArtworkSourceLauncher" xml:space="preserve"><value>{launcher} (vom Launcher)</value></data>
@@ -1240,7 +1246,6 @@
   <data name="ArtworkSetByHand" xml:space="preserve"><value>von Hand</value></data>
   <data name="ArtworkSetAutomatically" xml:space="preserve"><value>automatisch (Standard)</value></data>
   <data name="ArtworkImageSize" xml:space="preserve"><value>{width} × {height}</value></data>
-  <data name="ArtworkScore" xml:space="preserve"><value>★ {score}</value></data>
   <data name="ArtworkOwnFile" xml:space="preserve"><value>Eigene Datei</value></data>
   <data name="ArtworkOwnFileTag" xml:space="preserve"><value>EIGENE DATEI</value></data>
   <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · bis 20&#160;MB</value></data>

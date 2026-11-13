@@ -55,6 +55,99 @@ public sealed partial class DataSourcesTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T532-1")]
+    public async Task The_launchers_image_in_use_can_be_chosen_again_after_a_steamgriddb_image()
+    {
+        var (arcadia, _) = await StartAsync(wideHeroHeight: 826);
+        using var _ = arcadia;
+        OpenDataSources(arcadia);
+        await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
+        var modal = await OpenChangeArtworkAsync(arcadia);
+        arcadia.Press(UiAction.NextTab);
+        await ChangedAsync(arcadia, modal);
+        var launcher = modal.Tiles.Single(tile => tile.Offer?.Source == ArtworkSource.Launcher);
+        var grid = modal.Tiles.Single(tile => tile.Offer?.Source == ArtworkSource.SteamGridDb);
+        Assert.True(launcher.IsInUse);
+
+        Pick(arcadia, modal, grid);
+        await ChangedAsync(arcadia, modal);
+        Assert.True(grid.IsInUse);
+        Pick(arcadia, modal, launcher);
+        await ChangedAsync(arcadia, modal);
+
+        Assert.NotEqual(AppTexts.ArtworkOfferFailed, arcadia.Main.Toast.Text);
+        Assert.True(launcher.IsInUse);
+        Assert.Equal((ArtworkSource.Launcher, true), (Cached(arcadia)!.Hero!.Source, Cached(arcadia)!.Hero!.SetByHand));
+        Assert.Equal(826, arcadia.Main.ChangeArtwork!.Tile.Hero!.Size.Height);
+    }
+
+    private static void Pick(ArcadiaDriver arcadia, ChangeArtworkViewModel modal, ArtworkTileViewModel tile)
+    {
+        while (!tile.IsFocused)
+        {
+            arcadia.Press(modal.Tiles.IndexOf(tile) > modal.Tiles.ToList().FindIndex(t => t.IsFocused) ? UiAction.Right : UiAction.Left);
+        }
+
+        arcadia.Press(UiAction.Accept);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T532-3")]
+    public async Task While_the_images_are_looked_for_the_modal_shows_the_loading_state_with_a_changing_text()
+    {
+        var (arcadia, images) = await StartAsync();
+        using var _ = arcadia;
+        arcadia.SteamGridDb.Cover("steam", GameId, HighCover, 600, 900);
+        images.Serve(HighCover, TestImages.Png(600, 900));
+        OpenDataSources(arcadia);
+        await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
+        arcadia.Press(UiAction.Back);
+        images.Hang(HighCover);
+
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
+        arcadia.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.Artwork);
+        arcadia.Press(UiAction.Accept);
+        var modal = arcadia.Main.ChangeArtwork!;
+        await images.Hanging.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(modal.IsLoading);
+        Assert.Empty(modal.GridItems);
+        Assert.Contains(modal.LoadingText, ChangeArtworkViewModel.LoadingTexts);
+        var first = modal.LoadingText;
+        arcadia.Time.Advance(ChangeArtworkViewModel.LoadingTextTime);
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotEqual(first, modal.LoadingText);
+        Assert.Contains(modal.LoadingText, ChangeArtworkViewModel.LoadingTexts);
+
+        // The download gives up after its time: the tiles there are replace the loading state.
+        arcadia.Time.Advance(ArtworkService.DownloadTimeout);
+        await ChangedAsync(arcadia, modal);
+        Assert.False(modal.IsLoading);
+        Assert.NotEmpty(modal.Tiles);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T532-5")]
+    [Trait("TestCase", "T532-6")]
+    public async Task A_steamgriddb_image_in_use_shows_its_format_and_no_rating()
+    {
+        var (arcadia, images) = await StartAsync();
+        using var _ = arcadia;
+        arcadia.SteamGridDb.Cover("steam", GameId, HighCover, 600, 900, score: 7);
+        images.Serve(HighCover, TestImages.Png(600, 900));
+        OpenDataSources(arcadia);
+        await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
+
+        var modal = await OpenChangeArtworkAsync(arcadia);
+
+        var offered = Assert.Single(modal.Tiles, tile => tile.Offer?.Source == ArtworkSource.SteamGridDb);
+        Assert.True(offered is { IsInUse: true, HasTag: false });
+        Assert.Equal(
+            [(AppTexts.ArtworkSourceRow, "SteamGridDB"), (AppTexts.ArtworkFormatRow, "600 × 900"), (AppTexts.ArtworkSetRow, AppTexts.ArtworkSetAutomatically)],
+            modal.Facts.Select(fact => (fact.Label, fact.Value)));
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T490-28")]
     public async Task With_a_key_steamgriddb_turns_down_the_notice_says_so_and_no_suggestion_is_asked()
     {

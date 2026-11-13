@@ -25,7 +25,7 @@ public sealed class SteamGridDbSuggestions(SteamGridDbKey key, Func<Game, Artwor
 
         var answer = await imagesOf(game, kind, cancel);
         return answer.Outcome == SteamGridDbOutcome.Found
-            ? [.. answer.Images.Select(image => new SuggestedImage(ArtworkService.SteamGridDbOrigin, image.Url, image.Score))]
+            ? [.. answer.Images.Select(image => new SuggestedImage(ArtworkService.SteamGridDbOrigin, image.Url))]
             : [];
     }
 }

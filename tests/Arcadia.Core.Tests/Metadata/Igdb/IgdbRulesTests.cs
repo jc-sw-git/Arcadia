@@ -137,8 +137,9 @@ public sealed class IgdbRulesTests
             [{"id":7,"name":"Köln","game_type":0,"summary":"A made-up city game.","first_release_date":1609459200,
               "genres":[{"id":12,"name":"Role-playing (RPG)"},{"id":31,"name":"Adventure"},{"id":36,"name":"MOBA"}],
               "themes":[{"name":"Action"},{"name":"Fantasy"}],"keywords":[{"name":"city"}],
-              "age_ratings":[{"organization":4,"rating_category":21},{"organization":2,"rating_category":3},{"organization":1,"rating_category":11},
-                             {"organization":3,"rating_category":15},{"organization":4,"rating_category":99}],
+              "age_ratings":[{"organization":4,"rating_category":{"id":21,"rating":"16"}},{"organization":2,"rating_category":{"id":10,"rating":"12"}},
+                             {"organization":1,"rating_category":{"id":6,"rating":"M"}},{"organization":3,"rating_category":{"id":15,"rating":"C"}},
+                             {"organization":4,"rating_category":{"id":99,"rating":"99"}}],
               "involved_companies":[{"company":{"name":"Made-up Studio"},"developer":true,"publisher":false},
                                     {"company":{"name":"Made-up Publisher"},"developer":false,"publisher":true}],
               "cover":{"image_id":"co1abc"}}]
@@ -155,6 +156,35 @@ public sealed class IgdbRulesTests
         Assert.Equal(["Made-up Publisher"], game.Data.Publishers);
         Assert.Equal(new DateOnly(2021, 1, 1), game.Data.ReleaseDate);
         Assert.Equal("A made-up city game.", game.Data.Description);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T541-2")]
+    [InlineData("""{"organization":2,"rating_category":{"id":10,"rating":"Twelve"}}""", AgeRatingBoard.Pegi, "12")]
+    [InlineData("""{"organization":2,"rating_category":{"id":8,"rating":"PEGI 3+"}}""", AgeRatingBoard.Pegi, "3")]
+    [InlineData("""{"organization":1,"rating_category":{"id":4,"rating":"E10"}}""", AgeRatingBoard.Esrb, "E10+")]
+    [InlineData("""{"organization":4,"rating_category":{"id":20,"rating":"USK_12"}}""", AgeRatingBoard.Usk, "12")]
+    [InlineData("""{"category":2,"rating":3}""", AgeRatingBoard.Pegi, "12")]
+    [InlineData("""{"category":1,"rating":9}""", AgeRatingBoard.Esrb, "E10+")]
+    [InlineData("""{"organization":4,"category":4,"rating":22}""", AgeRatingBoard.Usk, "18")]
+    public void A_rating_is_read_from_its_categorys_text_or_the_deprecated_enum(string rating, AgeRatingBoard board, string value)
+    {
+        var json = "[{\"id\":7,\"name\":\"Nordwind\",\"age_ratings\":[" + rating + "]}]";
+
+        Assert.Equal([new AgeRating(board, value)], Assert.Single(IgdbAnswer.Read(Encoding.UTF8.GetBytes(json))!).Data.AgeRatings);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T541-2")]
+    [InlineData("""{"organization":2,"rating_category":10}""")]
+    [InlineData("""{"organization":3,"rating_category":{"id":14,"rating":"B"}}""")]
+    [InlineData("""{"organization":1,"rating_category":{"id":1,"rating":"RP"}}""")]
+    [InlineData("""{"rating_category":{"id":10,"rating":"12"}}""")]
+    public void A_rating_without_a_known_board_or_value_is_dropped_never_guessed_from_an_id(string rating)
+    {
+        var json = "[{\"id\":7,\"name\":\"Nordwind\",\"age_ratings\":[" + rating + "]}]";
+
+        Assert.Empty(Assert.Single(IgdbAnswer.Read(Encoding.UTF8.GetBytes(json))!).Data.AgeRatings);
     }
 
     [Theory]

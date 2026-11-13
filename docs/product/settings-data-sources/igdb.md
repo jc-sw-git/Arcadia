@@ -34,5 +34,6 @@ Index and the category's frame: [README.md](README.md). The merge and the order:
   order), handled by "Bei mehreren Treffern" (shared with the artwork, waiting list: [waiting-list.md](waiting-list.md)); no hit: launcher
   data, searched again at the next scan. A game matched once is asked by its IGDB id from then on.
 - IGDB's fields: summary as description (English), genres onto the German list (Action from the theme "Action"),
-  first release date, developers and publishers from the involved companies, USK/PEGI/ESRB by organization and rating
-  category, themes and keywords as provider tags.
+  first release date, developers and publishers from the involved companies, USK/PEGI/ESRB by organization and the
+  rating category's own text (or IGDB's deprecated rating enum), never by the category's undocumented ids; themes and
+  keywords as provider tags. An answer cached by an older way of reading is asked again at the next scan (#541).

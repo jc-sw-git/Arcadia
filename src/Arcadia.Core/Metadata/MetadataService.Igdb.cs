@@ -30,12 +30,12 @@ public sealed partial class MetadataService
                 .DistinctBy(g => g.g.Key, StringComparer.Ordinal);
 
     /// <summary>
-    /// IGDB still has to answer for the game: never asked, or a reload goes on. A game waiting for the player's choice or
-    /// skipped is not searched by name again, also not by a reload (D8).
+    /// IGDB still has to answer for the game: never asked, a reload goes on, or its answer was read by an older version
+    /// (#541). A game waiting for the player's choice or skipped is not searched by name again, also not by a reload (D8).
     /// </summary>
     private bool IsIgdbMissing(string gameKey) =>
         _records.GetValueOrDefault(gameKey) is var known && known?.IgdbByName is null
-        && (_igdbReloadLeft.Contains(gameKey) || known?.Igdb is null);
+        && (_igdbReloadLeft.Contains(gameKey) || known?.Igdb is null || known.Igdb.Reading < IgdbAnswer.Reading);
 
     private static ArtworkStoreId? SafeStoreIdOf(ILauncherMetadata? source, Game game)
     {

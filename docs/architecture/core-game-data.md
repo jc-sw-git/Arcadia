@@ -55,7 +55,7 @@ rows in "Datenquellen": `app-artwork.md`; the product rules: `docs/product/setti
   on 401/403; nothing sent without a usable access), `IgdbAccessStore` (both values in a `SecretFile`), `IgdbClient`
   (Twitch's token by POST, IGDB's API v4 with client id and token in headers, 4 requests a second for all callers, 10 s,
   waits on 429), `IgdbQuery` (the only place queries are built: AppID digits, IGDB id, a search term of letters,
-  digits and a few marks), `IgdbAnswer` (genres by name onto the list, age ratings by organization and category,
+  digits and a few marks), `IgdbAnswer` (genres by name onto the list, age ratings by organization and the category's text, `IgdbAnswer.Reading` marking cached answers to ask again,
   themes and keywords as tags, companies, first release date; `IgdbImages` the cover's https address),
   `IgdbMatching` (main games only, name equality with `?` as one character, several hits).
 - `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.

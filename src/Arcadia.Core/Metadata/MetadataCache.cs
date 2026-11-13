@@ -27,7 +27,8 @@ public sealed record CachedMetadata(
 /// IGDB's answer for one game (#494): the IGDB game it is (null: IGDB doesn't know the game's Steam AppID, so it has no
 /// data and is not searched by name, D3), that game's title and its data, unmerged.
 /// </summary>
-public sealed record IgdbCached(long? GameId, string? Title, GameMetadata Data, DateTimeOffset At);
+/// <param name="Reading">How the answer was read (<see cref="Igdb.IgdbAnswer.Reading"/>); an older reading is asked again.</param>
+public sealed record IgdbCached(long? GameId, string? Title, GameMetadata Data, DateTimeOffset At, int Reading = Igdb.IgdbAnswer.Reading);
 
 /// <summary>
 /// A search by name with several hits and "Selbst auswählen" (#494): the game waits on "Warten auf deine Auswahl" marked
@@ -148,7 +149,8 @@ public sealed class MetadataCache(string root)
                     igdb.GameId is > 0 ? igdb.GameId : null,
                     MetadataCheck.CheckedTitle(igdb.Title),
                     MetadataCheck.Checked(igdb.Data),
-                    at) : null,
+                    at,
+                    igdb.Reading ?? 0) : null,
                 StoredByName.Valid(stored.IgdbByName));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or ArgumentException)
@@ -198,6 +200,7 @@ public sealed class MetadataCache(string root)
                 Title = igdb.Title is null ? null : System.Net.WebUtility.HtmlEncode(igdb.Title),
                 Data = Escaped(igdb.Data),
                 At = igdb.At,
+                Reading = igdb.Reading,
             } : null,
             IgdbByName = StoredByName.Of(cached.IgdbByName),
         };
@@ -227,6 +230,9 @@ public sealed class MetadataCache(string root)
         public GameMetadata? Data { get; set; }
 
         public DateTimeOffset? At { get; set; }
+
+        /// <summary>Missing in files written before #541: those answers count as read the old way (0).</summary>
+        public int? Reading { get; set; }
     }
 
     /// <summary>

@@ -137,6 +137,30 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
     /// <summary>The pick of the tab shown.</summary>
     private ArtworkHitViewModel? ChosenInTab => IsHeroTab ? ChosenHero : ChosenCover;
 
+    /// <summary>B out of the hits: nothing picked is kept, the game starts again on "Cover" (#539).</summary>
+    public void DropPicks()
+    {
+        if (ChosenCover is null && ChosenHero is null && !IsHeroTab)
+        {
+            return;
+        }
+
+        ChosenCover = null;
+        ChosenHero = null;
+        foreach (var tile in Hits.OfType<ArtworkHitViewModel>())
+        {
+            tile.IsChosen = false;
+        }
+
+        if (IsHeroTab)
+        {
+            // A pressed again before the covers are back still lands in the grid: with both sought every hit has a cover.
+            _focusOn = Hits.OfType<ArtworkHitViewModel>().FirstOrDefault()?.Hit.Id;
+            IsHeroTab = false;
+            Reload();
+        }
+    }
+
     /// <summary>
     /// A on a hit while both are sought: picked for the tab's kind; with the other kind picked too, both are taken,
     /// otherwise the other tab shows. One kind sought: the list takes the hit.
@@ -335,6 +359,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         {
             _focusOn = null;
             PlayerMoved = true;
+            Zone = WaitingHitsFocus.Grid;
             FocusHit(at);
         }
     }

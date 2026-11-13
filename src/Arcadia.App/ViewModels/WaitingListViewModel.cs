@@ -229,6 +229,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     {
         InHits = false;
         Hits?.Leave();
+        (Hits as ArtworkHitsViewModel)?.DropPicks();
     }
 
     /// <summary>A or a double click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>

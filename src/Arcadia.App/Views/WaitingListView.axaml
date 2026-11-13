@@ -122,6 +122,7 @@
                           <StackPanel VerticalAlignment="Center" Spacing="4">
                             <TextBlock Classes="artworkLabel" Text="{x:Static app:AppTexts.WaitingChosenCover}" />
                             <TextBlock Classes="waitingPickName" Text="{Binding ChosenCover?.Name, FallbackValue={x:Static app:AppTexts.WaitingNotChosen}, TargetNullValue={x:Static app:AppTexts.WaitingNotChosen}}" />
+                            <TextBlock Classes="waitingHitYear" Text="{Binding ChosenCover?.YearText, FallbackValue=''}" IsVisible="{Binding ChosenCover?.HasYear, FallbackValue=False, TargetNullValue=False}" />
                           </StackPanel>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="14">
@@ -131,6 +132,7 @@
                           <StackPanel VerticalAlignment="Center" Spacing="4">
                             <TextBlock Classes="artworkLabel" Text="{x:Static app:AppTexts.WaitingChosenHero}" />
                             <TextBlock Classes="waitingPickName" Text="{Binding ChosenHero?.Name, FallbackValue={x:Static app:AppTexts.WaitingNotChosen}, TargetNullValue={x:Static app:AppTexts.WaitingNotChosen}}" />
+                            <TextBlock Classes="waitingHitYear" Text="{Binding ChosenHero?.YearText, FallbackValue=''}" IsVisible="{Binding ChosenHero?.HasYear, FallbackValue=False, TargetNullValue=False}" />
                           </StackPanel>
                         </StackPanel>
                       </StackPanel>

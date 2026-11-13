@@ -118,6 +118,25 @@ public sealed class WaitingListChoiceTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T539-4")]
+    public async Task B_drops_the_pick_and_the_game_starts_again_on_the_covers()
+    {
+        var (arcadia, list) = await OpenAsync();
+        using var _ = arcadia;
+        var hits = Hits(list);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        await WaitingListTests.ShownAsync(list);
+        Assert.True(hits.HasChosenCover);
+
+        arcadia.Press(UiAction.Back).Press(UiAction.Accept);
+        await WaitingListTests.ShownAsync(list);
+
+        Assert.Equal((false, false, false, AppTexts.WaitingTakeCoverHint), (hits.HasChosenCover, hits.HasChosenHero, hits.IsHeroTab, list.AcceptHint));
+        Assert.All(list.Hits!.Hits, hit => Assert.False(((ArtworkHitViewModel)hit).IsChosen));
+        Assert.Equal(3, arcadia.Artwork.Waiting.Count);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T539-7")]
     public async Task A_click_only_marks_a_hit_and_a_double_click_takes_it()
     {

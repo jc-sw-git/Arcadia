@@ -134,7 +134,7 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTermFocused), nameof(IsResetFocused))]
-    public partial WaitingHitsFocus Zone { get; private set; }
+    public partial WaitingHitsFocus Zone { get; protected set; }
 
     public bool IsTermFocused => IsActive && Zone == WaitingHitsFocus.Term;
 

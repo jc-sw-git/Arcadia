@@ -15,7 +15,7 @@ Derived from the owner's findings in the hand test of #43 as written in #539. Ke
       backgrounds three a row, the focus on the cover's own game; A on another game's background takes both and goes on
       to the next game. · E2E: yes
 - [x] **T539-4** RB first to "Hintergrund": A picks a background and turns to "Cover"; LB/RB keep each tab's pick
-      (marked, focused); A on a cover then takes both. B in the hits goes to the games list and takes nothing. · E2E: yes
+      (marked, focused); A on a cover then takes both. B in the hits goes to the games list, takes nothing and drops the picks: A again starts on "Cover" with nothing picked. · E2E: yes
 - [x] **T539-5** Cover and background from two SteamGridDB games: each kind comes from its own game. · E2E: yes
 - [x] **T539-6** After a restart and "Alle Artworks neu laden" both games are asked again, not searched by name;
       "Artwork ändern" offers each kind's images of its own game; a stored background game that can't be read falls back
@@ -43,12 +43,12 @@ Automated tests:
 | T539-1 | `Arcadia.App.Tests/WaitingListMetadataTests.A_game_with_several_igdb_hits_waits_on_the_metadata_list_apart_from_its_artwork_entry_and_keeps_its_launcher_data`, `…A_on_a_metadata_hit_shows_its_fields_and_title_everywhere_at_once_and_y_skips_for_good` (▼ in the list); `WaitingHitFactsTests.The_box_shows_what_igdb_has_checked_in_the_detail_pages_order`, `…A_long_description_is_cut_at_a_word_and_one_without_spaces_at_the_limit` |
 | T539-2 | `Arcadia.App.Tests/WaitingHitFactsTests.Without_any_fact_the_box_says_so` |
 | T539-3 | `Arcadia.App.Tests/WaitingListChoiceTests.A_on_a_cover_picks_it_and_shows_the_backgrounds_on_its_own_game_where_another_one_can_be_taken`; own term on both tabs: `WaitingListLevelsTests.A_result_of_the_own_term_is_taken_and_the_term_isnt_kept` |
-| T539-4 | `Arcadia.App.Tests/WaitingListChoiceTests.LB_RB_turn_the_tabs_each_keeps_its_pick_and_the_background_can_be_picked_first`, `…B_goes_back_to_the_games_and_skips_nothing` |
+| T539-4 | `Arcadia.App.Tests/WaitingListChoiceTests.LB_RB_turn_the_tabs_each_keeps_its_pick_and_the_background_can_be_picked_first`, `…B_goes_back_to_the_games_and_skips_nothing`, `…B_drops_the_pick_and_the_game_starts_again_on_the_covers` |
 | T539-5 | `Arcadia.Core.Tests/Artwork/ArtworkServiceByNameTests.Cover_and_background_chosen_from_two_games_each_come_from_their_own` |
 | T539-6 | `Arcadia.Core.Tests/Artwork/ArtworkServiceByNameTests.Two_chosen_games_last_across_a_restart_and_a_reload`, `…Artwork_aendern_offers_each_kind_from_its_chosen_game`, `…A_stored_background_game_that_cant_be_read_falls_back_to_the_cover_game` |
 | T539-7 | `Arcadia.App.Tests/WaitingListChoiceTests.A_click_only_marks_a_hit_and_a_double_click_takes_it`, `…A_click_on_a_hit_of_a_game_shown_before_takes_nothing` |
 | T539-10 | `Arcadia.App.Tests/WaitingListChoiceTests.The_notes_name_the_skip_button_as_a_glyph`; `Arcadia.Core.Tests/ButtonGlyphTextTests.Resource_texts_write_controller_buttons_as_glyphs` |
-| T539-11 | `Arcadia.App.Tests/KeyNamesTests` (each key does what its button does, every button checked, Guide keeps its badge) |
+| T539-11 | `Arcadia.App.Tests/KeyNamesTests` (each key does what its button does, every button checked, Guide keeps its badge, every `Keys=` of a view is the key `KeyNames` gives) |
 
 History:
 
@@ -62,3 +62,4 @@ History:
 | T539-1 to -7, -10, -11 | 2026-11-13 | implementer | Linux cloud container, Release, `tools/ci/run-tests.sh 4`, after the tabs | pass (Core 3203, Pan 438, App 867 in 4 shards) | – |
 | T539-1 to -7, -10, -11 | 2026-11-13 | QE | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (Core 3203, Pan 438, App 4 shards green); T539-5 and T539-7 red once by mutation (background game dropped; a click taking the hit) | Found: B in the hits keeps the picks (see PR Review) |
 | T539-8, -9 | 2026-11-13 | QE | Linux, headless window drawn by Skia (1920 × 1080), the made-up launcher and fake SteamGridDB, controller presses, keyboard (D) and a real pointer click | pass: both tabs, "DEIN COVER"/"DEIN HINTERGRUND", focus on the pick's own game, a click on a background marks it and takes nothing, with the keyboard ⇧ Q/⇧ E, V, Esc, Leertaste, WASD | Pictures `captures-539/qe/` in the project files |
+| T539-4 | 2026-11-13 | implementer | Linux cloud container, Debug, `dotnet test --filter` | fail, then pass | QE found B in the hits kept the cover pick (the next A took both); B now drops the picks; check `B_drops_the_pick_and_the_game_starts_again_on_the_covers` red before the fix |

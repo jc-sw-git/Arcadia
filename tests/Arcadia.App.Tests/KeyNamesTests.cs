@@ -41,4 +41,49 @@ public sealed class KeyNamesTests
     [Fact]
     [Trait("TestCase", "T539-11")]
     public void A_button_no_key_stands_for_keeps_its_badge() => Assert.Null(KeyNames.Of("Guide"));
+
+    /// <summary>
+    /// A view's hint names its key by hand (<c>Pad="LB" Keys="⇧ Q"</c>); each such key is the one <see cref="KeyNames"/> gives,
+    /// so a key named in a text and on a badge can't drift apart. A "/" in Keys gives a key next to it (e.g. "Klick").
+    /// </summary>
+    [Fact]
+    [Trait("TestCase", "T539-11")]
+    public void Every_key_a_view_names_for_a_button_is_the_one_KeyNames_gives()
+    {
+        var views = Path.Combine(RepoRoot(), "src", "Arcadia.App");
+        var pair = new System.Text.RegularExpressions.Regex("Pad=\"(?<pad>[^\"{]+)\"\\s+Keys=\"(?<keys>[^\"{]+)\"");
+        var wrong = new List<string>();
+        foreach (var file in Directory.EnumerateFiles(views, "*.axaml", SearchOption.AllDirectories))
+        {
+            foreach (System.Text.RegularExpressions.Match match in pair.Matches(File.ReadAllText(file)))
+            {
+                var pads = match.Groups["pad"].Value.Split('|');
+                var keys = match.Groups["keys"].Value.Split('|');
+                for (var i = 0; i < pads.Length && i < keys.Length; i++)
+                {
+                    if (KeyNames.Of(pads[i]) is { } key && keys[i].Split(" / ")[0] != key && !OwnKeyInContext.Contains((pads[i], keys[i])))
+                    {
+                        wrong.Add($"{Path.GetFileName(file)}: {pads[i]} = {keys[i]}, KeyNames: {key}");
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(wrong);
+    }
+
+    /// <summary>While a text is written the real keyboard types, so X (erase on the on-screen keyboard) is ⌫ there, not F.</summary>
+    private static readonly HashSet<(string Pad, string Key)> OwnKeyInContext = [("X", "⌫")];
+
+    // Found from this source file, not from the test binaries: CI runs each shard from a copy of them outside the repo.
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisFile = "")
+    {
+        var dir = new DirectoryInfo(Path.GetDirectoryName(thisFile)!);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Arcadia.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException($"Arcadia.slnx not found above {thisFile}.");
+    }
 }

@@ -24,11 +24,11 @@ Index and the category's frame: [README.md](README.md).
   the games list on the next waiting game, B goes back without; Y skips the game on both levels. Until chosen a game
   keeps its launcher image or placeholder.
 - Cover and background sought (#539): two tabs "Cover" and "Hintergrund" above the hits, LB/RB switch them (as in
-  "Artwork ändern"), a click on a tab too; "DEIN COVER" and "DEIN HINTERGRUND" (small, the image and its name, else
-  "Noch nicht gewählt") show the picks. A on a hit picks it for its tab and turns to the other tab ("Cover nehmen,
+  "Artwork ändern"), a click on a tab too; "DEIN COVER" and "DEIN HINTERGRUND" (small, the image, its name and year,
+  else "Noch nicht gewählt") show the picks. A on a hit picks it for its tab and turns to the other tab ("Cover nehmen,
   weiter zum Hintergrund" / "Hintergrund nehmen, weiter zum Cover"), the focus there on its pick or the pick's own game;
   either kind can be picked first, also from two different games. Once both are picked, A takes them ("Übernehmen,
-  weiter zum nächsten"). A tab keeps its pick while switching; B goes to the games list and keeps nothing. An own term
+  weiter zum nächsten"). A tab keeps its pick while switching; B goes to the games list and drops both picks (the game starts again on "Cover"). An own term
   searches the kind of the tab. Each kind then comes from its own SteamGridDB game (order, "Zuschneiden erlaubt",
   "Alle Artworks neu laden" and "Artwork ändern" use that game).
 - Mouse (#539): a click on a hit only marks it (the focus comes onto it, also from the games list); a double click takes

@@ -1377,21 +1377,21 @@
   <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>BILDSCHIRMTASTATUR</value></data>
   <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Standard-Layout</value></data>
   <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>Mit diesem Layout öffnet sich die Bildschirmtastatur</value></data>
-  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Jede Bildschirmtastatur öffnet sich mit diesem Layout: in der Suche, in Textfeldern und im Mausmodus.</value></data>
+  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Tastenanordnung {kind}. Jede Bildschirmtastatur öffnet sich mit diesem Layout: in der Suche, in Textfeldern und im Mausmodus.</value></data>
   <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>Mit [R3] wechselst du auf der offenen Tastatur zu einem anderen Layout der Schnellauswahl. Der Wechsel gilt, bis sich die Tastatur schließt; beim nächsten Öffnen ist wieder das Standard-Layout da.</value></data>
   <data name="LocalizationLayoutName" xml:space="preserve"><value>{name} · {kind}</value></data>
   <data name="LocalizationQuickLayout" xml:space="preserve"><value>Schnellauswahl</value></data>
-  <data name="LocalizationQuickLayoutSubtitle" xml:space="preserve"><value>In der Schnellauswahl für [R3]</value></data>
-  <data name="LocalizationQuickLayoutOff" xml:space="preserve"><value>[R3] bietet dieses Layout nicht an.</value></data>
-  <data name="LocalizationQuickLayoutOn" xml:space="preserve"><value>[R3] bietet dieses Layout auf der offenen Bildschirmtastatur an.</value></data>
-  <data name="LocalizationQuickLayoutInfo" xml:space="preserve"><value>Steht nur das Standard-Layout in der Schnellauswahl, ist „Layout“ ([R3]) auf der Tastatur ausgegraut.</value></data>
+  <data name="LocalizationQuickLayoutSubtitle" xml:space="preserve"><value>In der Schnellauswahl der Bildschirmtastatur</value></data>
+  <data name="LocalizationQuickLayoutOff" xml:space="preserve"><value>Die offene Bildschirmtastatur bietet dieses Layout nicht zum Wechseln an.</value></data>
+  <data name="LocalizationQuickLayoutOn" xml:space="preserve"><value>Die offene Bildschirmtastatur bietet dieses Layout zum Wechseln an.</value></data>
+  <data name="LocalizationQuickLayoutInfo" xml:space="preserve"><value>Steht nur das Standard-Layout in der Schnellauswahl, ist „Layout“ auf der Tastatur ausgegraut.</value></data>
   <data name="LocalizationDefaultAlwaysIn" xml:space="preserve"><value>Das Standard-Layout ist immer dabei.</value></data>
   <data name="LocalizationClockGroup" xml:space="preserve"><value>UHRZEIT</value></data>
   <data name="LocalizationClock" xml:space="preserve"><value>Uhrzeit</value></data>
   <data name="LocalizationClockSubtitle" xml:space="preserve"><value>Für jede Uhrzeit in Arcadia</value></data>
   <data name="LocalizationClockSystem" xml:space="preserve"><value>Wie im System</value></data>
-  <data name="LocalizationClock24" xml:space="preserve"><value>24 Stunden (21:58)</value></data>
-  <data name="LocalizationClock12" xml:space="preserve"><value>12 Stunden (9:58 PM)</value></data>
+  <data name="LocalizationClock24" xml:space="preserve"><value>24 Stunden</value></data>
+  <data name="LocalizationClock12" xml:space="preserve"><value>12 Stunden</value></data>
   <data name="LocalizationClockSystemInfo" xml:space="preserve"><value>Arcadia zeigt die Uhrzeit so, wie das System sie zeigt.</value></data>
   <data name="LocalizationClock24Info" xml:space="preserve"><value>Von 00:00 bis 23:59, zum Beispiel 21:58 Uhr.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Mit AM und PM, zum Beispiel 9:58 PM.</value></data>

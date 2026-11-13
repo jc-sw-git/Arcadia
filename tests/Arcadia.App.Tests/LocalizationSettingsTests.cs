@@ -21,7 +21,9 @@ public sealed class LocalizationSettingsTests : IDisposable
 {
     public const string Name = "Clock and region";
 
+    // The switches name layout and kind; the pill of "Standard-Layout" has room only for the name.
     private static readonly string[] LayoutNames = ["Deutsch · QWERTZ", "English (US) · QWERTY", "English (UK) · QWERTY", "Français · AZERTY", "Español · QWERTY con Ñ"];
+    private static readonly string[] DefaultNames = ["Deutsch", "English (US)", "English (UK)", "Français", "Español"];
 
     public void Dispose()
     {
@@ -62,9 +64,9 @@ public sealed class LocalizationSettingsTests : IDisposable
         Open(arcadia);
         var row = Assert.IsAssignableFrom<ChoiceRowViewModel>(arcadia.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey));
 
-        Assert.Equal(LayoutNames[0], row.ValueText);
+        Assert.Equal(DefaultNames[0], row.ValueText);
         arcadia.Press(UiAction.Left);
-        Assert.Equal(LayoutNames[4], row.ValueText);
+        Assert.Equal(DefaultNames[4], row.ValueText);
         Assert.Equal("es", arcadia.Settings.Current.Localization.KeyboardLayout);
         arcadia.Press(UiAction.Right);
         Assert.Equal("de", arcadia.Settings.Current.Localization.KeyboardLayout);
@@ -74,7 +76,7 @@ public sealed class LocalizationSettingsTests : IDisposable
         arcadia.Press(UiAction.Back);
         using var restarted = await arcadia.RestartAsync();
         Open(restarted);
-        Assert.Equal(LayoutNames[1], Assert.IsAssignableFrom<ChoiceRowViewModel>(restarted.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey)).ValueText);
+        Assert.Equal(DefaultNames[1], Assert.IsAssignableFrom<ChoiceRowViewModel>(restarted.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey)).ValueText);
     }
 
     [AvaloniaFact]
@@ -122,6 +124,14 @@ public sealed class LocalizationSettingsTests : IDisposable
     {
         using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"], Localization = new() { KeyboardLayout = "fr" } });
         arcadia.Press(UiAction.Search);
+        Assert.Equal("fr", arcadia.Keyboard().Layout.Id);
+
+        // B puts the keyboard away, X brings it out again: it closed in between, so it is back on the default.
+        PickLayout(arcadia, "US");
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Search!.IsKeyboardOut);
+        arcadia.Press(UiAction.Search);
+        Assert.True(arcadia.Search!.IsKeyboardOut);
         Assert.Equal("fr", arcadia.Keyboard().Layout.Id);
 
         PickLayout(arcadia, "US");
@@ -219,7 +229,7 @@ public sealed class LocalizationSettingsTests : IDisposable
         using var arcadia = await ArcadiaDriver.StartAsync();
         Open(arcadia);
 
-        Assert.Equal(LayoutNames[2], Assert.IsAssignableFrom<ChoiceRowViewModel>(arcadia.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey)).ValueText);
+        Assert.Equal(DefaultNames[2], Assert.IsAssignableFrom<ChoiceRowViewModel>(arcadia.FocusRow(LocalizationSettingsViewModel.DefaultLayoutKey)).ValueText);
         Assert.True(Switch(arcadia, "en-gb").IsDimmed);
         Assert.Null(arcadia.Settings.Current.Localization.KeyboardLayout);
         arcadia.Press(UiAction.Back).Press(UiAction.Search);

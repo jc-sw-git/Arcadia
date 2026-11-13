@@ -41,7 +41,7 @@ A8 R3 stays a menu; it lists the quick selection in the order of the settings ro
   term) and the mouse mode's keyboard over another window. · E2E: yes (one acceptance test per place; the mouse mode's
   keyboard as view model test)
 - [x] **T553-7** Scenario 11: keyboard open in FR AZERTY, R3 → EN-US: the keys are EN-US at once, the typed text stays;
-  close the keyboard (B, or close the search or field) and open it again → FR AZERTY; `settings.json` and the row
+  close the keyboard (B, or close the search or field; in the search also B then X) and open it again → FR AZERTY; `settings.json` and the row
   "Standard-Layout" still say FR AZERTY. Same in a settings text field and in the mouse mode. · E2E: yes
 - [x] **T553-8** Scenario 12: the layout menu offers only the quick selection *(A8)*; a layout switched out is missing at
   the next opening. With only the default in it, "Layout" (R3) in the keyboard's right block and in the footer is greyed
@@ -54,8 +54,8 @@ A8 R3 stays a menu; it lists the quick selection in the order of the settings ro
   E2E: no (unit test with a fake system layout)
 - [x] **T553-11** Settings from before the update: a saved `KeyboardLayout` is the default *(A4)*; no saved quick selection
   means all five *(A1)*. · E2E: no (unit test)
-- [x] **T553-12** Scenario 14, fake time 21:58: "Uhrzeit" ◀ ▶ steps "Wie im System" (default) · "24 Stunden (21:58)" ·
-  "12 Stunden (9:58 PM)" and wraps, saved at once. Without a restart, with the screens open, every time shown follows:
+- [x] **T553-12** Scenario 14, fake time 21:58: "Uhrzeit" ◀ ▶ steps "Wie im System" (default) · "24 Stunden" ·
+  "12 Stunden" (examples 21:58 / 9:58 PM in the value box) and wraps, saved at once. Without a restart, with the screens open, every time shown follows:
   header clock, "seit hh:mm" in the status modal, the times and "Behoben hh:mm" in "Letzte Meldungen", "Zuletzt
   gespielt" and other date-times on the detail page, "Zuletzt geprüft um …" in "Datenquellen", "Zuletzt gesucht: …" in
   "Über Arcadia", the launcher rows' "um … Uhr". · E2E: yes (one acceptance test walking these places)

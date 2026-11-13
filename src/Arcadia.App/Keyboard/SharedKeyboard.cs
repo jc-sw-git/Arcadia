@@ -32,6 +32,20 @@ public sealed class SharedKeyboard : IKeyboardTarget, IDisposable
         return Keyboard;
     }
 
+    /// <summary>
+    /// <paramref name="user"/> brings its keyboard out again: a layout picked with [R3] lasts only until the keyboard
+    /// closes (#553), so it opens on the default again, where it was docked.
+    /// </summary>
+    public void Reopen(IKeyboardTarget user)
+    {
+        if (_user == user)
+        {
+            var usesController = Keyboard.UsesController;
+            Keyboard.Open(_layouts(), Keyboard.AtTop);
+            Keyboard.UsesController = usesController;
+        }
+    }
+
     /// <summary><paramref name="user"/> is done; keys pressed meanwhile reach nothing. A newer user keeps the keyboard.</summary>
     public void GiveBack(IKeyboardTarget user)
     {

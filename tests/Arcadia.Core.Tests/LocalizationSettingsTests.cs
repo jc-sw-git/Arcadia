@@ -137,6 +137,22 @@ public sealed class LocalizationSettingsTests : IDisposable
         Assert.Empty(_log);
     }
 
+    [Theory]
+    [Trait("TestCase", "T553-17")]
+    [InlineData("""{ "Localization": { "QuickLayouts": "fr" } }""")]
+    [InlineData("""{ "Localization": { "QuickLayouts": 5 } }""")]
+    [InlineData("""{ "Localization": { "QuickLayouts": ["zz", 3, null] } }""")]
+    public void A_quick_selection_without_a_known_layout_offers_all_five(string json)
+    {
+        File.WriteAllText(SettingsPath, json);
+
+        var service = new SettingsService(new SettingsStore(SettingsPath), _log.Add);
+
+        Assert.Null(service.Current.Localization.QuickLayouts);
+        Assert.Equal(KeyboardLayout.All, KeyboardLayoutChoice.From(service.Current.Localization, null, "de-DE").Quick);
+        Assert.Single(_log);
+    }
+
     [Fact]
     [Trait("TestCase", "T553-17")]
     public void Known_quick_layouts_of_a_broken_list_are_kept()

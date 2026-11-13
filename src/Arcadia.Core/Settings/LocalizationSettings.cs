@@ -10,10 +10,10 @@ public enum ClockFormat
     /// <summary>"Wie im System": the system's time format.</summary>
     System = 0,
 
-    /// <summary>"24 Stunden (21:58)".</summary>
+    /// <summary>"24 Stunden": 21:58.</summary>
     TwentyFourHours = 1,
 
-    /// <summary>"12 Stunden (9:58 PM)".</summary>
+    /// <summary>"12 Stunden": 9:58 PM.</summary>
     TwelveHours = 2,
 }
 
@@ -56,6 +56,12 @@ public sealed record LocalizationSettings
         {
             log("Lokalisierung: unbekannte oder doppelte Layouts in der Schnellauswahl weggelassen"); // not a UI text (log)
             quick = [.. quick.Where(id => Search.KeyboardLayout.TryFind(id) is not null).Distinct()];
+
+            // Nothing known left (a list of the wrong type, or only unknown ids) is no choice of the player: all five.
+            if (quick.Count == 0)
+            {
+                quick = null;
+            }
         }
 
         var clock = Clock;

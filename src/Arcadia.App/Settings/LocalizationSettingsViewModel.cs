@@ -35,13 +35,13 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
             AppTexts.LocalizationDefaultLayout,
             () => IndexOf(Layouts.Default),
             index => ChooseDefault(KeyboardLayout.All[index]),
-            index => NameOf(KeyboardLayout.All[index]),
+            index => KeyboardLayout.All[index].Name,
             0,
             KeyboardLayout.All.Count - 1)
         {
             Group = keyboard,
             Subtitle = AppTexts.LocalizationDefaultLayoutSubtitle,
-            ValueInfos = [.. KeyboardLayout.All.Select(_ => AppTexts.LocalizationDefaultLayoutValue)],
+            ValueInfos = [.. KeyboardLayout.All.Select(layout => AppTexts.LocalizationDefaultLayoutValue(kind: layout.Kind))],
             Info = [new InfoText(AppTexts.LocalizationDefaultLayoutInfo)],
         };
         _quick = [.. KeyboardLayout.All.Select(layout => new QuickLayoutRowViewModel(this, layout) { Group = keyboard, Indent = 1 })];
@@ -66,7 +66,7 @@ public sealed class LocalizationSettingsViewModel : SettingsCategoryViewModel
     /// <summary>The layouts as the keyboards offer them now, with a default taken from the system when none is saved.</summary>
     private KeyboardLayoutChoice Layouts => SystemKeyboardLayout.Choice(_changes.Current.Localization);
 
-    /// <summary>A layout as the settings name it: "Deutsch · QWERTZ".</summary>
+    /// <summary>A layout as its switch names it: "Deutsch · QWERTZ". The value pill of "Standard-Layout" has room only for the name.</summary>
     private static string NameOf(KeyboardLayout layout) => AppTexts.LocalizationLayoutName(name: layout.Name, kind: layout.Kind);
 
     private static int IndexOf(KeyboardLayout layout) => KeyboardLayout.All.ToList().IndexOf(layout);

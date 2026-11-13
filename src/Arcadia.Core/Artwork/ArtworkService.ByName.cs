@@ -295,7 +295,7 @@ public sealed partial class ArtworkService
     {
         var run = NewRunState();
         var answer = await HitImagesAsync(hit, kind, cancel);
-        var best = answer.Images.FirstOrDefault(i => ArtworkFormat.Fits(new ImageSize(i.Width, i.Height), kind, run.Tolerance)) ?? answer.Images.FirstOrDefault();
+        var best = answer.Images.MinBy(i => ArtworkFormat.RankOf(new ImageSize(i.Width, i.Height), kind, run.Tolerance));
         if (best is null
             || await DownloadAsync(game, kind, best.Url, run, cancel) is not { } content
             || ImageCheck.Of(new MemoryStream(content)) is not { } size

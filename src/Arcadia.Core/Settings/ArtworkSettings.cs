@@ -64,7 +64,7 @@ public sealed record ArtworkSettings
 
     public SeveralHits SeveralHits { get; init; } = SeveralHits.Ask;
 
-    /// <summary>The share of an image <see cref="Crop"/> lets the crop cut away.</summary>
+    /// <summary>The share of a cover <see cref="Crop"/> lets the crop cut away; backgrounds always use "Normal" (#562).</summary>
     public double Tolerance => ToleranceOf(Crop);
 
     public static double ToleranceOf(CropAllowance crop) => crop switch

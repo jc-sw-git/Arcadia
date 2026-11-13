@@ -3,7 +3,7 @@ using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Tests.Artwork;
 
-/// <summary>#487: the fitting-format rule with the tolerance "Normal" (15 %), T487-8 to T487-10.</summary>
+/// <summary>#487, #562: the fitting-format rule with the tolerance "Normal" (15 %), T487-8 to T487-10, T562-1 to T562-3.</summary>
 public sealed class ArtworkFormatTests
 {
     [Fact]
@@ -15,12 +15,29 @@ public sealed class ArtworkFormatTests
     }
 
     [Fact]
-    public void A_square_cover_and_a_2_to_1_hero_cut_too_much()
+    public void A_background_fits_in_16_to_9_first_and_flat_second()
+    {
+        Assert.Equal(0, ArtworkFormat.RankOf(new ImageSize(2560, 1440), ArtworkKind.Hero));
+        Assert.Equal(0, ArtworkFormat.CutAway(new ImageSize(1920, 1080), ArtworkKind.Hero), 6);
+        Assert.Equal(1, ArtworkFormat.RankOf(new ImageSize(1920, 620), ArtworkKind.Hero));
+        Assert.Equal(2, ArtworkFormat.RankOf(new ImageSize(2400, 1000), ArtworkKind.Hero));
+    }
+
+    [Fact]
+    public void The_cover_tolerance_leaves_backgrounds_at_15_percent()
+    {
+        Assert.True(ArtworkFormat.Fits(new ImageSize(421, 900), ArtworkKind.Cover, 0.30));
+        Assert.False(ArtworkFormat.Fits(new ImageSize(2400, 1000), ArtworkKind.Hero, 0.30));
+        Assert.True(ArtworkFormat.Fits(new ImageSize(1920, 1080), ArtworkKind.Hero, 0.05));
+    }
+
+    [Fact]
+    public void A_square_cover_and_a_square_hero_cut_too_much()
     {
         Assert.Equal(1.0 / 3, ArtworkFormat.CutAway(new ImageSize(900, 900), ArtworkKind.Cover), 3);
         Assert.False(ArtworkFormat.Fits(new ImageSize(900, 900), ArtworkKind.Cover));
-        Assert.Equal(0.35, ArtworkFormat.CutAway(new ImageSize(2000, 1000), ArtworkKind.Hero), 2);
-        Assert.False(ArtworkFormat.Fits(new ImageSize(2000, 1000), ArtworkKind.Hero));
+        Assert.Equal(0.44, ArtworkFormat.CutAway(new ImageSize(1000, 1000), ArtworkKind.Hero), 2);
+        Assert.False(ArtworkFormat.Fits(new ImageSize(1000, 1000), ArtworkKind.Hero));
     }
 
     [Fact]

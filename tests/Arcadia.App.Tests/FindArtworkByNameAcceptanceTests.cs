@@ -117,12 +117,12 @@ public sealed class FindArtworkByNameAcceptanceTests
         var epic = files.Epic.Install();
         var app = new EpicApp("ab12cd34", "Leuchtturm") with
         {
-            KeyImages = [("DieselGameBoxTall", "https://cdn1.epicgames.com/offer/nsab/tall_1200x1600.jpg"), ("DieselGameBox", "https://cdn1.epicgames.com/offer/nsab/wide_2560x1440.jpg")],
+            // No background of Epic's own: its 16 : 9 one would fit (#562), and SteamGridDB isn't asked then.
+            KeyImages = [("DieselGameBoxTall", "https://cdn1.epicgames.com/offer/nsab/tall_1200x1600.jpg")],
         };
         epic.WriteInstalled(app);
         epic.WriteCatalog((app, EpicGame, null));
         files.ImageServer.Serve("https://cdn1.epicgames.com/offer/nsab/tall_1200x1600.jpg", TestImages.Png(1200, 1600));
-        files.ImageServer.Serve("https://cdn1.epicgames.com/offer/nsab/wide_2560x1440.jpg", TestImages.Png(2560, 1440));
         files.ImageServer.Serve("https://cdn.example/hero/egs.png", TestImages.Png(1920, 620));
 
         using var arcadia = await ArcadiaDriver.StartWithLaunchersAsync(files);

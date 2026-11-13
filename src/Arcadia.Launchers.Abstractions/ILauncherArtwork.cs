@@ -1,6 +1,6 @@
 namespace Arcadia.Launchers.Abstractions;
 
-/// <summary>The two images a game shows (#13): the cover (2 : 3) and the background above the detail page (about 3.1 : 1).</summary>
+/// <summary>The two images a game shows (#13): the cover (2 : 3) and the background behind the detail page (16 : 9, or flat about 3.1 : 1, #562).</summary>
 public enum ArtworkKind
 {
     Cover,

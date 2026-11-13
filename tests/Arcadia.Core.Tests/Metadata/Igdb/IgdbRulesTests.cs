@@ -202,7 +202,5 @@ public sealed class IgdbRulesTests
         var game = Assert.Single(IgdbAnswer.Read(Encoding.UTF8.GetBytes(json))!);
         Assert.Equal(3, game.Id);
         Assert.Null(game.CoverId);
-        Assert.Null(IgdbImages.CoverOf("../evil"));
-        Assert.Equal("https://images.igdb.com/igdb/image/upload/t_cover_big/co1abc.jpg", IgdbImages.CoverOf("co1abc")!.ToString());
     }
 }

@@ -43,6 +43,25 @@ public sealed partial class ButtonGlyphTextTests
     }
 
     /// <summary>
+    /// The texts in <c>AppTexts.resx</c> too (#539: "Mit Y überspringst du" slipped through there). Tooltips (<c>…Tip</c>)
+    /// are plain text that can't draw a badge and name a key beside the button for the mouse; a help row's input
+    /// ("RT oder A") is a list of buttons drawn with <c>ButtonTextBlock.Buttons</c>.
+    /// </summary>
+    [Fact]
+    public void Resource_texts_write_controller_buttons_as_glyphs()
+    {
+        var resx = System.Xml.Linq.XDocument.Load(Path.Combine(RepoRoot(), "src", "Arcadia.App", "AppTexts.resx"));
+        var bare = resx.Root!.Elements("data")
+            .Select(data => (Name: (string)data.Attribute("name")!, Text: (string?)data.Element("value") ?? string.Empty))
+            .Where(entry => !entry.Name.EndsWith("Tip", StringComparison.Ordinal) && !ButtonListText().IsMatch(entry.Name))
+            .Where(entry => Prose().IsMatch(entry.Text) && BareButton().IsMatch(entry.Text))
+            .Select(entry => $"{entry.Name}: {entry.Text}")
+            .ToList();
+
+        Assert.Empty(bare);
+    }
+
+    /// <summary>
     /// A controller button in a view is drawn by <c>PadGlyph</c>, <c>KeyText</c> or <c>KeyHint</c>, which show the symbols of
     /// the controller in use (#215); a plain TextBlock keeps Xbox's name on every controller (owner's test, 2026-10-29).
     /// </summary>
@@ -74,6 +93,9 @@ public sealed partial class ButtonGlyphTextTests
 
     [GeneratedRegex(@"<TextBlock[^>]*\bText=""(?:LB|RB|LT|RT|L3|R3|LS|RS|A|B|X|Y|D-Pad|⧉|≡)""")]
     private static partial Regex PlainButtonText();
+
+    [GeneratedRegex(@"^MouseModeHelp\w+Or\w+$")]
+    private static partial Regex ButtonListText();
 
     [GeneratedRegex(@"\$?""((?:[^""\\]|\\.)*)""")]
     private static partial Regex StringLiteral();

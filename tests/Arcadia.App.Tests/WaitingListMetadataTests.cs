@@ -21,7 +21,6 @@ public sealed class WaitingListMetadataTests
 {
     private static readonly Game Echo = WaitingListTests.GameOf("echo", "Echo Drift");
     private static readonly Game Koeln = WaitingListTests.GameOf("koeln", "K?ln");
-    private const string CoverAddress = "https://images.igdb.com/igdb/image/upload/t_cover_big/co2015.jpg";
 
     /// <summary>"Echo Drift" waits for artwork and metadata, "K?ln" for metadata; access and key valid, both searches done.</summary>
     private static async Task<ArcadiaDriver> StartAsync()
@@ -29,7 +28,6 @@ public sealed class WaitingListMetadataTests
         var images = new FakeImageServer();
         images.Serve("https://cdn.example/grid/501.png", TestImages.Png(600, 900));
         images.Serve("https://cdn.example/grid/502.png", TestImages.Png(600, 900));
-        images.Serve(CoverAddress, TestImages.Png(264, 374));
         var arcadia = await ArcadiaDriver.StartAsync(
             [LauncherSpec.With(WaitingListTests.Other, [Echo, Koeln]) with { Metadata = new FakeMetadataSource { Store = null } }],
             WaitingListTests.Settings,
@@ -107,8 +105,12 @@ public sealed class WaitingListMetadataTests
         var hits = await ShownMetadataHitsAsync(list);
         Assert.Equal((AppTexts.WaitingSoughtMetadata, AppTexts.WaitingIntroMetadata(2), AppTexts.WaitingNoteMetadata, "Echo Drift"), (hits.SoughtText, hits.Intro, hits.Note, hits.Term));
         Assert.Equal([("Echo Drift", "2015", true), ("Echo Drift", string.Empty, false)], hits.Hits.Select(h => (h.Name, h.YearText, h.HasYear)));
-        Assert.NotNull(hits.Hits[0].Image);
-        Assert.Null(hits.Hits[1].Image);
+
+        // #539: no covers, the marked hit's facts beside the list instead.
+        Assert.All(hits.Hits, hit => Assert.Null(hit.Image));
+        Assert.True(hits.ShowsFacts);
+        Assert.Equal(1, hits.Columns);
+        Assert.Equal("The 2015 one.", Assert.IsType<MetadataHitViewModel>(hits.MarkedHit).Facts.Description);
         Assert.Equal(2, IgdbSearches(arcadia));
     }
 
@@ -124,10 +126,10 @@ public sealed class WaitingListMetadataTests
         arcadia.Press(UiAction.Accept);
         var list = arcadia.Main.WaitingList!;
 
-        // ▲ goes round to "K?ln", A into its hits, ▶ to the second, A takes it.
+        // ▲ goes round to "K?ln", A into its hits, ▼ to the second (a list since #539), A takes it.
         arcadia.Press(UiAction.Up);
         await ShownMetadataHitsAsync(list);
-        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept).Press(UiAction.Down).Press(UiAction.Accept);
         await RunToIdleAsync(arcadia);
 
         Assert.Equal(["metadata|" + Echo.Key], list.Games.Select(g => g.Key));

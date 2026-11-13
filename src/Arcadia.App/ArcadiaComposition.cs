@@ -52,6 +52,9 @@ internal sealed record ArcadiaParts(
 
     /// <summary>The games' metadata (#493); null: none.</summary>
     public Core.Metadata.MetadataService? Metadata { get; init; }
+
+    /// <summary>What the player set by hand for games, own titles (#496); not opened yet. Null: nothing can be set.</summary>
+    public Core.UserData.UserDataStore? UserData { get; init; }
 }
 
 /// <summary>What the controllers are wired to: the parts that need SDL, VIIPER, Pan's pipe or a window in the App.</summary>
@@ -160,6 +163,16 @@ internal sealed class ArcadiaComposition
             IsInstalling = key => installTracker.StateOf(key) is not null,
         };
 
+        // Own titles are read before the first scan, so the library shows them from the start (#496); below them the title
+        // a provider corrects (#494).
+        if (parts.UserData is { } userData)
+        {
+            userData.Log = AppLog.Write;
+            userData.Open();
+        }
+
+        var titles = new GameTitles(parts.UserData, parts.Metadata is { } metadata ? metadata.TitleOf : null);
+
         var main = new MainViewModel(
             new LibraryService(launchers, time) { Log = AppLog.Write },
             new GameLaunchService(launchers.ClientOf, parts.Open) { Log = AppLog.Write },
@@ -174,7 +187,8 @@ internal sealed class ArcadiaComposition
             time,
             parts.FolderCheck,
             parts.Artwork,
-            parts.Metadata);
+            parts.Metadata,
+            titles);
         if (parts.Logs is { } logs)
         {
             main.Logs = logs;

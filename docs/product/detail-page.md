@@ -9,7 +9,7 @@
     "Spielen" with "Übersicht" open. Under the title the info line (#493): genres · developer · year, cut with "…" in one
     line, and the first age rating as a badge (USK before PEGI before ESRB); a missing part leaves no "·", none at all no line.
   - Below, a panel with a rail of areas, each with a value line: "Übersicht", "Infos", "Controller" (Steam Controller mode,
-    "Individueller Mausmodus") and "Verwalten" ("Artwork ändern", "Deinstallieren …"). ▼ from any button goes to the
+    "Individueller Mausmodus") and "Verwalten" ("Artwork ändern", "Titel ändern", "Titel zurücksetzen", "Deinstallieren …"). ▼ from any button goes to the
     rail, ▲ on the first area back to "Spielen"; a focused area shows its content at once, A goes into its rows, B back
     to the rail. ◀ ▶ change a value row at once, both ways.
   - "Übersicht" (#500): left the quick selection, up to 5 rows of the other areas in the order of the areas, each acting
@@ -62,3 +62,13 @@
   focused tile, also the one in use (it becomes set by hand); Y gives only the open tab back to Arcadia's choice. An own
   file stays offered under "Eigene Datei" after another choice, until X replaces it; it is cropped centred like every
   image. A file that isn't a readable PNG, JPEG or WebP of at most 20 MB is refused with a warning.
+- "Titel ändern" (#496) opens the on-screen keyboard over the page, prefilled with the shown title; ↵, Enter or ≡ take it,
+  B or Esc keep the old one. Spaces around it are dropped; an empty title or the automatic one (the launcher's, or a
+  provider's correction) clears the own title. The own title shows everywhere at once (library, search, sorting, the
+  carousel's order) and outlives rescans, "Alle Metadaten neu laden" and the game's absence from the library. Like
+  every game action also in the context menu; from there the focus follows the game to its new place in the sort.
+  "Titel zurücksetzen" is greyed without an own title. While the game has one, R3 shows and hides "Original-Titel:
+  <automatic title>" under the title in place of the info line (so a two-line title keeps the button row in place), the
+  hint "[R3] Original-Titel" only then; every page shown anew (another game, the page left) starts without the line.
+  While `user-data.json` is unreadable both rows are greyed with the reason, the header has a warning, and its entry
+  opens "Eigene Titel" in "Datenquellen", which says why (damaged, locked, from a newer Arcadia) and what to do.

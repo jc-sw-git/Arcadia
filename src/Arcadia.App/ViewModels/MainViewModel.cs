@@ -69,7 +69,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         TimeProvider time,
         InstallFolderCheck installFolders,
         ArtworkService? artwork = null,
-        MetadataService? metadata = null)
+        MetadataService? metadata = null,
+        GameTitles? titles = null)
     {
         _artwork = artwork;
         _metadata = metadata;
@@ -85,7 +86,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
-        Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata);
+        Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata, titles);
+        WatchUserData(Session.Titles.UserData);
         if (artwork is not null)
         {
             artwork.Changed += (_, keys) => Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateArtwork(keys));
@@ -236,7 +238,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>A dialog or menu over the page takes the input.</summary>
     public bool IsDialogOpen => PanDialogs.IsOpen || IsFirstRunShown || IsSettingsOpen || IsConfirmationOpen || IsGameMenuOpen || IsViewOptionsOpen || IsWebSignInOpen
-        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsCustomizeOverviewOpen || IsWaitingListOpen;
+        || IsStatusModalOpen || IsFilterOpen || IsChangeArtworkOpen || IsCustomizeOverviewOpen || IsChangeTitleOpen || IsWaitingListOpen;
 
     /// <summary>
     /// The web page Arcadia's browser shows or loads for a launcher (#83): shown over everything for a sign-in, or loaded
@@ -381,7 +383,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     {
         var page = OpenPages().First();
         object? dialog = (object?)PanDialogs.PanDialog ?? (object?)PanDialogs.PanUpdate ?? (IsWebSignInOpen ? WebPage : null)
-            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? (object?)CustomizeOverview ?? WaitingList;
+            ?? (object?)Confirmation ?? (object?)GameMenu ?? (object?)ViewOptions ?? (object?)StatusModal ?? (object?)FilterModal ?? (object?)ChangeArtwork ?? (object?)CustomizeOverview ?? (object?)ChangeTitle ?? WaitingList;
         return new ShownLayer(page.GetType(), dialog, page.Layout);
     }
 
@@ -498,6 +500,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return true;
         }
 
+        if (ChangeTitle is { } changeTitle)
+        {
+            changeTitle.Handle(action);
+            return true;
+        }
+
         return false;
     }
 
@@ -508,6 +516,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs.Release(action);
         _actions.Release(action);
         WaitingList?.Release(action);
+        ChangeTitle?.Release(action);
         foreach (var page in OpenPages())
         {
             page.Release(action);
@@ -521,6 +530,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         PanDialogs.CancelHold();
         _actions.CancelHold();
         WaitingList?.CancelHeldButtons();
+        ChangeTitle?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
             page.CancelHeldButtons();
@@ -699,6 +709,13 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         if (Detail is { IsFromLibrary: true } detail && LauncherTabs.SelectedTab is { } tab && !detail.Update(Library.ShownGames(tab), Library.SortLabel))
         {
             Detail = null;
+        }
+        else if (Detail is { IsFromSearch: true } fromSearch)
+        {
+            // The hits keep their order; each takes its game as read now, e.g. with a changed title (#496). A game that
+            // left the library stays until the page closes, as before.
+            var current = Session.Libraries.SelectMany(l => l.Games).DistinctBy(g => g.Key).ToDictionary(g => g.Key, StringComparer.Ordinal);
+            fromSearch.Update([.. fromSearch.Games.Select(game => current.GetValueOrDefault(game.Key) ?? game)], fromSearch.SortLabel);
         }
     }
 
@@ -923,6 +940,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
                 ShowSettings(typeof(AboutSettingsViewModel));
                 FocusRowOrTop(Settings?.Selected, AboutSettingsViewModel.InstallKey);
                 break;
+            case StatusTarget.UserData:
+                ShowSettings(typeof(DataSourcesSettingsViewModel));
+                FocusRowOrTop(Settings?.Selected, DataSourcesSettingsViewModel.UserDataRowKey);
+                break;
             case StatusTarget.SteamGridDbKey:
                 ShowSettings(typeof(DataSourcesSettingsViewModel));
                 FocusRowOrTop(Settings?.Selected, SteamGridDbKeyRows.KeyRowKey);
@@ -1073,6 +1094,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    private static readonly TimeSpan UserDataWriteLimit = TimeSpan.FromSeconds(2);
+
     /// <summary>
     /// Arcadia is closing: every page still open is disposed, the library's delayed rescans and the header's clock stop, and
     /// Main lets go of the static error event and the services, which outlive it in the tests.
@@ -1088,6 +1111,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
         // Closing with the waiting list open cancels its checks and own search instead of leaving them running.
         WaitingList = null;
+        ChangeTitle = null;
+
+        // A title just changed is on disk before Arcadia ends (#496); the write takes milliseconds, a stuck disk doesn't hold the exit.
+        Session.Titles.UserData?.WhenWrittenAsync().Wait(UserDataWriteLimit);
         AppErrors.Occurred -= OnAppError;
         PanDialogs.Dispose();
         ControllerMode.Dispose();

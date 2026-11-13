@@ -132,7 +132,8 @@ public sealed class DetailQuickTurnTests
         Assert.Same(page, detail.Current);
         Assert.Equal(0, jumps);
 
-        arcadia.Press(UiAction.Down);
+        // ▲ goes round from "Artwork ändern" to the last row.
+        arcadia.Press(UiAction.Up);
         Assert.Equal(GameActionKind.Uninstall, page.FocusedRow?.Kind);
         arcadia.Press(UiAction.Accept);
         Assert.NotNull(arcadia.Main.Confirmation);

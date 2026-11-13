@@ -39,6 +39,7 @@ internal static class GuardPages
         new("Bestätigung", [typeof(ConfirmationViewModel)], OpenConfirmation, arcadia => Presses(arcadia, UiAction.Left)),
         new("Übersicht anpassen", [typeof(CustomizeOverviewViewModel)], OpenCustomizeOverview,
             arcadia => Presses(arcadia, UiAction.Down, UiAction.Down, UiAction.Down)),
+        new("Titel ändern", [typeof(ChangeTitleViewModel)], OpenChangeTitle),
         new("Suche", [typeof(SearchViewModel)], Pressing(UiAction.Search), Search, RingsAtLeast: 30,
             RingFinding: ("mit Treffern", "Der Rahmen des fokussierten Treffers in der ersten Reihe ist oben nur halb so hell (#518).")),
         new("Tastaturlayout der Suche", [typeof(LayoutMenuViewModel)], Pressing(UiAction.Search, UiAction.KeyboardLayout),
@@ -169,6 +170,27 @@ internal static class GuardPages
         await OpenDetail(arcadia);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept).Press(UiAction.Up).Press(UiAction.Accept);
         Assert.NotNull(arcadia.Arcadia.Main.CustomizeOverview);
+    }
+
+    /// <summary>From the detail page: down the rail to "Verwalten", A, down to "Titel ändern", A (#496).</summary>
+    private static async Task OpenChangeTitle(ArcadiaWindow arcadia)
+    {
+        await OpenDetail(arcadia);
+        var page = arcadia.Arcadia.Detail!.Current;
+        arcadia.Press(UiAction.Down);
+        while (page.OpenArea.Key != DetailAreaViewModel.ManageKey)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        arcadia.Press(UiAction.Accept);
+        while (page.FocusedRow?.Kind != GameActionKind.ChangeTitle)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        arcadia.Press(UiAction.Accept);
+        Assert.NotNull(arcadia.Arcadia.Main.ChangeTitle);
     }
 
     private static Task OpenChangeArtwork(ArcadiaWindow arcadia)

@@ -105,7 +105,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
     public bool HasEntries => Entries.Count > 0;
 
     /// <summary>Something stands left of the search chip, so a divider separates it (owner, 2026-10-21).</summary>
-    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate || HasSteamGridDbWarning || HasIgdbWarning;
+    public bool HasAnyStatus => IsControllerStarting || HasControllerStatus || HasArcadiaUpdate || HasSteamGridDbWarning || HasIgdbWarning || HasUserDataWarning;
 
     /// <summary>SteamGridDB turned the key down (#489): a warning in the header until a new key or none.</summary>
     [ObservableProperty]
@@ -145,6 +145,21 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         _igdb = access;
         access.Changed += OnDataSourceChanged;
         UpdateDataSourceWarnings();
+    }
+
+    /// <summary>The file of own titles couldn't be read at the start (#496): a warning in the header for as long as Arcadia runs.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyStatus))]
+    public partial bool HasUserDataWarning { get; private set; }
+
+    public static string UserDataStatusId => "user-data";
+
+    /// <summary>Whether the file of own titles was unreadable at the start (#496); it is read only then.</summary>
+    public void ShowUserData(bool unreadable)
+    {
+        HasUserDataWarning = unreadable;
+        ShowHistory();
+        ShowEntries();
     }
 
     [ObservableProperty]
@@ -256,6 +271,7 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
         .. _controllerMessages,
         .. HasSteamGridDbWarning ? [new StatusMessage(SteamGridDbStatusId, HealthSeverity.Warning, AppTexts.DataSourcesKeyStatus)] : Array.Empty<StatusMessage>(),
         .. HasIgdbWarning ? [new StatusMessage(IgdbStatusId, HealthSeverity.Warning, AppTexts.DataSourcesIgdbStatus)] : Array.Empty<StatusMessage>(),
+        .. HasUserDataWarning ? [new StatusMessage(UserDataStatusId, HealthSeverity.Warning, AppTexts.UserDataStatus)] : Array.Empty<StatusMessage>(),
     ]);
 
     /// <summary>The header's messages as the modal's entries, each with the time it appeared at its level.</summary>
@@ -269,6 +285,9 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
                 : Array.Empty<StatusEntry>(),
             .. HasIgdbWarning
                 ? [new StatusEntry(IgdbStatusId, StatusLevel.Warning, AppTexts.DataSourcesIgdbStatus, AppTexts.DataSourcesIgdbStatusShort, default, StatusTarget.IgdbAccess, null)]
+                : Array.Empty<StatusEntry>(),
+            .. HasUserDataWarning
+                ? [new StatusEntry(UserDataStatusId, StatusLevel.Warning, AppTexts.UserDataStatus, AppTexts.UserDataStatusShort, default, StatusTarget.UserData, null)]
                 : Array.Empty<StatusEntry>(),
             .. HasArcadiaUpdate
                 ? [UpdateEntry()]

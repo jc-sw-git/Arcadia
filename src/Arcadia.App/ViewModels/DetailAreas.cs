@@ -20,6 +20,10 @@ public static class DetailAreas
 
     public const string ControllerIcon = "M8.5 7h7a5.5 5.5 0 0 1 0 11h-7a5.5 5.5 0 0 1 0-11zM8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01";
 
+    public const string ChangeTitleIcon = "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4";
+
+    public const string ResetTitleIcon = "M4 9h11a5 5 0 0 1 0 10H8M8 5L4 9l4 4";
+
     public const string ManageIcon = "M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4";
 
     /// <summary>
@@ -38,6 +42,8 @@ public static class DetailAreas
         GameActionKind.ControllerMode => "controller-mode",
         GameActionKind.MouseMode => "mouse-mode",
         GameActionKind.Artwork => "artwork",
+        GameActionKind.ChangeTitle => "change-title",
+        GameActionKind.ResetTitle => "reset-title",
         GameActionKind.Uninstall => "uninstall",
         _ => kind.ToString(),
     };
@@ -50,6 +56,8 @@ public static class DetailAreas
         [GameActionKind.ControllerMode] = StreamGeometry.Parse(ControllerIcon),
         [GameActionKind.MouseMode] = StreamGeometry.Parse("M6 3.5l12.5 7-5.5 1.8-1.8 5.7z"),
         [GameActionKind.Artwork] = StreamGeometry.Parse("M3.5 4.5h17v15h-17zM20.5 16l-5-5-8 8.5M9 10h.01"),
+        [GameActionKind.ChangeTitle] = StreamGeometry.Parse(ChangeTitleIcon),
+        [GameActionKind.ResetTitle] = StreamGeometry.Parse(ResetTitleIcon),
         [GameActionKind.Uninstall] = StreamGeometry.Parse("M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"),
     });
 
@@ -99,6 +107,10 @@ public static class DetailAreas
     [
         new(GameActionKind.Artwork, AppTexts.ActionChangeArtwork, AppTexts.DetailArtworkSubtitle, AppTexts.DetailArtworkInfo,
             Find(actions, GameActionKind.Artwork), AppTexts.DetailSetAfterInstall, value: null, point),
+        new(GameActionKind.ChangeTitle, AppTexts.ActionChangeTitle, AppTexts.DetailChangeTitleSubtitle, AppTexts.DetailChangeTitleInfo,
+            Find(actions, GameActionKind.ChangeTitle), greyedReason: null, value: null, point),
+        new(GameActionKind.ResetTitle, AppTexts.ActionResetTitle, AppTexts.DetailResetTitleSubtitle, AppTexts.DetailResetTitleInfo,
+            Find(actions, GameActionKind.ResetTitle), greyedReason: null, value: null, point),
         new(GameActionKind.Uninstall, AppTexts.ActionUninstallMore, AppTexts.DetailUninstallSubtitle(tile.LauncherName), AppTexts.DetailUninstallInfo(tile.LauncherName),
             Find(actions, GameActionKind.Uninstall), AppTexts.NotInstalled, value: null, point),
     ];

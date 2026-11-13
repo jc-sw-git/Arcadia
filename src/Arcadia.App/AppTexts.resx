@@ -625,7 +625,7 @@
   <data name="DetailTagsCaption" xml:space="preserve"><value>TAGS DER QUELLEN</value></data>
   <data name="DetailOverviewLine" xml:space="preserve"><value>{lastPlayed} · {playtime}</value></data>
   <data name="DetailControllerLine" xml:space="preserve"><value>Modus „{mode}“</value></data>
-  <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Deinstallieren</value></data>
+  <data name="DetailManageLine" xml:space="preserve"><value>Artwork, Titel, Deinstallieren</value></data>
   <data name="DetailQuickSelectionCaption" xml:space="preserve"><value>SCHNELLAUSWAHL</value></data>
   <data name="DetailCustomizeOverview" xml:space="preserve"><value>Übersicht anpassen</value></data>
   <data name="QuickSelectionDialogSubtitle" xml:space="preserve"><value>Bis zu 5 Einträge für die Schnellauswahl von {game}.</value></data>
@@ -659,6 +659,27 @@
   <data name="DetailSetAfterInstall" xml:space="preserve"><value>Einstellbar, sobald das Spiel installiert ist.</value></data>
   <data name="DetailArtworkSubtitle" xml:space="preserve"><value>Cover und Hintergrund wählen</value></data>
   <data name="DetailArtworkInfo" xml:space="preserve"><value>Wähle Cover und Hintergrund für dieses Spiel aus den Vorschlägen der Datenquellen oder nimm ein eigenes Bild.</value></data>
+  <data name="ActionChangeTitle" xml:space="preserve"><value>Titel ändern</value></data>
+  <data name="ActionChangeTitleMore" xml:space="preserve"><value>Titel ändern …</value></data>
+  <data name="ActionResetTitle" xml:space="preserve"><value>Titel zurücksetzen</value></data>
+  <data name="DetailChangeTitleSubtitle" xml:space="preserve"><value>Eigenen Titel für dieses Spiel eingeben</value></data>
+  <data name="DetailChangeTitleInfo" xml:space="preserve"><value>Der eigene Titel gilt überall: in der Bibliothek, in der Suche und beim Sortieren nach Name. Ein leerer Titel stellt den automatischen wieder her.</value></data>
+  <data name="DetailResetTitleSubtitle" xml:space="preserve"><value>Zurück zum automatischen Titel</value></data>
+  <data name="DetailResetTitleInfo" xml:space="preserve"><value>Verwirft den eigenen Titel. Das Spiel heißt wieder so, wie es der Launcher oder eine Datenquelle nennt.</value></data>
+  <data name="DetailNoOwnTitle" xml:space="preserve"><value>Das Spiel hat keinen eigenen Titel.</value></data>
+  <data name="DetailTitleUnreadable" xml:space="preserve"><value>Die Datei mit deinen eigenen Titeln (user-data.json) ist nicht lesbar. Arcadia überschreibt sie nicht: repariere oder lösche sie und starte Arcadia neu.</value></data>
+  <data name="DetailOriginalTitle" xml:space="preserve"><value>Original-Titel: {title}</value></data>
+  <data name="DetailOriginalTitleHint" xml:space="preserve"><value>Original-Titel</value></data>
+  <data name="ChangeTitleNote" xml:space="preserve"><value>Leer lassen oder „{title}“ eingeben stellt den automatischen Titel wieder her.</value></data>
+  <data name="ChangeTitleTooLong" xml:space="preserve"><value>Höchstens {count} Zeichen</value></data>
+  <data name="ChangeTitleTake" xml:space="preserve"><value>Übernehmen</value></data>
+  <data name="UserDataStatus" xml:space="preserve"><value>Eigene Titel nicht lesbar</value></data>
+  <data name="UserDataStatusShort" xml:space="preserve"><value>Automatische Titel gelten, bis user-data.json lesbar ist</value></data>
+  <data name="DataSourcesUserDataGroup" xml:space="preserve"><value>EIGENE DATEN</value></data>
+  <data name="DataSourcesUserData" xml:space="preserve"><value>Eigene Titel</value></data>
+  <data name="DataSourcesUserDataUnreadable" xml:space="preserve"><value>user-data.json nicht lesbar</value></data>
+  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia konnte user-data.json beim Start nicht lesen: Die Datei ist beschädigt, gesperrt oder stammt von einer neueren Arcadia-Version. Bis dahin zeigt jedes Spiel seinen automatischen Titel, und Titel lassen sich nicht ändern. Arcadia überschreibt die Datei nicht und legt eine Kopie als user-data.json.broken daneben. Repariere oder lösche die Datei im Ordner %APPDATA%\Arcadia und starte Arcadia neu.</value></data>
+  <data name="ErrorContextUserData" xml:space="preserve"><value>Eigene Titel speichern</value></data>
   <data name="DetailUninstallSubtitle" xml:space="preserve"><value>Übergibt an {launcher}</value></data>
   <data name="DetailUninstallInfo" xml:space="preserve"><value>Fragt vorher nach und lässt dann {launcher} das Spiel deinstallieren. Es bleibt in deiner Bibliothek und lässt sich jederzeit wieder installieren.</value></data>
   <data name="TileUninstalling" xml:space="preserve"><value>Wird deinstalliert …</value></data>

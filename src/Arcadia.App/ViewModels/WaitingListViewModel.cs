@@ -1,3 +1,4 @@
+using Arcadia.Launchers.Abstractions;
 using System.Collections.ObjectModel;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
@@ -23,15 +24,18 @@ namespace Arcadia.App.ViewModels;
 public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 {
     private readonly ArtworkService _artwork;
+    private readonly Func<Game, string> _titleOf;
     private readonly WaitingKeyboard _keyboard;
     private readonly Action<WaitingListViewModel> _close;
     private bool _disposed;
 
     /// <param name="keyboard">The settings' on-screen keyboard, for "Eigener Suchbegriff".</param>
     /// <param name="close">B in the games list or the ✕: back to the row "Warten auf deine Auswahl".</param>
-    public WaitingListViewModel(ArtworkService artwork, WaitingKeyboard keyboard, Action<WaitingListViewModel> close)
+    /// <param name="titleOf">The title a game shows, its own one included (#496).</param>
+    public WaitingListViewModel(ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close)
     {
         _artwork = artwork;
+        _titleOf = titleOf;
         _keyboard = keyboard;
         _close = close;
         _artwork.WaitingChanged += OnWaitingChanged;
@@ -221,7 +225,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             }
             else
             {
-                Games.Insert(i, new WaitingGameViewModel(waiting[i], ShowGame));
+                Games.Insert(i, new WaitingGameViewModel(waiting[i], _titleOf(waiting[i].Game), ShowGame));
             }
         }
 
@@ -252,7 +256,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         CurrentGame = game;
         InHits = false;
         Hits?.Dispose();
-        Hits = game is null ? null : new WaitingHitsViewModel(_artwork, game.Waiting, _keyboard, Take);
+        Hits = game is null ? null : new WaitingHitsViewModel(_artwork, game.Waiting, game.Title, _keyboard, Take);
         Hits?.Start();
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }

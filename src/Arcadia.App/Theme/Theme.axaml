@@ -905,6 +905,25 @@
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="24,20" />
   </Style>
+  <!-- "Original-Titel: …" under an own title (#496), shown with R3; one line like the info line. -->
+  <Style Selector="TextBlock.detailOriginalTitle">
+    <Setter Property="Margin" Value="0,8,0,0" />
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="MaxWidth" Value="1040" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <!-- "Titel ändern" (#496): the dialog stands above the keyboard drawer, its field as wide as the dialog. -->
+  <Style Selector="Border.changeTitleDialog">
+    <Setter Property="Width" Value="1040" />
+    <Setter Property="Margin" Value="0,150,0,0" />
+  </Style>
+  <Style Selector="TextBlock.changeTitleNote">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <!-- The game's metadata (#493): the age rating badge, the tags as chips, the lines of "Infos". -->
   <Style Selector="Border.ageBadge">
     <Setter Property="BorderBrush" Value="{StaticResource TextMuted}" />
@@ -1648,6 +1667,15 @@
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- "Titel ändern" (#496): the wide field; after the general field styles, which it overrides. -->
+  <Style Selector="Border.textField.changeTitleField">
+    <Setter Property="Width" Value="NaN" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Height" Value="56" />
+  </Style>
+  <Style Selector="Border.textField.changeTitleField TextBlock">
+    <Setter Property="FontSize" Value="22" />
   </Style>
   <Style Selector="TextBlock.fieldText">
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />

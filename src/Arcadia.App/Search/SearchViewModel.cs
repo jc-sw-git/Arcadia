@@ -103,7 +103,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
         _actions = actions;
         _host = host;
         _libraries = tabs.SearchedLibraries();
-        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
+        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture, _actions.OriginalTitleOf);
         _createTile = createTile;
         _badgeOf = badgeOf;
         _sharedKeyboard = keyboard;
@@ -493,7 +493,7 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
     public void Update()
     {
         _libraries = _tabs.SearchedLibraries();
-        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture);
+        _search = new GameSearch(_libraries.SelectMany(l => l.Games), Formatting.Culture, _actions.OriginalTitleOf);
         BuildChips();
         Recompute(FocusedResult?.Game.Key);
     }

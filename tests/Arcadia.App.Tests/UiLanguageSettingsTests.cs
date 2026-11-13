@@ -5,6 +5,8 @@ using Arcadia.ControllerSupport;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers;
 using Arcadia.Core.Settings;
+using Arcadia.Core.Tests.Metadata;
+using Arcadia.Launchers.Abstractions;
 using Avalonia.Headless.XUnit;
 
 namespace Arcadia.App.Tests;
@@ -236,6 +238,73 @@ public sealed class UiLanguageSettingsTests
         await arcadia.FollowRunningGamesAsync();
         Assert.Same(apply, arcadia.Main.Settings.FocusedRow);
         Assert.True(apply.IsEnabled);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T554-8")]
+    public async Task Apply_waits_for_a_game_that_is_starting()
+    {
+        var alpha = TestGames.Installed(KnownLaunchers.Gog, "Alpha", DateTimeOffset.UnixEpoch);
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Gog, alpha)]);
+        arcadia.Starts.Stage = LaunchStage.Starting;
+        arcadia.Press(UiAction.Accept);
+        await arcadia.WaitUntilAsync(() => arcadia.Starts.Keys.Count > 0, "the launcher starts Alpha");
+
+        Open(arcadia);
+        Language(arcadia);
+        arcadia.Press(UiAction.Right);
+        var apply = Apply(arcadia);
+
+        Assert.False(apply.IsEnabled);
+        Assert.Equal(AppTexts.LocalizationApplyWaitsForGame(game: "Alpha"), apply.Subtitle);
+        arcadia.Press(UiAction.Accept);
+        Assert.Empty(arcadia.Restarts);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T554-9")]
+    public async Task Apply_during_a_metadata_reload_warns_that_it_stops_and_the_restarted_Arcadia_doesnt_go_on_with_it()
+    {
+        var store = new LauncherInfo("store", "Shop", "shop", null);
+        var games = new[] { "4000001", "4000002" }.Select(id => new Game
+        {
+            Id = id,
+            LauncherId = store.Id,
+            Title = "Made-up game " + id,
+            Launch = new LaunchTarget.ProtocolUri("shop://run/" + id),
+        }).ToArray();
+        using var arcadia = await ArcadiaDriver.StartAsync(
+            [LauncherSpec.With(store, games) with { Metadata = new FakeMetadataSource() }],
+            new AppSettings { PanEnabled = true, ActiveLaunchers = [store.Id] },
+            stores: server => server.Serve("4000001", "A made-up description that is long enough to be kept as it is."));
+        await arcadia.WaitUntilAsync(() => arcadia.Metadata.GameCount > 0, "library at the metadata service");
+        arcadia.MetadataStore.Hang("4000002");
+
+        // "Alle Metadaten neu laden" asks first; A twice confirms it, and the hanging store keeps it running.
+        arcadia.Press(UiAction.Settings);
+        for (var i = 0; i < 4 && arcadia.Main.Settings!.Selected is not DataSourcesSettingsViewModel; i++)
+        {
+            arcadia.Press(UiAction.NextTab);
+        }
+
+        arcadia.Press(UiAction.NextPage);
+        var reload = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.ReloadKey));
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        Assert.True(reload.IsWorking);
+        arcadia.Press(UiAction.Back);
+
+        Open(arcadia);
+        Language(arcadia);
+        arcadia.Press(UiAction.Right);
+        var apply = Apply(arcadia);
+        Assert.True(apply.IsEnabled);
+        Assert.Contains(new InfoText(AppTexts.LocalizationApplyStopsReload), apply.Info);
+        arcadia.Press(UiAction.Accept);
+        Assert.Equal([ArcadiaDriver.LanguageRestart], arcadia.Restarts);
+
+        using var restarted = await arcadia.RestartAsync(arguments: new(ShowsLanguageSetting: true));
+        Assert.DoesNotContain(new InfoText(AppTexts.LocalizationApplyStopsReload), Apply(restarted).Info);
+        Assert.False(restarted.Metadata.Progress is { Reload: true });
     }
 
     /// <summary>Settings in a folder of their own, for the rows without the rest of Arcadia.</summary>

@@ -104,7 +104,11 @@ public sealed partial class FilterListPane : FilterPane
     public partial double ScrollStart { get; private set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScrollEnd))]
     public partial double ScrollLength { get; private set; } = 1;
+
+    /// <summary>The scroll bar's maximum: its values are fractions of all rows.</summary>
+    public double ScrollEnd => 1 - ScrollLength;
 
     [ObservableProperty]
     public partial bool HasScrollBar { get; private set; }
@@ -220,8 +224,7 @@ public sealed partial class FilterListPane : FilterPane
             Arrange();
         }
 
-        MatchNote = HasSearch ? MatchNoteOf(_rows.Sum(row => row.Cells.Count))
-            : choice.IsActive ? AppTexts.FilterMatchNoteChosen(choice.Names.Count + choice.Own.Count) : AppTexts.FilterMatchNote;
+        ShowMatchNote();
     }
 
     public override (string Summary, string Fallback, bool IsChosen) Summarize(GameFilter chosen)
@@ -512,6 +515,15 @@ public sealed partial class FilterListPane : FilterPane
         _firstRow = 0;
         FocusCell(target?.Row ?? 0, target?.Column ?? 0);
         OnPropertyChanged(nameof(PageText));
+        ShowMatchNote();
+    }
+
+    /// <summary>Below the list: the search's hits while one is typed, else how the choice matches.</summary>
+    private void ShowMatchNote()
+    {
+        var choice = _chosen.NamesOf(_list);
+        MatchNote = HasSearch ? MatchNoteOf(_rows.Sum(row => row.Cells.Count))
+            : choice.IsActive ? AppTexts.FilterMatchNoteChosen(choice.Names.Count + choice.Own.Count) : AppTexts.FilterMatchNote;
     }
 
     private void AddRows(List<FilterListRow> rows, List<FilterValueViewModel> values)

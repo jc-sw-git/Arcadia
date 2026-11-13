@@ -3352,6 +3352,278 @@
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
+  <!-- The metadata categories (#466, designs T44F04–T44F08). While the value search is written in, the modal moves up and
+       shortens above the keyboard; the list then shows four rows (FilterListPane.RowsInSightWhileWriting). -->
+  <Style Selector="Border.filterModal.writing">
+    <Setter Property="Height" Value="716" />
+    <Setter Property="Margin" Value="0,24,0,0" />
+  </Style>
+  <!-- The categories then lose their summaries, so all of them still fit beside the shortened list. -->
+  <Style Selector="Border.filterModal.writing Button.filterCategory">
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Padding" Value="14,4" />
+  </Style>
+  <Style Selector="Border.filterModal.writing Button.filterCategory ctl|FirstThatFits">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.filterLoadingNote">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="Margin" Value="0,-8,0,16" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterLoadingNote TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.filterSearch">
+    <Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.filterSearch:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterSearch.writing">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="ctl|LineIcon.filterSearchIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterSearchText, TextBlock.filterSearchPlaceholder">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="TextBlock.filterSearchPlaceholder">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <!-- The order: two halves, the one in use filled. -->
+  <Style Selector="Button.filterOrder">
+    <Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="14,0" />
+  </Style>
+  <Style Selector="Border.filterOrderPart.on">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart.on TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <!-- "Ohne Angabe einbeziehen": a row with its switch, once something is chosen. -->
+  <Style Selector="Button.filterSwitchRow">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="TextBlock.filterSwitchLabel">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.filterSwitchInfo">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.filterMatchNote">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Margin" Value="0,12,0,0" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.filterListHeading">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="Height" Value="56" />
+    <Setter Property="Padding" Value="0,28,0,0" />
+  </Style>
+  <Style Selector="TextBlock.filterListLead">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- An own tag (#495) stands out in the accent's soft colour. -->
+  <Style Selector="Button.filterValue.own TextBlock.filterValueLabel">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="ItemsControl.filterLetters">
+    <Setter Property="Margin" Value="14,0,0,0" />
+  </Style>
+  <Style Selector="TextBlock.filterLetter">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterLetter.current">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+
+  <!-- "Erscheinungsjahr": the chart's bars (dimmed outside a chosen range), the quick picks, "von" and "bis". -->
+  <Style Selector="ItemsControl.filterYearChart">
+    <Setter Property="Height" Value="190" />
+  </Style>
+  <Style Selector="Border.filterYearBar">
+    <Setter Property="CornerRadius" Value="3,3,0,0" />
+    <Setter Property="MinHeight" Value="2" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Border.filterYearBar.dimmed">
+    <Setter Property="Background" Value="{StaticResource LineStrong}" />
+  </Style>
+  <Style Selector="Border.filterYearBar.dimmed.inRange">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <!-- Wider than its bar (the margin), so "2020" isn't cut in a narrow column. -->
+  <Style Selector="TextBlock.filterYearLabel">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Margin" Value="-24,6,-24,0" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="Height" Value="22" />
+  </Style>
+  <Style Selector="Button.filterPick">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterPick:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterPick.selected, Button.filterPick.selected:pointerover">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.filterPick.noHits">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.filterPick.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.filterStepper">
+    <Setter Property="Height" Value="72" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterStepper.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="TextBlock.filterStepperLabel">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterStepperValue">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="MinWidth" Value="72" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterStep">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterStep:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+
+  <!-- "Altersfreigabe": a tile per rating, the system small above, the rating large, its hits below. -->
+  <Style Selector="Button.filterRatingTile">
+    <Setter Property="Width" Value="136" />
+    <Setter Property="Height" Value="120" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.selected">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.noHits">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingCaption">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingValue">
+    <Setter Property="FontSize" Value="32" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.all TextBlock.filterRatingValue">
+    <Setter Property="FontSize" Value="22" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingCount">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
   <!-- "Artwork ändern" (#490, prototype in #13). Tiles fill the grid's 852 px: five covers (2 : 3) or two backgrounds
        (16 : 9, as the detail page shows them, #562) a row; the notice spans three covers or the whole row. -->
   <Style Selector="Border.artworkModal">

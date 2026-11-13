@@ -24,7 +24,7 @@ public partial class MainViewModel
             // A corrected title (#494) shows in the library, the search and the sorting; the session rebuilds only on a change.
             Session.Titles.AutomaticTitlesChanged(keys);
             Detail?.ShowMetadata(keys);
-            // A filtered tab shows its new hits as the data arrives (#466 case 15).
+            // A filtered tab shows its new hits as the data arrives (#466 case 18).
             _filterFacts.MetadataChanged(keys);
             Library.FactsChanged();
             MetadataChanged?.Invoke(this, keys);

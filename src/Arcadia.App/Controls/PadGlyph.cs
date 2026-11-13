@@ -20,7 +20,14 @@ public sealed class PadGlyph : Border
     /// <summary>A fixed printing, for a text about one controller only (#315); null follows the controller in use.</summary>
     public static readonly StyledProperty<ButtonSymbols?> SymbolsProperty = AvaloniaProperty.Register<PadGlyph, ButtonSymbols?>(nameof(Symbols));
 
+    /// <summary>
+    /// The key that stands for the button (<see cref="Input.KeyNames"/>), shown as a key while the keyboard is in use (#539);
+    /// null keeps the controller's button, e.g. in a list of a controller's buttons.
+    /// </summary>
+    public static readonly StyledProperty<string?> KeysProperty = AvaloniaProperty.Register<PadGlyph, string?>(nameof(Keys));
+
     private ButtonSymbol? _shown;
+    private string? _shownKey;
 
     public PadGlyph()
     {
@@ -39,6 +46,12 @@ public sealed class PadGlyph : Border
         set => SetValue(SymbolsProperty, value);
     }
 
+    public string? Keys
+    {
+        get => GetValue(KeysProperty);
+        set => SetValue(KeysProperty, value);
+    }
+
     /// <summary>What the badge shows now, e.g. for a test: the text, or the icon's name.</summary>
     public ButtonSymbol? Shown => _shown;
 
@@ -49,6 +62,7 @@ public sealed class PadGlyph : Border
         base.OnAttachedToVisualTree(e);
         InputHints.Changed += OnInputChanged;
         _shown = null;
+        _shownKey = null;
         Update();
     }
 
@@ -61,7 +75,7 @@ public sealed class PadGlyph : Border
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ButtonProperty || change.Property == SymbolsProperty)
+        if (change.Property == ButtonProperty || change.Property == SymbolsProperty || change.Property == KeysProperty)
         {
             Update();
         }
@@ -71,6 +85,19 @@ public sealed class PadGlyph : Border
 
     private void Update()
     {
+        if (!InputHints.UsesController && Keys is { Length: > 0 } key)
+        {
+            ShowKey(key);
+            return;
+        }
+
+        if (_shownKey is not null)
+        {
+            _shownKey = null;
+            _shown = null;
+            Classes.Set("kbd", false);
+        }
+
         var symbol = ButtonSymbolSets.Symbol(Button ?? string.Empty, Symbols ?? InputHints.Symbols);
         if (symbol == _shown)
         {
@@ -82,6 +109,20 @@ public sealed class PadGlyph : Border
         Child = symbol.Icon == ButtonIcon.None
             ? new TextBlock { Text = symbol.Text }
             : new Path { Data = Icon(symbol.Icon) };
+    }
+
+    private void ShowKey(string key)
+    {
+        if (key == _shownKey)
+        {
+            return;
+        }
+
+        _shownKey = key;
+        _shown = null;
+        Classes.Set("round", false);
+        Classes.Set("kbd", true);
+        Child = new TextBlock { Text = key };
     }
 
     // The theme's geometry; detached (before the first show) the control finds only the application's resources.

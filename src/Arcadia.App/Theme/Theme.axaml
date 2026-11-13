@@ -100,6 +100,9 @@
     <!-- Detail page (#499): the panel with rail and rows lies semi-transparent on the game's artwork; the scrims keep the
          text on the artwork readable over a bright and a dark image. -->
     <SolidColorBrush x:Key="DetailSurface" Color="#F2121820" />
+    <!-- The turn arrows under the stacks (#530): the panel's surface, a little more see-through. -->
+    <SolidColorBrush x:Key="DetailTurnArrow" Color="#C7121820" />
+    <SolidColorBrush x:Key="DetailTurnArrowHover" Color="#EB121820" />
     <!-- What lists in a modal on DetailSurface fade into at their edges (#506: "Warten auf deine Auswahl"). -->
     <Color x:Key="ModalSurfaceColor">#121820</Color>
     <Color x:Key="DetailInfoBoxColor">#0F141A</Color>
@@ -989,13 +992,13 @@
   <!-- The rail of areas: each with its icon, name and value line; the open one lighter, the focused one ringed. -->
   <!-- The arrows under the detail page's stacks (#530): LT/RT inside, the way the carousel turns. -->
   <Style Selector="Path.turnArrow">
-    <Setter Property="Fill" Value="{StaticResource SurfaceRaised}" />
-    <Setter Property="Stroke" Value="{StaticResource Line}" />
+    <Setter Property="Fill" Value="{StaticResource DetailTurnArrow}" />
+    <Setter Property="Stroke" Value="{StaticResource SurfaceRaised}" />
     <Setter Property="StrokeThickness" Value="1" />
     <Setter Property="RenderTransformOrigin" Value="50%,50%" />
   </Style>
   <Style Selector="Button.detailStack:pointerover Path.turnArrow">
-    <Setter Property="Fill" Value="{StaticResource SurfaceHover}" />
+    <Setter Property="Fill" Value="{StaticResource DetailTurnArrowHover}" />
     <Setter Property="Stroke" Value="{StaticResource Accent}" />
   </Style>
   <Style Selector="Path.turnChevron">

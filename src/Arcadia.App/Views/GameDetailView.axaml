@@ -94,8 +94,8 @@
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" />
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="14,0,0,0">
-              <ctl:KeyHint Pad="LT" Keys="Q" />
               <Path Classes="turnChevron" Data="M8,0 L0,7 L8,14" />
+              <ctl:KeyHint Pad="LT" Keys="Q" />
             </StackPanel>
           </Panel>
         </StackPanel>

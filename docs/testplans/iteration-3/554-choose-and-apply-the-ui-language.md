@@ -7,13 +7,13 @@ code; the quality engineer checks them again in the review.
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B). "System language" is the Windows display language, faked in the tests; "region" is the regional
-format, set apart from it. Languages offered in the row: those whose texts are complete (open question on #554 for
-Français and Español before #555/#556).
+format, set apart from it. Languages offered in the row: those whose texts are complete; Français and Español join with
+their texts in #555/#556.
 
 **The row "Sprache"**
 
 - [ ] **T554-1** Settings, "Lokalisierung", group SPRACHE: the row "Sprache" shows one box per value in this order,
-  "Systemsprache · English · Deutsch" (plus "Français", "Español" once offered), each language in its own language and
+  "Systemsprache · English · Deutsch" ("Français", "Español" follow in #555/#556), each language in its own language and
   only "Systemsprache" in the current one ("System language" in English); the value in use is highlighted. Below it,
   indented one step, "Sprache anwenden". ◀ ▶ wrap at both ends; B goes back to where the settings were opened. · E2E: yes
 - [ ] **T554-2** "Systemsprache", system language German (de-DE, de-AT) or English (en-US, en-GB): Arcadia is in that

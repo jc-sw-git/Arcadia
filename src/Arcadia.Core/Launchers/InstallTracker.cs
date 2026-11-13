@@ -46,6 +46,9 @@ public sealed class InstallTracker(LauncherRegistry launchers, TimeProvider time
     /// <summary>True while a game handed to an unwatched launcher hasn't shown up installed yet.</summary>
     public bool HasPending => _pending.Count > 0;
 
+    /// <summary>The launchers of the games in <see cref="CompletePending"/>'s list: only they need reading again.</summary>
+    public IReadOnlyList<string> PendingLauncherIds => _pending.Select(Game.LauncherIdOf).Distinct(StringComparer.Ordinal).ToList();
+
     /// <summary>What the installation of a game is doing, or null if none runs.</summary>
     public InstallProgress? StateOf(string gameKey) => _installs.GetValueOrDefault(gameKey);
 

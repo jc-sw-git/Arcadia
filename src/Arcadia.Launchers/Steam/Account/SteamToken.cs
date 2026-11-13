@@ -14,8 +14,10 @@ internal static class SteamToken
         Claims(token) is { } claims && claims.TryGetProperty("sub", out var sub)
         && ulong.TryParse(sub.GetString(), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : null;
 
+    /// <summary>Null for a token without a usable <c>exp</c>, one outside the dates .NET can hold included.</summary>
     public static DateTimeOffset? ExpiresAt(string token) =>
         Claims(token) is { } claims && claims.TryGetProperty("exp", out var exp) && exp.TryGetInt64(out var seconds)
+        && seconds >= DateTimeOffset.MinValue.ToUnixTimeSeconds() && seconds <= DateTimeOffset.MaxValue.ToUnixTimeSeconds()
             ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
 

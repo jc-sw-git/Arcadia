@@ -48,6 +48,33 @@ public class SteamShortcutsTests : IDisposable
     }
 
     [Fact]
+    public void The_file_before_Arcadia_s_first_change_stays_kept_through_later_saves()
+    {
+        var path = Path.Combine(_dir, "config", "shortcuts.vdf");
+        SteamShortcuts.Add(path, "Player's own", Path.Combine(_dir, "own.exe"));
+        var players = File.ReadAllBytes(path);
+
+        SteamShortcuts.Add(path, "Arcadia", Path.Combine(_dir, "Arcadia.exe"));
+        SteamShortcuts.Add(path, "Other", Path.Combine(_dir, "other.exe"));
+
+        Assert.Equal(players, File.ReadAllBytes(path + ".arcadia-original.bak"));
+        Assert.Equal(2, SteamShortcuts.Read(path + ".bak").Count);
+    }
+
+    [Theory]
+    [InlineData("C:\\Games\\a\".exe")]
+    [InlineData("C:\\Games\\a\0.exe")]
+    [InlineData("")]
+    public void An_executable_with_a_quote_or_a_NUL_is_refused_and_nothing_is_written(string executable)
+    {
+        var path = Path.Combine(_dir, "config", "shortcuts.vdf");
+
+        Assert.Throws<ArgumentException>(() => SteamShortcuts.Add(path, "Spiel", executable));
+
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
     public void Remove_drops_matching_entries_and_renumbers_the_rest()
     {
         var path = Path.Combine(_dir, "config", "shortcuts.vdf");

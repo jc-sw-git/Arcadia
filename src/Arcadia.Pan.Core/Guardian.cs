@@ -169,6 +169,13 @@ public sealed partial class Guardian
                 return PanReason.OtherClient;
             }
 
+            if (_stopping)
+            {
+                // Its hello would pass and every command after it be rejected; the client retries once Pan runs again.
+                _log($"Client {client.Pid} refused: the service is stopping");
+                return PanReason.ServiceStopping;
+            }
+
             if (_phase == Phase.TornDown && _teardown is { IsCompleted: true })
             {
                 // The client that would have acknowledged is gone (only one is ever registered): start fresh.
@@ -211,6 +218,11 @@ public sealed partial class Guardian
                 {
                     _log($"Client {_client.Pid} speaks protocol {message.Version}, Pan speaks {PanMessage.ProtocolVersion}");
                     return PanMessage.Of(PanReply.Rejected, reason: PanReason.WrongProtocolVersion);
+                }
+
+                if (_stopping)
+                {
+                    return PanMessage.Of(PanReply.Rejected, reason: PanReason.ServiceStopping);
                 }
 
                 _helloDone = true;
@@ -597,7 +609,8 @@ public sealed partial class Guardian
             clientPid = journal.ClientPid;
             // Under the lock: a step left behind after its timeout may still remove from the lists.
             held = journal.HeldProcesses.ToList();
-            servers = journal.UsbipServers.ToList();
+            // The current pad first: the game must lose it within the step even when a leftover server hangs.
+            servers = journal.UsbipServers.OrderByDescending(server => server.Generation == generation).ToList();
         }
 
         if (unplanned)

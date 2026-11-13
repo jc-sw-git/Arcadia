@@ -101,16 +101,20 @@ public abstract partial class WaitingHitViewModel(Action<WaitingHitViewModel> ma
 }
 
 /// <summary>A SteamGridDB game offered for an artwork entry (#491): its cover, or its background.</summary>
-public sealed class ArtworkHitViewModel(SteamGridDbHit hit, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
+public sealed partial class ArtworkHitViewModel(SteamGridDbHit hit, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
     : WaitingHitViewModel(mark, take)
 {
     public SteamGridDbHit Hit { get; } = hit;
 
     /// <summary>
-    /// A background offered after the cover was chosen (cover and background sought, #539): the game the cover comes from,
-    /// which may be another one. Null for a cover, and for a background sought alone.
+    /// The background taken together with a cover (cover and background sought, #539): the game the cover comes from,
+    /// which may be another one. Null for a hit shown in the grid.
     /// </summary>
     public SteamGridDbHit? Cover { get; init; }
+
+    /// <summary>Picked in its tab while cover and background are sought (#539): marked until both are taken.</summary>
+    [ObservableProperty]
+    public partial bool IsChosen { get; set; }
 
     public override string Name => Hit.Name;
 

@@ -302,7 +302,7 @@ public sealed class WaitingListLevelsTests
         Assert.Equal(withCover.Take(SteamGridDbClient.MaxOwnTermHits), hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         var lastNeeded = Enumerable.Range(1001, 40).ToList().IndexOf(withCover[SteamGridDbClient.MaxOwnTermHits - 1]);
         Assert.DoesNotContain(arcadia.SteamGridDb.Asked(), a => Enumerable.Range(1001 + lastNeeded + 1, 40 - lastNeeded - 1).Any(id => a == $"grids/game/{id}"));
-        Assert.Equal(AppTexts.WaitingIntroCoverStepOwnTerm(25), hits.Intro);
+        Assert.Equal(AppTexts.WaitingIntroCoverTabOwnTerm(25), hits.Intro);
 
         // ◀ ▶ reach "Zurücksetzen" now; A on it: the search name and the hits again, without a search.
         var searches = arcadia.SteamGridDb.Asked().Count(a => a.StartsWith("search/", StringComparison.Ordinal));

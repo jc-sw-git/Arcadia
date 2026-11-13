@@ -46,7 +46,7 @@ copy among the offers waiting in the cache: taking another tile overwrites the f
 waiting row with its count) once per tab of "Datenquellen"; `ViewModels/WaitingListViewModel` (the games of one
 `WaitingKind`, and the two levels) and `WaitingHitsViewModel` (one entry's hits: the grid, "Eigener
 Suchbegriff" with the settings' on-screen keyboard, tile images off the UI thread once the focus rests), with
-`ArtworkHitsViewModel` (what is sought, the hit checks, cover then background in two steps, #539) over
+`ArtworkHitsViewModel` (what is sought, the hit checks, the tabs "Cover" and "Hintergrund" with a pick each, #539) over
 `ArtworkService.ByName` (`CheckWaitingHitAsync`, `CheckHitAsync`, `SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`;
 `NameMatch.HeroGameId` keeps a background from another game) and `MetadataHitsViewModel` over `MetadataService.Waiting.cs`
 (a list beside `WaitingHitFacts`, no images); `Views/WaitingListView` (click marks, double click takes). `MainViewModel.WaitingList.cs` opens

@@ -3,6 +3,7 @@ using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Launchers.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.ViewModels;
 
@@ -11,8 +12,9 @@ namespace Arcadia.App.ViewModels;
 /// one show at once; once the focus rests on the entry, the others are checked (a few at a time, filling the grid in
 /// SteamGridDB's order) and the tiles' images load. An own term searches SteamGridDB and shows the first
 /// <see cref="SteamGridDbClient.MaxOwnTermHits"/> results with images; nothing of it is kept.
-/// A game seeking cover and background is chosen in two steps (#539): first a cover, then a background, also from
-/// another hit; the background's step starts on the cover's own game, and B there goes back to the covers.
+/// A game seeking cover and background has a tab for each (#539, LB/RB or a click): A in a tab picks that kind, also from
+/// another hit than the other kind, and goes to the other tab while it has no pick, starting on the picked game; once
+/// both are picked they are taken together.
 /// </summary>
 /// <remarks>UI thread only.</remarks>
 public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
@@ -22,7 +24,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
 
     private readonly ArtworkService _artwork;
 
-    /// <summary>The hit the focus goes to once it shows, until the player moves: the cover's game, on either step.</summary>
+    /// <summary>The hit the focus goes to once it shows, until the player moves: the tab's pick, else the other tab's game.</summary>
     private int? _focusOn;
 
     /// <param name="take">A or a double click on a hit: the list takes it.</param>
@@ -58,21 +60,31 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
     /// <summary>Cover and background are sought: they are chosen one after the other (#539).</summary>
     public bool SeeksBoth => Sought.Count > 1;
 
-    /// <summary>The cover is chosen, the background is next: the tiles are backgrounds.</summary>
+    /// <summary>The tab "Hintergrund" is shown: the tiles are backgrounds. False on "Cover" and when one kind is sought.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns), nameof(BackHint), nameof(TakeHint))]
-    public partial bool IsHeroStep { get; private set; }
+    [NotifyPropertyChangedFor(nameof(Intro), nameof(TileKind), nameof(IsHero), nameof(Columns), nameof(TakeHint), nameof(IsCoverTab))]
+    public partial bool IsHeroTab { get; private set; }
 
-    /// <summary>The cover chosen on the first step, shown beside the backgrounds; null before.</summary>
+    public bool IsCoverTab => !IsHeroTab;
+
+    /// <summary>The cover picked in its tab; null until then.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasChosenCover))]
+    [NotifyPropertyChangedFor(nameof(HasChosenCover), nameof(TakeHint))]
     public partial ArtworkHitViewModel? ChosenCover { get; private set; }
+
+    /// <summary>The background picked in its tab; null until then.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasChosenHero), nameof(TakeHint))]
+    public partial ArtworkHitViewModel? ChosenHero { get; private set; }
 
     public bool HasChosenCover => ChosenCover is not null;
 
-    public override string BackHint => IsHeroStep ? AppTexts.WaitingOtherCover : AppTexts.Back;
+    public bool HasChosenHero => ChosenHero is not null;
 
-    public override string TakeHint => SeeksBoth && !IsHeroStep ? AppTexts.WaitingTakeCoverHint : AppTexts.WaitingTakeHint;
+    /// <summary>What A does: pick this tab's kind and go to the other, or, with the other picked, take both.</summary>
+    public override string TakeHint => !SeeksBoth ? AppTexts.WaitingTakeHint
+        : IsHeroTab ? (HasChosenCover ? AppTexts.WaitingTakeHint : AppTexts.WaitingTakeHeroHint)
+        : (HasChosenHero ? AppTexts.WaitingTakeHint : AppTexts.WaitingTakeCoverHint);
 
     public override string SoughtText => Sought.Count > 1 ? AppTexts.WaitingSoughtBoth
         : Sought[0] == ArtworkKind.Cover ? AppTexts.WaitingSoughtCover
@@ -84,12 +96,12 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         {
             if (SeeksBoth)
             {
-                return (IsHeroStep, IsOwnTerm) switch
+                return (IsHeroTab, IsOwnTerm) switch
                 {
-                    (false, false) => AppTexts.WaitingIntroCoverStep(Hits.Count),
-                    (false, true) => AppTexts.WaitingIntroCoverStepOwnTerm(Hits.Count),
-                    (true, false) => AppTexts.WaitingIntroHeroStep(Hits.Count),
-                    (true, true) => AppTexts.WaitingIntroHeroStepOwnTerm(Hits.Count),
+                    (false, false) => AppTexts.WaitingIntroCoverTab(Hits.Count),
+                    (false, true) => AppTexts.WaitingIntroCoverTabOwnTerm(Hits.Count),
+                    (true, false) => AppTexts.WaitingIntroHeroTab(Hits.Count),
+                    (true, true) => AppTexts.WaitingIntroHeroTabOwnTerm(Hits.Count),
                 };
             }
 
@@ -101,7 +113,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
     public override string Note => AppTexts.WaitingNote;
 
     /// <summary>What the tiles show and the hits are checked for: the cover when both are sought, until it is chosen.</summary>
-    public ArtworkKind TileKind => IsHeroStep ? ArtworkKind.Hero : NameMatch.TileKindOf(Sought);
+    public ArtworkKind TileKind => IsHeroTab ? ArtworkKind.Hero : NameMatch.TileKindOf(Sought);
 
     public override bool IsHero => TileKind == ArtworkKind.Hero;
 
@@ -120,37 +132,76 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
     }
 
     private WaitingHitViewModel NewHit(SteamGridDbHit hit) =>
-        Track(new ArtworkHitViewModel(hit, MarkFromClick, Take) { Cover = IsHeroStep ? ChosenCover?.Hit : null });
+        Track(new ArtworkHitViewModel(hit, MarkFromClick, Take) { IsChosen = hit.Id == ChosenInTab?.Hit.Id });
 
-    /// <summary>A on a cover while both are sought: kept, and the backgrounds follow; otherwise the list takes the hit.</summary>
+    /// <summary>The pick of the tab shown.</summary>
+    private ArtworkHitViewModel? ChosenInTab => IsHeroTab ? ChosenHero : ChosenCover;
+
+    /// <summary>
+    /// A on a hit while both are sought: picked for the tab's kind; with the other kind picked too, both are taken,
+    /// otherwise the other tab shows. One kind sought: the list takes the hit.
+    /// </summary>
     protected override void Choose(WaitingHitViewModel hit)
     {
-        if (!SeeksBoth || IsHeroStep)
+        if (!SeeksBoth)
         {
             base.Choose(hit);
             return;
         }
 
-        var cover = (ArtworkHitViewModel)hit;
-        ChosenCover = cover;
-        IsHeroStep = true;
-        _focusOn = cover.Hit.Id;
-        Reload();
+        var picked = (ArtworkHitViewModel)hit;
+        if (IsHeroTab)
+        {
+            ChosenHero = picked;
+        }
+        else
+        {
+            ChosenCover = picked;
+        }
+
+        foreach (var tile in Hits.OfType<ArtworkHitViewModel>())
+        {
+            tile.IsChosen = tile == picked;
+        }
+
+        if (ChosenCover is { } cover && ChosenHero is { } hero)
+        {
+            base.Choose(new ArtworkHitViewModel(hero.Hit, MarkFromClick, Take) { Cover = cover.Hit });
+            return;
+        }
+
+        ShowTab(hero: !IsHeroTab);
     }
 
-    /// <summary>B on the backgrounds: back to the covers, the focus on the cover chosen before.</summary>
-    public override bool StepBack()
+    /// <summary>LB/RB: the other tab, while both are sought; false otherwise.</summary>
+    public bool SwitchTab()
     {
-        if (!IsHeroStep)
+        if (!SeeksBoth || IsEditing)
         {
             return false;
         }
 
-        _focusOn = ChosenCover?.Hit.Id;
-        IsHeroStep = false;
-        ChosenCover = null;
-        Reload();
+        ShowTab(hero: !IsHeroTab);
         return true;
+    }
+
+    [RelayCommand]
+    private void ShowCovers() => ShowTab(hero: false);
+
+    [RelayCommand]
+    private void ShowHeroes() => ShowTab(hero: true);
+
+    /// <summary>A tab's hits, the focus on its pick, else on the game picked in the other tab.</summary>
+    private void ShowTab(bool hero)
+    {
+        if (!SeeksBoth || hero == IsHeroTab)
+        {
+            return;
+        }
+
+        IsHeroTab = hero;
+        _focusOn = (ChosenInTab ?? (hero ? ChosenCover : ChosenHero))?.Hit.Id;
+        Reload();
     }
 
     /// <summary>The game's own hits: what it seeks now, the known ones with their tiles, the unchecked ones checked.</summary>
@@ -167,11 +218,12 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         if (!match.Sought.SequenceEqual(Sought))
         {
             var kindBefore = TileKind;
-            if (match.Sought.Count < 2 && IsHeroStep)
+            if (match.Sought.Count < 2)
             {
-                // A cover set meanwhile (e.g. by hand): only the background is left to choose, from any hit.
-                IsHeroStep = false;
+                // One kind set meanwhile (e.g. by hand): the other is left, one tab, nothing picked.
+                IsHeroTab = false;
                 ChosenCover = null;
+                ChosenHero = null;
             }
 
             Sought = match.Sought;
@@ -194,7 +246,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         }
 
         LoadShownTiles(cancel);
-        if (IsHeroStep)
+        if (IsHeroTab)
         {
             // The waiting match knows which hits have a cover; whether they have a background is asked (once a session).
             await CheckInOrderAsync(match.Hits, int.MaxValue, hit => _artwork.CheckHitAsync(hit, ArtworkKind.Hero, cancel), cancel);
@@ -276,7 +328,7 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         Done(Hits.Count > 0 ? null : failure ?? AppTexts.WaitingNoHits);
     }
 
-    /// <summary>The cover's game showed on the other step: the focus goes to it, unless the player moved meanwhile.</summary>
+    /// <summary>The game wanted for the focus showed: the focus goes to it, unless the player moved meanwhile.</summary>
     private void FocusIfWanted(int at, SteamGridDbHit hit)
     {
         if (_focusOn == hit.Id && !PlayerMoved)

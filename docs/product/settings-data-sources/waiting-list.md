@@ -23,11 +23,13 @@ Index and the category's frame: [README.md](README.md).
   ◀ ▶ ▲ ▼ go round in rows and columns, the field's row counts as each column's top; A takes the hit and goes back to
   the games list on the next waiting game, B goes back without; Y skips the game on both levels. Until chosen a game
   keeps its launcher image or placeholder.
-- Cover and background sought (#539): two steps, "Schritt 1 von 2" the covers, A keeps one ("Cover nehmen, weiter zum
-  Hintergrund"); "Schritt 2 von 2" the backgrounds of the hits that have one, with "DEIN COVER" (small, its name) above
-  them, the focus first on the cover's own game; A takes cover and background, also from two different games. B on step
-  2 is "Anderes Cover": back to the covers, the focus on the one kept; B there goes to the games list. An own term
-  searches the kind of the step. Each kind then comes from its own SteamGridDB game (order, "Zuschneiden erlaubt",
+- Cover and background sought (#539): two tabs "Cover" and "Hintergrund" above the hits, LB/RB switch them (as in
+  "Artwork ändern"), a click on a tab too; "DEIN COVER" and "DEIN HINTERGRUND" (small, the image and its name, else
+  "Noch nicht gewählt") show the picks. A on a hit picks it for its tab and turns to the other tab ("Cover nehmen,
+  weiter zum Hintergrund" / "Hintergrund nehmen, weiter zum Cover"), the focus there on its pick or the pick's own game;
+  either kind can be picked first, also from two different games. Once both are picked, A takes them ("Übernehmen,
+  weiter zum nächsten"). A tab keeps its pick while switching; B goes to the games list and keeps nothing. An own term
+  searches the kind of the tab. Each kind then comes from its own SteamGridDB game (order, "Zuschneiden erlaubt",
   "Alle Artworks neu laden" and "Artwork ändern" use that game).
 - Mouse (#539): a click on a hit only marks it (the focus comes onto it, also from the games list); a double click takes
   it as A does. The note's "[Y]" is the skip button's glyph of the controller in use, with the keyboard its key (V).

@@ -8,7 +8,7 @@ using Avalonia.Threading;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// #539 through the view models: a game seeking cover and background is chosen in two steps, also from two hits; a click
+/// #539 through the view models: a game seeking cover and background has a tab for each, also picked from two hits; a click
 /// marks a hit and a double click takes it; the note names the skip button by its glyph. The made-up launcher of
 /// <see cref="WaitingListTests"/> without images, so every game seeks both; no window.
 /// </summary>
@@ -33,23 +33,22 @@ public sealed class WaitingListChoiceTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T539-3")]
-    [Trait("TestCase", "T539-4")]
-    public async Task A_on_a_cover_brings_the_backgrounds_starting_on_its_own_game_and_another_one_can_be_taken()
+    public async Task A_on_a_cover_picks_it_and_shows_the_backgrounds_on_its_own_game_where_another_one_can_be_taken()
     {
         var (arcadia, list) = await OpenAsync();
         using var _ = arcadia;
         var hits = Hits(list);
-        Assert.Equal((true, AppTexts.WaitingIntroCoverStep(2)), (hits.SeeksBoth, hits.Intro));
+        Assert.Equal((true, true, false, AppTexts.WaitingIntroCoverTab(2)), (hits.SeeksBoth, list.HasArtworkTabs, hits.IsHeroTab, hits.Intro));
 
-        // A into the hits, ▶ to the second cover (502), A keeps it: the backgrounds follow, on 502's own one.
+        // A into the hits, ▶ to the second cover (502), A picks it: the tab "Hintergrund" follows, on 502's own one.
         arcadia.Press(UiAction.Accept).Press(UiAction.Right);
         Assert.Equal(AppTexts.WaitingTakeCoverHint, list.AcceptHint);
         arcadia.Press(UiAction.Accept);
         await WaitingListTests.ShownAsync(list);
 
-        Assert.Equal((true, ArtworkKind.Hero, WaitingHitsViewModel.HeroColumns), (hits.IsHeroStep, hits.TileKind, hits.Columns));
-        Assert.Equal((502, "Echo Drift"), (hits.ChosenCover!.Hit.Id, hits.ChosenCover.Name));
-        Assert.Equal((AppTexts.WaitingIntroHeroStep(2), AppTexts.WaitingOtherCover), (hits.Intro, list.BackHint));
+        Assert.Equal((true, ArtworkKind.Hero, WaitingHitsViewModel.HeroColumns), (hits.IsHeroTab, hits.TileKind, hits.Columns));
+        Assert.Equal((502, "Echo Drift", false), (hits.ChosenCover!.Hit.Id, hits.ChosenCover.Name, hits.HasChosenHero));
+        Assert.Equal((AppTexts.WaitingIntroHeroTab(2), AppTexts.WaitingTakeHint), (hits.Intro, list.AcceptHint));
         Assert.Equal(502, HitId(list.Hits!.Hits[FocusedHit(list)]));
         Assert.All(list.Hits.Hits, hit => Assert.NotNull(hit.Image));
 
@@ -65,24 +64,57 @@ public sealed class WaitingListChoiceTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T539-4")]
-    public async Task B_on_the_backgrounds_goes_back_to_the_covers_on_the_one_chosen_and_B_again_to_the_games()
+    public async Task LB_RB_turn_the_tabs_each_keeps_its_pick_and_the_background_can_be_picked_first()
     {
         var (arcadia, list) = await OpenAsync();
         using var _ = arcadia;
         var hits = Hits(list);
-        arcadia.Press(UiAction.Accept).Press(UiAction.Right).Press(UiAction.Accept);
+
+        // RB to "Hintergrund" without a pick, A on the second background picks it and turns to "Cover".
+        arcadia.Press(UiAction.NextTab);
+        await WaitingListTests.ShownAsync(list);
+        Assert.Equal((true, ArtworkKind.Hero), (hits.IsHeroTab, hits.TileKind));
+        arcadia.Press(UiAction.Accept).Press(UiAction.Right);
+        Assert.Equal(AppTexts.WaitingTakeHeroHint, list.AcceptHint);
+        arcadia.Press(UiAction.Accept);
         await WaitingListTests.ShownAsync(list);
 
-        arcadia.Press(UiAction.Back);
-        await WaitingListTests.ShownAsync(list);
+        Assert.Equal((false, 502), (hits.IsHeroTab, hits.ChosenHero!.Hit.Id));
+        Assert.Equal(502, HitId(list.Hits!.Hits[FocusedHit(list)]));
 
-        Assert.Equal((false, null, true), (hits.IsHeroStep, hits.ChosenCover, list.InHits));
-        Assert.Equal((ArtworkKind.Cover, 502), (hits.TileKind, HitId(list.Hits!.Hits[FocusedHit(list)])));
-        Assert.Equal(AppTexts.Back, list.BackHint);
+        // LB back to "Hintergrund": the pick is still marked and focused; nothing was taken.
+        arcadia.Press(UiAction.PreviousTab);
+        await WaitingListTests.ShownAsync(list);
+        Assert.True(hits.IsHeroTab);
+        Assert.Equal([false, true], list.Hits.Hits.Select(h => ((ArtworkHitViewModel)h).IsChosen));
+        Assert.Equal(502, HitId(list.Hits.Hits[FocusedHit(list)]));
         Assert.Single(arcadia.Artwork.Waiting, w => w.Game.Key == WaitingListTests.Games[0].Key);
 
+        // To "Cover", ◀ to 501, A takes cover 501 with background 502.
+        arcadia.Press(UiAction.NextTab);
+        await WaitingListTests.ShownAsync(list);
+        arcadia.Press(UiAction.Left).Press(UiAction.Accept);
+        await list.Loading;
+        Dispatcher.UIThread.RunJobs();
+
+        var cached = Cached(arcadia, WaitingListTests.Games[0])!;
+        Assert.Equal(("https://cdn.example/grid/501.png", "https://cdn.example/hero/502.png"), (cached.Cover!.Stamp, cached.Hero!.Stamp));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T539-4")]
+    public async Task B_goes_back_to_the_games_and_skips_nothing()
+    {
+        var (arcadia, list) = await OpenAsync();
+        using var _ = arcadia;
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        await WaitingListTests.ShownAsync(list);
+
         arcadia.Press(UiAction.Back);
+
         Assert.False(list.InHits);
+        Assert.Equal(AppTexts.Close, list.BackHint);
+        Assert.Equal(3, arcadia.Artwork.Waiting.Count);
     }
 
     [AvaloniaFact]
@@ -98,13 +130,13 @@ public sealed class WaitingListChoiceTests
         Assert.True(list.InHits);
         Assert.True(second.IsFocused);
         Assert.Same(second, list.Hits.MarkedHit);
-        Assert.False(Hits(list).IsHeroStep);
+        Assert.False(Hits(list).IsHeroTab);
         Assert.Single(arcadia.Artwork.Waiting, w => w.Game.Key == WaitingListTests.Games[0].Key);
 
-        // The double click: the cover is kept, the backgrounds follow; there a double click takes the background.
+        // The double click: the cover is picked, the backgrounds follow; there a double click takes both.
         second.TakeCommand.Execute(null);
         await WaitingListTests.ShownAsync(list);
-        Assert.True(Hits(list).IsHeroStep);
+        Assert.True(Hits(list).IsHeroTab);
         list.Hits.Hits[0].TakeCommand.Execute(null);
         await list.Loading;
         Dispatcher.UIThread.RunJobs();

@@ -99,9 +99,6 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial WaitingHitViewModel? MarkedHit { get; private set; }
 
-    /// <summary>What B does in the hits: back to the games list, or a step back within the choice.</summary>
-    public virtual string BackHint => AppTexts.Back;
-
     /// <summary>What A on a hit does.</summary>
     public virtual string TakeHint => AppTexts.WaitingTakeHint;
 
@@ -248,12 +245,6 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// B in the hits: true when the choice went a step back within the hits (to the cover after the background, #539);
-    /// false sends the focus back to the games list.
-    /// </summary>
-    public virtual bool StepBack() => false;
-
     /// <summary>A click on a hit (#539): marks it, the focus comes onto it; nothing is chosen.</summary>
     public void Mark(WaitingHitViewModel hit)
     {
@@ -281,7 +272,7 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
     /// <summary>A new tile's click: the list marks it, bringing the focus into the hits first.</summary>
     protected void MarkFromClick(WaitingHitViewModel hit) => _mark(hit);
 
-    /// <summary>The hits again from the start, with the term in the field: e.g. another step of the choice (#539).</summary>
+    /// <summary>The hits again from the start, with the term in the field: e.g. the other tab of the choice (#539).</summary>
     protected void Reload()
     {
         Hits.Clear();

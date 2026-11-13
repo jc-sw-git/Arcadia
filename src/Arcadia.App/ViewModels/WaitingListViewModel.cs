@@ -80,7 +80,11 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     /// <summary>The current game's hits; null after the last game.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasArtworkTabs))]
     public partial WaitingHitsViewModel? Hits { get; private set; }
+
+    /// <summary>The game seeks cover and background: the footer names LB/RB for their tabs (#539).</summary>
+    public bool HasArtworkTabs => Hits is ArtworkHitsViewModel { SeeksBoth: true };
 
     /// <summary>The focus is in the hits (the second level), not in the games list.</summary>
     [ObservableProperty]
@@ -103,7 +107,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         : Hits?.Zone == WaitingHitsFocus.Reset ? AppTexts.WaitingReset
         : Hits?.TakeHint ?? AppTexts.WaitingTakeHint;
 
-    public string BackHint => InHits ? Hits?.BackHint ?? AppTexts.Back : AppTexts.Close;
+    public string BackHint => InHits ? AppTexts.Back : AppTexts.Close;
 
     /// <summary>The last choice being made (its images loading); the tests wait for it.</summary>
     public Task Loading { get; private set; } = Task.CompletedTask;
@@ -135,16 +139,12 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
             case UiAction.Status:
                 Skip();
                 break;
+            case UiAction.PreviousTab or UiAction.NextTab when Hits is ArtworkHitsViewModel artworkHits:
+                // Cover and background sought: LB/RB turn their tabs (#539), as in "Artwork ändern".
+                artworkHits.SwitchTab();
+                break;
             case UiAction.Back when InHits:
-                if (Hits?.StepBack() == true)
-                {
-                    HintsChanged();
-                }
-                else
-                {
-                    LeaveHits();
-                }
-
+                LeaveHits();
                 break;
             case UiAction.Back:
                 _close(this);
@@ -184,12 +184,16 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void Accept() => Handle(UiAction.Accept);
 
-    /// <summary>The choice went a step on or back, also by a double click: the footer says what A and B do now.</summary>
+    /// <summary>A pick or another tab, also by a click or double click: the footer says what A does now.</summary>
     private void OnHitsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(WaitingHitsViewModel.BackHint) or nameof(WaitingHitsViewModel.TakeHint))
+        if (e.PropertyName is nameof(WaitingHitsViewModel.TakeHint))
         {
             HintsChanged();
+        }
+        else if (e.PropertyName is nameof(ArtworkHitsViewModel.SeeksBoth))
+        {
+            OnPropertyChanged(nameof(HasArtworkTabs));
         }
     }
 

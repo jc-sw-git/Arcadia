@@ -1314,7 +1314,7 @@
                       <Border Classes="groupBox" Classes.first="{Binding StartsGroup}" Classes.last="{Binding EndsGroup}">
                         <Button Classes="plain settingRow pageRow" Classes.indent="{Binding IsIndented}" Classes.indentTwice="{Binding IsIndentedTwice}" Classes.focused="{Binding IsFocused}" Classes.unavailable="{Binding IsDimmed}" Classes.lifted="{Binding IsLifted}"
                                 Command="{Binding ClickCommand}">
-                          <ContentControl Content="{Binding}">
+                          <ContentControl Classes="unclipped" Content="{Binding}">
                             <ContentControl.DataTemplates>
                               <!-- A launcher (#136): its tab key, logo, name and state, and the switch "Aktiv". -->
                               <DataTemplate x:DataType="settings:LauncherRowViewModel">
@@ -1387,7 +1387,7 @@
                               <ProgressBar Classes="rowProgress" Minimum="0" Maximum="100" Value="{Binding Progress, TargetNullValue=0}" IsVisible="{Binding HasProgress}" />
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
-                            <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
+                            <ContentControl Grid.Column="2" Classes="unclipped" Content="{Binding}" VerticalAlignment="Center">
                               <ContentControl.DataTemplates>
                                 <!-- A text (#137): its value with a pencil; while it is written, the text with its caret. -->
                                 <DataTemplate x:DataType="settings:TextRowViewModel">
@@ -1471,7 +1471,6 @@
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="chevronRight" IsVisible="{Binding !IsWorking}" />
                                       <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                                     </Grid>
                                   </Border>
@@ -2133,7 +2132,7 @@
             <StackPanel Spacing="22" IsVisible="{Binding IsReleased}">
               <StackPanel Orientation="Horizontal" Spacing="18">
                 <Border Classes="promptIcon">
-                  <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" />
+                  <Path Data="{StaticResource CheckMarkIcon}" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="20" Stretch="Uniform" />
                 </Border>
                 <TextBlock Text="{Binding ReleasedTitle}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
               </StackPanel>

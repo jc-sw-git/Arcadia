@@ -60,7 +60,7 @@
                   <DataTemplate x:DataType="filter:FilterCategoryViewModel">
                     <Button Classes="plain filterCategory" Classes.current="{Binding IsCurrent}" Classes.focused="{Binding IsFocused}"
                             Classes.chosen="{Binding IsChosen}" Command="{Binding PickCommand}">
-                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Border Classes="filterCategoryDisc">
                           <ctl:LineIcon Classes="filterCategoryIcon" Icon="{Binding IconKey}" />
                         </Border>
@@ -72,7 +72,6 @@
                             <TextBlock Classes="filterSummary" Text="{Binding SummaryFallback}" />
                           </ctl:FirstThatFits>
                         </StackPanel>
-                        <Path Grid.Column="2" Classes="filterChevron" />
                       </Grid>
                     </Button>
                   </DataTemplate>

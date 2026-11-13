@@ -19,7 +19,7 @@ public static class PanTimeouts
     public static readonly TimeSpan DriverUninstaller = TimeSpan.FromMinutes(3);
 
     /// <summary>
-    /// Pan's own part: stopping the service with a full teardown (up to 90 s), the restore, replacing, configuring and
+    /// Pan's own part: stopping the service with a full teardown (up to 100 s), the restore, replacing, configuring and
     /// starting the service; with room to spare.
     /// </summary>
     public static readonly TimeSpan ServiceSteps = TimeSpan.FromMinutes(3);

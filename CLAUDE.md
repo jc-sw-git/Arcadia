@@ -117,6 +117,7 @@ What is needed only to implement an issue or finish a PR stays in that issue or 
 | Area | File |
 |---|---|
 | Principles: vision, launchers opt-in, feature parity, controllers alike, platforms, performance, plugins | `docs/product/README.md` |
+| Design rules: glyphs, focus, B, fades, ✕ and "Schließen", minimum sizes, progress and failures, theme | `docs/product/design.md` |
 | Library, page sizes, sorting, header tab strip | `docs/product/library.md` |
 | Buttons and keys (gamepad, WASD), button hints, held buttons, dialogs | `docs/product/controls.md` |
 | Controllers in games: Pan's emulated pads, the Steam Controller, the per-game mode | `docs/product/controllers-in-games.md` |

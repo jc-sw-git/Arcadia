@@ -1,7 +1,7 @@
 # Product decisions: Settings, category "Datenquellen"
 
 The page and its status messages: [settings.md](../settings.md). Where covers and backgrounds come from, their formats
-and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquellen, Über Arcadia.
+and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquellen, Lokalisierung, Über Arcadia.
 
 ## Tabs "Artwork" and "Metadaten" (#538)
 

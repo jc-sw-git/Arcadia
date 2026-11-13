@@ -6,6 +6,8 @@
   + update feed. Installs without admin rights to `%LOCALAPPDATA%\Arcadia\current\Arcadia.exe`. Nothing else may go
   into `%LOCALAPPDATA%\Arcadia`: the setup takes any file there for an installation and deletes the folder on
   "overwrite" or repair. Arcadia's own files (settings, logos, Epic play times, logs) are all in `%APPDATA%\Arcadia`.
+  Exception still to fix (#568): the artwork and metadata caches, own images included, are in
+  `%LOCALAPPDATA%\Arcadia\artwork` and `…\metadata`.
   The `Velopack` package and the `vpk` tool (`.config/dotnet-tools.json`) share one version.
 - `VelopackApp.Build()…Run()` must stay the first thing in `Program.Main`.
 - Pan installs itself to `%ProgramFiles%\Arcadia\Pan` with one UAC prompt; VIIPER is not in the installer, "Treiber installieren"

@@ -215,6 +215,7 @@
                 <!-- The marked metadata hit's facts (#539): what the player decides by. -->
                 <!-- RS and the mouse wheel scroll a long description (#560); a new hit starts at the top. -->
                 <Border Grid.Column="1" Classes="waitingFacts" IsVisible="{Binding ShowsFacts}">
+                  <Panel>
                   <ScrollViewer Name="FactsScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" ScrollChanged="OnFactsScrollChanged">
                   <ContentControl Name="Facts" Content="{Binding MarkedHit}">
                     <ContentControl.DataTemplates>
@@ -244,6 +245,9 @@
                     </ContentControl.DataTemplates>
                   </ContentControl>
                   </ScrollViewer>
+                  <!-- A long description fades into the box where more follows (docs/product/design.md → Scrolling). -->
+                  <ctl:EdgeFade Name="FactsFade" Size="32" FadeColor="{StaticResource SurfaceSunkenColor}" ScrollTarget="{Binding #FactsScroller}" />
+                  </Panel>
                 </Border>
               </Grid>
             </DockPanel>

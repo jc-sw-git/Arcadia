@@ -178,14 +178,33 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        var libraries = await _library.LoadAsync();
-        var finished = _installs.CompletePending(libraries.SelectMany(l => l.Games));
+        // Only the launchers of the pending games are read again: a whole scan every 15 s would read every library
+        // for as long as a launcher without an install monitor (demo, plugins) keeps an install open.
+        var rescans = new Dictionary<string, LauncherLibrary>(StringComparer.Ordinal);
+        var finished = new List<Game>();
+        foreach (var launcherId in _installs.PendingLauncherIds)
+        {
+            if (await _library.LoadAsync(launcherId) is not { } rescanned || _installs.CompletePending(rescanned.Games) is not { Count: > 0 } done)
+            {
+                continue;
+            }
+
+            finished.AddRange(done);
+            rescans[launcherId] = rescanned;
+        }
+
         if (finished.Count == 0)
         {
             return;
         }
 
-        Show(libraries);
+        // Merged into what is shown now, not what was shown before the awaits; a full reload that started meanwhile
+        // shows its own, newer scan.
+        if (!IsLoading)
+        {
+            Show(_scanned.Select(l => rescans.GetValueOrDefault(l.Launcher.Id, l)).ToList());
+        }
+
         Noticed?.Invoke(this, new LibraryNotice.PendingInstallsFinished(finished));
     }
 

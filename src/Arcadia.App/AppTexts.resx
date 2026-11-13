@@ -66,6 +66,7 @@
   <data name="UpdateCheckNoAnswer" xml:space="preserve"><value>Die Suche nach Updates ist fehlgeschlagen: GitHub antwortet nicht.</value></data>
   <data name="UpdateCheckFailed" xml:space="preserve"><value>Die Suche nach Updates ist fehlgeschlagen: {message}</value></data>
   <data name="UpdateDownloadFailed" xml:space="preserve"><value>Das Update konnte nicht geladen werden: {message}</value></data>
+  <data name="UpdateDownloadStalled" xml:space="preserve"><value>Das Update konnte nicht geladen werden: {minutes} Minuten lang kein Fortschritt. Versuch es später noch einmal.</value></data>
   <data name="NeverPlayed" xml:space="preserve"><value>Nie gespielt</value></data>
   <data name="PlayedOverAYearAgo" xml:space="preserve"><value>Vor über 1 Jahr</value></data>
   <data name="SortNameAscending" xml:space="preserve"><value>Name A–Z</value></data>

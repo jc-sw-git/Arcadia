@@ -20,6 +20,12 @@ public sealed class ArcadiaUpdateService
     /// <summary>Velopack's own limit is 30 minutes, which would leave "Nach Updates suchen" spinning that long.</summary>
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// A download that gets no further for this long is cancelled with a message; Velopack's own limits are per request
+    /// and much longer. Measured from the last progress, so a slow line that keeps going is never cut off.
+    /// </summary>
+    internal static readonly TimeSpan DownloadStall = TimeSpan.FromMinutes(2);
+
     private readonly HttpClient http;
     private readonly TimeProvider time;
     private readonly UpdateManager _manager;
@@ -158,13 +164,15 @@ public sealed class ArcadiaUpdateService
         LastError = null;
         Progress = 0;
         OnChanged();
+        using var stalled = new CancellationTokenSource(DownloadStall, time);
         try
         {
             await _manager.DownloadUpdatesAsync(update, percent =>
             {
+                stalled.CancelAfter(DownloadStall);
                 Progress = percent;
                 OnChanged();
-            });
+            }, stalled.Token);
 
             // Velopack's updater waits until Arcadia has exited, installs without a window (nothing
             // to answer, so the controller is never needed) and starts the new version.
@@ -173,6 +181,11 @@ public sealed class ArcadiaUpdateService
             IsRestartingForUpdate = true;
             Log?.Invoke($"Arcadia-Update {AvailableVersion} geladen, Neustart mit: {string.Join(' ', arguments)}");
             RestartRequested?.Invoke(this, EventArgs.Empty);
+        }
+        catch (OperationCanceledException) when (stalled.IsCancellationRequested)
+        {
+            LastError = AppTexts.UpdateDownloadStalled((int)DownloadStall.TotalMinutes);
+            Log?.Invoke($"Arcadia-Update abgebrochen: {DownloadStall.TotalMinutes:0} min ohne Fortschritt");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

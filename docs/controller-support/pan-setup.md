@@ -41,7 +41,7 @@ How Pan ([pan.md](pan.md)) gets onto the PC. The update at start: [pan-update.md
   description, recovery, pre-shutdown and DACL are set again in place, a stopped service is started. Anything else:
 - Pan copies itself to `%ProgramFiles%\Arcadia\Pan\Pan.exe`, compares the copy's SHA-256 with the source and the
   expected hash, and creates the service: quoted image path, auto start, an English description (Pan runs with `InvariantGlobalization`), recovery,
-  90 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
+  100 s pre-shutdown, a DACL under which users start and query but never change. A declined prompt is a failed action
   ("… abgelehnt"); exit code 3 points to `pan.log`.
 - "HidHide antwortet unerwartet" → "Neu installieren": a run with `--hidhide --hidhide-repair` runs the
   pinned installer with Windows Installer's reinstall, one prompt; only over the very driver it installs and never
@@ -80,7 +80,7 @@ How Pan leaves the PC, also when something gets in the way: [pan-uninstall.md](p
   Pan and a supported HidHide are there, Arcadia asks Pan `CheckHiding` (25 s reply timeout) and shows its answer as a
   row; the emulation asks before each start only then too (#382), without HidHide it pauses without asking. A driver
   change waiting for the Windows restart is one row instead (`PendingRestart`, `EmulationParts.WithRestart`).
-  Without Pan no pad is plugged in (`GuardedXboxPads.Unavailable`) and the per-game mode is greyed out.
+  Without Pan no pad is plugged in (`PanEmulationState.Unavailable`) and the per-game mode is greyed out.
 - Exit codes of `Pan.exe`: 0 done, 3 failed (`pan.log`), 4 data folder not securable (`--install`), 5 restore
   incomplete (`--restore`, `--uninstall`: what failed stays in the journal; after `--uninstall` the service stays and
   retries at every start; Arcadia shows "Pan konnte nicht alles aufräumen …"), 6 Pan installed but HidHide not,

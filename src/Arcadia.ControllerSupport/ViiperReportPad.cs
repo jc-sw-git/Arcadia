@@ -9,14 +9,17 @@ namespace Arcadia.ControllerSupport;
 internal sealed class ViiperReportPad : IVirtualPad
 {
     private readonly ViiperRawDevice _device;
+    private readonly Action<string> _log;
     private readonly CancellationTokenSource _reading = new();
     private readonly Task _reader;
     private volatile bool _broken;
 
-    public ViiperReportPad(PadKind kind, ViiperRawDevice device)
+    /// <param name="log">Where a failing feedback handler is reported; that is Arcadia's error, not a VIIPER loss.</param>
+    public ViiperReportPad(PadKind kind, ViiperRawDevice device, Action<string> log)
     {
         Kind = kind;
         _device = device;
+        _log = log;
         _reader = Task.Run(ReadFeedbackAsync, CancellationToken.None);
     }
 
@@ -51,7 +54,7 @@ internal sealed class ViiperReportPad : IVirtualPad
             while (true)
             {
                 await _device.Stream.ReadExactlyAsync(packet, _reading.Token);
-                Fed?.Invoke(VirtualPadReports.Feedback(Kind, packet));
+                Feed(VirtualPadReports.Feedback(Kind, packet));
             }
         }
         catch (OperationCanceledException) when (_reading.IsCancellationRequested)
@@ -62,6 +65,19 @@ internal sealed class ViiperReportPad : IVirtualPad
         {
             // The stream ended or broke: VIIPER or the device is gone, the next tick plugs a new pad.
             _broken = true;
+        }
+    }
+
+    /// <summary>A handler that throws loses this packet only: the pad still works, and the next rumble comes through.</summary>
+    private void Feed(PadFeedback feedback)
+    {
+        try
+        {
+            Fed?.Invoke(feedback);
+        }
+        catch (Exception ex)
+        {
+            _log($"{Kind}-Pad: Rumble oder Lichtleiste nicht weitergegeben: {ex}");
         }
     }
 

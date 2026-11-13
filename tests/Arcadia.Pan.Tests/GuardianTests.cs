@@ -234,6 +234,35 @@ public sealed class GuardianTests : IDisposable
     }
 
     [Fact]
+    public async Task A_client_that_connects_while_the_service_stops_is_refused()
+    {
+        Connect();
+        await _guardian.StopAsync();
+        _guardian.ClientGone();
+
+        Assert.Equal(PanReason.ServiceStopping, _guardian.Register(Arcadia with { Pid = 501 }));
+    }
+
+    [Fact]
+    public async Task A_hello_while_the_service_stops_is_rejected()
+    {
+        Assert.Equal(PanReason.None, _guardian.Register(Arcadia));
+        await _guardian.StopAsync();
+
+        var hello = _guardian.HandleNow(PanMessage.Of(PanCommand.Hello));
+
+        Assert.Equal(PanReply.Rejected, hello.Reply);
+        Assert.Equal(PanReason.ServiceStopping, hello.Reason);
+    }
+
+    [Fact]
+    public void Windows_waits_longer_than_the_longest_teardown()
+    {
+        // ports 10 + processes 10 + show 30 + restart 32 with the default timeouts.
+        Assert.Equal(TimeSpan.FromSeconds(82), Guardian.LongestTeardown);
+    }
+
+    [Fact]
     public async Task A_failed_step_stays_journaled_and_is_retried_at_the_next_trigger()
     {
         Connect();

@@ -171,8 +171,9 @@
           <TextBlock Text="{Binding GameInfo.Badge, TargetNullValue=''}" />
         </ctl:AgeRatingBadge>
       </StackPanel>
-      <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). -->
-      <ItemsControl Name="ButtonRow" Margin="0,20,0,0" HorizontalAlignment="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}">
+      <!-- 7 px around the buttons leave room for their focus ring (FocusRingGap). Drawn above the note's cloud (ZIndex),
+           which reaches up under the buttons, so the cloud never dims a button or its ring. -->
+      <ItemsControl Name="ButtonRow" ZIndex="1" Margin="0,20,0,0" HorizontalAlignment="Left" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource DetailButton}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <StackPanel Orientation="Horizontal" Spacing="16" />

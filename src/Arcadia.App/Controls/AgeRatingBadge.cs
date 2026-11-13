@@ -1,13 +1,12 @@
 using Arcadia.App.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media;
 
 namespace Arcadia.App.Controls;
 
 /// <summary>
 /// The border of an age rating (#541) in its board's colour: <see cref="Tone"/> picks the brush <c>AgeRating{Tone}</c>
-/// from <c>Theme.axaml</c>, so a theme replaces the colours in one place. Styled as <c>Border.ageBadge</c>.
+/// from <c>Theme.axaml</c> and follows it, so a theme replaces the colours in one place. Styled as <c>Border.ageBadge</c>.
 /// </summary>
 public sealed class AgeRatingBadge : Border
 {
@@ -23,26 +22,22 @@ public sealed class AgeRatingBadge : Border
         set => SetValue(ToneProperty, value);
     }
 
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        ApplyTone();
-    }
+    private IDisposable? _toneBrush;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
         if (change.Property == ToneProperty)
         {
-            ApplyTone();
+            _toneBrush?.Dispose();
+            _toneBrush = Bind(BorderBrushProperty, this.GetResourceObservable($"AgeRating{Tone}"));
         }
     }
 
-    private void ApplyTone()
+    // The default tone never raises a change, so the first binding is made here.
+    protected override void OnInitialized()
     {
-        if (this.TryFindResource($"AgeRating{Tone}", out var found) && found is IBrush brush)
-        {
-            BorderBrush = brush;
-        }
+        base.OnInitialized();
+        _toneBrush ??= Bind(BorderBrushProperty, this.GetResourceObservable($"AgeRating{Tone}"));
     }
 }

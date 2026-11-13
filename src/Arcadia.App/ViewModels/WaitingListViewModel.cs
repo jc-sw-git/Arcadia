@@ -115,6 +115,9 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     /// <summary>The focus moved in the games list: the view brings the current game into sight.</summary>
     public event EventHandler? FocusMoved;
 
+    /// <summary>RS or Shift+W/S while a metadata hit's facts show: the view scrolls their box one step up (-1) or down (1) (#560).</summary>
+    public event Action<int>? FactsScrollRequested;
+
     /// <summary>A press while the list is open; it takes every one. With the keyboard out, the keyboard takes it.</summary>
     public void Handle(UiAction action)
     {
@@ -138,6 +141,9 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 break;
             case UiAction.Status:
                 Skip();
+                break;
+            case UiAction.SecondaryUp or UiAction.SecondaryDown when Hits is { ShowsFacts: true }:
+                FactsScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);
                 break;
             case UiAction.PreviousTab or UiAction.NextTab when Hits is ArtworkHitsViewModel artworkHits:
                 // Cover and background sought: LB/RB turn their tabs (#539), as in "Artwork ändern".

@@ -46,8 +46,8 @@ Index and the category's frame: [README.md](README.md).
 
 ## Images set by hand and "Alle Artworks neu laden" (#490)
 
-- Group "ARTWORK" also holds "Alle Artworks neu laden" (below the missing images) and the switch "Von Hand gesetzte
-  Artworks überschreiben" (default off, saved in `settings.json`). "Neu laden" asks first, with the text matching the
+- Group "ARTWORK" also holds "Alle Artworks neu laden" (below the missing images) and, indented right under it, the
+  switch "Von Hand gesetzte Artworks überschreiben" (default off, saved in `settings.json`). "Neu laden" asks first, with the text matching the
   switch; B changes nothing. It runs like "Jetzt suchen" over every game, also asking SteamGridDB again, keeps images
   set by hand unless the switch is on, and is greyed out while a search runs; while it runs ("Neu laden läuft · n von
   N") it reads "Neu laden abbrechen".

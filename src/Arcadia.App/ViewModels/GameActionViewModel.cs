@@ -145,6 +145,17 @@ public sealed partial class GameActionViewModel : ViewModelBase
 
     public bool IsPrimary => Kind == GameActionKind.Play;
 
+    /// <summary>The primary action installs the game instead of starting it: its icon is a download arrow.</summary>
+    public bool Installs { get; private init; }
+
+    /// <summary>
+    /// The primary button shows A only while it has the focus (#560): A presses the focused button, so elsewhere the
+    /// glyph would be wrong. Without the focus it shows its icon, so the button keeps its width.
+    /// </summary>
+    public bool ShowsPressGlyph => IsPrimary && IsFocused;
+
+    public bool ShowsIcon => !ShowsPressGlyph;
+
     /// <summary>A hint below the label, or why the action isn't available.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasNote))]
@@ -172,6 +183,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
     public bool KeepsMenuOpen => Kind is GameActionKind.ControllerMode or GameActionKind.MouseMode;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsPressGlyph), nameof(ShowsIcon))]
     public partial bool IsFocused { get; set; }
 
     public IRelayCommand InvokeCommand { get; }
@@ -179,6 +191,7 @@ public sealed partial class GameActionViewModel : ViewModelBase
     /// <summary>Stroke icon in a 24×24 box.</summary>
     public Geometry Icon => StreamGeometry.Parse(Kind switch
     {
+        GameActionKind.Play when Installs => "M12 4v12M6 10l6 6 6-6M5 20h14",
         GameActionKind.Play => "M7 4.5v15l13-7.5z",
         GameActionKind.Details => "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v6M12 7.5v.5",
         GameActionKind.Favorite => "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z",
@@ -230,8 +243,8 @@ public sealed partial class GameActionViewModel : ViewModelBase
             ? new(GameActionKind.Play, tile.InstallStatusText, tile.ShowLauncherControlsHint ? AppTexts.ActionPauseAndCancelIn(launcher) : null, false, () => { })
             : !game.IsInstalled
                 ? game.InstallBlockedReason is { } blocked
-                    ? new(GameActionKind.Play, AppTexts.Install, blocked, false, () => { })
-                    : new(GameActionKind.Play, AppTexts.Install, AppTexts.ActionInstallOpensIn(launcher), true, () => host.Play(tile))
+                    ? new(GameActionKind.Play, AppTexts.Install, blocked, false, () => { }) { Installs = true }
+                    : new(GameActionKind.Play, AppTexts.Install, AppTexts.ActionInstallOpensIn(launcher), true, () => host.Play(tile)) { Installs = true }
                 : tile.IsRunningOrStarting
                     ? new(GameActionKind.Play, tile.PrimaryActionText, null, true, () => host.Play(tile))
                     : new(GameActionKind.Play, tile.PrimaryActionText, tile.UpdateAvailable ? AppTexts.ActionLauncherMayUpdate(launcher) : null, true, () => host.Play(tile)));

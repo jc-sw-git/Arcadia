@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Arcadia.App.ViewModels;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 
@@ -12,6 +13,9 @@ namespace Arcadia.App.Views;
 public partial class WaitingListView : UserControl
 {
     private WaitingListViewModel? _viewModel;
+    // As far as RS scrolls the facts per step: about three lines of the description.
+    private const double FactsScrollStep = 80;
+
     private WaitingHitsViewModel? _hits;
 
     public WaitingListView()
@@ -38,6 +42,7 @@ public partial class WaitingListView : UserControl
         {
             _viewModel.FocusMoved -= OnGameFocusMoved;
             _viewModel.PropertyChanged -= OnListChanged;
+            _viewModel.FactsScrollRequested -= OnFactsScrollRequested;
         }
 
         _viewModel = DataContext as WaitingListViewModel;
@@ -45,6 +50,7 @@ public partial class WaitingListView : UserControl
         {
             _viewModel.FocusMoved += OnGameFocusMoved;
             _viewModel.PropertyChanged += OnListChanged;
+            _viewModel.FactsScrollRequested += OnFactsScrollRequested;
         }
 
         FollowHits();
@@ -61,8 +67,26 @@ public partial class WaitingListView : UserControl
     private void FollowHits()
     {
         _hits?.FocusMoved -= OnHitFocusMoved;
+        _hits?.PropertyChanged -= OnHitsChanged;
         _hits = _viewModel?.Hits;
         _hits?.FocusMoved += OnHitFocusMoved;
+        _hits?.PropertyChanged += OnHitsChanged;
+        FactsScroller.Offset = default;
+    }
+
+    // Another hit's facts start at their top.
+    private void OnHitsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WaitingHitsViewModel.MarkedHit))
+        {
+            FactsScroller.Offset = default;
+        }
+    }
+
+    private void OnFactsScrollRequested(int direction)
+    {
+        var max = Math.Max(0, FactsScroller.Extent.Height - FactsScroller.Viewport.Height);
+        FactsScroller.Offset = new Vector(0, Math.Clamp(FactsScroller.Offset.Y + (direction * FactsScrollStep), 0, max));
     }
 
     private void OnGameFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>

@@ -212,8 +212,10 @@
                 </Panel>
 
                 <!-- The marked metadata hit's facts (#539): what the player decides by. -->
+                <!-- RS and the mouse wheel scroll a long description (#560); a new hit starts at the top. -->
                 <Border Grid.Column="1" Classes="waitingFacts" IsVisible="{Binding ShowsFacts}">
-                  <ContentControl Content="{Binding MarkedHit}">
+                  <ScrollViewer Name="FactsScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <ContentControl Name="Facts" Content="{Binding MarkedHit}">
                     <ContentControl.DataTemplates>
                       <DataTemplate x:DataType="vm:MetadataHitViewModel">
                         <StackPanel Spacing="14">
@@ -240,6 +242,7 @@
                       </DataTemplate>
                     </ContentControl.DataTemplates>
                   </ContentControl>
+                  </ScrollViewer>
                 </Border>
               </Grid>
             </DockPanel>

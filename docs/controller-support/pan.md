@@ -17,8 +17,8 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
   `PipeServer`, `InstallCommand` (`--install`), `ServiceSetup`, `UsbipInstall`, `Restore` (`--restore`), `WindowsCleanup`,
   `PanLog` (`%ProgramData%\Arcadia\Pan\pan.log`, 1 MB rotation). `--console` runs it in a console, `--version` prints
   version and protocol.
-- `src/Arcadia.ControllerSupport/Pan`: `PanClient` (`IEmulationGuardian`), `PanPipeTransport`, `GuardedXboxPads` (the
-  decorator that registers every plug with Pan), `PanSetup` (runs the bundled `Pan.exe` elevated). The App wires it in
+- `src/Arcadia.ControllerSupport/Pan`: `PanClient` (`IEmulationGuardian`), `PanPipeTransport`, `PanEmulation` (the
+  emulation whose `GuardedDevice` pads register every plug with Pan), `PanSetup` (runs the bundled `Pan.exe` elevated). The App wires it in
   `SteamControllerForGames.Create`; `SteamControllerXboxPad.FeedAlive` pulses the heartbeat on every poll.
 
 ## Identity and protocol
@@ -99,5 +99,5 @@ game reads a press mean 1.05 ms, p99 1.6 ms after the real controller (`checks/2
 
 `tests/Arcadia.Pan.Tests` (fake clock and cleanup) and `ServiceTests`, the real service end to end on the Windows CI
 runner only (`CI=true` and administrator; `ARCADIA_PAN_SERVICE_TESTS=1` by hand). `tests/Arcadia.Core.Tests`:
-`PanClientTests` (a fake Pan server over an anonymous pipe with the real `Guardian`), `GuardedXboxPadsTests`.
-`tests/Arcadia.App.Tests/PanGuardianTests`: what the player sees (`ArcadiaDriver.Pan`, a `FakeEmulationGuardian`).
+`PanClientTests` (a fake Pan server over an anonymous pipe with the real `Guardian`), `PanEmulationTests`.
+`tests/Arcadia.App.Tests/PanGuardianTests.cs`: what the player sees (`ArcadiaDriver.Pan`, a `FakeEmulationGuardian`).

@@ -45,7 +45,7 @@ administrator rights; usbip-win2 stays (Pan needs it), and so do the per-game mo
 
 ## At start and beside Pan
 
-- Once at start, `StopSisrStartedByOldArcadia` stops only an SISR whose command line shows the older Arcadia's start
+- Once at start, `SisrLeftovers.StopStartedByOldArcadiaAsync` stops only an SISR whose command line shows the older Arcadia's start
   (`--api.listen-address localhost:47640` and `--log.file` in one of Arcadia's log folders): the old Arcadia kept SISR
   running across its update, so it would take the controller beside Pan. An SISR the user started stays. A
   `viiper.exe` from SISR's folder goes too while no SISR from there runs, so it can't hold Arcadia's VIIPER's port.

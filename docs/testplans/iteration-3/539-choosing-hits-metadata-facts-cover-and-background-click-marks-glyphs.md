@@ -3,7 +3,7 @@
 Derived from the owner's findings in the hand test of #43 as written in #539. Keys follow `docs/product/controls.md`
 (WASD, Space = A, Esc = B, V = Y). Every game of the made-up launcher has neither cover nor background, so it seeks both.
 
-**Status:** Automated: T539-1 to -7, -10, -11 · QE: T539-8, -9 (implementer and QE) · Open for the owner: T539-12
+**Status:** Automated: T539-1 to -7, -10, -11 · QE: T539-8, -9 (implementer and QE) · Open for the owner: none (T539-12 passed)
 
 - [x] **T539-1** "Warten auf deine Auswahl" in "Metadaten": the hits are a list (name, year, first genre · developer), no
       covers, ▲ ▼ through it; beside it an info box with the marked hit's ERSCHIENEN, GENRES, ENTWICKLER, PUBLISHER,
@@ -31,7 +31,7 @@ Derived from the owner's findings in the hand test of #43 as written in #539. Ke
       lists; no text of the App's strings or `AppTexts.resx` names a bare button. · E2E: yes
 - [x] **T539-11** With the keyboard in use, a button in a text shows the key that does the same (Y as V, A as Leertaste,
       B as Esc, …); a text about one controller only keeps its buttons. · E2E: yes
-- [ ] **T539-12** **Owner:** with the Steam Controller, choose cover and background from two different hits of a real
+- [x] **T539-12** **Owner:** with the Steam Controller, choose cover and background from two different hits of a real
       waiting game and look at the result in the library and on the detail page; on the metadata list, judge whether the
       info box tells namesakes apart; read the new texts (tabs, "DEIN COVER", "DEIN HINTERGRUND", "Noch nicht gewählt", the empty box).
       · E2E: no (owner's library and wording)
@@ -63,3 +63,4 @@ History:
 | T539-1 to -7, -10, -11 | 2026-11-13 | QE | Linux cloud container, Release, `tools/ci/run-tests.sh 4` | pass (Core 3203, Pan 438, App 4 shards green); T539-5 and T539-7 red once by mutation (background game dropped; a click taking the hit) | Found: B in the hits keeps the picks (see PR Review) |
 | T539-8, -9 | 2026-11-13 | QE | Linux, headless window drawn by Skia (1920 × 1080), the made-up launcher and fake SteamGridDB, controller presses, keyboard (D) and a real pointer click | pass: both tabs, "DEIN COVER"/"DEIN HINTERGRUND", focus on the pick's own game, a click on a background marks it and takes nothing, with the keyboard ⇧ Q/⇧ E, V, Esc, Leertaste, WASD | Pictures `captures-539/qe/` in the project files |
 | T539-4 | 2026-11-13 | implementer | Linux cloud container, Debug, `dotnet test --filter` | fail, then pass | QE found B in the hits kept the cover pick (the next A took both); B now drops the picks; check `B_drops_the_pick_and_the_game_starts_again_on_the_covers` red before the fix |
+| T539-12 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

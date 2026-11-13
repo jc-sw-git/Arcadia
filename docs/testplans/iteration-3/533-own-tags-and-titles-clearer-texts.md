@@ -4,7 +4,7 @@ Derived from the owner's findings in the hand test of #43 (#495, #496) as writte
 `docs/product/controls.md` (WASD, Space = A, Esc = B). The notice belongs to the name editor, so it holds for "Neuer Tag"
 in the tag window and in the tag list and for renaming in the tag list alike.
 
-**Status:** Automated: T533-1 to -4 · QE: T533-5 · Open for the owner: T533-6
+**Status:** Automated: T533-1 to -4 · QE: T533-5 · Open for the owner: none (T533-6 passed)
 
 - [x] **T533-1** Detail page, "Verwalten" → "Tags": the info box reads „Weise deinen Spielen eigene Tags zu, um besser
       nach ihnen filtern zu können. Du kannst deine Tags auch unter Einstellungen → Datenquellen verwalten.“ · E2E: yes
@@ -20,7 +20,7 @@ in the tag window and in the tag list and for renaming in the tag list alike.
       hides it; the full name can still be taken. · E2E: yes
 - [x] **T533-5** The look: the notice below the field in the tag dialog with the keyboard greyed, the info box with the
       tag chips (a 40-character tag cut with "…") and with the line for none. · E2E: no (window)
-- [ ] **T533-6** **Owner:** read the new texts in place (info box of "Tags", "Titel ändern", the notice) and judge the
+- [x] **T533-6** **Owner:** read the new texts in place (info box of "Tags", "Titel ändern", the notice) and judge the
       wording. · E2E: no (wording is the owner's call)
 
 Automated tests:
@@ -40,3 +40,4 @@ History:
 | T533-2 (unreadable file) | 2026-11-13 | implementer | Debug, Linux cloud container | ✅ after the fix | QE finding 1: the greyed row said „keine eigenen Tags“ → lists nothing now |
 | T533-5 | 2026-11-13 | QE | PR #534 at 8153c9e, Debug, Linux cloud container (Xvfb 1920 × 1080, `--demo`, keys) | ✅ line for none; notice in the warning colour below the field at 40 characters, keys greyed; the 40-character tag as one chip cut with "…" under "EIGENE TAGS" | – |
 | All tests with the window guards (`WINDOW_GUARDS=1 tools/ci/run-tests.sh 4`) | 2026-11-13 | QE | PR #534 at 8153c9e, Release, Linux cloud container | ✅ | – |
+| T533-6 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

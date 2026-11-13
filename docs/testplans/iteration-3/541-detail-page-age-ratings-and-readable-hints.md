@@ -4,7 +4,7 @@ Findings of the owner's hand test of #43 (detail page after #493/#494/#531), cha
 written by the implementing thread from the issue's changes, as the issue had none; the quality engineer checks them in
 the review.
 
-**Status:** Automated: T541-1, T541-2, T541-3 (the colours chosen) · QE: T541-3, T541-4, T541-5, T541-6 · Owner passed: T541-7, T541-8
+**Status:** Automated: T541-1, T541-2, T541-3 (the colours chosen) · QE: T541-3, T541-4, T541-5, T541-6 · Open for the owner: none (T541-7, T541-8 passed)
 
 Every case runs on the detail page with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 

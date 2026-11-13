@@ -3,7 +3,7 @@
 Findings of the owner's hand test of #43: #531 left buttons flat in places. The cases were written by the implementing
 thread from the issue's four changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T540-3 (the selected tab drawn whole) · QE: T540-1, T540-2, T540-3, T540-4, T540-5 · Owner passed: T540-6
+**Status:** Automated: T540-3 (the selected tab drawn whole) · QE: T540-1, T540-2, T540-3, T540-4, T540-5 · Open for the owner: none (T540-6 passed)
 
 Keys follow `docs/product/controls.md`; every case works with the gamepad alone.
 

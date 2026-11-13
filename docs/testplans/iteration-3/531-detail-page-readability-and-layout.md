@@ -4,7 +4,7 @@ Findings of the owner's hand test of #43 (detail page from #498/#499/#500), chan
 written by the implementing thread from the issue's changes, as the issue had none; the quality engineer checks them in
 the review.
 
-**Status:** Automated: T531-6, T531-3 (the sizing) · QE: T531-1, T531-3, T531-4, T531-5, T531-7 · Owner passed: T531-2, T531-8, T531-9
+**Status:** Automated: T531-6, T531-3 (the sizing) · QE: T531-1, T531-3, T531-4, T531-5, T531-7 · Open for the owner: none (T531-2, T531-8, T531-9 passed)
 
 Every case runs on the detail page with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 "A bright artwork" is a game whose background is light behind the title and the button row.

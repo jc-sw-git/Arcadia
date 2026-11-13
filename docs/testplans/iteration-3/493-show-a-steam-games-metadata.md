@@ -16,7 +16,7 @@ saved as `src/Arcadia.Launchers/Steam/steam-tags-german.json` (no request beside
 Metadaten neu laden" runs, the old data stays visible until the new one is there. A5 with no game missing, the
 progress row reads "Alle Metadaten geladen" (greyed).
 
-**Status:** Automated: T493-1 to -11, T493-14 to -31, T493-41 · QE: T493-12, T493-13, T493-32 to -36 · Owner passed: T493-37, T493-38, T493-39 · Open for the owner: T493-40 (offline test, moved to the acceptance review of the iteration, I#267)
+**Status:** Automated: T493-1 to -11, T493-14 to -31, T493-41 · QE: T493-12, T493-13, T493-32 to -36 · Open for the owner: T493-40, offline test, moved to the acceptance review of the iteration, I#267 (T493-37, T493-38, T493-39 passed)
 
 **Steam data from `appinfo.vdf` and the store page**
 

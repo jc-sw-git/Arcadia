@@ -4,7 +4,7 @@ Derived from the owner's findings in the hand test of #43 as written in #538; th
 ("Datenquellen" stays one category with two tabs "Artwork" and "Metadaten", each with an icon). Keys follow
 `docs/product/controls.md` (WASD, Space = A, Esc = B, Q/E = LT/RT).
 
-**Status:** Automated: T538-1 to -8 · QE: T538-9, -10 · Owner passed: T538-11
+**Status:** Automated: T538-1 to -8 · QE: T538-9, -10 · Open for the owner: none (T538-11 passed)
 
 - [x] **T538-1** ≡, RB to "Datenquellen": two tabs "Artwork" (chosen) and "Metadaten" above the rows; "Artwork" holds
       STEAMGRIDDB, REIHENFOLGE FÜR ARTWORK, ARTWORK; RT shows "Metadaten" at its first row with IGDB, REIHENFOLGE FÜR

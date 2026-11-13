@@ -8,7 +8,7 @@ code. Automated tests use made-up games, names, ids and access values and a fake
 changed decision changes its case. #494 came in two PRs: access, matching, order and titles first, then the waiting
 list entries "Metadaten" (T494-16 to T494-20). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T494-2 to T494-17, T494-19 to T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-18, T494-22, T494-33 · Owner passed: T494-34, T494-35, T494-36
+**Status:** Automated: T494-2 to T494-17, T494-19 to T494-21, T494-23, T494-24, T494-25 (with #496), T494-26 to T494-32 · QE: T494-1, T494-18, T494-22, T494-33 · Open for the owner: none (T494-34, T494-35, T494-36 passed)
 
 **IGDB access**
 

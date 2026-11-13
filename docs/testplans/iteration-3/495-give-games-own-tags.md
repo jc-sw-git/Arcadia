@@ -14,7 +14,7 @@ Deviations from the cases, for the owner's look in #43's final test:
   not as a field with the source "Eigene".
 - D6: the questions quote with „…“ (`docs/product/ui-texts.md`), not ‚…'.
 
-**Status:** Automated: T495-1 to -11, -13 to -19, -21 to -27, -30 (guard on `main`) · QE: T495-12, -20, -28, -29, -31 · Owner passed: T495-32, T495-33
+**Status:** Automated: T495-1 to -11, -13 to -19, -21 to -27, -30 (guard on `main`) · QE: T495-12, -20, -28, -29, -31 · Open for the owner: none (T495-32, T495-33 passed)
 
 **Tag window (detail page and context menu)**
 

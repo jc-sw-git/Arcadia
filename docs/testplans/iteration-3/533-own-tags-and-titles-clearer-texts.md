@@ -4,7 +4,7 @@ Derived from the owner's findings in the hand test of #43 (#495, #496) as writte
 `docs/product/controls.md` (WASD, Space = A, Esc = B). The notice belongs to the name editor, so it holds for "Neuer Tag"
 in the tag window and in the tag list and for renaming in the tag list alike.
 
-**Status:** Automated: T533-1 to -4 · QE: T533-5 · Owner passed: T533-6
+**Status:** Automated: T533-1 to -4 · QE: T533-5 · Open for the owner: none (T533-6 passed)
 
 - [x] **T533-1** Detail page, "Verwalten" → "Tags": the info box reads „Weise deinen Spielen eigene Tags zu, um besser
       nach ihnen filtern zu können. Du kannst deine Tags auch unter Einstellungen → Datenquellen verwalten.“ · E2E: yes

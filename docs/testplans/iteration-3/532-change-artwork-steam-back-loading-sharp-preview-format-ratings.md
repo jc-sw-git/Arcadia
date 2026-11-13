@@ -1,6 +1,6 @@
 # #532 Change artwork: Steam artwork back, loading state, sharp images, preview, format and ratings
 
-**Status:** Automated: T532-1, T532-3, T532-5, T532-6, T532-8 · QE: T532-2, T532-4, T532-7, T532-9 · Owner passed: T532-10, T532-11
+**Status:** Automated: T532-1, T532-3, T532-5, T532-6, T532-8 · QE: T532-2, T532-4, T532-7, T532-9 · Open for the owner: none (T532-10, T532-11 passed)
 
 - [x] **T532-1** A game shows its launcher's image (automatic). In "Artwork ändern" A on a SteamGridDB tile, then A on the launcher's tile again, without closing the modal: the launcher's image is used again (set by hand, ticked), no warning "konnte nicht geladen werden". · E2E: yes
 - [x] **T532-2** Detail page with several games with covers: RT twice quickly and once slowly, LT back: the cover in front is as sharp as when the detail page is opened directly on that game. · E2E: no (window: decode size; pinned by the guard `SharpCoverTests`)

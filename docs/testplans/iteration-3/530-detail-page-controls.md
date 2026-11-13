@@ -3,7 +3,7 @@
 Findings of the owner's hand test of #43 (detail page from #498/#499/#500), changes 1 to 6 of the issue. The cases were written by the implementing thread from the issue's
 changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Owner passed: T530-6, T530-7, T530-10, T530-11
+**Status:** Automated: T530-1 to -4, T530-8, T530-9 · QE: T530-5 · Open for the owner: none (T530-6, T530-7, T530-10, T530-11 passed)
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md` (WASD,
 Space = A, Esc = B, Q/E = LT/RT, Shift+W/S = RS). "A jump" is the animation of one carousel turn: title, info line and

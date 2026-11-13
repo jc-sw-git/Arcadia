@@ -3,7 +3,7 @@
 Derived from the owner's findings in the hand test of #43 after #538, as written in #547. Keys follow
 `docs/product/controls.md` (WASD, Space = A, Esc = B, Shift+W/S = RS).
 
-**Status:** Automated: T547-1 to -4 · QE: T547-5 (passed) · Owner passed: T547-6
+**Status:** Automated: T547-1 to -4 · QE: T547-5 (passed) · Open for the owner: none (T547-6 passed)
 
 - [x] **T547-1** ≡ → "Datenquellen" → "Metadaten", focus "Launcher-Daten" while "Fehlende Metadaten" loads and scroll its
       info box down with RS: it stays where it was scrolled while the run refreshes the rows (no jump to the top). The

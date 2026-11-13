@@ -19,7 +19,7 @@ holds at most 200 characters (the field says "Höchstens 200 Zeichen" beyond); l
 and "Titel zurücksetzen" are also in the context menu (`docs/product/detail-page.md`: menu and detail page offer the
 same actions). The owner's cases are collected by the closing thread of #43.
 
-**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Owner passed: T496-18
+**Status:** Automated: T496-1 to -12, -14, -15 · QE: T496-13, T496-16, T496-17 · Open for the owner: none (T496-18 passed)
 
 **Change and reset**
 

@@ -1,6 +1,6 @@
 # #560 Final test of #43: glyphs, scrolling the hit info, row order and quick selection alignment
 
-**Status:** Automated: T560-2, T560-3, T560-4 · QE: T560-5, T560-6 · Owner passed: T560-1, T560-7
+**Status:** Automated: T560-2, T560-3, T560-4 · QE: T560-5, T560-6 · Open for the owner: none (T560-1, T560-7 passed)
 
 - [x] **T560-1** **Owner:** `--first-run` with the Steam Controller, step "Datenquellen": the focus on "Fertig" shows ≡'s
   glyph whole (lines on the dark glyph), not an empty dark circle. · E2E: no (real controller: the keyboard shows the

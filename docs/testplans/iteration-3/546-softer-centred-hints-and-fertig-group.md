@@ -3,7 +3,7 @@
 Findings of the owner's hand test of #43 after #541 and #497, changes 1 to 4 of the issue. The cases were written by the
 implementing thread from the issue's changes, as the issue had none; the quality engineer checks them in the review.
 
-**Status:** Automated: T546-4 · QE: T546-1, T546-2, T546-3, T546-4 · Owner passed: T546-5
+**Status:** Automated: T546-4 · QE: T546-1, T546-2, T546-3, T546-4 · Open for the owner: none (T546-5 passed)
 
 Every case runs with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 

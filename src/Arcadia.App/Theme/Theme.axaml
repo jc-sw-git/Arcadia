@@ -71,10 +71,10 @@
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
 
-    <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
-         ctl:LineIcon, which also fills "<key>Fill". Own drawings, from the designs (T141Icons). -->
     <!-- A check, 14 × 10: give its Path these proportions, as a square box with Stretch="Uniform" sets it at the top. -->
     <StreamGeometry x:Key="CheckMarkIcon">M5 12.5l4.5 4.5 9.5-10</StreamGeometry>
+    <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
+         ctl:LineIcon, which also fills "<key>Fill". Own drawings, from the designs (T141Icons). -->
     <StreamGeometry x:Key="IconTypeGame">M6.5 6.5h11a4.5 4.5 0 0 1 4.4 3.6l1 5.2a2.8 2.8 0 0 1-4.9 2.4L15.5 15h-7L6 17.7a2.8 2.8 0 0 1-4.9-2.4l1-5.2A4.5 4.5 0 0 1 6.5 6.5zM7 9.5v4M5 11.5h4</StreamGeometry>
     <StreamGeometry x:Key="IconTypeGameFill">M15.1 10.4a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0zM17.4 12.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0z</StreamGeometry>
     <StreamGeometry x:Key="IconInstalled">M5 13.5h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM7.5 7l3 3 6-6</StreamGeometry>
@@ -3627,13 +3627,13 @@
     <Setter Property="VerticalAlignment" Value="Top" />
   </Style>
   <Style Selector="Path.artworkTickMark">
-    <Setter Property="Data" Value="M5 12l5 5 9-10" />
+    <Setter Property="Data" Value="{StaticResource CheckMarkIcon}" />
     <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
     <Setter Property="StrokeThickness" Value="3.4" />
     <Setter Property="StrokeLineCap" Value="Round" />
     <Setter Property="StrokeJoin" Value="Round" />
     <Setter Property="Width" Value="16" />
-    <Setter Property="Height" Value="16" />
+    <Setter Property="Height" Value="11.4" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />

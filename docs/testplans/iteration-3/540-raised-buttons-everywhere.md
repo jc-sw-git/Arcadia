@@ -24,8 +24,8 @@ Keys follow `docs/product/controls.md`; every case works with the gamepad alone.
 - [x] **T540-4** The detail page's quick selection: "Artwork ändern", "Tags", "Deinstallieren …", the choices and
   "Übersicht anpassen" (keeps its outline) are raised; a greyed entry lies flat; the focus ring sits around the raised
   entry. · E2E: no (window: the look)
-- [ ] **T540-5** The checkmark sits in the middle of its box in "Übersicht anpassen", the tag window and the filter
-  ("Typ"); the check after "Für alle Spiele übernehmen" and the one in the dialog after the controllers are released sit in the middle
+- [x] **T540-5** The checkmark sits in the middle of its box in "Übersicht anpassen", the tag window and the filter
+  ("Typ"), on the chosen tile in "Artwork ändern" and beside the chosen layout of the on-screen keyboard; the check after "Für alle Spiele übernehmen" and the one in the dialog after the controllers are released sit in the middle
   of their place. · E2E: no (window: pixel position)
 - [ ] **T540-6** **Owner:** Look at the settings (all four categories), the library's tabs, a detail page and the
   filter on the TV: every button looks raised and the same, the checkmarks sit straight. · E2E: no (look and feel; the
@@ -49,3 +49,4 @@ History:
 | T540-5 | 2026-11-13 | Claude | PR #544, demo data, Linux/Xvfb ("Übersicht anpassen" at 1000 %) | ✅ | – |
 | T540-1, -2, -4, T540-3 (QE run) | 2026-11-13 | Claude (QE) | branch at 3d91b60, Debug, Linux/Xvfb 1920 × 1080, `--demo`, keys by xdotool | ✅ T540-1: „Jetzt einlesen“ raised, shadow whole; T540-2: ◀ ▶ raised in the launcher rows, flat in the greyed quick selection entries, no ▶ on the filter's categories and on „Zu den Datenquellen“; T540-3: library tab and settings category and „Artwork ändern“ tab raised; T540-4: „Artwork ändern“, „Tags“, „Deinstallieren …“, „Übersicht anpassen“ raised, greyed choices flat | – |
 | T540-5 (QE review) | 2026-11-13 | Claude (QE) | branch at 3d91b60, by geometry | ❌ two checks keep the old geometry in a square box: the chosen tile in „Artwork ändern“ (`artworkTickMark`, 16 × 16) and the chosen layout on the on-screen keyboard (20 × 20), each about 2–3 px too high | sent to the implementer |
+| T540-5 | 2026-11-13 | Claude | PR #544 after the review, by geometry (every check now uses `CheckMarkIcon` in its proportions) | ✅ | – |

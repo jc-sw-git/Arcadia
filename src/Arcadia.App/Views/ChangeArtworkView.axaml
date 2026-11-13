@@ -43,7 +43,7 @@
           <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Right" VerticalAlignment="Center">
             <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Text="{x:Static app:AppTexts.ArtworkTabsHint}" />
             <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.ArtworkChooseHint}" />
-            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.ArtworkUseHint}" />
+            <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.ArtworkUseHint}" />
             <Button Classes="plain" Command="{Binding PickOtherFileCommand}" IsVisible="{Binding CanPickOtherFile}">
               <ctl:KeyHint Pad="X" Keys="F" Text="{x:Static app:AppTexts.ArtworkOtherFileHint}" />
             </Button>

@@ -38,7 +38,7 @@
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding AcceptCommand}" IsVisible="{Binding HasGames}">
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptHint}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptHint}" />
             </Button>
           </StackPanel>
         </Border>

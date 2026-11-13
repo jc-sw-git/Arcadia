@@ -89,6 +89,9 @@ public sealed class UiTextsStayInResourcesTests
     [InlineData("""<Button ToolTip.Tip="Schließen (Esc)" />""")]
     [InlineData("""<Style><Setter Property="Text" Value="Weiter" /></Style>""")]
     [InlineData("""<TextBlock>Bibliothek wird geladen</TextBlock>""")]
+    [InlineData("""<KeyHint Pad="A" Keys="Leertaste" />""")]
+    [InlineData("""<KeyHint Pad="A" Keys="Esc" Alt="Klick" />""")]
+    [InlineData("""<TextBlock Text="{Binding Hint, TargetNullValue='Spielen'}" />""")]
     public void A_view_with_a_written_text_fails(string element) =>
         Assert.NotEmpty(GermanUiLiterals.InAxaml($"<UserControl xmlns=\"https://github.com/avaloniaui\">{element}</UserControl>"));
 
@@ -98,6 +101,10 @@ public sealed class UiTextsStayInResourcesTests
     [InlineData("""<TextBlock Text="{Binding Title}" />""")]
     [InlineData("""<TextBlock Text="ARCADIA" />""")]
     [InlineData("""<TextBlock Text="Esc" />""")]
+    [InlineData("""<KeyHint Pad="D-Pad" Keys="WASD" Alt="{x:Static app:AppTexts.Click}" />""")]
+    [InlineData("""<KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" />""")]
+    [InlineData("""<KeyHint Keys="Enter" />""")]
+    [InlineData("""<TextBlock IsVisible="{Binding Shown, FallbackValue=False, TargetNullValue='False'}" />""")]
     public void A_view_with_resources_bindings_and_names_passes(string element) =>
         Assert.Empty(GermanUiLiterals.InAxaml($"<UserControl xmlns=\"https://github.com/avaloniaui\" xmlns:x=\"x\" xmlns:app=\"app\">{element}</UserControl>"));
 

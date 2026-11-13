@@ -37,7 +37,7 @@
                     <ctl:KeyHint Pad="X" Keys="F" Text="{x:Static app:AppTexts.TagsHintRename}" />
                   </Button>
                   <Button Classes="plain" Command="{Binding AcceptCommand}">
-                    <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding AcceptHint}" />
+                    <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptHint}" />
                   </Button>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" IsVisible="{Binding ShowsGames}">
@@ -46,7 +46,7 @@
                     <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
                   </Button>
                   <Button Classes="plain" Command="{Binding AcceptCommand}" IsVisible="{Binding Games?.HasGames, TargetNullValue=False}">
-                    <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.ActionShowDetails}" />
+                    <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.ActionShowDetails}" />
                   </Button>
                 </StackPanel>
               </Panel>

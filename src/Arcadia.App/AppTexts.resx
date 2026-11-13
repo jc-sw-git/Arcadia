@@ -859,6 +859,7 @@
   <data name="LauncherCaption" xml:space="preserve"><value>LAUNCHER</value></data>
   <data name="LocationCaption" xml:space="preserve"><value>SPEICHERORT</value></data>
   <data name="MouseModeClickTip" xml:space="preserve"><value>Klicken wechselt zwischen „Standard“, „Erlaubt“ und „Deaktiviert“</value></data>
+  <data name="ControllerModeClickTip" xml:space="preserve"><value>Klicken wechselt zwischen „Standard“, „Arcadia“ und „Steam-Eingabe“</value></data>
   <data name="NotInstalledATip" xml:space="preserve"><value>Nicht installiert – A installiert</value></data>
   <data name="PreviousPageTip" xml:space="preserve"><value>Vorherige Seite (Q, Bild ↑ oder Umschalt+←)</value></data>
   <data name="NextPageTip" xml:space="preserve"><value>Nächste Seite (E, Bild ↓ oder Umschalt+→)</value></data>
@@ -882,6 +883,8 @@
   <data name="MouseWheel" xml:space="preserve"><value>Mausrad</value></data>
   <data name="DoubleClick" xml:space="preserve"><value>Doppelklick</value></data>
   <data name="RightClick" xml:space="preserve"><value>Rechtsklick</value></data>
+  <data name="KeyHintDrag" xml:space="preserve"><value>Ziehen</value></data>
+  <data name="KeyHintRelease" xml:space="preserve"><value>Loslassen</value></data>
   <data name="PageUpDown" xml:space="preserve"><value>Bild ↑ ↓</value></data>
   <data name="MenuKey" xml:space="preserve"><value>Menütaste</value></data>
   <data name="ToggleKeyboardTip" xml:space="preserve"><value>Bildschirmtastatur ein- oder ausblenden</value></data>

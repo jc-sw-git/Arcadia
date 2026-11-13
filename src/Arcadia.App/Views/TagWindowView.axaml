@@ -30,7 +30,7 @@
                 <Button Classes="plain tagHint" Classes.off="{Binding IsNewFocused}" Command="{Binding DeleteCommand}">
                   <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.TagsHintDelete}" />
                 </Button>
-                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static vm:TagWindowViewModel.AcceptHint}" />
+                <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static vm:TagWindowViewModel.AcceptHint}" />
               </StackPanel>
             </Border>
             <Panel>

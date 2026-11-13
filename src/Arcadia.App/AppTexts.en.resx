@@ -859,6 +859,7 @@
   <data name="LauncherCaption" xml:space="preserve"><value>LAUNCHER</value></data>
   <data name="LocationCaption" xml:space="preserve"><value>LOCATION</value></data>
   <data name="MouseModeClickTip" xml:space="preserve"><value>Clicking switches between “Default”, “Allowed” and “Turned off”</value></data>
+  <data name="ControllerModeClickTip" xml:space="preserve"><value>Clicking switches between “Default”, “Arcadia” and “Steam Input”</value></data>
   <data name="NotInstalledATip" xml:space="preserve"><value>Not installed – A installs</value></data>
   <data name="PreviousPageTip" xml:space="preserve"><value>Previous page (Q, Page ↑ or Shift+←)</value></data>
   <data name="NextPageTip" xml:space="preserve"><value>Next page (E, Page ↓ or Shift+→)</value></data>
@@ -882,6 +883,8 @@
   <data name="MouseWheel" xml:space="preserve"><value>Mouse wheel</value></data>
   <data name="DoubleClick" xml:space="preserve"><value>Double-click</value></data>
   <data name="RightClick" xml:space="preserve"><value>Right-click</value></data>
+  <data name="KeyHintDrag" xml:space="preserve"><value>Drag</value></data>
+  <data name="KeyHintRelease" xml:space="preserve"><value>Release</value></data>
   <data name="PageUpDown" xml:space="preserve"><value>Page ↑ ↓</value></data>
   <data name="MenuKey" xml:space="preserve"><value>Menu key</value></data>
   <data name="ToggleKeyboardTip" xml:space="preserve"><value>Show or hide the on-screen keyboard</value></data>
@@ -974,7 +977,7 @@
   <data name="MessageCountOne" xml:space="preserve"><value>1 message</value></data>
   <data name="MessageCountMany" xml:space="preserve"><value>{count} messages</value></data>
   <data name="KeyShift" xml:space="preserve"><value>Shift</value></data>
-  <data name="KeySpace" xml:space="preserve"><value>Space bar</value></data>
+  <data name="KeySpace" xml:space="preserve"><value>Space</value></data>
   <data name="Hide" xml:space="preserve"><value>Hide</value></data>
   <data name="ControllerModeSteam" xml:space="preserve"><value>Steam Input</value></data>
   <data name="ControllerModeDefault" xml:space="preserve"><value>Default ({mode})</value></data>

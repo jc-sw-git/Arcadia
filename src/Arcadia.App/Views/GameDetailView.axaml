@@ -17,7 +17,7 @@
               IsEnabled="{Binding IsEnabled}" Command="{Binding InvokeCommand}"
               ToolTip.Tip="{Binding DisabledReason}" ToolTip.ShowOnDisabled="True">
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" IsVisible="{Binding IsPrimary}" />
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsDark="True" IsVisible="{Binding IsPrimary}" />
           <!-- The icons are drawn in a 24 px box; scaled to 20 px like the design. -->
           <Viewbox Width="20" Height="20" IsVisible="{Binding !IsPrimary}" VerticalAlignment="Center">
             <Path Data="{Binding Icon}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2.4" StrokeLineCap="Round" StrokeJoin="Round"
@@ -224,7 +224,7 @@
                 <Button Classes="plain detailRail" Classes.open="{Binding IsOpen}" Classes.focused="{Binding IsFocused}" Command="{Binding OpenCommand}">
                   <DockPanel>
                     <!-- A's glyph in the ring (#530): a press enters the area, ◀ ▶ don't. -->
-                    <ctl:KeyHint DockPanel.Dock="Right" Pad="A" Keys="Leertaste" IsVisible="{Binding ShowsEnterHint}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    <ctl:KeyHint DockPanel.Dock="Right" Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsVisible="{Binding ShowsEnterHint}" VerticalAlignment="Center" Margin="10,0,0,0" />
                     <Border DockPanel.Dock="Left" Classes="railIcon" Margin="0,0,14,0" VerticalAlignment="Center">
                       <Path Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />

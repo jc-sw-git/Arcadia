@@ -1261,6 +1261,10 @@
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <Style Selector="TextBlock.quickValue.inChip">
+    <Setter Property="Width" Value="150" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
   <Style Selector="Path.quickIcon">
     <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
     <Setter Property="StrokeThickness" Value="2" />
@@ -1784,13 +1788,13 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
-  <Style Selector="Border.rowGo Path">
+  <Style Selector="Border.rowGo > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="Border.rowGo.primary > Grid > TextBlock">
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="Border.rowGo.primary Path">
+  <Style Selector="Border.rowGo.primary > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
   <Style Selector="Button.settingRow.focused Border.rowGo">
@@ -1800,7 +1804,7 @@
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
   </Style>
-  <Style Selector="Button.settingRow.focused Border.rowGo Path">
+  <Style Selector="Button.settingRow.focused Border.rowGo > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
   </Style>
   <!-- Nothing to press: flat, as a greyed button is everywhere. -->
@@ -1820,7 +1824,7 @@
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="Effect" Value="{x:Null}" />
   </Style>
-  <Style Selector="Button.settingRow.focused Border.rowGo.disabled Path">
+  <Style Selector="Button.settingRow.focused Border.rowGo.disabled > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="TextBlock.rowValue">

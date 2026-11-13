@@ -222,4 +222,31 @@ public sealed class WaitingListMetadataTests
         Assert.Equal(["Echo Drift Remix"], hits.Hits.Select(h => h.Name));
         Assert.Equal(AppTexts.WaitingIntroMetadataOwnTerm(1), hits.Intro);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T560-3")]
+    public async Task Rs_scrolls_the_facts_of_a_metadata_hit_only_while_they_overflow_and_nothing_else_on_the_list()
+    {
+        using var arcadia = await StartAsync();
+        WaitingListTests.OpenDataSources(arcadia);
+        arcadia.FocusRow(SeveralHitsRows.WaitingKey(WaitingKind.Metadata));
+        arcadia.Press(UiAction.Accept);
+        var list = arcadia.Main.WaitingList!;
+        await ShownMetadataHitsAsync(list);
+        var steps = new List<int>();
+        list.FactsScrollRequested += steps.Add;
+        var game = list.CurrentGame;
+
+        // Facts that fit their box ignore RS (the view says when they overflow; then the footer names RS).
+        arcadia.Press(UiAction.SecondaryDown);
+        Assert.Empty(steps);
+        list.FactsOverflow = true;
+        arcadia.Press(UiAction.SecondaryDown);
+        arcadia.Press(UiAction.SecondaryDown);
+        arcadia.Press(UiAction.SecondaryUp);
+
+        Assert.Equal([1, 1, -1], steps);
+        Assert.Same(game, list.CurrentGame);
+        Assert.Same(list, arcadia.Main.WaitingList);
+    }
 }

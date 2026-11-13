@@ -66,6 +66,7 @@
   <data name="UpdateCheckNoAnswer" xml:space="preserve"><value>Checking for updates failed: GitHub doesn’t answer.</value></data>
   <data name="UpdateCheckFailed" xml:space="preserve"><value>Checking for updates failed: {message}</value></data>
   <data name="UpdateDownloadFailed" xml:space="preserve"><value>The update couldn’t be downloaded: {message}</value></data>
+  <data name="UpdateDownloadStalled" xml:space="preserve"><value>The update couldn’t be downloaded: no progress for {minutes} minutes. Try again later.</value></data>
   <data name="NeverPlayed" xml:space="preserve"><value>Never played</value></data>
   <data name="PlayedOverAYearAgo" xml:space="preserve"><value>Over 1 year ago</value></data>
   <data name="SortNameAscending" xml:space="preserve"><value>Name A–Z</value></data>

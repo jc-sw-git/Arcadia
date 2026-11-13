@@ -225,20 +225,20 @@ public sealed class FirstRunDataSourcesTests
     {
         using var arcadia = await StartAsync();
         ToStep(arcadia);
+        // A slow SteamGridDB: the search the key starts is still waiting for its answer when the step ends.
+        var grids = "grids/steam/" + GameId;
+        arcadia.SteamGridDb.SlowPaths[grids] = TimeSpan.FromSeconds(1);
         await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
-        arcadia.SteamGridDb.Hangs = true;
-        await arcadia.WaitUntilAsync(() => arcadia.Artwork.Search.Running is not null || arcadia.SteamGridDb.Asked().Count > 0, "Suche läuft");
-        var asked = arcadia.SteamGridDb.Asked().Count(path => path == "grids/steam/" + GameId);
+        await arcadia.WaitUntilAsync(() => arcadia.SteamGridDb.Asked().Contains(grids), "Suche fragt SteamGridDB");
 
         arcadia.Press(UiAction.Settings);
 
-        // At once, while SteamGridDB still hangs.
+        // At once, while the answer is still on its way.
         Assert.False(arcadia.Main.IsInFirstRun);
         Assert.False(arcadia.Main.IsSettingsOpen);
-        arcadia.SteamGridDb.Hangs = false;
-        arcadia.Time.Advance(SteamGridDbClient.Timeout);
+        Assert.NotNull(arcadia.Artwork.Search.Running);
         await SettledAsync(arcadia);
-        Assert.Equal(asked, arcadia.SteamGridDb.Asked().Count(path => path == "grids/steam/" + GameId));
+        Assert.Equal(1, arcadia.SteamGridDb.Asked().Count(path => path == grids));
     }
 
     [AvaloniaFact]

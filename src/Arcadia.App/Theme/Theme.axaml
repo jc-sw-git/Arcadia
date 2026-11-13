@@ -3345,7 +3345,7 @@
   </Style>
 
   <!-- "Artwork ändern" (#490, prototype in #13). Tiles fill the grid's 852 px: five covers (2 : 3) or two backgrounds
-       (3.1 : 1) a row; the notice spans three covers or the whole row. -->
+       (16 : 9, as the detail page shows them, #562) a row; the notice spans three covers or the whole row. -->
   <Style Selector="Border.artworkModal">
     <Setter Property="Background" Value="{StaticResource DetailSurface}" />
     <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
@@ -3571,7 +3571,7 @@
   </Style>
   <Style Selector="ItemsControl.hero Border.artworkFrame">
     <Setter Property="Width" Value="412" />
-    <Setter Property="Height" Value="133" />
+    <Setter Property="Height" Value="232" />
   </Style>
   <Style Selector="Button.artworkTile.focused Border.artworkFrame">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
@@ -3812,7 +3812,7 @@
   <!-- Three backgrounds a row (HeroColumns) when only the background is sought. -->
   <Style Selector="ItemsControl.hero Button.waitingHit Border.artworkFrame">
     <Setter Property="Width" Value="280" />
-    <Setter Property="Height" Value="90" />
+    <Setter Property="Height" Value="158" />
   </Style>
   <Style Selector="ItemsControl.hero TextBlock.waitingHitName">
     <Setter Property="MaxWidth" Value="280" />
@@ -3910,7 +3910,7 @@
     <Setter Property="Width" Value="40" />
   </Style>
   <Style Selector="Border.waitingPickHero">
-    <Setter Property="Width" Value="186" />
+    <Setter Property="Width" Value="107" />
   </Style>
   <Style Selector="TextBlock.waitingPickName">
     <Setter Property="FontSize" Value="16" />

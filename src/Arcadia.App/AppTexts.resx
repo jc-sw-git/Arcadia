@@ -1114,7 +1114,7 @@
   <data name="DataSourcesLauncherImagesSubtitle" xml:space="preserve"><value>Die Bilder der Launcher selbst, ohne Schlüssel</value></data>
   <data name="DataSourcesLauncherImagesInfo" xml:space="preserve"><value>Die offiziellen Bilder der Launcher. Sie brauchen keinen Schlüssel.</value></data>
   <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>WER WAS LIEFERT</value></data>
-  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam liefert Cover und Hintergrund. Epic Games liefert für die meisten Spiele ein Cover, als Hintergrund aber nur ein Querformat in 16:9, das nicht zum flachen Kopf der Detailseite passt. Die übrigen Launcher liefern keine Bilder.</value></data>
+  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam liefert Cover und Hintergrund. Epic Games liefert für die meisten Spiele ein Cover und einen Hintergrund in 16:9. Die übrigen Launcher liefern keine Bilder.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>REIHENFOLGE</value></data>
   <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia fragt die Quellen von oben nach unten. Liefert eine kein passendes Bild, wird die nächste gefragt. Was passend heißt, legt „Zuschneiden erlaubt“ fest.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] hebt eine Quelle an, ▲ ▼ verschieben sie, [L3] legt sie ab, [B] bricht ab. Mit der Maus ziehst du sie.</value></data>
@@ -1224,14 +1224,14 @@
   <data name="WaitingChosenCover" xml:space="preserve"><value>DEIN COVER</value></data>
   <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB hat zu diesem Spiel keine weiteren Angaben.</value></data>
   <data name="DataSourcesCrop" xml:space="preserve"><value>Zuschneiden erlaubt</value></data>
-  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Bild wegfallen darf, damit es ins Format passt</value></data>
+  <data name="DataSourcesCropSubtitle" xml:space="preserve"><value>Wie viel von einem Cover wegfallen darf, damit es ins Format passt</value></data>
   <data name="DataSourcesCropLittle" xml:space="preserve"><value>Wenig · bis 5 %</value></data>
   <data name="DataSourcesCropNormal" xml:space="preserve"><value>Normal · bis 15 %</value></data>
   <data name="DataSourcesCropMuch" xml:space="preserve"><value>Viel · bis 30 %</value></data>
-  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Bilder bleiben fast vollständig, kommen dafür öfter von einer Quelle weiter unten.</value></data>
+  <data name="DataSourcesCropLittleInfo" xml:space="preserve"><value>Cover bleiben fast vollständig, kommen dafür öfter von einer Quelle weiter unten.</value></data>
   <data name="DataSourcesCropNormalInfo" xml:space="preserve"><value>Ein Mittelweg: Arcadia schneidet etwas zu, bevor es die nächste Quelle fragt.</value></data>
   <data name="DataSourcesCropMuchInfo" xml:space="preserve"><value>Arcadia bleibt öfter bei der ersten Quelle, schneidet aber auch Schrift oder Figuren am Rand ab.</value></data>
-  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Cover haben das Hochformat 2:3, Hintergründe das flache Format des Kopfs der Detailseite. Passt ein Bild nicht genau, schneidet Arcadia es mittig zu. Hier legst du fest, wie viel dabei höchstens wegfallen darf.</value></data>
+  <data name="DataSourcesCropInfo" xml:space="preserve"><value>Cover haben das Hochformat 2:3. Passt ein Cover nicht genau, schneidet Arcadia es mittig zu. Hier legst du fest, wie viel dabei höchstens wegfallen darf. Hintergründe passen in 16:9 wie die Detailseite oder im flachen Format von Steam und SteamGridDB, das Arcadia mittig auf 16:9 zuschneidet.</value></data>
   <data name="DataSourcesCropInfoOrder" xml:space="preserve"><value>Die Reihenfolge der Quellen gilt immer: Muss bei einer Quelle mehr wegfallen, fragt Arcadia die nächste. Passt bei keiner Quelle ein Bild, schneidet Arcadia das Bild der ersten Quelle zu, die überhaupt eins hat. Nur ohne jedes Bild bleibt der Platzhalter.</value></data>
   <data name="DataSourcesWhenHeading" xml:space="preserve"><value>WANN ES GILT</value></data>
   <data name="DataSourcesCropWhen" xml:space="preserve"><value>Sofort für die Bilder, die schon da sind, und die Bilder der Launcher; eine Suche startet dadurch nicht. SteamGridDB wird mit dem neuen Wert bei neuen Spielen und beim nächsten „Jetzt suchen“ gefragt. Von Hand gesetzte Bilder bleiben, wie sie sind.</value></data>
@@ -1249,7 +1249,7 @@
   <data name="ArtworkLoading5" xml:space="preserve"><value>Suche das schönste Motiv …</value></data>
   <data name="ArtworkLoading6" xml:space="preserve"><value>Entwickle die Negative …</value></data>
   <data name="ArtworkCoverHeading" xml:space="preserve"><value>COVER · 2:3</value></data>
-  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 3,1 : 1</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>HINTERGRUND · 16 : 9</value></data>
   <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} VORSCHLÄGE</value></data>
   <data name="ArtworkSourceRow" xml:space="preserve"><value>Quelle</value></data>
   <data name="ArtworkFileRow" xml:space="preserve"><value>Datei</value></data>

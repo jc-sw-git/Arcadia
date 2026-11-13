@@ -204,40 +204,84 @@ public sealed class ArtworkServiceSteamGridDbTests : IDisposable
 
     [Theory]
     [Trait("TestCase", "T489-16")]
-    [InlineData(CropAllowance.Little, 1827, true)] // 4.9 % cut away
-    [InlineData(CropAllowance.Little, 1807, false)] // 6.0 %
-    [InlineData(CropAllowance.Much, 1347, true)] // 29.9 %
-    [InlineData(CropAllowance.Much, 1326, false)] // 31.0 %
-    public async Task The_limits_of_wenig_and_viel_hold_at_the_percent(CropAllowance crop, int heroWidth, bool launcherFits)
+    [InlineData(CropAllowance.Little, 571, true)] // 4.8 % cut away
+    [InlineData(CropAllowance.Little, 564, false)] // 6.0 %
+    [InlineData(CropAllowance.Much, 421, true)] // 29.8 %
+    [InlineData(CropAllowance.Much, 414, false)] // 31.0 %
+    public async Task The_limits_of_wenig_and_viel_hold_at_the_percent(CropAllowance crop, int coverWidth, bool launcherFits)
     {
         await WithKeyAsync();
-        // A hero 3.1 : 1 needs 1922 × 620; narrower ones are cut at top and bottom.
-        BothSources(launcherHeroWidth: heroWidth);
+        // A cover 2 : 3 needs 600 × 900; narrower ones are cut at top and bottom.
+        BothSources(launcherCoverWidth: coverWidth);
         _settings = _settings with { Crop = crop };
 
         await ScanAsync();
 
-        Assert.Equal(launcherFits ? "steam-server" : ArtworkService.SteamGridDbOrigin, Cached()!.Hero!.Origin);
+        Assert.Equal(launcherFits ? "steam-server" : ArtworkService.SteamGridDbOrigin, Cached()!.Cover!.Origin);
     }
 
     [Fact]
-    [Trait("TestCase", "T489-19")]
-    public async Task A_sixteen_by_nine_background_is_replaced_by_steamgriddbs_hero_once_a_key_is_there()
+    [Trait("TestCase", "T562-3")]
+    public async Task Zuschneiden_erlaubt_leaves_backgrounds_at_fifteen_percent()
     {
-        // #13 scenario 2 and 3: without a key Epic's 16 : 9 image cropped, with one SteamGridDB's hero.
+        await WithKeyAsync();
+        // 1500 × 620 (2.42 : 1) loses 22 % cut to the flat 3.1 : 1 and 27 % cut to 16 : 9: within "Viel", but backgrounds
+        // stay at "Normal".
+        BothSources(launcherHeroWidth: 1500);
+        _settings = _settings with { Crop = CropAllowance.Much };
+
+        await ScanAsync();
+
+        Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached()!.Hero!.Origin);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T562-1")]
+    public async Task A_sixteen_by_nine_background_fits_and_steamgriddb_isnt_asked_for_one()
+    {
+        // #562: Epic's 16 : 9 image is the detail page's own shape; a key arriving later doesn't replace it.
         _source.Hero = [new("epic-catalog", Download: new Uri(LauncherHero))];
         _images.Serve(LauncherHero, TestImages.Png(2560, 1440));
         _sgdb.Hero("steam", Id, GridHero, 1920, 620);
         _images.Serve(GridHero, TestImages.Png(1920, 620));
         await ScanAsync();
-        Assert.Equal("epic-catalog", Cached()!.Hero!.Origin);
 
         await WithKeyAsync();
         _service.SearchAgain(byPlayer: false);
         await _service.WhenIdleAsync();
 
+        Assert.Equal("epic-catalog", Cached()!.Hero!.Origin);
+        Assert.DoesNotContain("heroes/steam/" + Id, _sgdb.Asked());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T562-2")]
+    public async Task A_flat_background_fits_so_steamgriddb_isnt_asked_for_a_steam_game()
+    {
+        await WithKeyAsync();
+        BothSources();
+
+        await ScanAsync();
+
+        Assert.Equal("steam-server", Cached()!.Hero!.Origin);
+        Assert.DoesNotContain("heroes/steam/" + Id, _sgdb.Asked());
+    }
+
+    [Fact]
+    [Trait("TestCase", "T562-2")]
+    public async Task Of_steamgriddbs_backgrounds_a_sixteen_by_nine_one_beats_a_better_rated_flat_one()
+    {
+        await WithKeyAsync();
+        BothSources();
+        const string WideHero = "https://cdn.example/hero/4000001-wide.png";
+        _sgdb.Hero("steam", Id, WideHero, 1920, 1080, score: -1);
+        _images.Serve(WideHero, TestImages.Png(1920, 1080));
+        _settings = _settings with { Order = [ArtworkSourceKind.SteamGridDb, ArtworkSourceKind.Launcher] };
+
+        await ScanAsync();
+
         Assert.Equal(ArtworkService.SteamGridDbOrigin, Cached()!.Hero!.Origin);
-        Assert.Single(_sgdb.Asked(), "heroes/steam/" + Id);
+        Assert.Equal(new ImageSize(1920, 1080), _service.Of("steam:" + Id)!.Hero!.Size);
     }
 
     [Fact]

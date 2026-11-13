@@ -10,7 +10,7 @@ Mausmodus" ("Controller"), "Artwork ändern" and "Deinstallieren …" ("Verwalte
 entries (decision in #500). Automated cases use the demo or made-up Steam and Epic fixtures (`ArcadiaDriver`), window
 cases `ArcadiaWindow`. Replaces T499-7 (A on "Übersicht" did nothing) and the "facts in full width" part of T499-1.
 
-**Status:** Automated: T500-1 to -23 · QE: T500-24 to -28 · Owner (passed): T500-29, T500-30
+**Status:** Automated: T500-1 to -23 · QE: T500-24 to -28 · Open for the owner: none (TT500-29, T500-30 passed, 2026-11-13)
 
 Quick selection in "Übersicht"
 

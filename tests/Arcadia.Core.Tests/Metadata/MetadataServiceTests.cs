@@ -446,6 +446,52 @@ public sealed class MetadataServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T547-2")]
+    public async Task Cancelling_a_search_keeps_what_was_found_and_the_next_search_asks_for_the_rest()
+    {
+        ServeAll("1", "3");
+        _server.Hang("2");
+        Scan("1", "2", "3");
+        await WaitForHangAsync();
+
+        _service.CancelRun();
+        await RunToIdleAsync();
+
+        Assert.Equal(["1", "2"], _server.AskedIds);
+        Assert.NotNull(_service.Of(Key("1")).Description);
+        Assert.Equal(new MetadataProgress(2, 3, false, false, null), _service.Progress);
+        Assert.Contains(Log, line => line.Contains("vom Spieler abgebrochen", StringComparison.Ordinal));
+
+        ServeAll("2");
+        Assert.True(_service.FetchMissing());
+        await RunToIdleAsync();
+        Assert.Equal(["1", "2", "2", "3"], _server.AskedIds);
+        Assert.Equal(new MetadataProgress(0, 3, false, false, null), _service.Progress);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T547-3")]
+    public async Task Cancelling_a_reload_keeps_the_old_data_of_the_games_it_didnt_reach_and_nothing_counts_as_missing()
+    {
+        ServeAll("1", "2", "3");
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+
+        _server.Serve("1", "Neue Beschreibung, die nicht zu lang ist und dir gefällt.");
+        _server.Hang("2");
+        Assert.True(_service.ReloadAll());
+        await WaitForHangAsync();
+        _service.CancelRun();
+        Assert.False(_service.Progress.Reload);
+        await RunToIdleAsync();
+
+        Assert.StartsWith("Neue Beschreibung", _service.Of(Key("1")).Description!.Value);
+        Assert.StartsWith("Beschreibung von 3", _service.Of(Key("3")).Description!.Value);
+        Assert.Equal(new MetadataProgress(0, 3, false, false, null), _service.Progress);
+        Assert.True(_service.ReloadAll());
+    }
+
+    [Fact]
     [Trait("TestCase", "T493-27")]
     public async Task Reloading_without_any_network_reports_once_and_a_background_run_never()
     {

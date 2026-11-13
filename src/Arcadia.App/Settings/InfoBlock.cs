@@ -8,6 +8,10 @@ namespace Arcadia.App.Settings;
 /// A piece of the info panel beside the settings rows (#15). Each kind has its own template in MainWindow.axaml, so the
 /// theme draws them all alike, whichever category they come from. Texts may name controller buttons (⧉, ≡, [L3]).
 /// </summary>
+/// <remarks>
+/// Blocks compare by content, lists included: a row given the same info again announces nothing, so a run refreshing
+/// the rows doesn't send the info panel back to its top (#547).
+/// </remarks>
 public abstract record InfoBlock;
 
 /// <summary>A paragraph.</summary>
@@ -39,7 +43,12 @@ public sealed record InfoError(string Text) : InfoBlock;
 /// A box of its own below the row's description, e.g. "Status" or "So funktioniert es" of Steam Controller Support:
 /// facts about the setting that are nothing to set, so they are no rows (owner, 2026-10-22).
 /// </summary>
-public sealed record InfoSection(string Title, IReadOnlyList<InfoBlock> Blocks) : InfoBlock;
+public sealed record InfoSection(string Title, IReadOnlyList<InfoBlock> Blocks) : InfoBlock
+{
+    public bool Equals(InfoSection? other) => other is not null && Title == other.Title && Blocks.SequenceEqual(other.Blocks);
+
+    public override int GetHashCode() => HashCode.Combine(Title, Blocks.Count);
+}
 
 /// <summary>The state of something running: a dot (green while all is well) or a spinner while it starts or stops.</summary>
 public sealed record InfoStatus(string Text, bool IsHealthy, bool IsInTransition) : InfoBlock
@@ -53,6 +62,11 @@ public sealed record InfoFootnote(string Text) : InfoBlock;
 /// <summary>One version in "Was ist neu".</summary>
 public sealed record InfoRelease(string VersionText, string DateText, IReadOnlyList<string> Changes) : InfoBlock
 {
+    public bool Equals(InfoRelease? other) =>
+        other is not null && VersionText == other.VersionText && DateText == other.DateText && Changes.SequenceEqual(other.Changes);
+
+    public override int GetHashCode() => HashCode.Combine(VersionText, DateText, Changes.Count);
+
     private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
 
     public static InfoRelease Of(ChangelogEntry entry) => new(
@@ -94,7 +108,12 @@ public sealed record InfoFact(string Label, string Value, bool IsMuted = false, 
 }
 
 /// <summary>Facts under a small heading, line by line, e.g. "BIBLIOTHEK" of a launcher (#136).</summary>
-public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock;
+public sealed record InfoFacts(string Title, IReadOnlyList<InfoFact> Facts) : InfoBlock
+{
+    public bool Equals(InfoFacts? other) => other is not null && Title == other.Title && Facts.SequenceEqual(other.Facts);
+
+    public override int GetHashCode() => HashCode.Combine(Title, Facts.Count);
+}
 
 /// <summary>A launcher as its tab shows it: logo and name.</summary>
 /// <param name="IsHighlighted">The launcher the info panel is about.</param>
@@ -106,6 +125,10 @@ public sealed record InfoTab(string Name, Services.LauncherBadge Badge, bool IsH
 /// </summary>
 public sealed record InfoTabBar(IReadOnlyList<InfoTab> Tabs) : InfoBlock
 {
+    public bool Equals(InfoTabBar? other) => other is not null && Tabs.SequenceEqual(other.Tabs);
+
+    public override int GetHashCode() => Tabs.Count;
+
     public bool IsEmpty => Tabs.Count == 0;
 }
 
@@ -115,7 +138,12 @@ public sealed record InfoLauncher(string Name, Services.LauncherBadge Badge, str
 /// <summary>
 /// A box about one launcher with its logo and name at the top, e.g. what it delivers of "Launcher-Daten" (#538).
 /// </summary>
-public sealed record InfoLauncherBox(string Name, Services.LauncherBadge Badge, IReadOnlyList<InfoBlock> Blocks) : InfoBlock;
+public sealed record InfoLauncherBox(string Name, Services.LauncherBadge Badge, IReadOnlyList<InfoBlock> Blocks) : InfoBlock
+{
+    public bool Equals(InfoLauncherBox? other) => other is not null && Name == other.Name && Badge == other.Badge && Blocks.SequenceEqual(other.Blocks);
+
+    public override int GetHashCode() => HashCode.Combine(Name, Blocks.Count);
+}
 
 /// <summary>Something to type and what it does, e.g. "/steam hollow" – "sucht nur in Steam" (#137).</summary>
 public sealed record InfoExample(string Sample, string Effect) : InfoBlock;

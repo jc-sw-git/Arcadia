@@ -38,14 +38,19 @@ public sealed class MetadataSettingsTests
             }
         });
 
-    /// <summary>Lets fake time pass until the metadata run is idle, the UI thread following.</summary>
+    /// <summary>
+    /// Lets fake time pass until the metadata run is idle, the UI thread following. First the scan reaches the service, or
+    /// a run not started yet looks idle. Small steps: under load a store answer can take longer than a step in real time,
+    /// and steps of a second let the request's 10 s timeout run out before the answer is read (#547).
+    /// </summary>
     private static async Task RunToIdleAsync(ArcadiaDriver arcadia)
     {
-        for (var i = 0; i < 3000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
+        await arcadia.WaitUntilAsync(() => arcadia.Metadata.GameCount > 0, "Bibliothek beim Metadaten-Dienst");
+        for (var i = 0; i < 30000 && !arcadia.Metadata.WhenIdleAsync().IsCompleted; i++)
         {
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(1);
-            arcadia.Time.Advance(TimeSpan.FromSeconds(1));
+            arcadia.Time.Advance(TimeSpan.FromMilliseconds(100));
         }
 
         await arcadia.Metadata.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(5));
@@ -115,8 +120,7 @@ public sealed class MetadataSettingsTests
 
         arcadia.MetadataStore.Serve("4000002", "Beschreibung von 4000002, die dir gefällt und nicht zu lang ist.");
         arcadia.Press(UiAction.Accept);
-        Assert.True(missing.IsWorking);
-        Assert.False(missing.CanActivate);
+        Assert.Equal((true, true, AppTexts.DataSourcesSearchCancel), (missing.IsWorking, missing.CanActivate, missing.ActionText));
         await RunToIdleAsync(arcadia);
 
         Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, missing.Subtitle);
@@ -144,6 +148,32 @@ public sealed class MetadataSettingsTests
         Assert.Empty(toasts);
     }
 
+    [AvaloniaTheory]
+    [Trait("TestCase", "T547-1")]
+    [InlineData("metadata-source-launcher")]
+    [InlineData(IgdbAccessRows.ClientIdRowKey)]
+    [InlineData(IgdbAccessRows.SecretRowKey)]
+    [InlineData(SteamGridDbKeyRows.KeyRowKey)]
+    public async Task While_a_run_goes_the_focused_rows_info_stays_where_it_was_scrolled(string rowKey)
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002", "4000003"], "4000001", "4000003");
+        OpenDataSources(arcadia);
+        var row = arcadia.FocusRow(rowKey);
+        var resets = new List<string>();
+        arcadia.Main.Settings!.FocusMoved += (_, _) => resets.Add("FocusMoved");
+        row.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is "ValueText" or nameof(SettingsRowViewModel.IsDimmed) or nameof(SettingsRowViewModel.Info))
+            {
+                resets.Add(e.PropertyName);
+            }
+        };
+
+        await RunToIdleAsync(arcadia);
+
+        Assert.Empty(resets);
+    }
+
     [AvaloniaFact]
     [Trait("TestCase", "T493-26")]
     [Trait("TestCase", "T493-28")]
@@ -168,12 +198,7 @@ public sealed class MetadataSettingsTests
         arcadia.Press(UiAction.Accept);
         Assert.Null(arcadia.Main.Settings.Selected.Dialog);
         var reload = Assert.IsType<ActionRowViewModel>(Row(arcadia, MetadataRows.ReloadKey));
-        Assert.True(reload.IsWorking);
-        Assert.False(reload.CanActivate);
-
-        // A second A while it runs starts no second run.
-        arcadia.Press(UiAction.Accept);
-        Assert.Null(arcadia.Main.Settings.Selected.Dialog);
+        Assert.Equal((true, true, AppTexts.DataSourcesReloadCancel), (reload.IsWorking, reload.CanActivate, reload.ActionText));
         await RunToIdleAsync(arcadia);
 
         Assert.Equal(asked + 2, arcadia.MetadataStore.RequestCount);
@@ -183,6 +208,43 @@ public sealed class MetadataSettingsTests
         // B leaves the settings as everywhere.
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T547-4")]
+    public async Task Suche_abbrechen_and_neu_laden_abbrechen_stop_the_run_on_a_and_the_rows_offer_their_action_again()
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002", "4000003"], "4000001", "4000003");
+        arcadia.MetadataStore.Hang("4000002");
+        OpenDataSources(arcadia);
+        var missing = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.MissingKey));
+        await arcadia.WaitUntilAsync(() => missing.ActionText == AppTexts.DataSourcesSearchCancel, "Suche abbrechen");
+        Assert.Equal((true, true), (missing.IsWorking, missing.CanActivate));
+
+        arcadia.Press(UiAction.Accept);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal((AppTexts.DataSourcesSearchNow, false, true), (missing.ActionText, missing.IsWorking, missing.CanActivate));
+        Assert.DoesNotContain("4000003", arcadia.MetadataStore.AskedIds);
+
+        // What is missing is asked for again with "Jetzt suchen"; then a reload is stopped from its own row.
+        arcadia.MetadataStore.Serve("4000002", "Beschreibung von 4000002, die dir gefällt und nicht zu lang ist.");
+        arcadia.Press(UiAction.Accept);
+        await RunToIdleAsync(arcadia);
+        Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, missing.Subtitle);
+
+        arcadia.MetadataStore.Hang("4000002");
+        var reload = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.ReloadKey));
+        arcadia.Press(UiAction.Accept).Press(UiAction.Accept);
+        Assert.Equal((AppTexts.DataSourcesReloadCancel, true, true), (reload.ActionText, reload.IsWorking, reload.CanActivate));
+        Assert.True(missing.IsDimmed);
+        arcadia.Press(UiAction.Accept);
+        Assert.Null(arcadia.Main.Settings!.Selected.Dialog);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal((AppTexts.DataSourcesMetadataReloadAction, false), (reload.ActionText, reload.IsWorking));
+        Assert.Equal(AppTexts.DataSourcesMetadataMissingNone, missing.Subtitle);
+        Assert.NotNull(arcadia.Metadata.Of(Store.Id + ":4000002").Description);
     }
 
     [AvaloniaFact]

@@ -3,7 +3,7 @@
 Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` → Artwork). The other parts of the App:
 [app.md](app.md).
 
-- `Services/ArtworkFolder`: the cache in `%LOCALAPPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
+- `Services/ArtworkFolder`: the cache in `%APPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
   its own that sends no cookies; `App.axaml.cs` passes it in through `ArcadiaParts.Artwork` (the tests' in their folder).
   It also makes the `SteamGridDbKey`: DPAPI for the current user on Windows, memory only elsewhere.
 - Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` switches its two tabs (#538, `IDataSourcesTab`;

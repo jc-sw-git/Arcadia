@@ -6,10 +6,10 @@ using Arcadia.Core.Settings;
 
 namespace Arcadia.App.Services;
 
-/// <summary>Where the App keeps the metadata cache (#493): <c>%LOCALAPPDATA%\Arcadia\metadata</c>, which may be thrown away.</summary>
+/// <summary>Where the App keeps the metadata cache (#493): <c>%APPDATA%\Arcadia\metadata</c>, in the data folder, not in the setup's install folder.</summary>
 public static class MetadataFolder
 {
-    public static string Default { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Arcadia", "metadata");
+    public static string Default { get; } = Path.Combine(Core.Diagnostics.LogLocation.DataFolder, "metadata");
 
     /// <summary>
     /// The cache with a client of its own: it sends no cookies (the shared client holds the Steam sign-in's), no account

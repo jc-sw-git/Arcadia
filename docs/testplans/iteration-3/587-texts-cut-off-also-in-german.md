@@ -11,7 +11,7 @@
   of "Ubisoft Connect" defaulting to "Steam-Eingabe"; the quick selection's "Steam-Controller-Modus" / "Modo del Steam
   Controller" and "Individueller Mausmodus", the value "Standard (Steam-Eingabe)" (quick selection, rail, area
   "Controller") and "Ubisoft Connect meldet keine" (playtime) show whole. · E2E: yes
-- [ ] **T587-3** The detail page (overview, rail with A's glyph on "Controller" and "Verwalten") in German, English,
+- [x] **T587-3** The detail page (overview, rail with A's glyph on "Controller" and "Verwalten") in German, English,
   French and Spanish, and the info panel of "Mit ⧉ zurück zu Arcadia" (value boxes with [R]) looked at in the running
   app: nothing of Arcadia's own cut, the quick selection and the facts beside it in line. · E2E: no (window)
 - [ ] **T587-4** **Owner:** On your PC, set "Sprache" to Français, open a game's detail page and walk the rail and the
@@ -34,3 +34,4 @@ History:
 | T587-1, T587-2 | 2026-11-14 | Claude | Debug, Linux cloud container, headless window, after the fixes | ✅ | – |
 | T587-3 | 2026-11-14 | QE (Claude) | `cbd2459`, Release, Linux/Xvfb, `--demo`, de/fr/es | ❌ F1: "Standard (Steam-Eingabe)" cut in the quick selection, rail and area "Controller" for a launcher defaulting to Steam Input; F2: "Ubisoft Connect n’en signale aucun" cut in the playtime fact | T587-2 extended with that game (red in all four languages), fixed in this PR |
 | T587-1, T587-2 | 2026-11-14 | Claude | Debug, Linux cloud container, headless window, after the QE fixes | ✅ | – |
+| T587-3 | 2026-11-14 | QE (Claude) | `82ece05`, Release, Linux/Xvfb, `--demo`, de/fr/es | ✅ "Standard (Steam-Eingabe)" whole in quick selection, rail (two lines) and area "Controller"; "Ubisoft Connect n’en signale aucun" whole (two lines); value boxes with [R] whole; rail with A's glyph on "Manette"/"Gérer" | – |

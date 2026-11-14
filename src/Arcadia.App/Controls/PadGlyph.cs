@@ -87,7 +87,7 @@ public sealed class PadGlyph : Border
     {
         if (!InputHints.UsesController && Keys is { Length: > 0 } key)
         {
-            ShowKey(key);
+            ShowKey(KeyLabels.Printed(key));
             return;
         }
 

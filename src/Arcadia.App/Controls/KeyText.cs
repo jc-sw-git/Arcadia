@@ -58,7 +58,7 @@ public sealed class KeyText : TextBlock
     // Only pills stand here (LB, RT, …), so the symbol is always text.
     private void Update()
     {
-        Text = InputHints.UsesController ? ButtonSymbolSets.Symbol(Pad ?? string.Empty, InputHints.Symbols).Text : Keys;
+        Text = InputHints.UsesController ? ButtonSymbolSets.Symbol(Pad ?? string.Empty, InputHints.Symbols).Text : Keys is null ? null : KeyLabels.Printed(Keys);
 
         // A pill held at its MinWidth keeps its size when the text grows ("RB" to "⇧ E"), and its content presenter then kept
         // arranging the text at the old, narrower width: only the "⇧" showed (#554, settings open at the start).

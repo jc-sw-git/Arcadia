@@ -297,7 +297,7 @@ public partial class MainWindow : Window
         var key = KeyPosition.Of(e);
         if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(key, e.KeyModifiers) is { } tab)
         {
-            Services.AppLog.Write($"Taste: {key} → Launcher {tab + 1}");
+            Services.AppLog.Write($"Taste: {KeyForLog(key, e.Key)} → Launcher {tab + 1}");
             Latency.Measure($"Launcher {tab + 1}", pressedAt, () => _viewModel.ChooseTabNumber(tab));
             e.Handled = true;
             return;
@@ -316,12 +316,15 @@ public partial class MainWindow : Window
                 return;
             }
 
-            Services.AppLog.Write($"Taste: {key} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+            Services.AppLog.Write($"Taste: {KeyForLog(key, e.Key)} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             var viewModel = _viewModel;
             Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action, repeat));
             e.Handled = true;
         }
     }
+
+    /// <summary>The key's place and, where the layout prints another letter there, that letter too: "W (Z)" on AZERTY (#588).</summary>
+    private static string KeyForLog(Key place, Key printed) => place == printed ? place.ToString() : $"{place} ({printed})";
 
     /// <summary>A key that ends "Bild ansehen" (#565) does nothing else, nor do its repeats.</summary>
     private bool SwallowedByImageShow(Key key)

@@ -13,8 +13,9 @@ internal static class DatePattern
     // The letters .NET reads as fields in a custom date and time pattern.
     private const string FieldLetters = "dfFghHKmMstyz";
 
-    // What ends a literal only to part it from the next field: spaces and the commas of several scripts.
-    private const string Separators = ",،፣၊";
+    // What ends a literal only to part it from the next field: spaces and the commas of several scripts (Latin, Arabic,
+    // Ethiopic, Myanmar). Escaped, because they are a region's characters, not Arcadia's texts, and no embedded font has them.
+    private const string Separators = ",\u060C\u1363\u104A";
 
     /// <summary>
     /// "dd.MM.yyyy" → "dd.MM.", "dddd, d 'de' MMMM 'de' yyyy" → "dddd, d 'de' MMMM", "yyyy'年'M'月'd'日'" → "M'月'd'日'".

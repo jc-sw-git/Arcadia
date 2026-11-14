@@ -121,7 +121,7 @@ public partial class MainViewModel : IOwnTagsHost
 
         var shown = Detail?.Current.Tile.Game.Key;
         Detail = null;
-        ShowSettings(typeof(DataSourcesSettingsViewModel));
+        ShowSettings(typeof(DataSourcesSettingsViewModel), keepsWayBack: true);
         Settings?.Selected?.FocusRow(DataSourcesSettingsViewModel.OwnTagsRowKey);
         TagList = list;
         _tagListBehindDetail = null;

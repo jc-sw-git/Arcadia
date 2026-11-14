@@ -186,6 +186,30 @@ public sealed class BackWhereYouCameFromTests
         using var arcadia = await ArcadiaDriver.StartAsync(releases: new FakeReleases("0.1.0", ("0.2.0", ["Neu"])));
         await arcadia.Updates.CheckIfDueAsync();
         await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasArcadiaUpdate, "das Update im Header");
+        OpenAboutFromTheStatusModal(arcadia);
+        Assert.IsType<AboutSettingsViewModel>(arcadia.Main.Settings?.Selected);
+        Assert.Null(arcadia.Main.StatusModal);
+
+        arcadia.Press(UiAction.Back);
+
+        Assert.Null(arcadia.Main.Settings);
+        Assert.Contains(arcadia.Main.StatusModal!.Entries, entry => entry.Entry.Target == StatusTarget.ArcadiaUpdate);
+
+        // Settings opened anew with ≡ close onto the page alone.
+        arcadia.Press(UiAction.Back).Press(UiAction.Settings).Press(UiAction.Back);
+        Assert.Null(arcadia.Main.StatusModal);
+
+        // Settings opened another way while the modal's way back is pending forget it: the launcher settings of an empty tab.
+        OpenAboutFromTheStatusModal(arcadia);
+        ((ILibraryHost)arcadia.Main).OpenLauncherSettings(null);
+        arcadia.Press(UiAction.Back);
+        Assert.Null(arcadia.Main.Settings);
+        Assert.Null(arcadia.Main.StatusModal);
+    }
+
+    /// <summary>Y, the update's entry, "Zu den Einstellungen" (not the update itself): "Über Arcadia".</summary>
+    private static void OpenAboutFromTheStatusModal(ArcadiaDriver arcadia)
+    {
         arcadia.Press(UiAction.Status);
         var modal = arcadia.Main.StatusModal!;
         while (modal.Focused?.Entry.Target != StatusTarget.ArcadiaUpdate)
@@ -201,15 +225,5 @@ public sealed class BackWhereYouCameFromTests
 
         arcadia.Press(UiAction.Accept);
         Assert.IsType<AboutSettingsViewModel>(arcadia.Main.Settings?.Selected);
-        Assert.Null(arcadia.Main.StatusModal);
-
-        arcadia.Press(UiAction.Back);
-
-        Assert.Null(arcadia.Main.Settings);
-        Assert.Contains(arcadia.Main.StatusModal!.Entries, entry => entry.Entry.Target == StatusTarget.ArcadiaUpdate);
-
-        // Settings opened anew with ≡ close onto the page alone.
-        arcadia.Press(UiAction.Back).Press(UiAction.Settings).Press(UiAction.Back);
-        Assert.Null(arcadia.Main.StatusModal);
     }
 }

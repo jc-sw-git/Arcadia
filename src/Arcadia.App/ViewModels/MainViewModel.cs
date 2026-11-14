@@ -966,11 +966,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private void CancelConfirmation() => Confirmation = null;
 
     [RelayCommand]
-    private void OpenSettings()
-    {
-        _dialogBehindSettings = null;
-        ShowSettings(first: null);
-    }
+    private void OpenSettings() => ShowSettings(first: null);
 
     /// <summary>
     /// Y (V) or a click on the header's status chip (#166): only while the header shows a message or the update, and
@@ -1084,8 +1080,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void IStatusModalHost.OrderChanged(bool newestFirst) => SaveView(settings => settings with { SortsStatusByNewest = newestFirst });
 
     /// <summary>The settings page (#15) in place of the library, which stays as it is underneath for the way back.</summary>
-    private void ShowSettings(Type? first, string? launcherId = null)
+    /// <param name="keepsWayBack">The settings come back on the way back from a game of the tag list, so a dialog that opened
+    /// them before still opens again when they close; any other opening forgets it (#586).</param>
+    private void ShowSettings(Type? first, string? launcherId = null, bool keepsWayBack = false)
     {
+        if (!keepsWayBack)
+        {
+            _dialogBehindSettings = null;
+        }
+
         var changes = new SettingsChanges(_settings);
         var launchers = new LauncherSettingsViewModel(this, changes, _time, launcherId);
         var steam = Session.Launchers.SteamInputOwner?.Launcher.Id;

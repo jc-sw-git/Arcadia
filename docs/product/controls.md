@@ -12,6 +12,10 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   Q/E = LT/RT, Shift+Q/E = LB/RB, Shift+W/S = RS, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
   the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real keyboard types, so only keys
   without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
+- The letters and digits above name places, as on a US keyboard (#588): a key acts by where it lies, so on AZERTY
+  ZQSD move and A/E are LT/RT. Hints, key badges in texts and tooltips show the letter the active Windows input layout
+  prints there, and follow a layout switch at once; a key that prints no letter keeps the US letter. Typing uses the
+  real layout; the on-screen keyboard's layout is separate. On Linux the hints show the US letters for now.
 - Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
   first and back, left/right in a row, up/down in a column; greyed-out items are passed over. That holds for the
   library and the search (`library.md`, `search.md`), the tabs, the settings' rows and the first start's, menus

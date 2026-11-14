@@ -16,6 +16,7 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   ZQSD move and A/E are LT/RT. Hints, key badges in texts and tooltips show the letter the active Windows input layout
   prints there, and follow a layout switch at once; a key that prints no letter keeps the US letter. Typing uses the
   real layout; the on-screen keyboard's layout is separate. On Linux the hints show the US letters for now.
+- The mouse's back button is B, as Esc is, wherever B acts; on a text being written it acts as Esc there (#586).
 - Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
   first and back, left/right in a row, up/down in a column; greyed-out items are passed over. That holds for the
   library and the search (`library.md`, `search.md`), the tabs, the settings' rows and the first start's, menus

@@ -124,6 +124,7 @@ public partial class MainWindow : Window
 
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerPressedEvent, OnMouseBackPressed, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
         SettingsRows.AddHandler(PointerMovedEvent, OnSettingsRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
 
@@ -325,6 +326,25 @@ public partial class MainWindow : Window
 
     /// <summary>The key's place and, where the layout prints another letter there, that letter too: "W (Z)" on AZERTY (#588).</summary>
     private static string KeyForLog(Key place, Key printed) => place == printed ? place.ToString() : $"{place} ({printed})";
+
+    /// <summary>The mouse's back button is B, as Esc is (#586); on a text being written it acts as Esc there.</summary>
+    private void OnMouseBackPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_viewModel is null || e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.XButton1Pressed)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (_viewModel.OpenTextEditor is { } editor)
+        {
+            editor.HandleKey(Key.Escape);
+            return;
+        }
+
+        Services.AppLog.Write("Maus: Zurück-Taste → Back");
+        _viewModel.Handle(UiAction.Back);
+    }
 
     /// <summary>A key that ends "Bild ansehen" (#565) does nothing else, nor do its repeats.</summary>
     private bool SwallowedByImageShow(Key key)

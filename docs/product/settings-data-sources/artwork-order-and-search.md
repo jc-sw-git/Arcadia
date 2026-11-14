@@ -57,4 +57,5 @@ Index and the category's frame: [README.md](README.md).
   set by hand unless the switch is on, and is greyed out while a search runs; while it runs ("Neu laden läuft · n von
   N") it reads "Neu laden abbrechen".
 - With a usable key "Artwork ändern" offers SteamGridDB's images (by the launcher's id, in SteamGridDB's order; its API rates every image 0, so no rating is shown) after the
-  launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen" to the row "Schlüssel".
+  launcher's; without a key or with a rejected one its notice leads by "Zu den Datenquellen" to the row "Schlüssel";
+  B or ✕ there open "Artwork ändern" again for the same game (#586).

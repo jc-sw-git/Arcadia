@@ -157,6 +157,12 @@ public partial class MainWindow : Window
             _viewModel?.SetInFront(true);
             _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
         };
+
+        // The key hints name the letters of the player's real keyboard layout (#588).
+        if (OperatingSystem.IsWindows())
+        {
+            WindowsKeyboardLayout.Follow(this);
+        }
     }
 
     private void UpdateSortDivider()
@@ -287,20 +293,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
+        // By position, so the cluster around WASD stays in place on AZERTY too (#588).
+        var key = KeyPosition.Of(e);
+        if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(key, e.KeyModifiers) is { } tab)
         {
-            Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
+            Services.AppLog.Write($"Taste: {key} → Launcher {tab + 1}");
             Latency.Measure($"Launcher {tab + 1}", pressedAt, () => _viewModel.ChooseTabNumber(tab));
             e.Handled = true;
             return;
         }
 
-        if (_viewModel is not null && ActionFor(e) is { } action)
+        if (_viewModel is not null && ActionFor(e, key) is { } action)
         {
             // A held key repeats its KeyDown. Moving and turning may repeat, and stop at a list's end like a held button
             // (#476); A acts on the release or after a hold, like the gamepad button, and a dialog must not open and close
             // again with every repeat.
-            var repeat = !_keysDown.Add(e.Key);
+            var repeat = !_keysDown.Add(key);
             if (repeat && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions or UiAction.Status
                 or UiAction.KeyboardLayout)
             {
@@ -308,7 +316,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            Services.AppLog.Write($"Taste: {e.Key} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+            Services.AppLog.Write($"Taste: {key} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             var viewModel = _viewModel;
             Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action, repeat));
             e.Handled = true;
@@ -342,14 +350,15 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
     {
-        _keysDown.Remove(e.Key);
+        var key = KeyPosition.Of(e);
+        _keysDown.Remove(key);
         if (_keysSwallowedByImageShow.Remove(e.Key))
         {
             e.Handled = true;
             return;
         }
 
-        if (_viewModel is not null && (ActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers)) is { } action)
+        if (_viewModel is not null && (ActionFor(e, key) ?? UiActionMap.FromKey(key, e.KeyModifiers)) is { } action)
         {
             _viewModel.Release(action);
         }
@@ -359,16 +368,16 @@ public partial class MainWindow : Window
     /// While the search takes typed text, only keys that type nothing are actions there; the rest
     /// arrive as text (<see cref="OnTextInput"/>). Elsewhere the usual key map applies.
     /// </summary>
-    private UiAction? ActionFor(KeyEventArgs e)
+    private UiAction? ActionFor(KeyEventArgs e, Key key)
     {
         if (_viewModel is { IsSettingsOpen: true })
         {
-            return SettingsActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers);
+            return SettingsActionFor(key, e.KeyModifiers) ?? UiActionMap.FromKey(key, e.KeyModifiers);
         }
 
         if (_viewModel is not { IsSearchShown: true, IsDialogOpen: false })
         {
-            return UiActionMap.FromKey(e.Key, e.KeyModifiers);
+            return UiActionMap.FromKey(key, e.KeyModifiers);
         }
 
         // The arrows move through the hits, Page Up/Down turn them, Enter starts the focused one (held: its details).
@@ -394,7 +403,7 @@ public partial class MainWindow : Window
     /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Page Up/Down scroll the info panel
     /// as RS does (Shift+W/S is RS everywhere, UiActionMap).
     /// </summary>
-    private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
+    private static UiAction? SettingsActionFor(Key key, KeyModifiers modifiers) => (key, modifiers) switch
     {
         (Key.Q, KeyModifiers.Shift) => UiAction.PreviousTab,
         (Key.E, KeyModifiers.Shift) => UiAction.NextTab,

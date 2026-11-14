@@ -32,6 +32,8 @@ texts); this file adds what differs. Every new or changed German text gets its S
 | distribución | a keyboard or controller layout; Steam's own: *configuración de Steam* | layout |
 | modo ratón | mouse mode | modo mouse |
 | ajustes | settings | configuración (for Arcadia's settings) |
+| estándar / por defecto | a value the player can choose that follows a setting (“Estándar (Arcadia)”) / the factory value named in an info (“Por defecto: 3 segundos”) | — |
+| Intro, Escribir | the Enter key / [A] typing a key on the on-screen keyboard | Enter |
 | por ejemplo | — | p. ej. or any other abbreviation (units like h, min, MB, % stay) |
 | propio, tu propio | what the player set (tu propio título, imagen propia) | personalizado |
 | info, panel de información | the panel beside a row | detalles, tooltip |

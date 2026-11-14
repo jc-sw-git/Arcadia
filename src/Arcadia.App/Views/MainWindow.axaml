@@ -121,7 +121,7 @@
           </Button>
           <Button Classes="plain headerChip" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{x:Static app:AppTexts.SettingsTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <ctl:KeyHint Pad="≡" Keys="Enter" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" />
               <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
                     Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
             </StackPanel>
@@ -792,13 +792,13 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.MoreHits}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.DoubleClick}" /></Border>
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.Click}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.HoldForDetails}" />
@@ -1267,7 +1267,7 @@
                         <Button Classes="plain neighbour breadcrumb" Margin="-6,0,0,0" Command="{Binding BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackToListTip}">
                           <StackPanel Orientation="Horizontal" Spacing="8">
                             <ctl:KeyHint Pad="B" Keys="Esc" VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Static app:AppTexts.Launcher}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static app:AppTexts.LaunchersCategory}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
                         <TextBlock Text="/" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
@@ -1786,7 +1786,7 @@
               <ctl:KeyHint Pad="X" Keys="⌫" Text="{x:Static app:AppTexts.KeyDelete}" />
               <ctl:KeyHint Pad="Y" Text="{x:Static app:AppTexts.Space}" />
               <ctl:KeyHint Pad="LB|RB" Text="⇧ / AltGr" />
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{x:Static app:AppTexts.Apply}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{x:Static app:AppTexts.Apply}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Discard}" />
             </StackPanel>
             <!-- A dialog with its own hints (a running driver install, #413 D2) hides the page's, so no "B Zurück" shows. -->
@@ -1807,7 +1807,7 @@
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>

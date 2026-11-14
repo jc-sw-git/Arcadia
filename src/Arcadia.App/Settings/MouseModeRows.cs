@@ -142,7 +142,7 @@ public sealed class MouseModeRows
         new("D-Pad", AppTexts.MouseModeHelpArrowKeys),
         new("B", "Esc"),
         new("LB / RB", AppTexts.MouseModeHelpShiftTab),
-        new("≡", "Enter"),
+        new("≡", AppTexts.KeyEnter),
         new("Y", AppTexts.MouseModeHelpKeyboard),
         new(AppTexts.MouseModeHelpHoldView, AppTexts.MouseModeHelpBackToArcadia),
         new(AppTexts.MouseModeHelpHoldViewMenu, AppTexts.MouseModeHelpBackToController),

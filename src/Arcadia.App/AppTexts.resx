@@ -1414,4 +1414,7 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>Von 00:00 bis 23:59, zum Beispiel 21:58 Uhr.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Mit AM und PM, zum Beispiel 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Gilt sofort für die Uhr oben, „seit“ im Status, die letzten Meldungen, „Zuletzt gespielt“ und jede andere Uhrzeit. Datum und Zahlen folgen dem Regionsformat des Systems.</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
+  <data name="LaunchersCategory" xml:space="preserve"><value>Launcher</value></data>
+  <data name="LauncherLogo" xml:space="preserve"><value>Logo</value></data>
 </root>

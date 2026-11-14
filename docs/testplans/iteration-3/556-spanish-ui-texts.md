@@ -48,3 +48,5 @@ History:
 |---|---|---|---|---|---|
 | T556-1 to T556-4 (automated) | 2026-11-14 | Implementer | Debug, Linux cloud container, headless Avalonia | green | – |
 | T556-5 (library, game menu, view dialog, filter, search, detail page, first start both steps, all settings categories) | 2026-11-14 | Implementer | Debug, Linux cloud container, Xvfb, `--demo`, Spanish | quick selection value “Por defecto (permitido)” cut on the detail page; the row labels there (“Modo del Steam Con…”) are cut in English and German too | “Default” is “Estándar” in Spanish; the label trimming is the quick selection's design |
+| T556-5 (all 117 guard page states, headless es-ES, plus real app under Xvfb `--demo` Spanish incl. the Metadatos tab) | 2026-11-14 | QE | Debug, Linux cloud container | findings 1–6 | fixed in this PR |
+| T556-6 (all 1,713 texts against `ui-texts-spanish.md`) | 2026-11-14 | QE | resx | findings 1–5, optional 7–9 | fixed in this PR |

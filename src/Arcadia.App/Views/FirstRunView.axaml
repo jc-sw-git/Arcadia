@@ -134,7 +134,7 @@
               <StackPanel DockPanel.Dock="Bottom">
                 <Button Classes="plain finish" Command="{Binding FinishCommand}" ToolTip.Tip="{x:Static app:AppTexts.DoneTip}">
                   <StackPanel Orientation="Horizontal" Spacing="12">
-                    <ctl:KeyHint Pad="≡" Keys="Enter" IsDark="True" />
+                    <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" IsDark="True" />
                     <TextBlock Text="{x:Static app:AppTexts.Done}" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
@@ -189,7 +189,7 @@
       <Border Grid.Row="2" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsReady}">
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.OnOff}" />
-          <ctl:KeyHint Pad="≡" Keys="Enter" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Done}" />
+          <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Done}" />
         </StackPanel>
       </Border>
     </Grid>

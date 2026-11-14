@@ -21,7 +21,7 @@
   <data name="FilterResetAll" xml:space="preserve"><value>Restablecer todos los filtros</value></data>
   <data name="FilterOnlyNotInstalled" xml:space="preserve"><value>Solo no instalados</value></data>
   <data name="FilterHintReset" xml:space="preserve"><value>Restablecer</value></data>
-  <data name="FilterHintToggle" xml:space="preserve"><value>Sí/No</value></data>
+  <data name="FilterHintToggle" xml:space="preserve"><value>Activar/Desactivar</value></data>
   <data name="Select" xml:space="preserve"><value>Seleccionar</value></data>
   <data name="Back" xml:space="preserve"><value>Atrás</value></data>
   <data name="FilterHintCloseAndApply" xml:space="preserve"><value>Cerrar y aplicar</value></data>
@@ -60,7 +60,7 @@
   <data name="SearchNoHit" xml:space="preserve"><value>Ningún juego coincide con «{term}». Revisa la ortografía o añade más launchers.</value></data>
   <data name="SearchHitRange" xml:space="preserve"><value>{first}–{last} de {count}</value></data>
   <data name="AllLaunchers" xml:space="preserve"><value>Todos los launchers</value></data>
-  <data name="SortedBy" xml:space="preserve"><value>Ordenado por {sort}</value></data>
+  <data name="SortedBy" xml:space="preserve"><value>Orden: {sort}</value></data>
   <data name="NoHits" xml:space="preserve"><value>Sin resultados</value></data>
   <data name="UnexpectedError" xml:space="preserve"><value>Error inesperado ({context}) – los detalles están en arcadia.log.</value></data>
   <data name="UpdateCheckNoAnswer" xml:space="preserve"><value>La búsqueda de actualizaciones ha fallado: GitHub no responde.</value></data>
@@ -290,7 +290,7 @@
   <data name="LoggingOpensWithMouse" xml:space="preserve"><value>El archivo se abre en el programa asignado a los archivos .log. Para ello se activa el modo ratón.</value></data>
   <data name="LoggingPanNotInstalled" xml:space="preserve"><value>Pan no está instalado</value></data>
   <data name="LoggingFileMissing" xml:space="preserve"><value>El archivo aún no existe</value></data>
-  <data name="Browse" xml:space="preserve"><value>Explorar</value></data>
+  <data name="Browse" xml:space="preserve"><value>Desplazar</value></data>
   <data name="LoggingInfoSubtitle" xml:space="preserve"><value>Avisos y confirmaciones</value></data>
   <data name="LoggingWarningSubtitle" xml:space="preserve"><value>Algo no ha funcionado y te necesita</value></data>
   <data name="LoggingErrorSubtitle" xml:space="preserve"><value>Fallido o inesperado</value></data>
@@ -876,7 +876,7 @@
   <data name="SearchGamesWatermark" xml:space="preserve"><value>Buscar juegos…</value></data>
   <data name="FilterAndSortTip" xml:space="preserve"><value>Filtro y orden (L3)</value></data>
   <data name="Keyboard" xml:space="preserve"><value>Teclado</value></data>
-  <data name="Enter" xml:space="preserve"><value>Intro</value></data>
+  <data name="Enter" xml:space="preserve"><value>Escribir</value></data>
   <data name="KeyboardRetract" xml:space="preserve"><value>Recoger el teclado</value></data>
   <data name="ChooseHit" xml:space="preserve"><value>Elegir resultado</value></data>
   <data name="MoreHits" xml:space="preserve"><value>Más resultados</value></data>
@@ -940,7 +940,7 @@
   <data name="FirstRunDataSourcesDoneInfo" xml:space="preserve"><value>La biblioteca está ahí al instante. Lo que aún les falta a los juegos de los launchers elegidos se carga en segundo plano, tan rápido como lo permiten SteamGridDB, IGDB y la tienda; Ajustes › Fuentes de datos muestra el progreso.</value></data>
   <data name="FirstRunDataSourcesLaterHeading" xml:space="preserve"><value>SE PUEDE CAMBIAR MÁS TARDE</value></data>
   <data name="FirstRunDataSourcesLaterInfo" xml:space="preserve"><value>La clave y el acceso se pueden introducir, comprobar o borrar en cualquier momento en Ajustes › Fuentes de datos.</value></data>
-  <data name="OnOff" xml:space="preserve"><value>Sí / No</value></data>
+  <data name="OnOff" xml:space="preserve"><value>Activar / Desactivar</value></data>
   <data name="KeyboardWindowTitle" xml:space="preserve"><value>Teclado en pantalla de Arcadia</value></data>
   <data name="ChooseKeys" xml:space="preserve"><value>Elegir teclas</value></data>
   <data name="Type" xml:space="preserve"><value>Escribir</value></data>
@@ -961,8 +961,8 @@
   <data name="LevelNow" xml:space="preserve"><value>Ahora {level}</value></data>
   <data name="Installed" xml:space="preserve"><value>Instalado</value></data>
   <data name="LibraryGroup" xml:space="preserve"><value>BIBLIOTECA</value></data>
-  <data name="GamesScannedAgo" xml:space="preserve"><value>{games} · último {ago}</value></data>
-  <data name="ScannedAgo" xml:space="preserve"><value>· último {ago}</value></data>
+  <data name="GamesScannedAgo" xml:space="preserve"><value>{games} · escaneado {ago}</value></data>
+  <data name="ScannedAgo" xml:space="preserve"><value>· escaneado {ago}</value></data>
   <data name="MouseModeGroup" xml:space="preserve"><value>MODO RATÓN</value></data>
   <data name="MouseMode" xml:space="preserve"><value>Modo ratón</value></data>
   <data name="AccountGroup" xml:space="preserve"><value>CUENTA</value></data>
@@ -1414,4 +1414,7 @@
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Con AM y PM, por ejemplo 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Se aplica al instante al reloj de arriba, a «desde» en el estado, a los mensajes recientes, a «Última partida» y a cualquier otra hora. La fecha y los números siguen el formato regional del sistema.</value></data>
   <data name="ErrorContextImageShow" xml:space="preserve"><value>Ver imagen</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Intro</value></data>
+  <data name="LaunchersCategory" xml:space="preserve"><value>Launchers</value></data>
+  <data name="LauncherLogo" xml:space="preserve"><value>Logotipo</value></data>
 </root>

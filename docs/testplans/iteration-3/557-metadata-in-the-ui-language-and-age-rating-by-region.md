@@ -29,7 +29,7 @@ languages with their texts in #555/#556; the metadata side already speaks them.
   ESRB. A game without the region's rating shows the next one in that order. · E2E: yes
 - [x] **T557-7** Region → first board: Germany and Austria USK, USA and Canada ESRB, every other region (Switzerland,
   France, UK, Japan) and an unknown one PEGI. · E2E: yes
-- [ ] **T557-8** Arcadia in English with `--demo`: a demo game's detail page shows genres, tags and description in
+- [x] **T557-8** Arcadia in English with `--demo`: a demo game's detail page shows genres, tags and description in
   English, the badge and "Infos" in the region's order; nothing cut off. · E2E: no (window)
 - [ ] **T557-9** **Owner:** On your PC (German Windows, Steam library): "Sprache" English, "Sprache anwenden". The
   descriptions on the detail pages stay German; the Steam tags are English after the restart. "Datenquellen" →
@@ -47,7 +47,7 @@ Automated tests:
 | T557-2 | `MetadataLanguageTests`, `SteamAppMetadataTests` (Core) |
 | T557-3 | `MetadataLanguageTests` (App); the variants in `MetadataLanguageTests` (Core) |
 | T557-4 | `MetadataLanguageTests` (App); `MetadataServiceTests`, `MetadataLanguageTests` (Core) |
-| T557-5 | `MetadataLanguageTests` (Core); the names per language in `TranslationsTests` |
+| T557-5 | `MetadataLanguageTests` (App, Core); the names per language in `TranslationsTests` |
 | T557-6 | `MetadataLanguageTests` (App), `WaitingHitFactsTests` (App); `MetadataLanguageTests`, `MetadataServiceTests` (Core) |
 | T557-7 | `MetadataLanguageTests` (Core) |
 
@@ -56,3 +56,5 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T557-1 to T557-7 | 2026-11-14 | Claude | branch build, Linux container, `dotnet test` | ✅ | – |
+| T557-5, T557-6 | 2026-11-14 | Claude (QE) | branch merged with `main`, Linux container, `dotnet test` | ✅ new App acceptance test for T557-5, T557-6 now checks the whole order in "Infos"; both red once | – |
+| T557-8 | 2026-11-14 | Claude (QE) | Debug build, Linux container, Xvfb, `--demo`, "Sprache" English, no region set (PEGI) | ✅ description, tags, genres and dates English; badge "PEGI 16" first, "Infos" PEGI 16 then USK 18; nothing cut off (`captures-557/qe/`) | – |

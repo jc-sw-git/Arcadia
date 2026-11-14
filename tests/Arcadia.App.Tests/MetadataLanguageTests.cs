@@ -11,7 +11,7 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// #557: the detail page's metadata in the UI language and the region's age rating first, through the view models with a
-/// made-up Steam library, a fake store and fake time (T557-3, T557-4, T557-6).
+/// made-up Steam library, a fake store and fake time (T557-3 to T557-6).
 /// </summary>
 public sealed class MetadataLanguageTests
 {
@@ -98,10 +98,10 @@ public sealed class MetadataLanguageTests
 
     [AvaloniaTheory]
     [Trait("TestCase", "T557-6")]
-    [InlineData(AgeRatingBoard.Usk, "USK 16")]
-    [InlineData(AgeRatingBoard.Pegi, "PEGI 18")]
-    [InlineData(AgeRatingBoard.Esrb, "ESRB M")]
-    public async Task The_badge_shows_the_regions_age_rating_and_Infos_lists_it_first(AgeRatingBoard region, string badge)
+    [InlineData(AgeRatingBoard.Usk, "USK 16", "USK 16, PEGI 18, ESRB M")]
+    [InlineData(AgeRatingBoard.Pegi, "PEGI 18", "PEGI 18, USK 16, ESRB M")]
+    [InlineData(AgeRatingBoard.Esrb, "ESRB M", "ESRB M, USK 16, PEGI 18")]
+    public async Task The_badge_shows_the_regions_age_rating_and_Infos_lists_it_first(AgeRatingBoard region, string badge, string infos)
     {
         var local = new GameMetadata
         {
@@ -113,6 +113,42 @@ public sealed class MetadataLanguageTests
 
         Assert.Equal(badge, page.GameInfo.Badge);
         Assert.Equal(badge, page.GameInfo.Facts.First(fact => fact.IsBadge).Value);
-        Assert.Equal(3, page.GameInfo.Facts.Count(fact => fact.IsBadge));
+
+        // "Infos" lists the others after it in the order USK, PEGI, ESRB.
+        Assert.Equal(infos, string.Join(", ", page.GameInfo.Facts.Where(fact => fact.IsBadge).Select(fact => fact.Value)));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T557-5")]
+    public async Task Genres_follow_the_ui_language_after_the_restart_without_a_reload()
+    {
+        var local = new GameMetadata { Genres = [Genre.RolePlaying, Genre.Strategy], Developers = ["Nordkai Studio"] };
+        using var arcadia = await ArcadiaDriver.StartAsync([Steam(local)], stores: store => store.Serve(Eisenflut.Id, German));
+        await RunToIdleAsync(arcadia);
+        Assert.Equal("Rollenspiel, Strategie · Nordkai Studio", OpenDetail(arcadia).GameInfo.InfoLine);
+        arcadia.Press(UiAction.Back);
+
+        // "Sprache": English; after the restart Arcadia's texts are English (UiLanguage.Use), the store isn't asked again.
+        var before = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            arcadia.Settings.Update(settings => settings with { Localization = settings.Localization with { Language = "en" } });
+            using var english = await arcadia.RestartAsync();
+            await RunToIdleAsync(english);
+            var page = OpenDetail(english);
+
+            Assert.Equal("Role-playing, Strategy · Nordkai Studio", page.GameInfo.InfoLine);
+            Assert.Equal("Role-playing, Strategy", page.GameInfo.Facts.Single(fact => fact.Caption == AppTexts.DetailGenresCaption).Value);
+            Assert.Single(english.MetadataStore.Requests);
+
+            // The info box of a metadata hit names them the same way.
+            var hit = new WaitingHitFacts(local, english.Metadata.FirstAgeRatingBoard);
+            Assert.Equal("Role-playing, Strategy", hit.Facts.Single(fact => fact.Caption == AppTexts.DetailGenresCaption).Value);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = before;
+        }
     }
 }

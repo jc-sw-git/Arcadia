@@ -8,7 +8,7 @@
 - [x] **T585-2** After a change of "Sprache", IGDB's English description replaces Steam's text in the old language at
   once, without a request; "Alle Metadaten neu laden" asks the store in the new language and its text comes first
   again. · E2E: yes
-- [ ] **T585-3** The info of "Sprache" (Lokalisierung) and of IGDB in "Reihenfolge für Metadaten" say what T585-1 and
+- [x] **T585-3** The info of "Sprache" (Lokalisierung) and of IGDB in "Reihenfolge für Metadaten" say what T585-1 and
   T585-2 show, in all four languages, and fit their panel. · E2E: no (window)
 
 Automated tests:
@@ -26,3 +26,5 @@ History:
 | T585-1, T585-2 | 2026-11-14 | Claude | Debug, Linux cloud container, `dotnet test` on `main` before any change | ✅ (the bug didn't reproduce: the code already follows the rule; the report came from the German IGDB info, which says "eine deutsche Beschreibung" because German is its UI language) | fix the "Sprache" info only |
 | T585-1 | 2026-11-14 | Claude | Debug, Linux cloud container, `MergedMetadata` changed on purpose to prefer German | ❌ as intended (5 cases red) | reverted |
 | T585-3 | 2026-11-14 | Claude | Debug, Linux/Xvfb, `--demo`, French, keys | ✅ "Langue": the new sentence fits the panel with room left | – |
+| T585-1, T585-2 | 2026-11-14 | Claude (QE) | Debug, Linux cloud container, `MergedMetadata` changed on purpose to prefer a German description | ❌ as intended (9 of 20 cases red) | reverted; the tests catch the reported behaviour |
+| T585-3 | 2026-11-14 | Claude (QE) | Debug, Linux/Xvfb, `--demo`, Deutsch, English, Français, Español, keys | ✅ "Sprache" info fits its panel with room left in all four; IGDB's info in "Reihenfolge für Metadaten" unchanged and matches the code | – |

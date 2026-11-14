@@ -125,7 +125,7 @@ public sealed class KeyHint : StackPanel
     private Border Glyph(string text, bool isKey)
     {
         Border glyph = isKey
-            ? new Border { Classes = { "glyph", "kbd" }, Child = new TextBlock { Text = text } }
+            ? new Border { Classes = { "glyph", "kbd" }, Child = new TextBlock { Text = KeyLabels.Printed(text) } }
             : new PadGlyph { Button = text };
         glyph.Classes.Set("dark", IsDark);
         return glyph;

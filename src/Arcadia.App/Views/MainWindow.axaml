@@ -39,11 +39,11 @@
 
         <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
           <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
-                  Command="{Binding LauncherTabs.PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousLauncherTip}">
+                  Command="{Binding LauncherTabs.PreviousCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousLauncherTip}">
             <ctl:KeyText Pad="LB" Keys="⇧ Q" />
           </Button>
           <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
-                  Command="{Binding LauncherTabs.NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextLauncherTip}">
+                  Command="{Binding LauncherTabs.NextCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextLauncherTip}">
             <ctl:KeyText Pad="RB" Keys="⇧ E" />
           </Button>
           <Panel>
@@ -87,7 +87,7 @@
           </StackPanel>
           <!-- The status messages as one chip like search and settings (#166, design T166Library): Y (V) and the symbols;
                a click anywhere on it opens the status modal. "Controller wird eingerichtet …" alone shows no chip. -->
-          <Button Name="StatusChip" Classes="plain headerChip statusChip" Command="{Binding OpenStatusModalCommand}" ToolTip.Tip="{x:Static app:AppTexts.StatusTip}"
+          <Button Name="StatusChip" Classes="plain headerChip statusChip" Command="{Binding OpenStatusModalCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.StatusTip}"
                   IsVisible="{Binding Status.HasEntries}">
             <StackPanel Orientation="Horizontal" Spacing="4">
               <ctl:KeyHint Pad="Y" Keys="V" Margin="0,0,6,0" />
@@ -113,7 +113,7 @@
           </Button>
           <Border Classes="divider" Margin="6,0" IsVisible="{Binding Status.HasAnyStatus}" />
           <!-- Search and settings as chips: the key that opens them beside their symbol (owner, 2026-10-21). -->
-          <Button Classes="plain headerChip" Command="{Binding OpenSearchCommand}" ToolTip.Tip="{x:Static app:AppTexts.SearchTip}" IsVisible="{Binding !IsSearchShown}">
+          <Button Classes="plain headerChip" Command="{Binding OpenSearchCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.SearchTip}" IsVisible="{Binding !IsSearchShown}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="X" Keys="F" />
               <Path Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
@@ -152,7 +152,7 @@
           <Border Classes="divider" />
           <!-- The tab's filter (#44): neutral, or filled with "19 von 412"; without a category to filter by only the funnel. -->
           <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
-                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="{x:Static app:AppTexts.FilterTip}">
+                  Command="{Binding Library.OpenFilterCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.FilterTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
               <Path Classes="filterFunnel" />
@@ -201,7 +201,7 @@
                     </Viewbox>
                   </Button>
                   <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Library.OpenMenuCommand}"
-                          ToolTip.Tip="{x:Static app:AppTexts.MoreActionsTip}">
+                          ctl:KeyTip.Text="{x:Static app:AppTexts.MoreActionsTip}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <ctl:KeyHint Pad="⧉" Keys="R" />
                       <TextBlock Text="{x:Static app:AppTexts.Options}" VerticalAlignment="Center" />
@@ -402,7 +402,7 @@
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.PreviousPageCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousPageTip}">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.PreviousPageCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousPageTip}">
                 <ctl:KeyText Pad="LT" Keys="Q" />
               </Button>
               <ItemsControl ItemsSource="{Binding Library.PageButtons}" Margin="10,0">
@@ -422,7 +422,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.NextPageCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextPageTip}">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.NextPageCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextPageTip}">
                 <ctl:KeyText Pad="RT" Keys="E" />
               </Button>
             </StackPanel>
@@ -487,7 +487,7 @@
           <!-- The tab's filter, the same chip as over the library (#530): the carousel turns through its hits. -->
           <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
                   IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"
-                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="{x:Static app:AppTexts.FilterTip}">
+                  Command="{Binding Library.OpenFilterCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.FilterTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
               <Path Classes="filterFunnel" />
@@ -1164,11 +1164,11 @@
             <Border Name="CategoryDividerLeft" Grid.Column="1" Classes="divider tabDivider" Margin="20,0" />
             <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
               <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
-                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.PreviousCategoryCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousCategoryTip}">
+                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.PreviousCategoryCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousCategoryTip}">
                 <ctl:KeyText Pad="LB" Keys="⇧ Q" />
               </Button>
               <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
-                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.NextCategoryCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextCategoryTip}">
+                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.NextCategoryCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextCategoryTip}">
                 <ctl:KeyText Pad="RB" Keys="⇧ E" />
               </Button>
               <Panel DataContext="{Binding Settings}" x:DataType="settings:SettingsPageViewModel">

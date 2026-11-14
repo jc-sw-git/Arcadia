@@ -104,6 +104,7 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/AppErrors`: the last line of defence: unexpected errors logged with stack trace and shown as a toast;
   `Guard`/`.Forget(context)` for work nobody awaits.
 - `Input/UiAction`/`UiActionMap`: keys and buttons as the actions `MainViewModel.Handle` routes.
+- `Input/KeyPosition`, `KeyLabels`, `WindowsKeyboardLayout` (#588): letter keys count by place; hints and `KeyTip` tooltips show the active layout's letter.
 - `Input/HeldPress`: whether the press being handled repeats a held button or key; where a step wraps round
   (`ListFocus.Cycle`, `ValueCycle.Step`, `GridFocus.Step`, `HitWindow.Turn`/`Move` with `held`), a repeat stops at the end (#476).
   `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.

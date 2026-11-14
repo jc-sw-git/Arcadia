@@ -158,7 +158,14 @@ public sealed class UserDataStoreTests : IAsyncDisposable
         var failures = new List<Exception>();
         var changed = new List<string>();
         store.WriteFailed += (_, e) => failures.Add(e);
-        store.Changed += (_, keys) => changed.AddRange(keys);
+        // Changed comes from this thread and from the failing write's background thread, possibly at once.
+        store.Changed += (_, keys) =>
+        {
+            lock (changed)
+            {
+                changed.AddRange(keys);
+            }
+        };
 
         // The failing write runs in the background and may put "Aal" back before Change returns, so "Zander" is seen
         // only through the first Changed (the keys below), never by reading the store here.

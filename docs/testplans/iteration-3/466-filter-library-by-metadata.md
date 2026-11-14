@@ -3,7 +3,7 @@
 Part B of #44: the metadata categories in the modal "Filter" that #465 built (designs: artboards "#44"). Controller
 only unless a case says otherwise; B goes back one level. Test cases derived by the quality engineer from #466's
 scenarios 1–19 and #44's visual checklist, before implementation. The age rating flow is provisional: the owner tries
-it in T466-16 and may change it within this issue. Until #557 lands, the default rating system is USK.
+it in T466-16 and may change it within this issue. The default rating system is the region's (#557).
 
 **Status:** Automated: T466-1 to -15, -17 to -22 · QE: T466-23, -25 · Open for the owner: T466-16, T466-24
 

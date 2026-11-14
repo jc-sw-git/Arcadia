@@ -26,7 +26,8 @@ languages with their texts in #555/#556; the metadata side already speaks them.
   page's info line, in "Infos" and in the info box of a metadata hit; cached genres need no reload. · E2E: yes
 - [x] **T557-6** The first age rating badge is the region's board, with all three delivered: USK 16 in Germany, PEGI 18
   in France, ESRB M in the USA; "Infos" and the info box of a metadata hit list the region's first, then USK, PEGI,
-  ESRB. A game without the region's rating shows the next one in that order. · E2E: yes
+  ESRB. A game without the region's rating shows the next one in that order. The library filter's "Altersfreigabe"
+  (#466) opens on the region's system, or on the first one the tab has. · E2E: yes
 - [x] **T557-7** Region → first board: Germany and Austria USK, USA and Canada ESRB, every other region (Switzerland,
   France, UK, Japan) and an unknown one PEGI. · E2E: yes
 - [x] **T557-8** Arcadia in English with `--demo`: a demo game's detail page shows genres, tags and description in
@@ -48,7 +49,7 @@ Automated tests:
 | T557-3 | `MetadataLanguageTests` (App); the variants in `MetadataLanguageTests` (Core) |
 | T557-4 | `MetadataLanguageTests` (App); `MetadataServiceTests`, `MetadataLanguageTests` (Core) |
 | T557-5 | `MetadataLanguageTests` (App, Core); the names per language in `TranslationsTests` |
-| T557-6 | `MetadataLanguageTests` (App), `WaitingHitFactsTests` (App); `MetadataLanguageTests`, `MetadataServiceTests` (Core) |
+| T557-6 | `MetadataLanguageTests` (App), `LibraryMetadataFilterTests` (App), `WaitingHitFactsTests` (App); `MetadataLanguageTests`, `MetadataServiceTests` (Core) |
 | T557-7 | `MetadataLanguageTests` (Core) |
 
 History:

@@ -78,13 +78,13 @@ public sealed class LibraryMetadataFilterTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static async Task<ArcadiaDriver> StartAsync(LauncherSpec spec, SavedFilter? saved = null)
+    private static async Task<ArcadiaDriver> StartAsync(LauncherSpec spec, SavedFilter? saved = null, AgeRatingBoard region = AgeRatingBoard.Usk)
     {
         var arcadia = await ArcadiaDriver.StartAsync([spec], settings: new AppSettings
         {
             ActiveLaunchers = [KnownLaunchers.Steam.Id],
             LibraryFilters = saved is null ? new Dictionary<string, SavedFilter>() : new Dictionary<string, SavedFilter> { [KnownLaunchers.Steam.Id] = saved },
-        });
+        }, firstAgeRatingBoard: region);
         await RunToIdleAsync(arcadia);
         return arcadia;
     }
@@ -507,6 +507,29 @@ public sealed class LibraryMetadataFilterTests
         Assert.Equal("6", modal.HitsText);
         Assert.False(Category(modal, "Altersfreigabe").IsChosen);
         Assert.Equal(["Alle", "3", "7", "12", "16", "18"], rating.Ratings.Select(tile => tile.Value));
+    }
+
+    [AvaloniaTheory]
+    [Trait("TestCase", "T557-6")]
+    [InlineData(AgeRatingBoard.Esrb, AgeRatingBoard.Esrb)]
+    [InlineData(AgeRatingBoard.Pegi, AgeRatingBoard.Pegi)]
+    [InlineData(AgeRatingBoard.Usk, AgeRatingBoard.Usk)]
+    public async Task Altersfreigabe_opens_on_the_regions_system(AgeRatingBoard region, AgeRatingBoard expected)
+    {
+        var (spec, _, _) = SteamWith([.. Library(), new("Funk", Meta([Genre.Action], [], "Nordkai", "Seewind", 2020, new AgeRating(AgeRatingBoard.Esrb, "T")))]);
+        using var arcadia = await StartAsync(spec, region: region);
+
+        Assert.Equal(expected, OpenAt(arcadia, "Altersfreigabe").RatingPane!.Board);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T557-6")]
+    public async Task Without_the_regions_system_in_the_tab_Altersfreigabe_opens_on_the_first_present_one()
+    {
+        var (spec, _, _) = SteamWith(Library());
+        using var arcadia = await StartAsync(spec, region: AgeRatingBoard.Esrb);
+
+        Assert.Equal(AgeRatingBoard.Usk, OpenAt(arcadia, "Altersfreigabe").RatingPane!.Board);
     }
 
     [AvaloniaFact]

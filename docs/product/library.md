@@ -46,7 +46,7 @@
   same name; a provider tag the game also has as an own one shows only as the own one (as on the detail page); a
   renamed or merged own tag follows into the filter, a deleted one drops out. Year: chart, quick picks ("Letzte 3
   Jahre", decades, "Vor 2000"), "von"/"bis" (◀▶ one year, LT/RT ten, within the tab's years, "von" never after
-  "bis"); the tab's whole range is "Alle Jahre". Age rating (provisional): one system (the region's, USK until #557),
+  "bis"); the tab's whole range is "Alle Jahre". Age rating (provisional): one system (the region's, #557),
   then one or more of its ratings; no conversion between systems, another system clears the ratings. Once a value is
   chosen, "Ohne Angabe einbeziehen" adds the entries without that metadata. Metadata arriving later re-filters the
   library; a modal opened during a metadata run (reading the launchers' files included) says so and keeps its counts and categories.

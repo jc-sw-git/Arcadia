@@ -10,6 +10,7 @@ namespace Arcadia.App.Filter;
 
 /// <summary>What the filter modal counts and offers (#44, #466): the tab's entries and facts as they were when it opened.</summary>
 /// <param name="ThisYear">"Letzte 3 Jahre" counts back from it.</param>
+/// <param name="FirstAgeRatingBoard">The region's rating system (#557): "Altersfreigabe" opens on it when the tab has it.</param>
 /// <param name="MetadataLoading">A metadata run goes on: the counts may change once the modal closes (#466 case 16).</param>
 public sealed record FilterModalSetup(
     string LauncherName,
@@ -17,12 +18,8 @@ public sealed record FilterModalSetup(
     FilterFacts Facts,
     FilterOffer Offer,
     int ThisYear,
-    bool MetadataLoading = false)
-{
-    /// <summary>The setup of a tab without metadata, as part A opened it.</summary>
-    public static FilterModalSetup Of(string launcherName, IReadOnlyList<Game> games) =>
-        new(launcherName, games, FilterFacts.None, FilterOffer.Of(games), DateTime.Now.Year);
-}
+    AgeRatingBoard FirstAgeRatingBoard,
+    bool MetadataLoading = false);
 
 /// <summary>What a category's values ask of the modal.</summary>
 public interface IFilterPaneHost

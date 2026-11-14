@@ -20,11 +20,10 @@ public sealed partial class FilterRatingPane : FilterPane
     private int _rating;
     private RatingChoice? _choice;
 
-    /// <param name="preferredBoard">The region's system (#557); USK until #557 lands.</param>
-    public FilterRatingPane(IFilterPaneHost host, AgeRatingBoard preferredBoard = AgeRatingBoard.Usk)
+    public FilterRatingPane(IFilterPaneHost host)
         : base(FilterCategory.AgeRating, host)
     {
-        _defaultBoard = host.Setup.Offer.DefaultBoard(preferredBoard);
+        _defaultBoard = host.Setup.Offer.DefaultBoard(host.Setup.FirstAgeRatingBoard);
         Systems = [.. host.Setup.Offer.Boards.Select(board => new FilterChipViewModel(NameOf(board), chip => PickSystem(chip)) { Tag = board })];
         Board = _defaultBoard;
         Ratings = Tiles(Board);

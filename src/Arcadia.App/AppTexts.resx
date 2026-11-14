@@ -980,6 +980,8 @@
   <data name="MessageCountMany" xml:space="preserve"><value>{count} Meldungen</value></data>
   <data name="KeyShift" xml:space="preserve"><value>Umschalt</value></data>
   <data name="KeySpace" xml:space="preserve"><value>Leertaste</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Esc</value></data>
   <data name="Hide" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="ControllerModeSteam" xml:space="preserve"><value>Steam-Eingabe</value></data>
   <data name="ControllerModeDefault" xml:space="preserve"><value>Standard ({mode})</value></data>

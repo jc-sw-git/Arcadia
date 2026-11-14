@@ -50,7 +50,7 @@ public sealed class FirstRunDataSourcesViewModel : SettingsCategoryViewModel
             Group = AppTexts.FirstRunFinishGroup,
             IsPrimary = true,
             ShortcutPad = "≡",
-            ShortcutKeys = "Enter",
+            ShortcutKeys = AppTexts.KeyEnter,
         };
         _key.Changed += OnChanged;
         if (_igdb is not null)

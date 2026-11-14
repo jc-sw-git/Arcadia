@@ -51,7 +51,7 @@
               <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.ArtworkRestoreHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding CloseCommand}">
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
             </Button>
           </StackPanel>
         </Border>

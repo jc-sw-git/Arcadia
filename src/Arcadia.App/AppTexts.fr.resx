@@ -36,7 +36,7 @@
   <data name="SteamControllerTornDownNoAnswer" xml:space="preserve"><value>Steam Controller : Arcadia n’a pas répondu pendant 3 secondes, Pan a donc retiré la manette Xbox – elle revient dans un instant</value></data>
   <data name="SteamControllerTornDownPanEnded" xml:space="preserve"><value>Steam Controller : Pan a été fermé et a retiré la manette Xbox – elle revient dès que Pan tourne à nouveau</value></data>
   <data name="SteamControllerTornDown" xml:space="preserve"><value>Steam Controller : Pan a retiré la manette Xbox ({reason}) – elle revient dans un instant</value></data>
-  <data name="KeyDelete" xml:space="preserve"><value>Suppr</value></data>
+  <data name="KeyDelete" xml:space="preserve"><value>Effacer</value></data>
   <data name="LogFileNoProgram" xml:space="preserve"><value>Aucun programme n’est défini pour les fichiers .log.</value></data>
   <data name="LogFileAccessDenied" xml:space="preserve"><value>L’accès au fichier a été refusé.</value></data>
   <data name="FileGone" xml:space="preserve"><value>Le fichier n’existe plus.</value></data>
@@ -93,7 +93,7 @@
   <data name="ErrorContextRefreshLibrary" xml:space="preserve"><value>Nouvelle analyse de la bibliothèque</value></data>
   <data name="MouseModeDisabledInGame" xml:space="preserve"><value>Le mode souris est désactivé dans ce jeu</value></data>
   <data name="MouseModeOnForDialog" xml:space="preserve"><value>Mode souris activé tant que la boîte de dialogue est ouverte</value></data>
-  <data name="MouseModeOffByGame" xml:space="preserve"><value>Mode souris désactivé – désactivé dans ce jeu</value></data>
+  <data name="MouseModeOffByGame" xml:space="preserve"><value>Mode souris désactivé – bloqué dans ce jeu</value></data>
   <data name="MouseModeOnGameSeesInput" xml:space="preserve"><value>Mode souris activé – le jeu voit toujours les saisies</value></data>
   <data name="MouseModeOff" xml:space="preserve"><value>Mode souris désactivé</value></data>
   <data name="ErrorContextOpenKeyboard" xml:space="preserve"><value>Ouverture du clavier virtuel</value></data>
@@ -197,7 +197,7 @@
   <data name="LauncherControllerNeedsPan" xml:space="preserve"><value>Réglable dès que le gardien des manettes (Pan) est activé : Manettes → Pan.</value></data>
   <data name="LauncherControllerPanUnsupported" xml:space="preserve"><value>Le gardien des manettes (Pan) ne fonctionne pas encore sur ce système, et sans lui, pas de mode Steam Controller.</value></data>
   <data name="LauncherControllerPresetSubtitle" xml:space="preserve"><value>Préréglage pour les jeux de ce lanceur</value></data>
-  <data name="LauncherControllerPresetInfo" xml:space="preserve"><value>Le réglage par défaut de tous les jeux {launcher} quand le Steam Controller est utilisée. Chaque nouveau jeu {launcher} reçoit automatiquement ce mode. Il peut être changé par jeu dans ses détails.</value></data>
+  <data name="LauncherControllerPresetInfo" xml:space="preserve"><value>Le réglage par défaut de tous les jeux {launcher} quand le Steam Controller est utilisé. Chaque nouveau jeu {launcher} reçoit automatiquement ce mode. Il peut être changé par jeu dans ses détails.</value></data>
   <data name="LauncherControllerOwnModeOne" xml:space="preserve"><value>1 jeu a son propre mode</value></data>
   <data name="LauncherControllerOwnModeMany" xml:space="preserve"><value>{count} jeux ont leur propre mode</value></data>
   <data name="LauncherControllerOwnModeInfo" xml:space="preserve"><value>Vous avez modifié vous-même ces jeux {launcher}. Ensuite, ils suivent de nouveau le préréglage « {preset} » :</value></data>
@@ -261,11 +261,11 @@
   <data name="LauncherNoGamesInfo" xml:space="preserve"><value>{launcher} est installé, mais Arcadia n’y a trouvé aucun jeu. Dès que vous y achetez ou installez un jeu, il apparaît dans l’onglet.</value></data>
   <data name="FactGames" xml:space="preserve"><value>Jeux</value></data>
   <data name="FactScanning" xml:space="preserve"><value>en cours d’analyse</value></data>
-  <data name="FactNotScanned" xml:space="preserve"><value>non analysé</value></data>
+  <data name="FactNotScanned" xml:space="preserve"><value>non analysés</value></data>
   <data name="FactLastScanned" xml:space="preserve"><value>Dernière analyse</value></data>
-  <data name="FactNotWatched" xml:space="preserve"><value>non surveillés</value></data>
-  <data name="FactOnlyStartedFromArcadia" xml:space="preserve"><value>uniquement ceux démarrés depuis Arcadia</value></data>
-  <data name="FactWatched" xml:space="preserve"><value>surveillés</value></data>
+  <data name="FactNotWatched" xml:space="preserve"><value>pas de suivi</value></data>
+  <data name="FactOnlyStartedFromArcadia" xml:space="preserve"><value>uniquement pour les lancements depuis Arcadia</value></data>
+  <data name="FactWatched" xml:space="preserve"><value>suivi actif</value></data>
   <data name="FactRunningGames" xml:space="preserve"><value>Jeux en cours</value></data>
   <data name="FactReportedByLauncher" xml:space="preserve"><value>signalés par le lanceur</value></data>
   <data name="FactEntries" xml:space="preserve"><value>Entrées</value></data>
@@ -432,7 +432,7 @@
   <data name="PanNotHiddenReasonNothing" xml:space="preserve"><value>Pan ne trouve rien sur cette manette qu’il puisse cacher aux jeux.</value></data>
   <data name="PanNotHiddenReasonNotFound" xml:space="preserve"><value>Pan ne trouve pas cette manette parmi les périphériques de ce PC.</value></data>
   <data name="PanNotHiddenReasonFailed" xml:space="preserve"><value>Pan n’a pas pu cacher cette manette. La cause est dans pan.log.</value></data>
-  <data name="PanStartFailedInfo" xml:space="preserve"><value>Arcadia n’a pas pu créer les manettes virtuelles. Pan a donc de nouveau libéré les manettes réelles ; Steam et les jeux les voient directement. Arcadia réessaie de lui-même au prochain démarrage ; détails dans arcadia.log.</value></data>
+  <data name="PanStartFailedInfo" xml:space="preserve"><value>Arcadia n’a pas pu créer les manettes virtuelles. Pan a donc de nouveau libéré les manettes réelles ; Steam et les jeux les voient directement. Arcadia réessaie de lui-même à la prochaine tentative ; détails dans arcadia.log.</value></data>
   <data name="Retrying" xml:space="preserve"><value>Nouvelle tentative…</value></data>
   <data name="PanUsbipSubtitle" xml:space="preserve"><value>Crée les manettes virtuelles</value></data>
   <data name="PanUsbipInfo" xml:space="preserve"><value>Grâce au pilote usbip (usbip-win2), Arcadia crée les manettes virtuelles que voient les jeux et Steam. « Installer » met en place toutes les parties manquantes en une étape. {admin}</value></data>
@@ -517,7 +517,7 @@
   <data name="FirstRunFoundNoGames" xml:space="preserve"><value>Trouvé · pas encore de jeux</value></data>
   <data name="FirstRunOnBecomesTab" xml:space="preserve"><value>Activé · devient l’onglet {tab}</value></data>
   <data name="FirstRunOffNoTab" xml:space="preserve"><value>Désactivé · pas d’onglet</value></data>
-  <data name="ToSettings" xml:space="preserve"><value>Vers les paramètres</value></data>
+  <data name="ToSettings" xml:space="preserve"><value>Aller aux paramètres</value></data>
   <data name="StatusEmpty" xml:space="preserve"><value>Rien à voir ici.</value></data>
   <data name="NewestFirst" xml:space="preserve"><value>Les plus récents d’abord</value></data>
   <data name="StatusAllDone" xml:space="preserve"><value>Tout est fait !</value></data>
@@ -575,7 +575,7 @@
   <data name="DemoWouldOpenLauncher" xml:space="preserve"><value>Jeu de démo : {launcher} s’ouvrirait maintenant.</value></data>
   <data name="GameUninstallOnlyInLauncher" xml:space="preserve"><value>« {game} » ne peut être désinstallé que dans {launcher} – ouverture de {launcher}…</value></data>
   <data name="GameAskUninstall" xml:space="preserve"><value>Désinstaller « {game} » ?</value></data>
-  <data name="GameAskUninstallText" xml:space="preserve"><value>{launcher} retire le jeu de ce PC et demandera peut-être encore une fois lui-même.</value></data>
+  <data name="GameAskUninstallText" xml:space="preserve"><value>{launcher} retire le jeu de ce PC et vous demandera peut-être lui-même de confirmer.</value></data>
   <data name="Uninstall" xml:space="preserve"><value>Désinstaller</value></data>
   <data name="GameUninstallOpening" xml:space="preserve"><value>Ouverture de la désinstallation de « {game} » dans {launcher}…</value></data>
   <data name="DemoWouldUninstall" xml:space="preserve"><value>Jeu de démo : « {game} » serait désinstallé maintenant.</value></data>
@@ -600,7 +600,7 @@
   <data name="ActionPanNotRunning" xml:space="preserve"><value>Pan ne tourne pas – ouvre les paramètres des manettes, qui en donnent la raison</value></data>
   <data name="IndividualMouseModeCaption" xml:space="preserve"><value>MODE SOURIS INDIVIDUEL</value></data>
   <data name="ActionShowDetails" xml:space="preserve"><value>Afficher les détails</value></data>
-  <data name="ActionToFavorites" xml:space="preserve"><value>Vers les favoris</value></data>
+  <data name="ActionToFavorites" xml:space="preserve"><value>Ajouter aux favoris</value></data>
   <data name="DetailLauncherReportsNone" xml:space="preserve"><value>{launcher} n’en signale aucun</value></data>
   <data name="DetailUpdateNote" xml:space="preserve"><value>{launcher} l’installera peut-être avant le démarrage.</value></data>
   <data name="DetailSoundtrackNote" xml:space="preserve"><value>{launcher} lit la bande originale.</value></data>
@@ -642,8 +642,8 @@
   <data name="QuickSelectionApplied" xml:space="preserve"><value>Appliquée à tous les jeux.</value></data>
   <data name="QuickSelectionMoveHint" xml:space="preserve"><value>Choisir</value></data>
   <data name="DetailInfoCaption" xml:space="preserve"><value>INFOS</value></data>
-  <data name="DetailBefore" xml:space="preserve"><value>AVANT</value></data>
-  <data name="DetailAfter" xml:space="preserve"><value>APRÈS</value></data>
+  <data name="DetailBefore" xml:space="preserve"><value>PRÉCÉDENT</value></data>
+  <data name="DetailAfter" xml:space="preserve"><value>SUIVANT</value></data>
   <data name="DetailUpdateAvailable" xml:space="preserve"><value>Mise à jour disponible</value></data>
   <data name="DetailControllerModeTitle" xml:space="preserve"><value>Mode du Steam Controller</value></data>
   <data name="DetailControllerModeSubtitle" xml:space="preserve"><value>Qui contrôle le Steam Controller dans ce jeu</value></data>
@@ -980,6 +980,8 @@
   <data name="MessageCountMany" xml:space="preserve"><value>{count} messages</value></data>
   <data name="KeyShift" xml:space="preserve"><value>Maj</value></data>
   <data name="KeySpace" xml:space="preserve"><value>Espace</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Entrée</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Échap</value></data>
   <data name="Hide" xml:space="preserve"><value>Masquer</value></data>
   <data name="ControllerModeSteam" xml:space="preserve"><value>Steam Input</value></data>
   <data name="ControllerModeDefault" xml:space="preserve"><value>Par défaut ({mode})</value></data>
@@ -1274,7 +1276,7 @@
   <data name="ArtworkLauncherImagesOffText" xml:space="preserve"><value>Tant qu’elles sont désactivées, Arcadia n’affiche ici aucune image du lanceur. Vous les réactivez sous « Sources de données ».</value></data>
   <data name="ArtworkSourcesOffTitle" xml:space="preserve"><value>Les images des lanceurs et SteamGridDB sont désactivés</value></data>
   <data name="ArtworkSourcesOffText" xml:space="preserve"><value>Il n’y a ici que vos propres fichiers jusqu’à ce que vous réactiviez une source sous « Sources de données ».</value></data>
-  <data name="ArtworkToDataSources" xml:space="preserve"><value>Vers les sources de données</value></data>
+  <data name="ArtworkToDataSources" xml:space="preserve"><value>Aller aux sources de données</value></data>
   <data name="ArtworkTabsHint" xml:space="preserve"><value>Jaquette / Arrière-plan</value></data>
   <data name="ArtworkChooseHint" xml:space="preserve"><value>Choisir une image</value></data>
   <data name="ArtworkUseHint" xml:space="preserve"><value>Utiliser</value></data>

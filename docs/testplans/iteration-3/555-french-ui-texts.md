@@ -25,7 +25,7 @@ Space = A, Esc = B). "System language" is the Windows display language, faked in
 - [x] **T555-6** Every page in French at 1920 × 1080 (library, detail page, menus, search, filter, settings categories,
   first start, dialogs): no text cut off or running into its neighbour; longer French texts wrap or fit. · E2E: no
   (window)
-- [ ] **T555-7** Independent review of the French texts by the quality engineer: meaning matches the German, the
+- [x] **T555-7** Independent review of the French texts by the quality engineer: meaning matches the German, the
   glossary terms are used consistently, labels quoted in a text match the label they name. · E2E: no (language review)
 - [ ] **T555-8** **Owner:** Windows display language French (or "Français" applied): click through library, detail page
   and settings once; anything that reads oddly or is still German or English goes into the PR. · E2E: no (real PC)
@@ -45,6 +45,7 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T555-1 to T555-5 | 2026-11-14 | Claude | branch feat/french-ui-texts-555, Linux container, `dotnet test` | ✅ | – |
-| T555-6 | 2026-11-14 | Claude | branch feat/french-ui-texts-555, Debug build, Xvfb 1920 × 1080, `--demo`, "Français" set | see PR | – |
+| T555-6 | 2026-11-14 | Claude | branch feat/french-ui-texts-555, Debug build, Xvfb 1920 × 1080, `--demo`, "Français" set | ✅ nothing cut off; "Lanceur" → "Lanceurs", "Trié par" → "Tri :", size unit "Go" | fixed in this PR |
 | T555-6 | 2026-11-14 | Claude (QE) | branch feat/french-ui-texts-555 @ 3cb7fc4, Release build, Xvfb 1920 × 1080, `--demo` and `--demo --first-run`, "Français" set; library, game menu, view, filter, detail page (4 areas), search (empty, no hit, hits), settings (5 categories), tags, new tag with on-screen keyboard, change artwork, uninstall question, first start (2 steps) | ✅ no French-only cut-off; two cut-offs seen are the same in German | – |
 | T555-7 | 2026-11-14 | Claude (QE) | all `*.fr.resx` side by side with German, glossary and quoted-label check by script | ❌ 5 findings (agreement, one meaning, key badges, backspace key) | fixed in this PR, see Review |
+| T555-7 | 2026-11-14 | Claude | the 5 findings fixed (texts, `KeyEnter`/`KeyEscape` badges), Xvfb screenshots of hint bar, settings button and "Durée de maintien" in French; language, keyboard and mouse mode tests green | ✅ | – |

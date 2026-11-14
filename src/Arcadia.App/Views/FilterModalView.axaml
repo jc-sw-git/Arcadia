@@ -34,7 +34,7 @@
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{Binding MoveText}" IsVisible="{Binding !MovesInGrid}" />
               <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding MoveText}" IsVisible="{Binding MovesInGrid}" />
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding BackText}" />
             </StackPanel>
           </Border>
 

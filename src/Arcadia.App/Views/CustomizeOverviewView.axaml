@@ -72,7 +72,7 @@
               <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" IsVisible="{Binding MovesBothWays}" />
               <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" IsVisible="{Binding MovesSideways}" />
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding BackText}" />
             </StackPanel>
           </Border>
         </StackPanel>

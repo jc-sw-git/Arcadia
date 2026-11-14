@@ -72,7 +72,7 @@ Les autres programmes qui les utilisent (comme DS4Windows avec HidHide) cesseron
   <data name="DriversRunningTitle" xml:space="preserve"><value>Installation des pilotes</value></data>
   <data name="DriversPromptRunning" xml:space="preserve"><value>Confirmez la demande de droits d’administrateur</value></data>
   <data name="DriversUsbipRunningDetail" xml:space="preserve"><value>peut prendre quelques minutes</value></data>
-  <data name="DownloadProgress" xml:space="preserve"><value>{received} Mo sur {total}</value></data>
+  <data name="DownloadProgress" xml:space="preserve"><value>{received} sur {total} Mo</value></data>
   <data name="StepConfirmPrompt" xml:space="preserve"><value>Confirmer la demande de droits d’administrateur</value></data>
   <data name="StepViiper" xml:space="preserve"><value>Télécharger et configurer VIIPER</value></data>
   <data name="StepSteamStop" xml:space="preserve"><value>Fermer Steam</value></data>

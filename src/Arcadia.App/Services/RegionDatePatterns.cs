@@ -18,9 +18,9 @@ internal sealed record RegionDatePatterns(string HeaderDate, string DayAndMonth,
         var withoutYear = DatePattern.WithoutYear(format.LongDatePattern);
         var dayAndMonth = DatePattern.WithoutYear(format.ShortDatePattern);
         return new RegionDatePatterns(
-            Usable(region, "Kopfzeilendatum", DatePattern.Abbreviated(HasDayAndMonth(withoutYear) ? withoutYear : format.MonthDayPattern), "M", "ddd d MMM"),
-            Usable(region, "Tag und Monat", HasDayAndMonth(dayAndMonth) ? dayAndMonth : format.MonthDayPattern, "M", "d MMM"),
-            Usable(region, "langes Datum", DatePattern.WithoutWeekday(format.LongDatePattern), "D", "d MMMM yyyy"));
+            Usable(region, nameof(HeaderDate), DatePattern.Abbreviated(HasDayAndMonth(withoutYear) ? withoutYear : format.MonthDayPattern), "M", "ddd d MMM"),
+            Usable(region, nameof(DayAndMonth), HasDayAndMonth(dayAndMonth) ? dayAndMonth : format.MonthDayPattern, "M", "d MMM"),
+            Usable(region, nameof(LongDate), DatePattern.WithoutWeekday(format.LongDatePattern), "D", "d MMMM yyyy"));
     }
 
     private static bool HasDayAndMonth(string pattern) => DatePattern.Has(pattern, 'd') && DatePattern.Has(pattern, 'M');

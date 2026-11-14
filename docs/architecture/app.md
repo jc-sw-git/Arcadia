@@ -49,9 +49,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   in `MainViewModel.FirstRun.cs`.
 - `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
   hits shown in `TileSlotViewModel` places too).
-- `Keyboard/` (#110): `OnScreenKeyboardViewModel` (view `Views/OnScreenKeyboardView`), `BoardKeyViewModel`,
-  `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types into; its user greys out or
-  leaves out keys, `BoardKeyState`), `WindowInFrontTarget` (the mouse mode's), `SharedKeyboard` (taken in turn, #477).
+- Keyboards, layouts, region formats: [app-keyboard-and-region.md](app-keyboard-and-region.md).
 - `Messages/` (#433): `RecentMessages` (the last 50 toasts and status changes, any thread), `StatusMessageChanges`
   (the header's status messages turned into entries; fed by `StatusBarViewModel`), `ILogFiles`/`LogFiles` (the three
   logs by `LogKind`, never a path). `ToastViewModel.Show` takes a level and records every toast; the group "LOGGING" is
@@ -104,7 +102,6 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/AppErrors`: the last line of defence: unexpected errors logged with stack trace and shown as a toast;
   `Guard`/`.Forget(context)` for work nobody awaits.
 - `Input/UiAction`/`UiActionMap`: keys and buttons as the actions `MainViewModel.Handle` routes.
-- `Input/KeyPosition`, `KeyLabels`, `WindowsKeyboardLayout` (#588): letter keys count by place; hints and `KeyTip` tooltips show the active layout's letter.
 - `Input/HeldPress`: whether the press being handled repeats a held button or key; where a step wraps round
   (`ListFocus.Cycle`, `ValueCycle.Step`, `GridFocus.Step`, `HitWindow.Turn`/`Move` with `held`), a repeat stops at the end (#476).
   `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.

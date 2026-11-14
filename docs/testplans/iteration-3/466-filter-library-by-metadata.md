@@ -5,7 +5,7 @@ only unless a case says otherwise; B goes back one level. Test cases derived by 
 scenarios 1–19 and #44's visual checklist, before implementation. The age rating flow is provisional: the owner tries
 it in T466-16 and may change it within this issue. Until #557 lands, the default rating system is USK.
 
-**Status:** Automated: T466-1 to -5, -7 to -15, -17 to -20, -22 · QE: – · Open for the owner: T466-16
+**Status:** Automated: T466-1 to -5, -7 to -15, -17 to -20, -22 · QE: T466-23, -25 · Open for the owner: T466-16
 
 **Long value lists (genre, tags, developer, publisher)**
 
@@ -95,7 +95,7 @@ it in T466-16 and may change it within this issue. Until #557 lands, the default
 
 - [x] **T466-22** Gamepad alone through every metadata category: B from the value search goes to the list, from the
       list to the categories, from there closes and applies; no step needs a mouse or keyboard. · E2E: yes
-- [ ] **T466-23** With the mouse: click a category, a value, the sort switch, the search field, the switch "Ohne
+- [x] **T466-23** With the mouse: click a category, a value, the sort switch, the search field, the switch "Ohne
       Angabe einbeziehen", the year range and a quick pick, a rating system and a rating; the wheel scrolls long lists;
       hints show the keyboard's keys (C for L3, the key for X). · E2E: no (real clicks and wheel, the quality engineer's
       run)
@@ -105,7 +105,7 @@ it in T466-16 and may change it within this issue. Until #557 lands, the default
 - [ ] **T466-24** Release build, `--demo-games 5000` with metadata (thousands of tag values): every press in "Tags"
       (move, choose, L3, a letter jump) moves the focus within 50 ms, opening the modal and a choice don't block the
       UI (counts computed off the UI thread). · E2E: no (budget measured by hand, CI asserts no timing)
-- [ ] **T466-25** #44's visual checklist for part B: focus ring on the first and last value of a long list, on the
+- [x] **T466-25** #44's visual checklist for part B: focus ring on the first and last value of a long list, on the
       own-tags group, the switch, both year ends, the quick picks and ratings; fade top and bottom, scroll bar and
       letter bar in A–Z; 0-hit values greyed but readable; developer names over 30 characters and 200 % scaling
       truncate with "…" while hit counts stay; bar chart readable; the keyboard never covers the search field; the
@@ -131,3 +131,5 @@ History:
 | T466-25 | 2026-11-14 | Claude (QE) | Release build under Xvfb, `--demo` and `--demo-games 5000`, keyboard and mouse | ❌ | rings on first and last value, switch, year ends, quick picks, systems and ratings, fades, scroll and letter bar, greyed values, long developer names cut with "…" and counts kept, bar chart, keyboard below the search field: ✅; a single long chosen value reads "Mehrere"; while typing the search, the hint "Wert" stays; no loading line while the launchers' own metadata is read (QE finding 4, 5, 6). Not checked: Xbox/PlayStation glyphs (no gamepad here), 200 % scaling (the Big Picture is laid out in a Viewbox) |
 | T466-24 (fixes) | 2026-11-14 | Claude (implementation) | Debug build under Xvfb, `--demo --demo-games 5000` with the demo's numbered topic tags (about 640 tags in the GOG tab), keyboard | ✅ | a move in "Tags" 10–17 ms press to frame while the list scrolls, under 1 ms without scrolling; opening the filter 42–75 ms after the first (2.3 s cold), it was 0.4–0.6 s with the keyboard built at each opening |
 | QE findings 1, 2, 4, 5, 6 | 2026-11-14 | Claude (implementation) | `dotnet test`, Linux container; Xvfb for the hints while typing and the loading line | ✅ | each new or changed acceptance test red on the code before the fix; the loading line shows while the launchers' files are read |
+| T466-23, T466-25 (re-check) | 2026-11-14 | Claude (QE) | Release build of cb0f930 under Xvfb, `--demo` and `--demo-games 5000`, keyboard and mouse | ✅ | QE findings 1, 2, 4, 5 and 6 fixed: the ring stays on the chosen system (key and click), the hint follows a click on the order, one long developer name is cut with "…", typing shows only "Tippen" and "Tastatur ausblenden", the loading line shows while the launchers' metadata is read. Not checked: Xbox/PlayStation glyphs (no gamepad here) |
+| T466-24 (re-check) | 2026-11-14 | Claude (QE) | Release build of cb0f930 under Xvfb, `--demo --demo-games 5000` (about 640 tags in the GOG tab), keyboard | ❌ | opening 43 ms; a move inside the window under 1 ms, a move that scrolls 8–13 ms, a choice 15 ms, a letter jump in A–Z under 3 ms: ✅; LT/RT paging in "Häufigste zuerst" 27–172 ms (6 of 12 over 50 ms) and L3 58–128 ms: over the budget in the container (QE finding 7) |

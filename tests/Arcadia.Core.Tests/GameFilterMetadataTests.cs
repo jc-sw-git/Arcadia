@@ -375,6 +375,7 @@ public sealed class GameFilterMetadataTests
             new AgeRating(AgeRatingBoard.Usk, "12")))));
         var filter = Names(FilterList.Genre, "Shooter", "Action").WithNames(FilterList.Tag, NameChoice.Of(["Tag 1", "Tag 2"], withUnknown: true));
         filter.Count(games, facts);
+        FilterOffer.Of(games, facts);
 
         var watch = Stopwatch.StartNew();
         var counts = filter.Count(games, facts);

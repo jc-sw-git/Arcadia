@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Arcadia.Core.Metadata;
 using Arcadia.Launchers.Abstractions;
 
@@ -99,8 +100,8 @@ public sealed class FilterOffer
         facts ??= FilterFacts.None;
         bool installed = false, uninstalled = false;
         var types = new HashSet<GameType>();
-        var spellings = Enum.GetValues<FilterList>().Select(_ => new Dictionary<string, Dictionary<string, int>>(FilterNames.Comparer)).ToArray();
-        var own = new Dictionary<string, Dictionary<string, int>>(FilterNames.Comparer);
+        var spellings = Lists.Select(_ => new Dictionary<string, Spellings>(FilterNames.Comparer)).ToArray();
+        var own = new Dictionary<string, Spellings>(FilterNames.Comparer);
         var years = new Dictionary<int, int>();
         var boards = new HashSet<AgeRatingBoard>();
         foreach (var game in games)
@@ -114,7 +115,7 @@ public sealed class FilterOffer
                 continue;
             }
 
-            foreach (var list in Enum.GetValues<FilterList>())
+            foreach (var list in Lists)
             {
                 Count(spellings[(int)list], gameFacts.NamesOf(list));
             }
@@ -131,34 +132,60 @@ public sealed class FilterOffer
         return new FilterOffer(
             installed && uninstalled,
             types.OrderBy(LibraryTypes.Position).ToList(),
-            [.. Enum.GetValues<FilterList>().Select(list => ByEntries(spellings[(int)list], list))],
+            [.. Lists.Select(list => ByEntries(spellings[(int)list], list))],
             [.. ByEntries(own, FilterList.Tag).OrderBy(tag => tag.Label, StringComparer.CurrentCultureIgnoreCase)],
             years,
             [.. boards.Order()]);
     }
 
-    private static void Count(Dictionary<string, Dictionary<string, int>> spellings, IReadOnlyList<string> names)
-    {
-        foreach (var name in names)
-        {
-            if (!spellings.TryGetValue(name, out var ofName))
-            {
-                spellings[name] = ofName = new Dictionary<string, int>(StringComparer.Ordinal);
-            }
+    private static readonly FilterList[] Lists = Enum.GetValues<FilterList>();
 
-            ofName[name] = ofName.GetValueOrDefault(name) + 1;
+    private static void Count(Dictionary<string, Spellings> spellings, IReadOnlyList<string> names)
+    {
+        for (var i = 0; i < names.Count; i++)
+        {
+            ref var ofName = ref CollectionsMarshal.GetValueRefOrAddDefault(spellings, names[i], out _);
+            (ofName ??= new Spellings()).Add(names[i]);
         }
     }
 
     /// <summary>One value per name, in its most frequent spelling (#466 case 5), the most frequent first.</summary>
-    private static List<FilterName> ByEntries(Dictionary<string, Dictionary<string, int>> spellings, FilterList list) => [.. spellings.Values
-        .Select(ofName =>
-        {
-            var spelling = ofName.OrderByDescending(pair => pair.Value).ThenBy(pair => pair.Key, StringComparer.Ordinal).First().Key;
-            return new FilterName(spelling, LabelOf(list, spelling), ofName.Values.Sum());
-        })
+    private static List<FilterName> ByEntries(Dictionary<string, Spellings> spellings, FilterList list) => [.. spellings.Values
+        .Select(ofName => new FilterName(ofName.MostFrequent, LabelOf(list, ofName.MostFrequent), ofName.Entries))
         .OrderByDescending(name => name.Entries)
         .ThenBy(name => name.Label, StringComparer.CurrentCultureIgnoreCase)];
+
+    /// <summary>
+    /// The spellings of one name and how many entries use each. Nearly every name has one spelling, so the others get a
+    /// dictionary only when they occur: one per name made the offer of thousands of tags too slow (#466 case 24).
+    /// </summary>
+    private sealed class Spellings
+    {
+        private string? _first;
+        private int _firstCount;
+        private Dictionary<string, int>? _others;
+
+        public int Entries { get; private set; }
+
+        public string MostFrequent => _others is null
+            ? _first!
+            : _others.Append(new KeyValuePair<string, int>(_first!, _firstCount))
+                .OrderByDescending(pair => pair.Value).ThenBy(pair => pair.Key, StringComparer.Ordinal).First().Key;
+
+        public void Add(string spelling)
+        {
+            Entries++;
+            if (_first is null || string.Equals(_first, spelling, StringComparison.Ordinal))
+            {
+                _first ??= spelling;
+                _firstCount++;
+                return;
+            }
+
+            _others ??= new Dictionary<string, int>(StringComparer.Ordinal);
+            _others[spelling] = _others.GetValueOrDefault(spelling) + 1;
+        }
+    }
 
     private static string LabelOf(FilterList list, string key) =>
         list == FilterList.Genre && Enum.TryParse<Genre>(key, out var genre) ? GenreNames.Of(genre) : key;

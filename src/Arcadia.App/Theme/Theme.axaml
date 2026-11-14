@@ -187,11 +187,13 @@
       <GradientStop Offset="0" Color="#8C0B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
-    <!-- Header and footer over the detail page's artwork (#612): the panel's colour, 60 % see-through, so the artwork
+    <!-- Header and footer over the detail page's artwork (#612): the panel's colour, 45 % see-through, so the artwork
          clearly shows behind them and their text still reads on a bright one. -->
-    <SolidColorBrush x:Key="DetailBar" Color="#66121820" />
-    <!-- The quiet frame around the detail page's covers (#612), setting them off from the artwork. -->
+    <SolidColorBrush x:Key="DetailBar" Color="#8C121820" />
+    <!-- The quiet frame around the detail page's covers (#612), setting them off from the artwork: a light line inside a
+         dark one. -->
     <SolidColorBrush x:Key="DetailCoverFrame" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="DetailCoverEdge" Color="#73000000" />
     <!-- Over the blurred copy of a background around its sharp image (#565), so the image stands out from it. -->
     <SolidColorBrush x:Key="ArtworkBlurShade" Color="#8C0B0F14" />
     <!-- "Bild ansehen" (#565): behind the shown game's title, bottom left. -->
@@ -424,6 +426,21 @@
   <Style Selector="Button.tab.selected">
     <Setter Property="Background" Value="{StaticResource RaisedLight}" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="TextBlock.headerDate">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <!-- Over the detail page's artwork (#612) the other launchers' tabs are chips, as under the mouse, and the date is as
+       light as body text, so they read on a bright image through the see-through band. -->
+  <Style Selector="Grid.onArt Button.tab:not(.selected)">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Grid.onArt Button.tab:not(.selected):pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Grid.onArt TextBlock.headerDate">
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
   </Style>
 
   <!-- A content control around a raised button: the button's shadow reaches beyond it (#540). -->
@@ -1143,10 +1160,15 @@
   <Style Selector="Border.detailNoteScrim.stackTitle">
     <Setter Property="Margin" Value="-56,-20" />
   </Style>
+  <Style Selector="Border.detailCoverEdge">
+    <Setter Property="BorderBrush" Value="{StaticResource DetailCoverEdge}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
   <Style Selector="Border.detailCoverFrame">
     <Setter Property="BorderBrush" Value="{StaticResource DetailCoverFrame}" />
     <Setter Property="BorderThickness" Value="2" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="CornerRadius" Value="11" />
   </Style>
   <!-- Header and footer bands, only on the detail page (#612); the footer's keeps its line at the top. -->
   <Style Selector="Border.detailBar">
@@ -2954,6 +2976,9 @@
   </Style>
 
   <!-- The status messages (#166, designs T166Library/T166Modal/T166Empty/T166Bausteine). -->
+  <Style Selector="Button.headerChip.clockChip">
+    <Setter Property="Padding" Value="16,0" />
+  </Style>
   <Style Selector="Button.headerChip.statusChip">
     <Setter Property="Padding" Value="8,0,10,0" />
   </Style>

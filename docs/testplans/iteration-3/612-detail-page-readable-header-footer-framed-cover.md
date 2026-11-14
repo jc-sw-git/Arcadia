@@ -1,17 +1,23 @@
 # #612 Detail page: readable header and footer, background to the window's edges, framed cover
 
-**Status:** Automated: T612-3 (window area) · QE: T612-1 to T612-6 · Open for the owner: T612-7
+**Status:** Automated: T612-3 (window area), T612-8 · QE: T612-1 to T612-6, T612-9 · Open for the owner: T612-7
 
-- [x] **T612-1** Detail page open over a bright artwork: header (logo, tabs, clock) sits on a dark see-through band, the
-  artwork visibly shows through, all text reads clearly. · E2E: no (window)
+- [x] **T612-1** Detail page open over a bright artwork: header (logo, tabs, clock) sits on a dark band, 45 %
+  see-through, the artwork visibly shows through, all text reads clearly; the other launchers' tabs are chips as under
+  the mouse, date and time share one chip. · E2E: no (window)
 - [x] **T612-2** The same for the footer (position, sort, button hints). · E2E: no (window)
 - [x] **T612-3** Window wider than 16 : 9 (e.g. 2547 × 1360) and narrower (e.g. 1200 × 1000): the artwork reaches every
   edge of the window, no black bars, no hard edge; header and footer bands reach the window's sides. · E2E: no (window)
 - [x] **T612-4** Titles of the games before and after sit on a soft cloud like the note under "Spielen" and read clearly
   on a bright image. · E2E: no (window)
-- [x] **T612-5** The front cover and the stack covers have a subtle light frame that sets them off from the artwork; the
+- [x] **T612-5** The front cover and the stack covers have a subtle frame (light inside, dark outside) that sets them off
+  from a bright and a dark artwork; the
   preview in "Artwork ändern" shows the bands and the frame too. · E2E: no (window)
 - [x] **T612-6** Library page: header and footer look as before (no band). · E2E: no (window)
+- [x] **T612-8** A click on the date and time chip opens the settings at "Lokalisierung", from the library and from the
+  detail page; B goes back to where it was. No button or key reaches the chip. · E2E: yes
+- [x] **T612-9** "Bild ansehen" (10 s without input on the detail page) in a window wider than 16 : 9: the image show
+  covers the whole window, the page's background doesn't show at the sides. · E2E: no (window)
 - [ ] **T612-7** **Owner:** On your monitor with your own games, open the detail page of a game with a bright and one with
   a dark artwork: header and footer read well, the artwork shows through their bands, nothing looks cut off at the
   window's edges, the cover stands out. · E2E: no (real artwork on a real monitor)
@@ -21,6 +27,7 @@ Automated tests:
 | Test cases | Tests |
 |---|---|
 | T612-3 | `WindowAreaTests` (the area the background fills, for a wide, a tall and a 16 : 9 window) |
+| T612-8 | `LocalizationSettingsTests.A_click_on_the_clock_chip_opens_Lokalisierung_from_the_library_and_from_the_detail_page_and_B_goes_back` |
 
 History:
 
@@ -30,3 +37,5 @@ History:
 | T612-3 | 2026-11-14 | Claude | as above, windows 2547 × 1360 and 1200 × 1000 | ✅ | – |
 | T612-5 | 2026-11-14 | Claude | as above, "Artwork ändern" preview | ✅ | – |
 | T612-6 | 2026-11-14 | Claude | as above, library at 2547 × 1360 | ✅ | – |
+| T612-1, T612-5 | 2026-11-14 | Claude | as above, after QE findings 1 and 2 (date and other tabs lighter, dark outer line on the frame) | ✅ | – |
+| T612-1, T612-9 | 2026-11-14 | Claude | as above, after the owner's test (band 45 %, tab chips, clock chip, image show to the window's edges) at 2547 × 1360 | ✅ | – |

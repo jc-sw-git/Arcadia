@@ -130,9 +130,14 @@
                     Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
             </StackPanel>
           </Button>
-          <Border Classes="divider" Margin="6,0" />
-          <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <!-- Date and time in one chip (#612): a click opens "Lokalisierung"; no button or key reaches it. A chip of its own,
+               so no divider before it. -->
+          <Button Classes="plain headerChip clockChip" Command="{Binding OpenClockSettingsCommand}" ToolTip.Tip="{x:Static app:AppTexts.ClockTip}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="headerDate" Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </Grid>
 
@@ -2187,8 +2192,9 @@
       </Panel>
 
       <!-- "Bild ansehen" (#565): after a while without input the page fades out and the background shows whole, then other
-           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. -->
-      <Panel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
+           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. It
+           fills the whole window, so the page's background doesn't show in the bars beside the layout (#612). -->
+      <ctl:WindowFillPanel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
              DataContext="{Binding ImageShow}" x:DataType="vm:ImageShowViewModel">
         <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding ShowsFirst}" Fit="Whole" File="{Binding FirstImage?.File}"
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
@@ -2196,7 +2202,7 @@
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
         <Border Height="120" VerticalAlignment="Bottom" ZIndex="2" Background="{StaticResource ImageShowTitleScrim}" />
         <TextBlock Name="ImageShowTitle" ZIndex="2" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
-      </Panel>
+      </ctl:WindowFillPanel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"

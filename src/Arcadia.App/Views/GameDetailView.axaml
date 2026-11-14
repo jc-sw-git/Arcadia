@@ -29,10 +29,11 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Canvas Width="1920" Height="1080">
+  <Panel>
+  <ctl:WindowFillPanel>
     <!-- The background: the game's artwork (#487), the game's hue with its rings until it is there (#13); the hue blends
-         to the next game's. It fills the whole window, past the layout's edges (#612, code-behind FillWindow). -->
-    <Border Name="Backdrop" Width="1920" Height="1080" Background="{Binding Current.Backdrop}">
+         to the next game's. It fills the whole window, past the layout's edges (#612). -->
+    <Border Name="Backdrop" Background="{Binding Current.Backdrop}">
       <Border.Transitions>
         <Transitions>
           <BrushTransition Property="Background" Duration="0:0:0.48" />
@@ -45,6 +46,8 @@
         <ctl:ArtworkImage Name="HeroArt" Fit="DetailPage" File="{Binding Current.Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
       </Panel>
     </Border>
+  </ctl:WindowFillPanel>
+  <Canvas Width="1920" Height="1080">
     <!-- A scrim only behind title and buttons (#565): they stay readable over any image, which shows almost uncovered
          elsewhere. Header and footer have their own see-through bands (MainWindow, #612). -->
     <!-- Larger than the ellipse on every side, so it fades out before the border's edge (#612): no hard line at its
@@ -71,8 +74,11 @@
               <Panel>
                 <ctl:ArtworkImage Name="DetailCoverArt" File="{Binding Tile.Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                 <Border Classes="shade" CornerRadius="12" IsVisible="{Binding !Tile.IsInstalled}" />
-                <!-- A quiet frame sets the cover off from the artwork behind it (#612). -->
-                <Border Classes="detailCoverFrame" IsHitTestVisible="False" />
+                <!-- A quiet frame sets the cover off from the artwork behind it (#612): a light line inside a dark one, so
+                     it stands out on a bright artwork as on a dark one. -->
+                <Border Classes="detailCoverEdge" IsHitTestVisible="False">
+                  <Border Classes="detailCoverFrame" />
+                </Border>
                 <Grid RowDefinitions="*,Auto" Margin="18" IsVisible="{Binding !#DetailCoverArt.IsShowing}">
                   <TextBlock Text="{Binding Tile.Monogram}" FontSize="88" FontWeight="ExtraBold" Foreground="{Binding Tile.AccentBrush}" />
                   <TextBlock Grid.Row="1" Text="{Binding Tile.Title}" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
@@ -568,6 +574,7 @@
       </DockPanel>
     </Border>
   </Canvas>
+  </Panel>
 
   <UserControl.Styles>
     <Style Selector="TextBlock.statValue">

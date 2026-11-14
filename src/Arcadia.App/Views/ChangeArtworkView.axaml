@@ -87,7 +87,9 @@
                     <Panel>
                       <ctl:ArtworkImage Name="MiniCover" File="{Binding Tile.Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                       <TextBlock Classes="artworkMonogram" Text="{Binding Tile.Monogram}" Foreground="{Binding Tile.AccentBrush}" IsVisible="{Binding !#MiniCover.IsShowing}" />
-                      <Border Classes="detailCoverFrame" />
+                      <Border Classes="detailCoverEdge">
+                        <Border Classes="detailCoverFrame" />
+                      </Border>
                     </Panel>
                   </Border>
                   <Border Classes="artworkMark cover" Canvas.Left="262" Canvas.Top="98" IsVisible="{Binding IsCurrentCoverMarked}" />

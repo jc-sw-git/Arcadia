@@ -22,7 +22,7 @@ Space = A, Esc = B). "System language" is the Windows display language, faked in
 - [x] **T555-5** The French texts keep the glossary and typography of `docs/product/ui-texts-french.md`: « » with a
   no-break space, a no-break space before : ; ! ?, ’, no "émuler", "p. ex.", "redémarrer Windows"; controller
   buttons as glyphs (CI check `UI texts`, `ButtonGlyphTextTests`). · E2E: no (CI check of the resource files)
-- [ ] **T555-6** Every page in French at 1920 × 1080 (library, detail page, menus, search, filter, settings categories,
+- [x] **T555-6** Every page in French at 1920 × 1080 (library, detail page, menus, search, filter, settings categories,
   first start, dialogs): no text cut off or running into its neighbour; longer French texts wrap or fit. · E2E: no
   (window)
 - [ ] **T555-7** Independent review of the French texts by the quality engineer: meaning matches the German, the
@@ -46,3 +46,5 @@ History:
 |---|---|---|---|---|---|
 | T555-1 to T555-5 | 2026-11-14 | Claude | branch feat/french-ui-texts-555, Linux container, `dotnet test` | ✅ | – |
 | T555-6 | 2026-11-14 | Claude | branch feat/french-ui-texts-555, Debug build, Xvfb 1920 × 1080, `--demo`, "Français" set | see PR | – |
+| T555-6 | 2026-11-14 | Claude (QE) | branch feat/french-ui-texts-555 @ 3cb7fc4, Release build, Xvfb 1920 × 1080, `--demo` and `--demo --first-run`, "Français" set; library, game menu, view, filter, detail page (4 areas), search (empty, no hit, hits), settings (5 categories), tags, new tag with on-screen keyboard, change artwork, uninstall question, first start (2 steps) | ✅ no French-only cut-off; two cut-offs seen are the same in German | – |
+| T555-7 | 2026-11-14 | Claude (QE) | all `*.fr.resx` side by side with German, glossary and quoted-label check by script | ❌ 5 findings (agreement, one meaning, key badges, backspace key) | fixed in this PR, see Review |

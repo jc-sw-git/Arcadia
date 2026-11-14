@@ -10,7 +10,8 @@ pattern of `settings.md`.
   language. ◀ ▶ save the choice at once and change nothing else: the language applies from the next start.
 - "Systemsprache" is the Windows display language, not the regional format; one Arcadia doesn't speak gives English,
   never German. The info names the system language (in the UI language) or says it isn't supported and English is
-  used, and that metadata stay in the language they were loaded in until "Alle Metadaten neu laden".
+  used, and that descriptions stay in the language they were loaded in until "Alle Metadaten neu laden" (genres
+  and Steam tags follow the new language at once).
 - Indented below, "Sprache anwenden" restarts Arcadia into the choice and opens the settings on "Sprache" again, in
   fullscreen exactly when the window is now. Active only when the choice gives another language than the one in use
   (compared by language: "Deutsch" on a German system changes nothing); greyed out, with the reason in its subtitle and

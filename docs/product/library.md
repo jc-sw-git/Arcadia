@@ -46,7 +46,7 @@
   "bis"); the tab's whole range is "Alle Jahre". Age rating (provisional): one system (the region's, USK until #557),
   then one or more of its ratings; no conversion between systems, another system clears the ratings. Once a value is
   chosen, "Ohne Angabe einbeziehen" adds the entries without that metadata. Metadata arriving later re-filters the
-  library; a modal opened during a metadata run says so and keeps its counts.
+  library; a modal opened during a metadata run (reading the launchers' files included) says so and keeps its counts and categories.
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
   it fades out where more tabs follow: the cut-off tab itself turns transparent, nothing is laid over it, so over the

@@ -81,10 +81,10 @@ public sealed partial class FilterRatingPane : FilterPane
             case UiAction.Down:
                 Move(1);
                 break;
-            case UiAction.Left when _stop == Stop.WithUnknown || (_stop == Stop.Systems ? _system : _rating) == 0:
+            case UiAction.Left when _stop == Stop.WithUnknown || IndexIn(_stop) == 0:
                 return false;
             case UiAction.Left:
-                FocusIn(_stop, (_stop == Stop.Systems ? _system : _rating) - 1);
+                FocusIn(_stop, IndexIn(_stop) - 1);
                 break;
             case UiAction.Right when _stop == Stop.Systems:
                 FocusIn(_stop, Math.Min(Systems.Count - 1, _system + 1));
@@ -114,7 +114,9 @@ public sealed partial class FilterRatingPane : FilterPane
         {
             Board = board;
             Ratings = Tiles(board);
-            FocusIn(_stop, Math.Min(_rating, Ratings.Count - 1));
+
+            // The ratings are new; the focus stays where it was, on the system just picked or at the same place among the ratings.
+            FocusIn(_stop, IndexIn(_stop));
         }
 
         foreach (var system in Systems)
@@ -148,7 +150,8 @@ public sealed partial class FilterRatingPane : FilterPane
         }
 
         var summary = AppTexts.FilterRatingSummary(board: NameOf(rating.Board), ratings: string.Join(", ", rating.Ratings));
-        return (WithUnknownTail(summary, rating.WithUnknown), WithUnknownTail(AppTexts.FilterSeveral, rating.WithUnknown), true);
+        var shown = WithUnknownTail(summary, rating.WithUnknown);
+        return (shown, rating.Ratings.Count > 1 ? WithUnknownTail(AppTexts.FilterSeveral, rating.WithUnknown) : shown, true);
     }
 
     [RelayCommand]
@@ -163,7 +166,7 @@ public sealed partial class FilterRatingPane : FilterPane
     // The design starts on "Alle" (T44F08).
     protected override void Entered() => FocusIn(Stop.Ratings, 0);
 
-    protected override void Left() => FocusIn(_stop, _stop == Stop.Systems ? _system : _rating, focused: false);
+    protected override void Left() => FocusIn(_stop, IndexIn(_stop), focused: false);
 
     /// <summary>A system: its ratings show, the ones chosen under another system are cleared (#466 case 13).</summary>
     private void PickSystem(FilterChipViewModel chip)
@@ -205,8 +208,10 @@ public sealed partial class FilterRatingPane : FilterPane
 
         var at = Math.Max(0, stops.IndexOf(_stop));
         var next = stops[Arcadia.Core.Navigation.ListFocus.Cycle(at, delta, stops.Count, IsRepeat)];
-        FocusIn(next, next == Stop.Systems ? _system : _rating);
+        FocusIn(next, IndexIn(next));
     }
+
+    private int IndexIn(Stop stop) => stop == Stop.Systems ? _system : _rating;
 
     private void FocusIn(Stop stop, int index, bool focused = true)
     {

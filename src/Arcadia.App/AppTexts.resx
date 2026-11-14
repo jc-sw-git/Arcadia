@@ -1103,7 +1103,7 @@
   <data name="FilterRatingSummary" xml:space="preserve"><value>{board} {ratings}</value></data>
   <data name="FilterEntriesOne" xml:space="preserve"><value>1 Eintrag</value></data>
   <data name="FilterEntries" xml:space="preserve"><value>{count} Einträge</value></data>
-  <data name="FilterMetadataLoading" xml:space="preserve"><value>Metadaten werden noch geladen, die Zahlen können sich ändern.</value></data>
+  <data name="FilterMetadataLoading" xml:space="preserve"><value>Metadaten werden geladen … Kategorien und Zahlen können sich noch ändern.</value></data>
   <data name="LauncherOrderHeading" xml:space="preserve"><value>LAUNCHER-REIHENFOLGE</value></data>
   <data name="SteamDesktopGroup" xml:space="preserve"><value>DESKTOP-STEUERUNG</value></data>
   <data name="ControllerGroup" xml:space="preserve"><value>CONTROLLER</value></data>

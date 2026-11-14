@@ -164,7 +164,9 @@ public sealed partial class FilterYearPane : FilterPane
         var summary = YearPicks.Of(years, _thisYear) is { } pick ? LabelOf(pick)
             : years.From == years.To ? Formatting.Number(years.From)
             : AppTexts.FilterYearRange(from: Formatting.Number(Math.Max(years.From, _earliest)), to: Formatting.Number(Math.Min(years.To, _latest)));
-        return (WithUnknownTail(summary, years.WithUnknown), WithUnknownTail(AppTexts.FilterSeveral, years.WithUnknown), true);
+        // One span of years, never "Mehrere".
+        var shown = WithUnknownTail(summary, years.WithUnknown);
+        return (shown, shown, true);
     }
 
     [RelayCommand]

@@ -29,7 +29,7 @@ public partial class MainViewModel
             Library.FactsChanged();
             MetadataChanged?.Invoke(this, keys);
         });
-        metadata.ProgressChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => FilterModal?.ShowMetadataLoading(metadata.Progress.Running));
+        metadata.ProgressChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => FilterModal?.ShowMetadataLoading(metadata.IsBusy));
         metadata.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextMetadata));
         metadata.ReloadFailed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.DataSourcesMetadataReloadNoConnection));
         if (metadata.Igdb is { } igdb)

@@ -99,7 +99,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
     /// <summary>The category whose values show on the right: the one in focus, or the one the focus went into.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Pane), nameof(OptionsPane), nameof(ListPane), nameof(YearPane), nameof(RatingPane), nameof(Values),
-        nameof(ShowsRadios), nameof(ShowsTypes), nameof(MovesInGrid), nameof(AcceptText), nameof(MoveText), nameof(BackText),
+        nameof(ShowsRadios), nameof(ShowsTypes), nameof(MovesInGrid), nameof(ShowsLineMoveHint), nameof(ShowsGridMoveHint), nameof(AcceptText), nameof(MoveText), nameof(BackText),
         nameof(SearchText), nameof(PageText), nameof(OrderText), nameof(StepText), nameof(StepTenText))]
     public partial FilterCategoryViewModel Current { get; private set; }
 
@@ -133,7 +133,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
 
     /// <summary>The focus is on the values, not on the categories.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(MoveText), nameof(AcceptText), nameof(BackText), nameof(MovesInGrid), nameof(SearchText), nameof(PageText),
+    [NotifyPropertyChangedFor(nameof(MoveText), nameof(AcceptText), nameof(BackText), nameof(MovesInGrid), nameof(ShowsLineMoveHint), nameof(ShowsGridMoveHint), nameof(SearchText), nameof(PageText),
         nameof(OrderText), nameof(StepText), nameof(StepTenText))]
     public partial bool IsInValues { get; private set; }
 
@@ -167,6 +167,11 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
 
     /// <summary>The values move on all four directions.</summary>
     public bool MovesInGrid => IsInValues && Pane.MovesInGrid;
+
+    /// <summary>While the search is typed only "Tippen" and "Tastatur ausblenden" stand (design T44F06).</summary>
+    public bool ShowsLineMoveHint => !IsWriting && !MovesInGrid;
+
+    public bool ShowsGridMoveHint => !IsWriting && MovesInGrid;
 
     public string AcceptText => !IsInValues ? (IsResetFocused ? AppTexts.FilterHintReset : AppTexts.FilterValues) : Pane.AcceptText;
 
@@ -295,6 +300,8 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
         OnPropertyChanged(nameof(AcceptText));
         OnPropertyChanged(nameof(BackText));
         OnPropertyChanged(nameof(MovesInGrid));
+        OnPropertyChanged(nameof(ShowsLineMoveHint));
+        OnPropertyChanged(nameof(ShowsGridMoveHint));
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(PageText));
         OnPropertyChanged(nameof(OrderText));

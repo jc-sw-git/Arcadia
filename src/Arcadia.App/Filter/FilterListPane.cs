@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
@@ -82,8 +83,13 @@ public sealed partial class FilterListPane : FilterPane
 
     public override bool IsWriting => Editor is not null;
 
-    [ObservableProperty]
-    public partial IReadOnlyList<FilterListRow> VisibleRows { get; private set; } = [];
+    private readonly ObservableCollection<FilterListRow> _visibleRows = [];
+
+    /// <summary>
+    /// The rows in sight. Changed row by row, never replaced: a new list made the view build all nine rows again on every
+    /// press, 54–133 ms with a thousand tags (#466 case 24).
+    /// </summary>
+    public IReadOnlyList<FilterListRow> VisibleRows => _visibleRows;
 
     /// <summary>The letters of "A–Z" beside the list, the focused value's highlighted.</summary>
     [ObservableProperty]
@@ -235,8 +241,11 @@ public sealed partial class FilterListPane : FilterPane
             return (AllText(_list), AllText(_list), false);
         }
 
-        var labels = choice.Own.Concat(choice.Names.Select(LabelOf));
-        return (WithUnknownTail(string.Join(", ", labels), choice.WithUnknown), WithUnknownTail(AppTexts.FilterSeveral, choice.WithUnknown), true);
+        var labels = choice.Own.Concat(choice.Names.Select(LabelOf)).ToList();
+        var summary = WithUnknownTail(string.Join(", ", labels), choice.WithUnknown);
+
+        // Like the type (part A): "Mehrere" only stands for several; one long value is cut where it doesn't fit.
+        return (summary, labels.Count > 1 ? WithUnknownTail(AppTexts.FilterSeveral, choice.WithUnknown) : summary, true);
     }
 
     /// <summary>A click on a value: it takes the focus and is chosen or cleared.</summary>
@@ -265,6 +274,10 @@ public sealed partial class FilterListPane : FilterPane
         var focused = FocusedValue;
         IsAlphabetical = !IsAlphabetical;
         Arrange(focused);
+
+        // A click on the switch comes past Handle, which refreshes the hints after a key.
+        OnPropertyChanged(nameof(OrderText));
+        Host.HintsChanged();
     }
 
     [RelayCommand]
@@ -576,7 +589,7 @@ public sealed partial class FilterListPane : FilterPane
     {
         var inSight = InSight;
         _firstRow = Math.Clamp(_firstRow, 0, Math.Max(0, _rows.Count - inSight));
-        VisibleRows = [.. _rows.Skip(_firstRow).Take(inSight)];
+        ShowOnly(_rows.Skip(_firstRow).Take(inSight).ToList());
         FadesTop = _firstRow > 0;
         FadesBottom = _firstRow + inSight < _rows.Count;
         HasScrollBar = _rows.Count > inSight;
@@ -587,6 +600,57 @@ public sealed partial class FilterListPane : FilterPane
         {
             letter.IsCurrent = letter.Letter == current;
         }
+    }
+
+    /// <summary>Brings the rows in sight to <paramref name="wanted"/> with as few changes as a scroll by some rows needs.</summary>
+    private void ShowOnly(List<FilterListRow> wanted)
+    {
+        var shown = _visibleRows;
+        var start = wanted.Count == 0 ? -1 : IndexOf(shown, wanted[0]);
+        if (start > 0)
+        {
+            for (var i = 0; i < start; i++)
+            {
+                shown.RemoveAt(0);
+            }
+        }
+        else if (start < 0 && shown.Count > 0 && IndexOf(wanted, shown[0]) is var below and > 0)
+        {
+            for (var i = 0; i < below; i++)
+            {
+                shown.Insert(i, wanted[i]);
+            }
+        }
+
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            if (i == shown.Count)
+            {
+                shown.Add(wanted[i]);
+            }
+            else if (!ReferenceEquals(shown[i], wanted[i]))
+            {
+                shown[i] = wanted[i];
+            }
+        }
+
+        while (shown.Count > wanted.Count)
+        {
+            shown.RemoveAt(shown.Count - 1);
+        }
+    }
+
+    private static int IndexOf(IList<FilterListRow> rows, FilterListRow row)
+    {
+        for (var i = 0; i < rows.Count; i++)
+        {
+            if (ReferenceEquals(rows[i], row))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private string LabelOf(string key) =>

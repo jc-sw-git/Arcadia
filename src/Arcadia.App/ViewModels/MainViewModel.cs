@@ -1418,7 +1418,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
-    bool ILibraryHost.IsMetadataLoading => _metadata?.Progress.Running == true;
+    bool ILibraryHost.IsMetadataLoading => _metadata?.IsBusy == true;
 
     FilterKeyboard ILibraryHost.FilterKeyboard => new(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack);
 

@@ -1472,5 +1472,5 @@
   <data name="FilterRatingSummary" xml:space="preserve"><value>{board} {ratings}</value></data>
   <data name="FilterEntriesOne" xml:space="preserve"><value>1 entry</value></data>
   <data name="FilterEntries" xml:space="preserve"><value>{count} entries</value></data>
-  <data name="FilterMetadataLoading" xml:space="preserve"><value>Metadata is still loading, the numbers may change.</value></data>
+  <data name="FilterMetadataLoading" xml:space="preserve"><value>Loading metadata… categories and numbers may still change.</value></data>
 </root>

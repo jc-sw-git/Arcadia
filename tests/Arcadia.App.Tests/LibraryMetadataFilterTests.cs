@@ -216,6 +216,14 @@ public sealed class LibraryMetadataFilterTests
         Assert.False(List(modal).IsAlphabetical);
         Assert.Equal(["Alle Genres 6", "Shooter 2", "Puzzle 1", "Rollenspiel 1", "Simulation 1"], Shown(modal));
 
+        // A click on the order switch updates its hint at once, not with the next key (QE finding on PR #577).
+        var changed = new List<string?>();
+        modal.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        List(modal).ToggleOrderCommand.Execute(null);
+        Assert.Contains(nameof(FilterModalViewModel.OrderText), changed);
+        Assert.Equal("Reihenfolge: A–Z", modal.OrderText);
+        arcadia.Press(UiAction.ViewOptions);
+
         // Tags start with "Häufigste zuerst"; the genre keeps its order while the modal is open.
         arcadia.Press(UiAction.Back);
         modal = OpenAt(arcadia, "Tags");
@@ -250,8 +258,15 @@ public sealed class LibraryMetadataFilterTests
         using var arcadia = await StartAsync(spec);
         var modal = OpenAt(arcadia, "Tags");
 
+        Assert.True(modal.ShowsGridMoveHint);
         arcadia.Press(UiAction.Search);
         Assert.True(modal.IsWriting);
+
+        // While typing only "Tippen" and "Tastatur ausblenden" stand (design T44F06).
+        Assert.False(modal.ShowsGridMoveHint || modal.ShowsLineMoveHint);
+        Assert.Null(modal.SearchText);
+        Assert.Null(modal.OrderText);
+        Assert.Equal(["Tippen", "Tastatur ausblenden"], [modal.AcceptText, modal.BackText]);
         var editor = modal.Editor!;
         editor.Type("ko");
         Assert.Equal(["Koop 2"], Shown(modal));
@@ -265,6 +280,7 @@ public sealed class LibraryMetadataFilterTests
         // B puts the keyboard away, the narrowed list stays; A on a hit chooses it.
         arcadia.Press(UiAction.Back);
         Assert.False(modal.IsWriting);
+        Assert.True(modal.ShowsGridMoveHint);
         Assert.Equal(["Koop 2"], Shown(modal));
         arcadia.Press(UiAction.Accept);
         Assert.Equal("2", modal.HitsText);
@@ -308,9 +324,13 @@ public sealed class LibraryMetadataFilterTests
 
         var modal = OpenAt(arcadia, "Genre");
         Choose(arcadia, "Shooter");
+
+        // "Mehrere" only stands for several values, as for the type; one alone is cut where it doesn't fit.
+        Assert.Equal("Shooter", Category(modal, "Genre").SummaryFallback);
         Choose(arcadia, "Rollenspiel");
         Assert.Equal("3", modal.HitsText);
         Assert.Equal("Shooter, Rollenspiel", Category(modal, "Genre").Summary);
+        Assert.Equal("Mehrere", Category(modal, "Genre").SummaryFallback);
 
         arcadia.Press(UiAction.Back);
         OpenAt(arcadia, "Entwickler");
@@ -349,7 +369,7 @@ public sealed class LibraryMetadataFilterTests
         arcadia.Press(UiAction.Accept);
         Assert.Equal("3", modal.HitsText);
         Assert.Equal("Shooter & o. Angabe", Category(modal, "Genre").Summary);
-        Assert.Equal("Mehrere & o. Angabe", Category(modal, "Genre").SummaryFallback);
+        Assert.Equal("Shooter & o. Angabe", Category(modal, "Genre").SummaryFallback);
 
         arcadia.Press(UiAction.Back).Press(UiAction.Back);
         Assert.Equal(["Asche", "Chrom", "Ohne"], Titles(arcadia));
@@ -487,6 +507,23 @@ public sealed class LibraryMetadataFilterTests
         Assert.Equal("6", modal.HitsText);
         Assert.False(Category(modal, "Altersfreigabe").IsChosen);
         Assert.Equal(["Alle", "3", "7", "12", "16", "18"], rating.Ratings.Select(tile => tile.Value));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T466-14")]
+    public async Task The_ring_stays_on_the_system_just_picked()
+    {
+        var (spec, _, _) = SteamWith(Library());
+        using var arcadia = await StartAsync(spec);
+        var modal = OpenAt(arcadia, "Altersfreigabe");
+        var rating = modal.RatingPane!;
+
+        // From "Alle" up to the systems, ▶ to PEGI, A: the ring stayed on the first system (QE finding on PR #577).
+        arcadia.Press(UiAction.Up).Press(UiAction.Right).Press(UiAction.Accept);
+
+        Assert.Equal(AgeRatingBoard.Pegi, rating.Board);
+        Assert.Equal(["PEGI"], rating.Systems.Where(chip => chip.IsFocused).Select(chip => chip.Label));
+        Assert.DoesNotContain(rating.Ratings, tile => tile.IsFocused);
     }
 
     [AvaloniaFact]

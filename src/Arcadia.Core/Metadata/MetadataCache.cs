@@ -55,7 +55,7 @@ public sealed record IgdbNameMatch(bool Skipped, IReadOnlyList<IgdbGame> Hits, l
 }
 
 /// <summary>
-/// The raw metadata per provider (#493): <c>%LOCALAPPDATA%\Arcadia\metadata\&lt;launcher&gt;\&lt;game&gt;.json</c>, one
+/// The raw metadata per provider (#493): <c>%APPDATA%\Arcadia\metadata\&lt;launcher&gt;\&lt;game&gt;.json</c>, one
 /// file per game, each written through a temporary file and a rename. A damaged file is deleted and fetched again; values
 /// read back are checked like a store's answer. File names come from the key and never leave the cache.
 /// </summary>

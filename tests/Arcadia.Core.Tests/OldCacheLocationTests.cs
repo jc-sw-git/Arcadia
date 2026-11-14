@@ -60,4 +60,17 @@ public sealed class OldCacheLocationTests : IDisposable
 
         Assert.False(Directory.Exists(DataFolder));
     }
+
+    [Fact]
+    public void A_cache_that_cannot_move_stays_and_does_not_stop_the_other_one()
+    {
+        Write(Path.Combine(LocalAppData, "Arcadia", "artwork", "own.png"), "mine");
+        Write(Path.Combine(LocalAppData, "Arcadia", "metadata", "1.json"), "{}");
+        Write(Path.Combine(DataFolder, "artwork"), "a file where the folder should go");
+
+        OldCacheLocation.Move(LocalAppData, DataFolder);
+
+        Assert.True(File.Exists(Path.Combine(LocalAppData, "Arcadia", "artwork", "own.png")));
+        Assert.True(File.Exists(Path.Combine(DataFolder, "metadata", "1.json")));
+    }
 }

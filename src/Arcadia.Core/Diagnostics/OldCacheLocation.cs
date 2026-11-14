@@ -36,11 +36,18 @@ public static class OldCacheLocation
         if (!Directory.Exists(to))
         {
             Directory.CreateDirectory(Path.GetDirectoryName(to)!);
-            Directory.Move(from, to);
-            return;
+            try
+            {
+                Directory.Move(from, to);
+                return;
+            }
+            catch (IOException)
+            {
+                // Another drive (redirected AppData folders): the folder can't be renamed, its files can be moved one by one.
+            }
         }
 
-        // Both exist (a new cache was started before the move): keep what the new one has, add what only the old one has.
+        // Both exist (a new cache was started before the move, or the folder could not be renamed): keep what the new one has, add what only the old one has.
         foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
         {
             var target = Path.Combine(to, Path.GetRelativePath(from, file));

@@ -77,6 +77,7 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
             {
                 if (e.PropertyName == nameof(FilterListPane.Editor))
                 {
+                    Keyboard ??= list.Editor?.Keyboard;
                     HintsChanged();
                 }
             };
@@ -157,6 +158,13 @@ public sealed partial class FilterModalViewModel : ViewModelBase, IFilterPaneHos
 
     /// <summary>The value search being typed: the modal makes room for the on-screen keyboard below it.</summary>
     public TextEditorViewModel? Editor => ListPane?.Editor;
+
+    /// <summary>
+    /// The keyboard in the drawer: none until the first search, then kept, so the drawer can slide out with it. Built
+    /// with the modal, the keyboard cost about half a second at each opening (#466 case 24).
+    /// </summary>
+    [ObservableProperty]
+    public partial OnScreenKeyboardViewModel? Keyboard { get; private set; }
 
     public bool IsWriting => Pane.IsWriting;
 

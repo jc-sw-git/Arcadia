@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:kb="using:Arcadia.App.Keyboard"
              xmlns:ctl="using:Arcadia.App.Controls"
              xmlns:views="using:Arcadia.App.Views"
              xmlns:filter="using:Arcadia.App.Filter"
@@ -394,10 +395,16 @@
       </Panel>
     </Border>
 
-    <!-- The settings' shared keyboard for the value search, as in "Titel ändern". -->
+    <!-- The settings' shared keyboard for the value search, as in "Titel ändern"; built at the first search, not with the modal. -->
     <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsWriting}" VerticalAlignment="Bottom">
       <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
-        <views:OnScreenKeyboardView DataContext="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SettingsKeyboard.Keyboard}" HorizontalAlignment="Center" />
+        <ContentControl Content="{Binding Keyboard}" HorizontalAlignment="Center" IsVisible="{Binding Keyboard, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="kb:OnScreenKeyboardViewModel">
+              <views:OnScreenKeyboardView />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
       </Border>
     </ctl:RevealPanel>
   </Panel>

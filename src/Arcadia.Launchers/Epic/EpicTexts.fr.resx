@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EpicSoftwareTitle" xml:space="preserve"><value>Inclure les logiciels et moteurs</value></data>
+  <data name="EpicSoftwareSubtitle" xml:space="preserve"><value>Entrées lançables qui ne sont pas des jeux</value></data>
+  <data name="EpicSoftwareInfo" xml:space="preserve"><value>La bibliothèque d’Epic contient aussi des programmes qui ne sont pas des jeux. Si cette option est activée, ils apparaissent aussi dans Arcadia :</value></data>
+  <data name="EpicUnrealEngine" xml:space="preserve"><value>Unreal Engine, toutes les versions en une seule entrée</value></data>
+  <data name="EpicUnrealEditorForFortnite" xml:space="preserve"><value>Unreal Editor for Fortnite</value></data>
+  <data name="EpicMoreAddOns" xml:space="preserve"><value>autres extensions lançables</value></data>
+  <data name="EpicMetadataSummary" xml:space="preserve"><value>Développeur uniquement</value></data>
+  <data name="EpicMetadataAbout" xml:space="preserve"><value>Sur ce PC, le catalogue d’Epic ne nomme de façon fiable que le développeur. Ses descriptions se résument souvent au titre ou n’ont pas de caractères spéciaux, et il n’a pas de date de sortie. Arcadia ne les demande nulle part.</value></data>
+</root>

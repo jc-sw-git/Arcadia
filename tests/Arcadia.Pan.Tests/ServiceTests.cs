@@ -54,10 +54,51 @@ public sealed class ServiceTests : IDisposable
 {
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan TeardownTimeout = TimeSpan.FromSeconds(20);
+
+    // A cold Windows PowerShell on a busy runner took more than 20 s to print its port (#575); it is awaited, not slept.
+    private static readonly TimeSpan FakeViiperStartTimeout = TimeSpan.FromMinutes(2);
     private readonly string _work = Path.Combine(Path.GetTempPath(), "ArcadiaPanTests", Guid.NewGuid().ToString("N"));
     private readonly List<Process> _children = [];
 
+    // From the first --install on, the service may be this test's: Dispose removes what a failed run left behind.
+    private bool _installs;
+
     public void Dispose()
+    {
+        // A run that failed midway leaves the service running (it holds Pan's pipe, which PipeServerTests needs next) and
+        // the fake VIIPER alive (its exe can't be deleted): both go first, also when one of them fails (#575).
+        try
+        {
+            RemoveServiceLeftBehind();
+        }
+        finally
+        {
+            EndChildren();
+            DeleteWork();
+        }
+    }
+
+    /// <summary>Stops and deletes the service this test installed, when it is still there; the end of a passed run removed it.</summary>
+    private void RemoveServiceLeftBehind()
+    {
+        if (!_installs || !ServiceController.GetServices().Any(service => service.ServiceName == PanPaths.ServiceName))
+        {
+            return;
+        }
+
+        using (var service = new ServiceController(PanPaths.ServiceName))
+        {
+            if (service.Status != ServiceControllerStatus.Stopped)
+            {
+                service.Stop();
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TeardownTimeout);
+            }
+        }
+
+        Output("sc.exe", "delete", PanPaths.ServiceName);
+    }
+
+    private void EndChildren()
     {
         foreach (var child in _children)
         {
@@ -65,22 +106,28 @@ public sealed class ServiceTests : IDisposable
             {
                 if (!child.HasExited)
                 {
-                    child.Kill();
+                    child.Kill(entireProcessTree: true);
+                    child.WaitForExit(TeardownTimeout);
                 }
             }
-            catch (InvalidOperationException)
+            catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
             {
+                // Ended meanwhile, or not ours to end any more.
             }
 
             child.Dispose();
         }
+    }
 
+    private void DeleteWork()
+    {
         try
         {
             Directory.Delete(_work, recursive: true);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            // A file still held is left to the runner's temp cleanup; it must not hide the test's own failure.
         }
     }
 
@@ -92,6 +139,7 @@ public sealed class ServiceTests : IDisposable
 
         // T243-7: a hash that isn't the file's (a swapped Pan.exe) installs nothing; with the hash Arcadia computed the
         // copy lands in Program Files and the service runs.
+        _installs = true;
         Assert.Equal(3, Run(pan, "--install", "--expect-hash", new string('0', 64)));
         Assert.False(File.Exists(PanPaths.InstalledExecutable), "nothing installed with a wrong hash");
         Assert.Equal(0, Run(pan, "--install", "--expect-hash", hash));
@@ -418,7 +466,7 @@ public sealed class ServiceTests : IDisposable
             + "[Console]::Out.WriteLine($l.LocalEndpoint.Port); [Console]::Out.Flush(); Start-Sleep -Seconds 300";
         var process = Process.Start(new ProcessStartInfo(viiper) { ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", listen }, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
         _children.Add(process);
-        var line = await process.StandardOutput.ReadLineAsync().WaitAsync(ReplyTimeout * 2);
+        var line = await process.StandardOutput.ReadLineAsync().WaitAsync(FakeViiperStartTimeout);
         Assert.True(int.TryParse(line, out var port), $"the fake viiper.exe names its port ({line})");
         return (process, port);
     }

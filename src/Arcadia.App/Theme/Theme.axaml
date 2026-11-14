@@ -1203,9 +1203,13 @@
   <Style Selector="Button.detailRail.open Border.railIcon Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
+  <!-- A second line rather than "…" (#587): "Modus „Standard (Steam-Eingabe)“" is longer than the rail is wide; the genres
+       of "Infos" (a game's data) still end in "…" after two lines. -->
   <Style Selector="TextBlock.railValue">
     <Setter Property="FontSize" Value="15" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
   <Style Selector="Button.detailRail.open TextBlock.railValue">
@@ -1271,7 +1275,7 @@
     <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
   </Style>
   <Style Selector="Border.detailInfoBox">
-    <Setter Property="Width" Value="336" />
+    <Setter Property="Width" Value="294" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
   </Style>
@@ -1321,10 +1325,14 @@
     <Setter Property="BorderThickness" Value="2" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
+  <!-- A name too long for its row ("Modo del Steam Controller" beside its value) takes a second line, never "…" (#587). -->
   <Style Selector="TextBlock.quickTitle">
     <Setter Property="FontSize" Value="17" />
+    <Setter Property="LineHeight" Value="20" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -1332,12 +1340,13 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
-    <Setter Property="MaxWidth" Value="150" />
+    <Setter Property="MaxWidth" Value="196" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <!-- Wide enough for the longest value in every language, "Standard (Steam-Eingabe)" (#587). -->
   <Style Selector="TextBlock.quickValue.inChip">
-    <Setter Property="Width" Value="150" />
+    <Setter Property="Width" Value="196" />
     <Setter Property="TextAlignment" Value="Center" />
   </Style>
   <Style Selector="Path.quickIcon">
@@ -1476,9 +1485,11 @@
   <Style Selector="Border.valueBox.current TextBlock.valueBoxTitle">
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
   </Style>
+  <!-- Reading text of an info panel: 16 px (design.md → Sizes). The line is high enough for an inline glyph (22 px) and the
+       descenders beside it, or a box with [R] cuts its text's lower edge (#587). -->
   <Style Selector="TextBlock.valueBoxText">
-    <Setter Property="FontSize" Value="15" />
-    <Setter Property="LineHeight" Value="21" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="24" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
@@ -1713,6 +1724,38 @@
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
   </Style>
+  <!-- Captions in capitals (the texts are upper case): the one kind of reading text below 14 px (design.md → Sizes). A
+       section's caption is a size larger, a heading over a list or menu two. -->
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.label.section">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="TextBlock.label.heading">
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <!-- An info panel's small print: reading text, so 16 px like every text of the panel (design.md → Sizes); the fainter
+       colour sets it apart. -->
+  <Style Selector="TextBlock.infoFootnote">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <!-- A mode card in an info panel (Border.modeCard): what the mode does, and the faint note which one is the default. -->
+  <Style Selector="TextBlock.bullet">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.modeDefault">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <Style Selector="TextBlock.infoText">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="LineHeight" Value="27" />
@@ -1733,6 +1776,15 @@
     <Setter Property="CornerRadius" Value="23" />
     <Setter Property="Padding" Value="8,0" />
     <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <!-- The detail page's rows (#587): a game's Steam Controller mode, "Standard (Steam-Eingabe)", is longer than the
+       settings' values. In the quick selection's 15 px, 42 px wider, the info box 42 px narrower, so the rows' subtitles
+       keep their room. -->
+  <Style Selector="Border.valuePill.wide">
+    <Setter Property="Width" Value="292" />
+  </Style>
+  <Style Selector="Border.valuePill.wide TextBlock.valueText">
+    <Setter Property="FontSize" Value="15" />
   </Style>
   <Style Selector="Button.settingRow.focused Border.valuePill">
     <Setter Property="Background" Value="{StaticResource Bg}" />
@@ -2663,6 +2715,11 @@
   </Style>
   <!-- The keyboard's layout menu (R3). Low enough for all five to fit within the keys' height: the mouse mode's window
        is only as large as the keyboard. -->
+  <!-- The layout's kind under its name ("Tastatur der Region", …): a short line, not a caption, so 15 px (design.md → Sizes). -->
+  <Style Selector="TextBlock.layoutKind">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
   <Style Selector="Button.layoutItem">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />

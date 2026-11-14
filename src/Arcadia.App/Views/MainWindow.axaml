@@ -999,7 +999,7 @@
 
             <!-- The search's launchers: any number at once, "Alle Launcher" switches them all on. -->
             <StackPanel Spacing="14" IsVisible="{Binding HasLaunchers}">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.LauncherCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.LauncherCaption}" />
               <ItemsControl ItemsSource="{Binding LauncherRows}" Margin="-6">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="x:Object">
@@ -1022,7 +1022,7 @@
             </StackPanel>
 
             <StackPanel Spacing="14">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.SortByCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.SortByCaption}" />
               <ItemsControl ItemsSource="{Binding SortRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:SortRowViewModel">
@@ -1050,7 +1050,7 @@
             </StackPanel>
 
             <StackPanel Spacing="14" IsVisible="{Binding HasPageSizes}">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.PageSizeCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.PageSizeCaption}" />
               <ItemsControl ItemsSource="{Binding PageSizeOptions}" Margin="-6">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -1086,7 +1086,7 @@
         <Border Name="GameMenuPanel" Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12"
                 HorizontalAlignment="Left" VerticalAlignment="Top" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="2" DataContext="{Binding GameMenu}" x:DataType="vm:GameMenuViewModel">
-            <TextBlock Classes="label" Text="{Binding Title}" FontSize="14" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="label heading" Text="{Binding Title}" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
             <ItemsControl ItemsSource="{Binding Actions}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GameActionViewModel">
@@ -1696,7 +1696,7 @@
                   </StackPanel>
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoFootnote">
-                  <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" />
+                  <TextBlock Classes="infoFootnote" Text="{Binding Text}" />
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoRelease">
                   <StackPanel Spacing="10">
@@ -1727,7 +1727,7 @@
               <Border Classes="infoPanel" IsVisible="{Binding FocusedRow?.HasPreview, TargetNullValue=False}">
                 <StackPanel Spacing="20" Margin="32,30">
                   <StackPanel Spacing="6">
-                    <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
+                    <TextBlock Classes="label heading" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
                     <TextBlock Text="{Binding FocusedRow?.PreviewSubtitle, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.HasPreviewSubtitle, TargetNullValue=False}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                   </StackPanel>
                   <ItemsControl ItemsSource="{Binding FocusedRow?.Preview}" />
@@ -1744,7 +1744,7 @@
                           <TextBlock Grid.Column="1" Classes="noteText" ctl:ButtonTextBlock.Text="{Binding FocusedRow?.DimmedNote, TargetNullValue=''}" />
                         </Grid>
                       </Border>
-                      <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
+                      <TextBlock Classes="label heading" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
                       <views:ValueBoxesView Boxes="{Binding FocusedRow?.ValueBoxes}" Classes.dimmed="{Binding FocusedRow?.IsDimmed, TargetNullValue=False}"
                                             IsVisible="{Binding FocusedRow?.HasValueBoxes, TargetNullValue=False}" />
                       <ItemsControl ItemsSource="{Binding FocusedRow?.Info}">
@@ -2207,12 +2207,6 @@
   </Panel>
 
   <Window.Styles>
-    <Style Selector="TextBlock.label">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="LetterSpacing" Value="1" />
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-    </Style>
     <Style Selector="TextBlock.value">
       <Setter Property="FontSize" Value="18" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -2249,16 +2243,6 @@
       <Setter Property="Data" Value="M5.5 5.5l13 13 M18.5 5.5l-13 13" />
       <Setter Property="StrokeThickness" Value="2.6" />
       <Setter Property="Stroke" Value="{StaticResource Danger}" />
-    </Style>
-    <Style Selector="TextBlock.bullet">
-      <Setter Property="FontSize" Value="15" />
-      <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
-      <Setter Property="TextWrapping" Value="Wrap" />
-    </Style>
-    <Style Selector="TextBlock.modeDefault">
-      <Setter Property="FontSize" Value="13" />
-      <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-      <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="TextBlock.crumb">
       <Setter Property="FontSize" Value="18" />

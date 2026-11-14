@@ -7,6 +7,7 @@
   <data name="PanJournalUnreadable" xml:space="preserve"><value>Pan n’a pas pu lire son journal – détails dans pan.log sous %ProgramData%\Arcadia\Pan</value></data>
   <data name="ErrorContextUi" xml:space="preserve"><value>Interface</value></data>
   <data name="ErrorContextArtwork" xml:space="preserve"><value>Jaquettes et arrière-plans</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>Affichage de l’image</value></data>
   <data name="ErrorContextControllerWatch" xml:space="preserve"><value>Surveillance des manettes</value></data>
   <data name="ErrorContextXboxPadForGames" xml:space="preserve"><value>Manette Xbox pour les jeux</value></data>
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Vérification des installations</value></data>
@@ -1414,5 +1415,4 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>De 00:00 à 23:59, par exemple 21:58.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Avec AM et PM, par exemple 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>S’applique aussitôt à l’horloge en haut, à « depuis » dans l’état, aux messages récents, à « Dernière partie » et à toutes les autres heures. La date et les nombres suivent le format régional du système.</value></data>
-  <data name="ErrorContextImageShow" xml:space="preserve"><value>Affichage de l’image</value></data>
 </root>

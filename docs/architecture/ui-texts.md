@@ -51,8 +51,8 @@ description is translated by Windows' own means (`ServiceDescriptions`).
 ## Adding or changing a text
 
 1. Add a `<data name="Key" xml:space="preserve"><value>…</value></data>` to the project's `*Texts.resx` and, with
-   the same key and placeholders, to every translation beside it (`docs/product/ui-texts-english.md`). The key
-   is an English C# identifier saying what the text is (`SearchNoHit`, `ErrorContextLoadLibrary`).
+   the same key and placeholders, to every translation beside it (`docs/product/ui-texts-english.md`,
+   `ui-texts-spanish.md`). The key is an English C# identifier saying what the text is (`SearchNoHit`, `ErrorContextLoadLibrary`).
 2. Use it: `AppTexts.Key` or `AppTexts.Key(game: title)` in code, `{x:Static app:AppTexts.Key}` in a view
    (`xmlns:app="using:Arcadia.App"`).
 3. Plural or conditional texts are separate keys chosen in code (`GameCountOne` / `GameCountMany(count)`), whole

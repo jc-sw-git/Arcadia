@@ -12,7 +12,7 @@ using Avalonia.Headless.XUnit;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// The group "SPRACHE" of "Lokalisierung" (#554): choosing a language saves it, "Sprache anwenden" restarts Arcadia into it
+/// The group "SPRACHE" of "Lokalisierung" (#554, #556): choosing a language saves it, "Sprache anwenden" restarts Arcadia into it
 /// when that changes the language and nothing a restart would cut off runs, and the restarted Arcadia opens on "Sprache".
 /// The tests' system language is German unless a test says otherwise; the texts read stay German (the test thread's).
 /// </summary>
@@ -30,9 +30,9 @@ public sealed class UiLanguageSettingsTests
         Assert.True(category.Rows[0].HasGroupHeading);
         Assert.Equal(1, category.Rows[1].Indent);
         var language = Language(arcadia);
-        Assert.Equal([AppTexts.LocalizationLanguageSystem, "English", "Deutsch"], Values(language));
+        Assert.Equal([AppTexts.LocalizationLanguageSystem, "English", "Español", "Deutsch"], Values(language));
         Assert.Equal(AppTexts.LocalizationLanguageSystem, language.ValueText);
-        Assert.Equal(3, language.ValueBoxes.Count);
+        Assert.Equal(4, language.ValueBoxes.Count);
         Assert.True(language.ValueBoxes[0].IsCurrent);
 
         // ◀ ▶ wrap at both ends.
@@ -49,9 +49,10 @@ public sealed class UiLanguageSettingsTests
     [Trait("TestCase", "T554-2")]
     [Trait("TestCase", "T554-3")]
     [Trait("TestCase", "T554-11")]
+    [Trait("TestCase", "T556-1")]
     public async Task System_language_is_used_when_Arcadia_speaks_it_otherwise_English_and_the_info_says_which()
     {
-        foreach (var (system, inUse) in new[] { ("de-DE", "de-DE"), ("de-AT", "de-AT"), ("en-US", "en-US"), ("en-GB", "en-GB"), ("it-IT", "en") })
+        foreach (var (system, inUse) in new[] { ("de-DE", "de-DE"), ("de-AT", "de-AT"), ("en-US", "en-US"), ("en-GB", "en-GB"), ("es-ES", "es-ES"), ("es-MX", "es-MX"), ("it-IT", "en") })
         {
             using var arcadia = await ArcadiaDriver.StartAsync(arguments: new(SystemLanguage: system));
             Assert.Equal(inUse, arcadia.Main.Languages.InUse.Name);
@@ -65,6 +66,24 @@ public sealed class UiLanguageSettingsTests
         using var fresh = await ArcadiaDriver.StartAsync(settings: new AppSettings(), arguments: new(FirstRun: true, SystemLanguage: "it-IT"));
         Assert.NotNull(fresh.Main.FirstRun);
         Assert.Equal("en", fresh.Main.Languages.InUse.Name);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T556-2")]
+    [InlineData("es-ES", "El idioma del sistema es italiano. Arcadia aún no está disponible en él, así que con «Idioma del sistema» está en inglés.")]
+    [InlineData("en-US", "The system language is Italian. Arcadia isn’t available in it yet, so with “System language” it is in English.")]
+    public void The_system_language_is_named_as_the_UI_language_writes_it(string uiCulture, string expected)
+    {
+        var before = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(uiCulture);
+            Assert.Equal(expected, UiLanguageRows.SystemLanguageText(CultureInfo.GetCultureInfo("it-IT")));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = before;
+        }
     }
 
     [AvaloniaFact]
@@ -93,7 +112,7 @@ public sealed class UiLanguageSettingsTests
         arcadia.Press(UiAction.Right);
         Assert.Equal("en", arcadia.Settings.Current.Localization.Language);
         arcadia.Press(UiAction.Right);
-        Assert.Equal("de", arcadia.Settings.Current.Localization.Language);
+        Assert.Equal("es", arcadia.Settings.Current.Localization.Language);
         arcadia.Click(language.StepBackCommand);
         Assert.Equal("en", arcadia.Settings.Current.Localization.Language);
         Assert.Empty(arcadia.Restarts);
@@ -122,13 +141,14 @@ public sealed class UiLanguageSettingsTests
         Assert.False(Apply(arcadia).IsEnabled);
 
         Language(arcadia);
-        arcadia.Press(UiAction.Left); // English
+        arcadia.Press(UiAction.Left); // Español
         apply = Apply(arcadia);
         Assert.True(apply.IsEnabled);
         Assert.Equal(AppTexts.LocalizationApplyRestarts, apply.Subtitle);
         Assert.Contains(new InfoText(AppTexts.LocalizationApplyInfo), apply.Info);
 
         Language(arcadia);
+        arcadia.Press(UiAction.Left); // English
         arcadia.Press(UiAction.Left); // Systemsprache: German again
         apply = Apply(arcadia);
         Assert.False(apply.IsEnabled);

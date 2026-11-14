@@ -15,6 +15,7 @@ expect 1 "missing E2E, owner case and History fail before the review" $check tes
 expect 1 "an open case that is not the owner's fails after the review" $check testplan-file/bad.md yes
 texts=../check-ui-texts.sh
 expect 0 "allowed spellings, keys, comments and the header pass" $texts ui-texts/good.resx
+expect 0 "allowed Spanish spellings pass" $texts ui-texts/good.es.resx
 for fixture in ui-texts/bad-*.resx; do
   expect 1 "forbidden spelling in $fixture fails" $texts "$fixture"
 done

@@ -17,6 +17,21 @@ python3 -I - "${files[@]}" <<'PY'
 import os, re, sys
 import xml.etree.ElementTree as ET
 
+class Outside:
+    """Matches a pattern only in the parts of a text outside the quotes opened by `opening` and closed by `closing`."""
+    def __init__(self, opening, closing, pattern):
+        self.quoted = re.compile(re.escape(opening) + ".*?" + re.escape(closing), re.S)
+        self.pattern = pattern
+    def search(self, text):
+        return self.pattern.search(self.quoted.sub("", text))
+
+class Unopened:
+    """Matches a sentence that ends with `closing` but has no `opening` (Spanish ¿…? and ¡…!)."""
+    def __init__(self, opening, closing):
+        self.opening, self.closing = opening, closing
+    def search(self, text):
+        return text.count(self.closing) > text.count(self.opening)
+
 common = [
     ("...", re.compile(r"\.\.\.")),
     (" - ", re.compile(r"(?<=\S) - (?=\S)")),
@@ -43,6 +58,24 @@ forbidden = {
         ("German quote „ or « »", re.compile(r"[„«»]")),
         ("space before …", re.compile(r"\s…")),
         ("German letter, text left untranslated?", re.compile(r"[äöüÄÖÜß]")),
+    ],
+    "es": common + [
+        # "emular" as a verb: a controller is "virtual" and Arcadia "virtualiza" it; "emulación" stays
+        ("emular…, use virtual/virtualizar", re.compile(r"\bemul(a|ar|ad[oa]s?|an|ando|e|en)\b", re.IGNORECASE)),
+        ("p. ej., use “por ejemplo”", re.compile(r"\bp\.\s?ej\.", re.IGNORECASE)),
+        ("reiniciar Windows, use “reiniciar el PC”", re.compile(r"reinici\w*\s+(el\s+)?Windows", re.IGNORECASE)),
+        ("usted, the player is “tú”", re.compile(r"\busted(es)?\b", re.IGNORECASE)),
+        ("ordenador, use “PC”", re.compile(r"\bordenador", re.IGNORECASE)),
+        ("lanzador, use “launcher”", re.compile(r"\blanzador", re.IGNORECASE)),
+        ("straight quote, use «…»", re.compile(r'"')),
+        ("German quote „", re.compile(r"„")),
+        # “…” only inside «…»
+        ("“ ” outside «…», use «…»", Outside("«", "»", re.compile(r"[“”]"))),
+        ("? without ¿", Unopened("¿", "?")),
+        ("! without ¡", Unopened("¡", "!")),
+        ("space before …", re.compile(r"\s…")),
+        # ü is Spanish too (ambigüedad)
+        ("German letter, text left untranslated?", re.compile(r"[äöÄÖß]")),
     ],
 }
 failed = False

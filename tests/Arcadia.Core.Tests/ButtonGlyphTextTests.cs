@@ -52,6 +52,7 @@ public sealed partial class ButtonGlyphTextTests
     /// </summary>
     [Fact]
     [Trait("TestCase", "T554-18")]
+    [Trait("TestCase", "T556-4")]
     public void Resource_texts_write_controller_buttons_as_glyphs_in_every_language()
     {
         var bare = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src"), "*Texts*.resx", SearchOption.AllDirectories)
@@ -71,6 +72,8 @@ public sealed partial class ButtonGlyphTextTests
     [InlineData("AppTexts.en.resx", "A story about X marks the spot", false)]
     [InlineData("AppTexts.resx", "Mit [Y] überspringst du das Spiel", false)]
     [InlineData("AppTexts.en.resx", "Press [LB] to switch", false)]
+    [InlineData("AppTexts.es.resx", "Pulsa RB para cambiar", true)]
+    [InlineData("AppTexts.es.resx", "Arcadia y Steam a la vez", false)]
     public void A_bare_button_fails_by_language(string file, string text, bool fails) =>
         Assert.Equal(fails, BareButtonsIn(file, new XDocument(new XElement("root",
             new XElement("data", new XAttribute("name", "Fixture"), new XElement("value", text))))).Any());

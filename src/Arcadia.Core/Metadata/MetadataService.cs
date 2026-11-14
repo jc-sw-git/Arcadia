@@ -250,11 +250,28 @@ public sealed partial class MetadataService : IDisposable
     }
 
     /// <summary>The run going on now and those queued behind it, and the choices still being written; for the tests.</summary>
-    public Task WhenIdleAsync()
+    /// <remarks>
+    /// A runner that ends while new work came in starts the next one from its last step, so the runner awaited may complete
+    /// with another one running: idle is only when no new runner or write took its place meanwhile.
+    /// </remarks>
+    public async Task WhenIdleAsync()
     {
-        lock (_gate)
+        while (true)
         {
-            return Task.WhenAll(_runner, _saving);
+            Task runner, saving;
+            lock (_gate)
+            {
+                (runner, saving) = (_runner, _saving);
+            }
+
+            await Task.WhenAll(runner, saving).ConfigureAwait(false);
+            lock (_gate)
+            {
+                if (_runner == runner && _saving == saving)
+                {
+                    return;
+                }
+            }
         }
     }
 

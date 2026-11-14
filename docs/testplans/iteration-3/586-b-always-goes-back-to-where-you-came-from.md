@@ -1,6 +1,6 @@
 # #586 B always goes back to the page you came from, also from a detail page opened in the search
 
-**Status:** Automated: T586-1 to T586-6 · QE: T586-7 · Open for the owner: T586-8
+**Status:** Automated: T586-1 to T586-6, T586-9, T586-10 · QE: T586-7 · Open for the owner: T586-8
 
 - [x] **T586-1** Search "river" with the controller, hold ≡ on the second hit, B on its detail page: back in the search
   with "river", the same hits, the keyboard out, the focus on that hit. · E2E: yes
@@ -20,6 +20,10 @@
 - [ ] **T586-8** **Owner:** own library, controller: search a game, open its details (≡ held), turn with RT, B: back in
   the search on the game shown last, nothing lost; then the same with a real mouse's back button. · E2E: no (owner's PC,
   real mouse)
+- [x] **T586-9** The status modal (Y), an entry's "Zu den Einstellungen", B: the modal again with its entries as they
+  are now; B closes it. Settings opened with ≡ close onto the page alone. · E2E: yes
+- [x] **T586-10** "Artwork ändern" without a key, "Zu den Datenquellen", B: "Artwork ändern" again for the same game,
+  over its detail page. · E2E: yes
 
 Automated tests:
 
@@ -30,6 +34,8 @@ Automated tests:
 | T586-4 | `BackWhereYouCameFromTests.B_leads_from_a_hit_back_to_the_search_and_then_to_the_library_detail_page_it_was_opened_over` |
 | T586-5 | `BackWhereYouCameFromTests.X_on_a_detail_page_from_the_search_also_returns_to_the_search` |
 | T586-6 | `BackWhereYouCameFromTests.Settings_opened_over_a_detail_page_lead_back_to_it_after_a_game_of_the_tag_list` |
+| T586-9 | `BackWhereYouCameFromTests.B_on_settings_opened_from_the_status_modal_opens_the_modal_again`, `StatusModalTests.Zu_den_Einstellungen_on_Pan_laeuft_nicht_opens_the_row_that_says_why_and_B_returns_to_the_modal_then_the_library` |
+| T586-10 | `ChangeArtworkTests.Without_a_key_the_notice_follows_the_tiles_and_leads_to_the_settings_and_B_back` |
 
 History:
 

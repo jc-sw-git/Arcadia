@@ -85,7 +85,7 @@
 
     <!-- The stacks: a click turns the carousel to the game before or after. Over the covers, which let clicks through. -->
     <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Top="380" Width="240" Height="408" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousGameTip}">
+            Command="{Binding PreviousCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Classes="onArt" Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
@@ -104,7 +104,7 @@
       </DockPanel>
     </Button>
     <Button Classes="plain detailStack" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Canvas.Left="1680" Canvas.Top="380" Width="240" Height="408" IsVisible="{Binding HasNeighbours}"
-            Command="{Binding NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextGameTip}">
+            Command="{Binding NextCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Classes="onArt" Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"

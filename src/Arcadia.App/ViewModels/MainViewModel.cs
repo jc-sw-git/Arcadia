@@ -347,6 +347,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    /// <summary>Opens the dialog again that opened the settings once they close (#586): B goes back where it came from.</summary>
+    private Action? _dialogBehindSettings;
+
     /// <summary>The file and folder dialogs over the window (#138); set once the window is there.</summary>
     public ISystemDialogs? Dialogs { get; set; }
 
@@ -963,7 +966,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private void CancelConfirmation() => Confirmation = null;
 
     [RelayCommand]
-    private void OpenSettings() => ShowSettings(first: null);
+    private void OpenSettings()
+    {
+        _dialogBehindSettings = null;
+        ShowSettings(first: null);
+    }
 
     /// <summary>
     /// Y (V) or a click on the header's status chip (#166): only while the header shows a message or the update, and
@@ -997,6 +1004,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void IStatusModalHost.OpenSettingsOf(StatusEntry entry, bool startFix)
     {
         StatusModal = null;
+        OpenSettingsOf(entry, startFix);
+
+        // B in the settings opens the status modal again (#586), with the entries as they are then.
+        if (Settings is not null)
+        {
+            _dialogBehindSettings = OpenStatusModal;
+        }
+    }
+
+    private void OpenSettingsOf(StatusEntry entry, bool startFix)
+    {
         switch (entry.Target)
         {
             case StatusTarget.PanProblem:
@@ -1099,16 +1117,16 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private void CloseSettings() => LeaveSettings();
 
     /// <summary>
-    /// B or ✕ on the settings: back to the page they were opened over (#586), also when a game of the tag list covered it
-    /// meanwhile.
+    /// B or ✕ on the settings: back to where they were opened from (#586): the page underneath, also when a game of the tag
+    /// list covered it meanwhile, and the dialog that opened them.
     /// </summary>
     private void LeaveSettings()
     {
         Settings = null;
-        if (DetailBehindSettings is { } detail)
+        // A game of the tag list still open (the settings were opened anew over it) keeps the page for its own way back;
+        // otherwise the page comes back, shown before it is let go so it is never closed in between.
+        if (DetailBehindSettings is { } detail && (Detail is null || _tagListBehindDetail is null))
         {
-            // Only onto the page it was covered by; a game of the tag list still open there keeps its way back. Shown
-            // before it is let go, so it is never closed in between.
             if (Detail is null && StillShows(detail))
             {
                 Detail = detail;
@@ -1116,6 +1134,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
             DetailBehindSettings = null;
         }
+
+        var reopen = _dialogBehindSettings;
+        _dialogBehindSettings = null;
+        reopen?.Invoke();
     }
 
     /// <summary>A covered detail page takes its list as it is now; false when its game left that list.</summary>

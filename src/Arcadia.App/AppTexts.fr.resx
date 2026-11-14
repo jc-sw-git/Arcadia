@@ -1382,7 +1382,7 @@
   <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>Langue du système : {language}. Arcadia n’est pas encore disponible dans cette langue ; avec « Langue du système », il est donc en anglais.</value></data>
   <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows n’indique aucune langue d’affichage, donc avec « Langue du système », Arcadia est en anglais.</value></data>
   <data name="LocalizationLanguageInfo" xml:space="preserve"><value>Le choix est enregistré aussitôt et s’applique au prochain démarrage. « Appliquer la langue » ci-dessous redémarre Arcadia tout de suite.</value></data>
-  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Les descriptions restent dans la langue dans laquelle elles ont été chargées. « Recharger toutes les métadonnées » dans « Sources de données » les obtient dans la nouvelle langue là où elles existent.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Les descriptions restent dans la langue dans laquelle elles ont été chargées ; si une autre source comme IGDB en a une en anglais, Arcadia affiche celle-ci. « Recharger toutes les métadonnées » dans « Sources de données » les obtient dans la nouvelle langue là où elles existent.</value></data>
   <data name="LocalizationApply" xml:space="preserve"><value>Appliquer la langue</value></data>
   <data name="LocalizationApplyAction" xml:space="preserve"><value>Redémarrer</value></data>
   <data name="LocalizationApplySame" xml:space="preserve"><value>La langue choisie est déjà active</value></data>

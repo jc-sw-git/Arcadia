@@ -55,8 +55,8 @@ switch.
 - A controller fix closes the modal, opens "Controller" on its row and starts there (its question, the progress
   dialog); a fix already running only jumps there. "Jetzt aktualisieren" runs from the modal; a failure is an error
   toast and the entry stays. "Zu den Einstellungen" opens the category on the message's row ("Pan läuft nicht": the row
-  that says why; the update: "Jetzt aktualisieren"), its top row if the message went meanwhile; B returns to library
-  or detail page.
+  that says why; the update: "Jetzt aktualisieren"), its top row if the message went meanwhile; B or ✕ on the settings
+  open the status modal again with the entries as they are then (#586).
 - The list follows the header live: a new entry never moves the focus, a gone focused one hands it to the next. After
   the last one: a celebrating graphic (its confetti falls once) and "Hier gibt es nichts zu sehen. Alles erledigt! Das
   hast du wunderbar gemacht!"; B closes.

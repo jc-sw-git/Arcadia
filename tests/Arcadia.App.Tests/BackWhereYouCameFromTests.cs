@@ -1,5 +1,6 @@
 using Arcadia.App.Input;
 using Arcadia.App.Settings;
+using Arcadia.App.Status;
 using Arcadia.App.ViewModels;
 using Arcadia.Core.Launchers;
 using Arcadia.Launchers;
@@ -126,7 +127,15 @@ public sealed class BackWhereYouCameFromTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T586-6")]
-    public async Task Settings_opened_over_a_detail_page_lead_back_to_it_after_a_game_of_the_tag_list()
+    public async Task Settings_opened_over_a_detail_page_lead_back_to_it_after_a_game_of_the_tag_list() =>
+        await SettingsLeadBackOverTheTagListAsync(settingsOverTheTagGame: false);
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T586-6")]
+    public async Task Settings_opened_again_over_the_tag_lists_game_keep_the_way_back_to_the_first_detail_page() =>
+        await SettingsLeadBackOverTheTagListAsync(settingsOverTheTagGame: true);
+
+    private static async Task SettingsLeadBackOverTheTagListAsync(bool settingsOverTheTagGame)
     {
         using var arcadia = await ArcadiaDriver.StartAsync(
             [new LauncherSpec(KnownLaunchers.Gog, 1, Library: [Alpha, Mitte]), new LauncherSpec(KnownLaunchers.Epic, 2, Library: [Eisenflut])]);
@@ -147,8 +156,16 @@ public sealed class BackWhereYouCameFromTests
         arcadia.Press(UiAction.Accept);
         arcadia.Press(UiAction.Down).Press(UiAction.Accept);
         arcadia.Press(UiAction.Accept);
-        Assert.NotSame(libraryDetail, arcadia.Detail);
+        var tagGame = arcadia.Detail;
+        Assert.NotSame(libraryDetail, tagGame);
         Assert.Null(arcadia.Main.Settings);
+
+        // ≡ and B over the tag's game: back on it, its way back intact.
+        if (settingsOverTheTagGame)
+        {
+            arcadia.Press(UiAction.Settings).Press(UiAction.Back);
+            Assert.Same(tagGame, arcadia.Detail);
+        }
 
         // B: the tag's games, the tags, "Datenquellen", then the settings close onto the page they were opened over.
         arcadia.Press(UiAction.Back, times: 3);
@@ -160,5 +177,39 @@ public sealed class BackWhereYouCameFromTests
         Assert.Same(libraryDetail, arcadia.Detail);
         Assert.Equal("Alpha", libraryDetail.Current.Tile.Title);
         Assert.True(arcadia.Main.IsTabStripShown);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T586-9")]
+    public async Task B_on_settings_opened_from_the_status_modal_opens_the_modal_again()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync(releases: new FakeReleases("0.1.0", ("0.2.0", ["Neu"])));
+        await arcadia.Updates.CheckIfDueAsync();
+        await arcadia.WaitUntilAsync(() => arcadia.Main.Status.HasArcadiaUpdate, "das Update im Header");
+        arcadia.Press(UiAction.Status);
+        var modal = arcadia.Main.StatusModal!;
+        while (modal.Focused?.Entry.Target != StatusTarget.ArcadiaUpdate)
+        {
+            arcadia.Press(UiAction.Down);
+        }
+
+        // "Zu den Einstellungen", not the update itself.
+        if (modal.Focused.IsFixFocused)
+        {
+            arcadia.Press(UiAction.Right);
+        }
+
+        arcadia.Press(UiAction.Accept);
+        Assert.IsType<AboutSettingsViewModel>(arcadia.Main.Settings?.Selected);
+        Assert.Null(arcadia.Main.StatusModal);
+
+        arcadia.Press(UiAction.Back);
+
+        Assert.Null(arcadia.Main.Settings);
+        Assert.Contains(arcadia.Main.StatusModal!.Entries, entry => entry.Entry.Target == StatusTarget.ArcadiaUpdate);
+
+        // Settings opened anew with ≡ close onto the page alone.
+        arcadia.Press(UiAction.Back).Press(UiAction.Settings).Press(UiAction.Back);
+        Assert.Null(arcadia.Main.StatusModal);
     }
 }

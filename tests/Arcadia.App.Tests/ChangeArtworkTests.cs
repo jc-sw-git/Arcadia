@@ -129,7 +129,8 @@ public sealed class ChangeArtworkTests
     [AvaloniaFact]
     [Trait("TestCase", "T490-27")]
     [Trait("TestCase", "T490-4")]
-    public async Task Without_a_key_the_notice_follows_the_tiles_and_leads_to_the_settings()
+    [Trait("TestCase", "T586-10")]
+    public async Task Without_a_key_the_notice_follows_the_tiles_and_leads_to_the_settings_and_B_back()
     {
         var alpha = Installed("Alpha");
         using var arcadia = await ArcadiaDriver.StartAsync([new LauncherSpec(KnownLaunchers.Gog, 1, Library: [alpha])]);
@@ -154,6 +155,12 @@ public sealed class ChangeArtworkTests
 
         Assert.Null(arcadia.Main.ChangeArtwork);
         Assert.True(arcadia.Main.IsSettingsOpen);
+
+        // B goes back where it came from (#586): "Artwork ändern" for the same game, over its detail page.
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.Equal("Alpha", arcadia.Main.ChangeArtwork?.Tile.Title);
+        Assert.Equal("Alpha", arcadia.Detail?.Current.Tile.Title);
     }
 
     [AvaloniaFact]

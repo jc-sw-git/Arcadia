@@ -23,7 +23,7 @@ public static class KeyNames
             ["L3"] = (Key.C, KeyModifiers.None, "C"),
             ["R3"] = (Key.G, KeyModifiers.None, "G"),
             ["⧉"] = (Key.R, KeyModifiers.None, "R"),
-            ["≡"] = (Key.Enter, KeyModifiers.None, "Enter"),
+            ["≡"] = (Key.Enter, KeyModifiers.None, AppTexts.KeyEnter),
             ["D-Pad"] = (Key.W, KeyModifiers.None, "WASD"),
         };
 

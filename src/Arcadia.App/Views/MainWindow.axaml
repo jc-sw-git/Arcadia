@@ -25,9 +25,13 @@
   <Viewbox Stretch="Uniform" ClipToBounds="False">
     <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
 
+      <!-- On the detail page header and footer lie on see-through bands over the artwork (#612), up to the window's edges. -->
+      <Border Grid.Row="0" Classes="detailBar" Margin="-1920,-1080,-1920,0" IsVisible="{Binding IsDetailOpen}" />
+
       <!-- Header: logo, launcher tabs, status. The tab strip sits in the middle between logo and status, as wide as its
            tabs need; at its widest it keeps 40 px to both sides, with a divider in the middle of each gap (owner, 2026-10-21). -->
-      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+      <!-- On the detail page its text casts the shadow of text on artwork (#612), so the softer grey reads on a bright one. -->
+      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Classes.onArt="{Binding IsDetailOpen}">
         <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
                 StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
@@ -126,9 +130,14 @@
                     Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
             </StackPanel>
           </Button>
-          <Border Classes="divider" Margin="6,0" />
-          <TextBlock Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <!-- Date and time in one chip (#612): a click opens "Lokalisierung"; no button or key reaches it. A chip of its own,
+               so no divider before it. -->
+          <Button Classes="plain headerChip clockChip" Command="{Binding OpenClockSettingsCommand}" ToolTip.Tip="{x:Static app:AppTexts.ClockTip}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="headerDate" Text="{Binding Status.Date}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Status.Clock}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </Grid>
 
@@ -470,9 +479,11 @@
       </Grid>
 
       <!-- Footer: button hints -->
-      <!-- The line bleeds into the bars beside the layout (Theme.axaml, bleed): 1920 + 80 padding. -->
-      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
-        <Panel>
+      <!-- The line and, on the detail page, the band (#612) bleed into the bars beside and below the layout (Theme.axaml,
+           bleed): 1920 + 80 padding. -->
+      <Border Grid.Row="3" Classes.detailBar="{Binding IsDetailOpen}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0"
+              Margin="-1920,0,-1920,-1080" Padding="2000,0,2000,1080">
+        <Panel Classes.onArt="{Binding IsDetailOpen}">
         <!-- The hints name the input in use: the controller's buttons, or the keyboard's keys and the mouse (#127). Search
              and settings aren't listed: their chips in the header name their keys (owner, 2026-10-21). -->
         <!-- Detail page (#499): the position and the sort on the left, the hints follow the focus. -->
@@ -2181,8 +2192,9 @@
       </Panel>
 
       <!-- "Bild ansehen" (#565): after a while without input the page fades out and the background shows whole, then other
-           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. -->
-      <Panel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
+           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. It
+           fills the whole window, so the page's background doesn't show in the bars beside the layout (#612). -->
+      <ctl:WindowFillPanel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
              DataContext="{Binding ImageShow}" x:DataType="vm:ImageShowViewModel">
         <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding ShowsFirst}" Fit="Whole" File="{Binding FirstImage?.File}"
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
@@ -2190,7 +2202,7 @@
                           Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
         <Border Height="120" VerticalAlignment="Bottom" ZIndex="2" Background="{StaticResource ImageShowTitleScrim}" />
         <TextBlock Name="ImageShowTitle" ZIndex="2" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
-      </Panel>
+      </ctl:WindowFillPanel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"

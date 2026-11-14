@@ -843,6 +843,7 @@
   <data name="StatusTip" xml:space="preserve"><value>Estado (V)</value></data>
   <data name="SearchTip" xml:space="preserve"><value>Buscar (F)</value></data>
   <data name="SettingsTip" xml:space="preserve"><value>Ajustes (Intro)</value></data>
+  <data name="ClockTip" xml:space="preserve"><value>Ajustar la hora y la fecha</value></data>
   <data name="FilterTip" xml:space="preserve"><value>Filtro (G)</value></data>
   <data name="BackTip" xml:space="preserve"><value>Atrás (Esc)</value></data>
   <data name="Library" xml:space="preserve"><value>Biblioteca</value></data>

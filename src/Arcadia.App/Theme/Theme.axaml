@@ -180,20 +180,20 @@
       <GradientStop Offset="0.8" Color="#270B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
-    <!-- The detail page's scrims (#565): only behind title and buttons, the header's tabs and the footer's hints, so the
-         background shows almost uncovered. The title's is an ellipse around title and buttons in the top 440 px. -->
-    <RadialGradientBrush x:Key="DetailScrimTitle" GradientOrigin="42.7%,56.8%" Center="42.7%,56.8%" RadiusX="46.9%" RadiusY="68.2%">
+    <!-- The detail page's scrim (#565): only behind title and buttons, so the background shows almost uncovered. An
+         ellipse around title and buttons, centred at 820, 250 in the layout and reaching 900 px to the sides and 300 px
+         up and down, on a border from -400, -100 to 2320, 600 (GameDetailView) that it never touches. -->
+    <RadialGradientBrush x:Key="DetailScrimTitle" GradientOrigin="44.85%,50%" Center="44.85%,50%" RadiusX="33.09%" RadiusY="42.86%">
       <GradientStop Offset="0" Color="#8C0B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
-    <LinearGradientBrush x:Key="DetailScrimTop" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#B30B0F14" />
-      <GradientStop Offset="1" Color="#000B0F14" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="DetailScrimBottom" StartPoint="0%,100%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="#D90B0F14" />
-      <GradientStop Offset="1" Color="#000B0F14" />
-    </LinearGradientBrush>
+    <!-- Header and footer over the detail page's artwork (#612): the panel's colour, 45 % see-through, so the artwork
+         clearly shows behind them and their text still reads on a bright one. -->
+    <SolidColorBrush x:Key="DetailBar" Color="#8C121820" />
+    <!-- The quiet frame around the detail page's covers (#612), setting them off from the artwork: a light line inside a
+         dark one. -->
+    <SolidColorBrush x:Key="DetailCoverFrame" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="DetailCoverEdge" Color="#73000000" />
     <!-- Over the blurred copy of a background around its sharp image (#565), so the image stands out from it. -->
     <SolidColorBrush x:Key="ArtworkBlurShade" Color="#8C0B0F14" />
     <!-- "Bild ansehen" (#565): behind the shown game's title, bottom left. -->
@@ -426,6 +426,21 @@
   <Style Selector="Button.tab.selected">
     <Setter Property="Background" Value="{StaticResource RaisedLight}" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+  <Style Selector="TextBlock.headerDate">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <!-- Over the detail page's artwork (#612) the other launchers' tabs are chips, as under the mouse, and the date is as
+       light as body text, so they read on a bright image through the see-through band. -->
+  <Style Selector="Grid.onArt Button.tab:not(.selected)">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
+  </Style>
+  <Style Selector="Grid.onArt Button.tab:not(.selected):pointerover">
+    <Setter Property="Background" Value="{StaticResource Line}" />
+  </Style>
+  <Style Selector="Grid.onArt TextBlock.headerDate">
+    <Setter Property="Foreground" Value="{StaticResource Text}" />
   </Style>
 
   <!-- A content control around a raised button: the button's shadow reaches beyond it (#540). -->
@@ -1140,6 +1155,24 @@
        with soft edges (#541), so it reads over a bright image. -->
   <Style Selector="Border.detailNoteScrim">
     <Setter Property="Background" Value="{StaticResource DetailNoteScrim}" />
+  </Style>
+  <!-- Behind the titles under the stacks (#612): wider than the text by the same amount on each side, like the note's. -->
+  <Style Selector="Border.detailNoteScrim.stackTitle">
+    <Setter Property="Margin" Value="-56,-20" />
+  </Style>
+  <Style Selector="Border.detailCoverEdge">
+    <Setter Property="BorderBrush" Value="{StaticResource DetailCoverEdge}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
+  <Style Selector="Border.detailCoverFrame">
+    <Setter Property="BorderBrush" Value="{StaticResource DetailCoverFrame}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="11" />
+  </Style>
+  <!-- Header and footer bands, only on the detail page (#612); the footer's keeps its line at the top. -->
+  <Style Selector="Border.detailBar">
+    <Setter Property="Background" Value="{StaticResource DetailBar}" />
   </Style>
   <Style Selector="Path.detailNoteIcon">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
@@ -2943,6 +2976,9 @@
   </Style>
 
   <!-- The status messages (#166, designs T166Library/T166Modal/T166Empty/T166Bausteine). -->
+  <Style Selector="Button.headerChip.clockChip">
+    <Setter Property="Padding" Value="16,0" />
+  </Style>
   <Style Selector="Button.headerChip.statusChip">
     <Setter Property="Padding" Value="8,0,10,0" />
   </Style>

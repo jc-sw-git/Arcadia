@@ -1124,7 +1124,7 @@
   <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>QUIÉN APORTA QUÉ</value></data>
   <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam aporta portada y fondo. Epic Games aporta una portada y un fondo 16:9 para la mayoría de los juegos. Los demás launchers no aportan imágenes.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>ORDEN</value></data>
-  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia consulta las fuentes de arriba abajo. Si una no tiene una imagen adecuada, se consulta la siguiente. Qué es adecuado lo decide «Recorte permitido».</value></data>
+  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia consulta las fuentes de arriba abajo. Si una no tiene una imagen adecuada, se consulta la siguiente. Una portada es adecuada si al recortarla por el centro al formato vertical 2:3 se pierde como máximo un 15 %. Un fondo es adecuado en 16:9, como la página de detalles, o en el formato plano de Steam y SteamGridDB; cada fondo se muestra casi entero. Si ninguna fuente tiene una imagen adecuada, Arcadia toma la de la primera fuente que tenga alguna.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] levanta una fuente, ▲ ▼ la mueven, [L3] la suelta, [B] cancela. Con el ratón, se arrastra.</value></data>
   <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Arcadia no consulta la fuente y oculta sus imágenes hasta que la actives. Las imágenes elegidas a mano se quedan.</value></data>
   <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>Arcadia consulta la fuente en su lugar del orden.</value></data>
@@ -1413,4 +1413,5 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>De 00:00 a 23:59, por ejemplo 21:58.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Con AM y PM, por ejemplo 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Se aplica al instante al reloj de arriba, a «desde» en el estado, a los mensajes recientes, a «Última partida» y a cualquier otra hora. La fecha y los números siguen el formato regional del sistema.</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>Ver imagen</value></data>
 </root>

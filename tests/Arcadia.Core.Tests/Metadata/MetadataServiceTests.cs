@@ -556,6 +556,49 @@ public sealed class MetadataServiceTests : IDisposable
         Assert.Contains(Log, line => line.Contains("broken nicht lesbar"));
     }
 
+    [Fact]
+    [Trait("TestCase", "T466-16")]
+    public async Task A_run_counts_as_busy_while_it_reads_the_launchers_own_files()
+    {
+        await RunToIdleAsync();
+        var reading = new BlockingSource();
+        var changes = 0;
+        _service.ProgressChanged += (_, _) => Interlocked.Increment(ref changes);
+
+        _service.Update([new LibraryMetadata(new LauncherLibrary(Launcher, [GameOf("local-1")]), reading)]);
+        Assert.True(reading.Started.Wait(TimeSpan.FromSeconds(5)));
+
+        // Nothing is fetched yet, so the progress doesn't run, but the filter has to know categories may still come.
+        Assert.False(_service.Progress.Running);
+        Assert.True(_service.IsBusy);
+        Assert.True(Volatile.Read(ref changes) > 0);
+
+        reading.Go.Set();
+        await RunToIdleAsync();
+        Assert.False(_service.IsBusy);
+    }
+
+    /// <summary>Its local read waits for <see cref="Go"/>, as a big library's files take a while.</summary>
+    private sealed class BlockingSource : ILauncherMetadata
+    {
+        public ManualResetEventSlim Started { get; } = new();
+
+        public ManualResetEventSlim Go { get; } = new();
+
+        public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField>();
+
+        public string Summary => "Made-up summary";
+
+        public string About => "Made-up about";
+
+        public IMetadataLookup Look(IReadOnlyCollection<Game> games)
+        {
+            Started.Set();
+            Go.Wait(TimeSpan.FromSeconds(10));
+            return new FakeMetadataSource().Look(games);
+        }
+    }
+
     private sealed class ThrowingSource : ILauncherMetadata
     {
         public IReadOnlySet<MetadataField> Fields { get; } = new HashSet<MetadataField>();

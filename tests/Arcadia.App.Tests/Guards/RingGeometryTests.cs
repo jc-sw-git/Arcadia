@@ -45,6 +45,41 @@ public sealed class RingGeometryTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T466-25")]
+    public async Task No_ring_is_cut_off_in_the_filters_metadata_panes_at_their_edges()
+    {
+        // 40 tags: the list scrolls, its last value stands at the bottom edge above the fade.
+        var entries = LibraryMetadataFilterTests.Library().Concat(Enumerable.Range(1, 40).Select(n =>
+            new LibraryMetadataFilterTests.Entry($"Spiel {n:00}", LibraryMetadataFilterTests.Meta(tags: [$"Tag {n:00}"])))).ToArray();
+        var (spec, _, _) = LibraryMetadataFilterTests.SteamWith(entries);
+        using var arcadia = await ArcadiaWindow.ShowAsync([spec], new AppSettings { ActiveLaunchers = [KnownLaunchers.Steam.Id] });
+        await LibraryMetadataFilterTests.RunToIdleAsync(arcadia.Arcadia);
+
+        // "Tags": its first value, the right column, the last value.
+        arcadia.Press(UiAction.KeyboardLayout).Press(UiAction.Down, times: 2).Press(UiAction.Right);
+        AssertNoRingCutOff(arcadia, "Filter, erster Tag");
+        arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 2);
+        AssertNoRingCutOff(arcadia, "Filter, rechter Rand der Tags");
+        arcadia.Press(UiAction.NextPage, times: 10);
+        AssertNoRingCutOff(arcadia, "Filter, letzter Tag");
+        // A chosen tag shows the switch above the list.
+        arcadia.Press(UiAction.Accept).Press(UiAction.Up, times: 30);
+        AssertNoRingCutOff(arcadia, "Filter, Schalter der Tags");
+
+        // "Erscheinungsjahr": the last quick pick, "bis".
+        arcadia.Press(UiAction.Back).Press(UiAction.Down, times: 3).Press(UiAction.Right).Press(UiAction.Up).Press(UiAction.Right, times: 5);
+        AssertNoRingCutOff(arcadia, "Filter, letzte Schnellwahl");
+        arcadia.Press(UiAction.Down, times: 2);
+        AssertNoRingCutOff(arcadia, "Filter, bis");
+
+        // "Altersfreigabe": the last rating, the last system.
+        arcadia.Press(UiAction.Back).Press(UiAction.Down).Press(UiAction.Right).Press(UiAction.Right, times: 5);
+        AssertNoRingCutOff(arcadia, "Filter, letzte Freigabe");
+        arcadia.Press(UiAction.Up).Press(UiAction.Right);
+        AssertNoRingCutOff(arcadia, "Filter, letztes System");
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T180-2")]
     public void No_ring_is_cut_off_on_the_mouse_modes_keyboard_and_its_layout_menu()
     {

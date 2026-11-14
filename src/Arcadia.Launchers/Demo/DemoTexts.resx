@@ -29,6 +29,7 @@
   <data name="DemoMetadataTag5" xml:space="preserve"><value>Gute Story</value></data>
   <data name="DemoMetadataTag6" xml:space="preserve"><value>Entspannend</value></data>
   <data name="DemoMetadataTag7" xml:space="preserve"><value>Pixelgrafik</value></data>
+  <data name="DemoMetadataTopicTag" xml:space="preserve"><value>Thema {number}</value></data>
   <data name="DemoMetadataSummary" xml:space="preserve"><value>Erfundene Metadaten der Demo</value></data>
   <data name="DemoMetadataAbout" xml:space="preserve"><value>Die Demo-Bibliothek bringt erfundene Beschreibungen, Genres, Tags und Altersfreigaben mit. Arcadia fragt dafür nirgends nach.</value></data>
 </root>

@@ -29,3 +29,5 @@ History:
 |---|---|---|---|---|---|
 | T588-1 to T588-6 | 2026-11-14 | Claude | Debug, Linux cloud container, `dotnet test` | ✅ | – |
 | T588-1, T588-8 | 2026-11-14 | Claude | Debug, Linux/Xvfb, `--demo`, `setxkbmap fr`, xdotool keys | ✅ log: z → W → Up, q → A → Left, a → Q → PreviousPage, w → nothing; search typed "zqsd"; hints stay US letters on Linux by design | – |
+| T588-1 to T588-6 | 2026-11-14 | Claude (QE) | Release, Linux cloud container, `dotnet test Arcadia.slnx` (App 1059, Core 3428, Pan 469); red run: `KeyPosition.Of` without the place and `KeyLabels.Printed`/`PrintedInBrackets` returning the text unchanged → 8 of 17 red | ✅ | – |
+| T588-1, T588-3, T588-4 (look) | 2026-11-14 | Claude (QE) | Debug, Linux/Xvfb, `--demo`, AZERTY letters fed to `KeyLabels.Use` 8 s after start (local only), UI de/en/fr/es | ✅ header ⇧ A/⇧ E, page arrows A/E, footer ⇧ A ⇧ E · A E switch without a key press; settings category arrows ⇧ A/⇧ E; tooltip "Page précédente (A, Page ↑ ou Maj+←)" | – |

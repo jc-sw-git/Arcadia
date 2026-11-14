@@ -5,7 +5,7 @@ only unless a case says otherwise; B goes back one level. Test cases derived by 
 scenarios 1–19 and #44's visual checklist, before implementation. The age rating flow is provisional: the owner tries
 it in T466-16 and may change it within this issue. Until #557 lands, the default rating system is USK.
 
-**Status:** Automated: T466-1 to -5, -7 to -15, -17 to -20, -22 · QE: T466-23, -25 · Open for the owner: T466-16
+**Status:** Automated: T466-1 to -15, -17 to -22 · QE: T466-23, -25 · Open for the owner: T466-16, T466-24
 
 **Long value lists (genre, tags, developer, publisher)**
 
@@ -25,9 +25,8 @@ it in T466-16 and may change it within this issue. Until #557 lands, the default
 - [x] **T466-5** Developer "CD PROJEKT RED" on 2 games and "CD Projekt Red " on 1: one value "CD PROJEKT RED" with
       3 hits; "Ubisoft Montreal" and "Ubisoft" stay two values. The same merging for genre (by key), tags and
       publisher. · E2E: yes
-- [ ] **T466-6** An Epic game with only English IGDB tags: the filter offers exactly the tags its detail page shows,
-      untranslated and untrimmed. · E2E: yes, deferred (the App driver has no IGDB tags for a library yet; the
-      rule that the filter reads the merged metadata the detail page shows is tested in Core)
+- [x] **T466-6** An Epic game with only English IGDB tags: the filter offers exactly the tags its detail page shows,
+      untranslated and untrimmed. · E2E: yes
 
 **Filtering and "Ohne Angabe einbeziehen"**
 
@@ -86,10 +85,9 @@ it in T466-16 and may change it within this issue. Until #557 lands, the default
 - [x] **T466-20** Own tag "Grusel" chosen: renamed to "Horror", the filter still holds it as "Horror" (also in
       `settings.json`); merged into another own tag, the filter holds the kept tag; deleted, it drops out, and with
       nothing left chosen "Tags" is unfiltered. · E2E: yes
-- [ ] **T466-21** Values only IGDB supplies chosen, then IGDB switched off in "Datenquellen": those values are gone
+- [x] **T466-21** Values only IGDB supplies chosen, then IGDB switched off in "Datenquellen": those values are gone
       from the modal and the library is filtered without them; the saved choice stays and applies again once IGDB is
-      back. Once #557 lands, the same for provider tags of another UI language. · E2E: yes, deferred (switching IGDB
-      off in the App driver; values dropping out and the saved choice staying are tested in Core)
+      back. Once #557 lands, the same for provider tags of another UI language. · E2E: yes
 
 **Controls**
 
@@ -102,7 +100,7 @@ it in T466-16 and may change it within this issue. Until #557 lands, the default
 
 **Performance and look**
 
-- [ ] **T466-24** Release build, `--demo-games 5000` with metadata (thousands of tag values): every press in "Tags"
+- [ ] **T466-24** **Owner:** Release build, `--demo-games 5000` with metadata (thousands of tag values): every press in "Tags"
       (move, choose, L3, a letter jump) moves the focus within 50 ms, opening the modal and a choice don't block the
       UI (counts computed off the UI thread). · E2E: no (budget measured by hand, CI asserts no timing)
 - [x] **T466-25** #44's visual checklist for part B: focus ring on the first and last value of a long list, on the
@@ -134,3 +132,4 @@ History:
 | T466-23, T466-25 (re-check) | 2026-11-14 | Claude (QE) | Release build of cb0f930 under Xvfb, `--demo` and `--demo-games 5000`, keyboard and mouse | ✅ | QE findings 1, 2, 4, 5 and 6 fixed: the ring stays on the chosen system (key and click), the hint follows a click on the order, one long developer name is cut with "…", typing shows only "Tippen" and "Tastatur ausblenden", the loading line shows while the launchers' metadata is read. Not checked: Xbox/PlayStation glyphs (no gamepad here) |
 | T466-24 (re-check) | 2026-11-14 | Claude (QE) | Release build of cb0f930 under Xvfb, `--demo --demo-games 5000` (about 640 tags in the GOG tab), keyboard | ❌ | opening 43 ms; a move inside the window under 1 ms, a move that scrolls 8–13 ms, a choice 15 ms, a letter jump in A–Z under 3 ms: ✅; LT/RT paging in "Häufigste zuerst" 27–172 ms (6 of 12 over 50 ms) and L3 58–128 ms: over the budget in the container (QE finding 7) |
 | T466-24 (paging, L3) | 2026-11-14 | Claude (implementation) | Debug build under Xvfb, `--demo --demo-games 5000` (about 640 tags in the GOG tab), keyboard | ✅ | with fixed row slots: LT/RT paging 3–6 ms press to frame, L3 12–21 ms, a scrolling move 4 ms; `RingGeometryTests` caught a clipped ring on the slots' values first (fixed) |
+| T466-6, T466-21 | 2026-11-14 | Claude (implementation) | `LibraryIgdbFilterTests`, `dotnet test`, Linux container | ✅ | the App tests deferred so far, with IGDB's fake: the filter's tags equal the detail page's, IGDB off drops them and keeps the saved choice |

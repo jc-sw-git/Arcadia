@@ -7,6 +7,7 @@
   <data name="PanJournalUnreadable" xml:space="preserve"><value>Pan couldn’t read its journal – details are in pan.log under %ProgramData%\Arcadia\Pan</value></data>
   <data name="ErrorContextUi" xml:space="preserve"><value>User interface</value></data>
   <data name="ErrorContextArtwork" xml:space="preserve"><value>Covers and backgrounds</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>View image</value></data>
   <data name="ErrorContextControllerWatch" xml:space="preserve"><value>Controller monitoring</value></data>
   <data name="ErrorContextXboxPadForGames" xml:space="preserve"><value>Xbox pad for games</value></data>
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Checking installations</value></data>
@@ -1125,7 +1126,7 @@
   <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>WHO PROVIDES WHAT</value></data>
   <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam provides cover and background. Epic Games provides a cover and a 16:9 background for most games. The other launchers provide no images.</value></data>
   <data name="DataSourcesOrderHeading" xml:space="preserve"><value>ORDER</value></data>
-  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia asks the sources from top to bottom. If one has no fitting image, the next one is asked. What fitting means is set by “Cropping allowed”.</value></data>
+  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia asks the sources from top to bottom. If one has no fitting image, the next one is asked. A cover fits if cropping it centered to the 2:3 portrait format cuts away at most 15 %. A background fits in 16:9 like the detail page or in the flat format of Steam and SteamGridDB; every background is shown almost whole. If no source has a fitting image, Arcadia takes the one of the first source that has any.</value></data>
   <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] lifts a source, ▲ ▼ move it, [L3] drops it, [B] cancels. With the mouse, you drag it.</value></data>
   <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Arcadia doesn’t ask the source and hides its images until you turn it on. Images set by hand stay.</value></data>
   <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>Arcadia asks the source at its place in the order.</value></data>

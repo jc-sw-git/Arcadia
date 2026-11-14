@@ -102,7 +102,7 @@
           <Border Classes="infoPanel">
             <StackPanel Spacing="20" Margin="32,30">
               <StackPanel Spacing="6">
-                <TextBlock Classes="label" FontSize="14" Text="{Binding TabBarTitle}" />
+                <TextBlock Classes="label heading" Text="{Binding TabBarTitle}" />
                 <TextBlock Text="{Binding TabBarSubtitle}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
               </StackPanel>
               <Border Classes="miniTabs" DataContext="{Binding TabBar}" x:DataType="settings:InfoTabBar">

@@ -157,7 +157,7 @@ internal static class GuardPages
         Assert.NotNull(arcadia.LauncherCategory().PageLauncherId);
     }
 
-    private static Task OpenDetail(ArcadiaWindow arcadia)
+    internal static Task OpenDetail(ArcadiaWindow arcadia)
     {
         arcadia.Arcadia.Hold(UiAction.Accept, PastHoldTime);
         Assert.True(arcadia.Arcadia.Main.IsDetailOpen, "Detailseite offen");

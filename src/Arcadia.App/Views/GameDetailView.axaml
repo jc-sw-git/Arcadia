@@ -90,7 +90,7 @@
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Classes="onArt" Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label onArt" Text="{x:Static app:AppTexts.DetailBefore}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailBefore}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" />
@@ -109,7 +109,7 @@
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
           <TextBlock Classes="onArt" Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                      MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label onArt" Text="{x:Static app:AppTexts.DetailAfter}" FontSize="13" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailAfter}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" RenderTransform="scaleX(-1)" />
@@ -224,14 +224,17 @@
               <DataTemplate x:DataType="vm:DetailAreaViewModel">
                 <Button Classes="plain detailRail" Classes.open="{Binding IsOpen}" Classes.focused="{Binding IsFocused}" Command="{Binding OpenCommand}">
                   <DockPanel>
-                    <!-- A's glyph in the ring (#530): a press enters the area, ◀ ▶ don't. -->
-                    <ctl:KeyHint DockPanel.Dock="Right" Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsVisible="{Binding ShowsEnterHint}" VerticalAlignment="Center" Margin="10,0,0,0" />
                     <Border DockPanel.Dock="Left" Classes="railIcon" Margin="0,0,14,0" VerticalAlignment="Center">
                       <Path Data="{Binding Icon}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" Stretch="None"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <StackPanel Spacing="1" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis" />
+                      <!-- A's glyph in the ring (#530): a press enters the area, ◀ ▶ don't. Beside the name, not beside both lines, so
+                           the value line keeps the whole width and isn't cut while the glyph shows (#587). -->
+                      <DockPanel>
+                        <ctl:KeyHint DockPanel.Dock="Right" Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsVisible="{Binding ShowsEnterHint}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                        <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      </DockPanel>
                       <TextBlock Classes="railValue" Text="{Binding ValueLine}" />
                     </StackPanel>
                   </DockPanel>
@@ -243,14 +246,15 @@
 
         <Panel Name="AreaContent" Margin="34,28">
           <!-- "Übersicht" (#500): left the quick selection, up to five rows of the other areas that act as their rows do, and set
-               apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so a
-               name and a value like "Standard (Arcadia)" fit side by side. -->
-          <Grid Name="Overview" ColumnDefinitions="480,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
+               apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so the
+               longest name in any language ("Modo del Steam Controller") and a value like "Standard (Arcadia)" fit side by side
+               uncut (#587). -->
+          <Grid Name="Overview" ColumnDefinitions="540,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
             <!-- The places of five entries stay reserved (#541), so the note and "Übersicht anpassen" never move: the note right
                  under the fifth place, "Übersicht anpassen" in the middle between that place and the panel's lower edge (the
                  -28 reaches through AreaContent's margin to that edge). 5 × 56 + 4 × 8 = 312. -->
             <Grid RowDefinitions="Auto,312,*">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailQuickSelectionCaption}" FontSize="13" Margin="0,0,0,14" />
+              <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailQuickSelectionCaption}" Margin="0,0,0,14" />
               <ItemsControl Name="QuickEntries" Grid.Row="1" VerticalAlignment="Top" ItemsSource="{Binding Overview.Rows}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -340,28 +344,28 @@
               <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                 <Border Classes="detailStat">
                   <StackPanel Spacing="3">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" FontSize="12" />
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.LastPlayedCaption}" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.LastPlayedText}" />
                     <TextBlock Classes="statSource" Text="{Binding LastPlayedAt}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Classes="detailStat">
                   <StackPanel Spacing="3">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" FontSize="12" />
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.PlaytimeCaption}" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.PlaytimeText}" />
                     <TextBlock Classes="statSource" Text="{Binding PlaytimeSource}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Row="1" Classes="detailStat">
                   <StackPanel Spacing="3">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" FontSize="12" />
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.InstalledOnCaption}" />
                     <TextBlock Classes="statValue" Text="{Binding InstalledAt}" />
                     <TextBlock Classes="statSource" Text="{Binding Tile.LocationText}" ToolTip.Tip="{Binding Tile.LocationText}" />
                   </StackPanel>
                 </Border>
                 <Border Grid.Row="1" Grid.Column="1" Classes="detailStat">
                   <StackPanel Spacing="3">
-                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" FontSize="12" />
+                    <TextBlock Classes="label" Text="{x:Static app:AppTexts.SizeCaption}" />
                     <TextBlock Classes="statValue" Text="{Binding Tile.SizeText}" />
                     <TextBlock Classes="statSource" Text="{Binding DriveText}" />
                   </StackPanel>
@@ -389,7 +393,7 @@
                 <Grid ColumnDefinitions="*,500" ColumnSpacing="44">
                   <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailDescriptionCaption}" FontSize="13" VerticalAlignment="Center" />
+                      <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailDescriptionCaption}" VerticalAlignment="Center" />
                       <TextBlock Classes="metadataSource" Text="{Binding GameInfo.DescriptionSource, TargetNullValue=''}" VerticalAlignment="Center" IsVisible="{Binding GameInfo.HasDescription}" />
                     </StackPanel>
                     <TextBlock Name="Description" Text="{Binding GameInfo.Description, TargetNullValue=''}" FontSize="21" LineHeight="32" Foreground="{StaticResource Text}" TextWrapping="Wrap"
@@ -403,7 +407,7 @@
                         <DataTemplate x:DataType="vm:DetailFact">
                           <Border Classes="metadataFact">
                             <DockPanel>
-                              <TextBlock DockPanel.Dock="Left" Classes="label" Text="{Binding Caption}" FontSize="13" Width="170" VerticalAlignment="Center" />
+                              <TextBlock DockPanel.Dock="Left" Classes="label section" Text="{Binding Caption}" Width="170" VerticalAlignment="Center" />
                               <TextBlock DockPanel.Dock="Right" Classes="metadataSource" Text="{Binding Source}" Margin="16,0,0,0" VerticalAlignment="Center" />
                               <Panel>
                                 <TextBlock Text="{Binding Value}" IsVisible="{Binding !IsBadge}" FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
@@ -418,7 +422,7 @@
                     </ItemsControl>
                     <!-- The player's own tags (#495), before the providers'. -->
                     <StackPanel Spacing="10" IsVisible="{Binding GameInfo.HasOwnTags}">
-                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" FontSize="13" />
+                      <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" />
                       <ItemsControl ItemsSource="{Binding GameInfo.OwnTags}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
@@ -436,7 +440,7 @@
                     </StackPanel>
                     <StackPanel Spacing="10" IsVisible="{Binding GameInfo.HasTags}">
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailTagsCaption}" FontSize="13" VerticalAlignment="Center" />
+                        <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailTagsCaption}" VerticalAlignment="Center" />
                         <TextBlock Classes="metadataSource" Text="{Binding GameInfo.TagsSource, TargetNullValue=''}" VerticalAlignment="Center" />
                       </StackPanel>
                       <ItemsControl ItemsSource="{Binding GameInfo.Tags}">
@@ -482,7 +486,7 @@
                     </Border>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <Path Classes="detailNoteIcon" Data="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5.5M12 7.5v.5" Width="20" Height="20" />
-                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailInfoCaption}" FontSize="13" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
+                      <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailInfoCaption}" Foreground="{StaticResource AccentSoft}" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{Binding InfoRow?.Title, TargetNullValue=''}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextWrapping="Wrap" />
                     <views:ValueBoxesView Boxes="{Binding InfoRow?.ValueBoxes}" Classes.dimmed="{Binding InfoRow?.IsGreyed, TargetNullValue=False}" IsVisible="{Binding InfoRow?.HasValueBoxes, TargetNullValue=False}" />
@@ -490,7 +494,7 @@
                                FontSize="17" LineHeight="25" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap" />
                     <!-- The game's own tags below the text of "Tags" (#533), as the chips in "Infos". -->
                     <StackPanel Spacing="10" IsVisible="{Binding InfoRow?.HasInfoTags, TargetNullValue=False}">
-                      <TextBlock Classes="label" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" FontSize="13" />
+                      <TextBlock Classes="label section" Text="{x:Static app:AppTexts.DetailOwnTagsCaption}" />
                       <ItemsControl ItemsSource="{Binding InfoRow?.InfoTags}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>

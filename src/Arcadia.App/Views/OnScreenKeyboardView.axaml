@@ -97,7 +97,7 @@
     <!-- Layout menu (R3) over the right block, inside the keyboard: the mouse mode's window is only as large as it. -->
     <Border Classes="keyboardLayoutMenu" IsVisible="{Binding LayoutMenu.IsOpen}" HorizontalAlignment="Right" VerticalAlignment="Top">
       <StackPanel Spacing="2">
-        <TextBlock Text="{x:Static app:AppTexts.KeyboardLayoutCaption}" FontSize="13" FontWeight="Bold" LetterSpacing="1.3" Foreground="{StaticResource TextMuted}" Margin="12,6,12,8" />
+        <TextBlock Classes="label section" Text="{x:Static app:AppTexts.KeyboardLayoutCaption}" Margin="12,6,12,8" />
         <ItemsControl ItemsSource="{Binding LayoutMenu.Items}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -115,7 +115,7 @@
                         StrokeLineCap="Round" StrokeJoin="Round" Width="20" Height="14.3" Stretch="Uniform" VerticalAlignment="Center" />
                   <StackPanel Spacing="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Layout.Name}" FontSize="17" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Layout.Kind}" FontSize="13" Foreground="{StaticResource TextMuted}" />
+                    <TextBlock Classes="layoutKind" Text="{Binding Layout.Kind}" />
                   </StackPanel>
                 </DockPanel>
               </Button>

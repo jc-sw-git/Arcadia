@@ -71,7 +71,7 @@ not the whole folder.
 ## Window guards
 
 - `tests/Arcadia.App.Tests/Guards/` opens the real headless window through `ArcadiaWindow` (click, real key, wheel,
-  layout, pixels, focus ring). It holds only cross-page guards (focus ring, ring geometry, fades, consistent texts,
+  layout, pixels, focus ring). It holds only cross-page guards (focus ring, ring geometry, fades, consistent texts, uncut texts in every language,
   embedded font, covers and icons, reused covers and search keys); they run on `main` only (`tools/ci/run-tests.sh`,
   `WINDOW_GUARDS=1`), and `ArcadiaWindow` anywhere else fails the test run.
 - The guards walk one list of pages, dialogs and settings categories, `Guards/GuardPages.cs` (how to open each, how

@@ -26,8 +26,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   tab without games or whose launcher is gone, or no launcher active (#136). It lies under every page and asks more
   through `ILibraryHost`; whether the focused game's install folder is gone it asks `Services/InstallFolderCheck` off
   the UI thread (#227). It keeps each tab's sorted and filtered list until a rescan, the sort or the tab's filter
-  changes it. `Filter/` (#44): `FilterModalViewModel` (R3) with its category and value rows, drawn by
-  `Views/FilterModalView`; Main hosts it, the library saves its choice when it closes.
+  changes it. The filter modal (`Filter/`, #44, #466): [app-filter.md](app-filter.md).
 - Detail page (carousel, areas, quick selection, "Übersicht anpassen"): [app-detail-page.md](app-detail-page.md).
 - `GameActions`: what a game does (start, install, back to it, held A), one per window.
 - `LauncherTabsViewModel` the tabs; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu),

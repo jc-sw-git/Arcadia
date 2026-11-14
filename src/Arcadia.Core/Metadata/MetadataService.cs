@@ -113,6 +113,22 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
+    /// <summary>
+    /// A run goes on, from its start: also while it indexes the cache and reads the launchers' own files, which
+    /// <see cref="MetadataProgress.Running"/> leaves out because nothing is fetched then. The filter tells by it that
+    /// categories may still come (#466).
+    /// </summary>
+    public bool IsBusy
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _running;
+            }
+        }
+    }
+
     /// <summary>The games of the last libraries a store or IGDB is asked for, e.g. for "Alle Metadaten neu laden?"; 0 before the first scan.</summary>
     public int GameCount
     {
@@ -273,12 +289,16 @@ public sealed partial class MetadataService : IDisposable
                 _madeUp = madeUp;
             }
 
-            if (!_running)
+            if (_running)
             {
-                _running = true;
-                _runner = Task.Run(RunAsync);
+                return;
             }
+
+            _running = true;
+            _runner = Task.Run(RunAsync);
         }
+
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task RunAsync()

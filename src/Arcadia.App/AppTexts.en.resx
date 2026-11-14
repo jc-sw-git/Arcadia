@@ -1414,4 +1414,64 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>From 00:00 to 23:59, for example 21:58.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>With AM and PM, for example 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Applies at once to the clock at the top, “since” in the status, the recent messages, “Last played” and every other time. Date and numbers follow the system’s regional format.</value></data>
+  <data name="FilterGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="FilterTags" xml:space="preserve"><value>Tags</value></data>
+  <data name="FilterDevelopers" xml:space="preserve"><value>Developer</value></data>
+  <data name="FilterPublishers" xml:space="preserve"><value>Publisher</value></data>
+  <data name="FilterYear" xml:space="preserve"><value>Release year</value></data>
+  <data name="FilterAgeRating" xml:space="preserve"><value>Age rating</value></data>
+  <data name="FilterAllGenres" xml:space="preserve"><value>All genres</value></data>
+  <data name="FilterAllTags" xml:space="preserve"><value>All tags</value></data>
+  <data name="FilterAllDevelopers" xml:space="preserve"><value>All developers</value></data>
+  <data name="FilterAllPublishers" xml:space="preserve"><value>All publishers</value></data>
+  <data name="FilterAllYears" xml:space="preserve"><value>All years</value></data>
+  <data name="FilterAllRatings" xml:space="preserve"><value>All ratings</value></data>
+  <data name="FilterSearchGenres" xml:space="preserve"><value>Search genres</value></data>
+  <data name="FilterSearchTags" xml:space="preserve"><value>Search tags</value></data>
+  <data name="FilterSearchDevelopers" xml:space="preserve"><value>Search developers</value></data>
+  <data name="FilterSearchPublishers" xml:space="preserve"><value>Search publishers</value></data>
+  <data name="FilterByFrequency" xml:space="preserve"><value>Most common first</value></data>
+  <data name="FilterAlphabetical" xml:space="preserve"><value>A–Z</value></data>
+  <data name="FilterHintOrder" xml:space="preserve"><value>Order: {order}</value></data>
+  <data name="FilterWithUnknown" xml:space="preserve"><value>Include unknown</value></data>
+  <data name="FilterWithUnknownInfo" xml:space="preserve"><value>Also shows entries without {what}.</value></data>
+  <data name="FilterLackingGenre" xml:space="preserve"><value>a genre</value></data>
+  <data name="FilterLackingTags" xml:space="preserve"><value>tags</value></data>
+  <data name="FilterLackingDevelopers" xml:space="preserve"><value>a developer</value></data>
+  <data name="FilterLackingPublishers" xml:space="preserve"><value>a publisher</value></data>
+  <data name="FilterLackingYear" xml:space="preserve"><value>a release year</value></data>
+  <data name="FilterLackingRating" xml:space="preserve"><value>a {board} rating</value></data>
+  <data name="FilterSummaryWithUnknown" xml:space="preserve"><value>{summary} &amp; unknown</value></data>
+  <data name="FilterMatchNote" xml:space="preserve"><value>Choose several · an entry matches if it has one of them</value></data>
+  <data name="FilterMatchNoteChosen" xml:space="preserve"><value>{count} chosen · an entry matches if it has one of them</value></data>
+  <data name="FilterSearchOneMatch" xml:space="preserve"><value>1 value matches</value></data>
+  <data name="FilterSearchMatches" xml:space="preserve"><value>{count} values match</value></data>
+  <data name="FilterSearchNoMatch" xml:space="preserve"><value>No value matches</value></data>
+  <data name="FilterOwnTagsHeading" xml:space="preserve"><value>OWN TAGS</value></data>
+  <data name="FilterOtherTagsHeading" xml:space="preserve"><value>OTHER TAGS</value></data>
+  <data name="FilterHintSearch" xml:space="preserve"><value>Search</value></data>
+  <data name="FilterHintPage" xml:space="preserve"><value>Page</value></data>
+  <data name="FilterHintLetter" xml:space="preserve"><value>Letter</value></data>
+  <data name="FilterHintYear" xml:space="preserve"><value>Year</value></data>
+  <data name="FilterHintTenYears" xml:space="preserve"><value>10 years</value></data>
+  <data name="FilterHintRow" xml:space="preserve"><value>Row</value></data>
+  <data name="FilterHintChoose" xml:space="preserve"><value>Choose</value></data>
+  <data name="FilterHintSystem" xml:space="preserve"><value>System</value></data>
+  <data name="FilterHintType" xml:space="preserve"><value>Type</value></data>
+  <data name="FilterHintHideKeyboard" xml:space="preserve"><value>Hide keyboard</value></data>
+  <data name="FilterYearFrom" xml:space="preserve"><value>FROM</value></data>
+  <data name="FilterYearTo" xml:space="preserve"><value>TO</value></data>
+  <data name="FilterYearRange" xml:space="preserve"><value>{from} – {to}</value></data>
+  <data name="FilterLastThreeYears" xml:space="preserve"><value>Last 3 years</value></data>
+  <data name="FilterTwenties" xml:space="preserve"><value>2020s</value></data>
+  <data name="FilterTens" xml:space="preserve"><value>2010s</value></data>
+  <data name="FilterNoughties" xml:space="preserve"><value>2000s</value></data>
+  <data name="FilterBefore2000" xml:space="preserve"><value>Before 2000</value></data>
+  <data name="FilterYearsChart" xml:space="preserve"><value>Entries per year from {from} to {to}</value></data>
+  <data name="FilterSystem" xml:space="preserve"><value>SYSTEM</value></data>
+  <data name="FilterRatingNote" xml:space="preserve"><value>Choose several. Only the rating of the chosen system counts.</value></data>
+  <data name="FilterRatingSummary" xml:space="preserve"><value>{board} {ratings}</value></data>
+  <data name="FilterEntriesOne" xml:space="preserve"><value>1 entry</value></data>
+  <data name="FilterEntries" xml:space="preserve"><value>{count} entries</value></data>
+  <data name="FilterMetadataLoading" xml:space="preserve"><value>Loading metadata… categories and numbers may still change.</value></data>
 </root>

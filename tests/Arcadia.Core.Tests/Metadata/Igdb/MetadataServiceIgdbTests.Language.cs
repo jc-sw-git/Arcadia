@@ -50,6 +50,7 @@ public sealed partial class MetadataServiceIgdbTests
     [InlineData("fr-FR", false)]
     [InlineData("es-ES", false)]
     [InlineData("de-DE", true)]
+    [InlineData("en-US", true)]
     [InlineData("fr-FR", true)]
     [InlineData("es-ES", true)]
     public async Task A_description_in_the_ui_language_beats_igdbs_english_in_either_order(string culture, bool igdbFirst)

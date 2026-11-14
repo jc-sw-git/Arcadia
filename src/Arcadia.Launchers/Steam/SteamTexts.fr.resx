@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="SteamOtherAccountNotice" xml:space="preserve"><value>Steam est connecté avec un autre compte</value></data>
+  <data name="SteamUnreachableWithList" xml:space="preserve"><value>Impossible de joindre Steam. Arcadia affiche la dernière liste de vos jeux chargée.</value></data>
+  <data name="SteamUnreachableWithoutList" xml:space="preserve"><value>Impossible de joindre Steam. Vos jeux non installés manquent jusqu’à ce qu’Arcadia puisse charger leur liste.</value></data>
+  <data name="SteamSignInExpired" xml:space="preserve"><value>Votre connexion a expiré. Reconnectez-vous pour voir tous vos jeux.</value></data>
+  <data name="SteamAccountTitle" xml:space="preserve"><value>Compte Steam</value></data>
+  <data name="SteamAccountPurpose" xml:space="preserve"><value>Connectez-vous pour accéder à toute votre bibliothèque de jeux</value></data>
+  <data name="SteamAccountAbout1" xml:space="preserve"><value>Si vous ajoutez votre compte Steam à Arcadia, vous accédez aussi dans Arcadia à toute votre bibliothèque de jeux. </value></data>
+  <data name="SteamAccountAbout2" xml:space="preserve"><value>Sans connexion, Arcadia ne peut afficher que les jeux installés sur ce PC.</value></data>
+  <data name="SteamSignInMethod" xml:space="preserve"><value>Vous vous connectez sur la page de connexion de Steam, par code QR avec l’application Steam Mobile ou avec nom et mot de passe. Arcadia ne voit jamais vos identifiants.</value></data>
+  <data name="ErrorContextSignOut" xml:space="preserve"><value>Se déconnecter</value></data>
+  <data name="ErrorContextCheckSteamAccount" xml:space="preserve"><value>Vérifier le compte Steam</value></data>
+  <data name="ErrorContextLoadGames" xml:space="preserve"><value>Charger les jeux</value></data>
+  <data name="SteamSignInTitle" xml:space="preserve"><value>Se connecter à Steam</value></data>
+  <data name="SteamRefusedNotOwned" xml:space="preserve"><value>Le compte Steam connecté ne possède pas ce jeu.</value></data>
+  <data name="SteamFolderExpected" xml:space="preserve"><value>steam.exe et le dossier steamapps</value></data>
+  <data name="SteamToolsSubtitle" xml:space="preserve"><value>Comme SteamVR et des SDK</value></data>
+  <data name="SteamToolsInfo" xml:space="preserve"><value>Sous « Outils », Steam liste des programmes pour les jeux et leur développement. Si cette option est activée, ils apparaissent aussi dans Arcadia, avec un compte Steam même ceux qui ne sont pas installés ; les environnements d’exécution et les composants redistribuables sont toujours ignorés :</value></data>
+  <data name="SteamSoftwareSubtitle" xml:space="preserve"><value>Comme Wallpaper Engine et Blender</value></data>
+  <data name="SteamSoftwareInfo" xml:space="preserve"><value>Steam vend aussi des programmes qui ne sont pas des jeux. Si cette option est activée, ils apparaissent aussi dans Arcadia, avec un compte Steam même ceux qui ne sont pas installés :</value></data>
+  <data name="SteamSoundtracksSubtitle" xml:space="preserve"><value>Les bandes originales de vos jeux</value></data>
+  <data name="SteamSoundtracksInfo" xml:space="preserve"><value>Steam installe les bandes originales comme des jeux. Si cette option est activée, elles apparaissent aussi dans Arcadia, avec un compte Steam même celles qui ne sont pas installées ; [A] ouvre une bande originale dans Steam, qui la lit.</value></data>
+  <data name="SteamToolsTitle" xml:space="preserve"><value>Inclure les outils</value></data>
+  <data name="SteamDedicatedServers" xml:space="preserve"><value>Serveurs dédiés</value></data>
+  <data name="SteamSoftwareTitle" xml:space="preserve"><value>Inclure les logiciels</value></data>
+  <data name="SteamSoundtracksTitle" xml:space="preserve"><value>Inclure les bandes originales</value></data>
+  <data name="SteamOtherAccountInstall" xml:space="preserve"><value>Un autre compte est connecté à Steam</value></data>
+  <data name="SteamOtherAccountUninstalledNotice" xml:space="preserve"><value>Steam est actuellement connecté avec un autre compte qu’Arcadia. Tant que cela ne change pas, les jeux ne peuvent pas être installés depuis Arcadia.</value></data>
+  <data name="SteamOtherAccountInstalledNotice" xml:space="preserve"><value>Steam est actuellement connecté avec un autre compte qu’Arcadia. Le jeu risque de ne pas démarrer ou d’utiliser les mauvaises sauvegardes.</value></data>
+  <data name="SteamMetadataSummary" xml:space="preserve"><value>Description, genres, développeur, date de sortie, tags et classifications d’âge · sans clé</value></data>
+  <data name="SteamMetadataAbout" xml:space="preserve"><value>Arcadia lit les genres, le développeur, l’éditeur, la date de sortie et les tags directement dans les fichiers de Steam. Il récupère la description et les classifications d’âge une fois par jeu sur la page du magasin de Steam. Sans clé, Steam accepte environ 200 requêtes en 5 minutes ; Arcadia reste en dessous. Steam n’apprend que l’AppID du jeu, ni compte ni nom.</value></data>
+</root>

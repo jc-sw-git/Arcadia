@@ -36,7 +36,7 @@
               <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.WaitingSkipHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding CloseCommand}">
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackHint}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding BackHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding AcceptCommand}" IsVisible="{Binding HasGames}">
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptHint}" />

@@ -25,7 +25,7 @@
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.QuickSelectionMoveHint}" />
                 <Button Classes="plain" Command="{Binding GoBackCommand}">
-                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                  <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
                 </Button>
                 <Button Classes="plain tagHint" Classes.off="{Binding IsNewFocused}" Command="{Binding DeleteCommand}">
                   <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.TagsHintDelete}" />

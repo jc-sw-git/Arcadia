@@ -63,7 +63,7 @@
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding SearchText}" IsVisible="{Binding SearchText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="L3" Keys="C" Text="{Binding OrderText}" IsVisible="{Binding OrderText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding BackText}" />
             </StackPanel>
           </Border>
 

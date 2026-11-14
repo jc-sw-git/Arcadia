@@ -136,7 +136,7 @@ public sealed partial class BoardKeyViewModel : ViewModelBase
     {
         BoardKeyKind.Backspace => ("⌫", AppTexts.KeyDelete, "X"),
         BoardKeyKind.Tab => (string.Empty, "Tab", null),
-        BoardKeyKind.Enter => ("↵", "Enter", "≡"),
+        BoardKeyKind.Enter => ("↵", AppTexts.KeyEnter, "≡"),
         BoardKeyKind.Shift => ("⇧", key.Width >= 2 ? AppTexts.KeyShift : string.Empty, "LB"),
         BoardKeyKind.Space => ("␣", AppTexts.KeySpace, "Y"),
         BoardKeyKind.AltGr => (string.Empty, "AltGr", "RB"),

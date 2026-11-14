@@ -121,7 +121,7 @@
           </Button>
           <Button Classes="plain headerChip" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{x:Static app:AppTexts.SettingsTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <ctl:KeyHint Pad="≡" Keys="Enter" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" />
               <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
                     Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
             </StackPanel>
@@ -505,7 +505,7 @@
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
-            <ctl:KeyHint Pad="B" Keys="Esc" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Detail?.Current.BackHint, TargetNullValue=''}" />
+            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Detail?.Current.BackHint, TargetNullValue=''}" />
           </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
@@ -611,7 +611,7 @@
             <Button Grid.Column="1" Name="SearchCloseButton" Classes="plain" Command="{Binding CloseCommand}" ToolTip.Tip="{x:Static app:AppTexts.CloseSearchTip}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <!-- B closes the search only with the keyboard in; with it out, B puts the keyboard away first. -->
-                <ctl:KeyHint Pad="B" Keys="Esc" IsVisible="{Binding !IsKeyboardOut}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" IsVisible="{Binding !IsKeyboardOut}" />
                 <TextBlock Text="{x:Static app:AppTexts.Close}" FontSize="16" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -776,7 +776,7 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Options}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEscape}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.KeyboardRetract}" />
                   </StackPanel>
                 </StackPanel>
@@ -792,13 +792,13 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.MoreHits}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.DoubleClick}" /></Border>
                     <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.Click}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.HoldForDetails}" />
@@ -810,7 +810,7 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Options}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEscape}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Close}" />
                   </StackPanel>
                 </StackPanel>
@@ -1071,7 +1071,7 @@
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
                 <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1110,7 +1110,7 @@
             </ItemsControl>
             <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right" Margin="8,10,8,2">
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1137,7 +1137,7 @@
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
                 <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1266,7 +1266,7 @@
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Classes="plain neighbour breadcrumb" Margin="-6,0,0,0" Command="{Binding BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackToListTip}">
                           <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ctl:KeyHint Pad="B" Keys="Esc" VerticalAlignment="Center" />
+                            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Static app:AppTexts.Launcher}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
@@ -1786,8 +1786,8 @@
               <ctl:KeyHint Pad="X" Keys="⌫" Text="{x:Static app:AppTexts.KeyDelete}" />
               <ctl:KeyHint Pad="Y" Text="{x:Static app:AppTexts.Space}" />
               <ctl:KeyHint Pad="LB|RB" Text="⇧ / AltGr" />
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{x:Static app:AppTexts.Apply}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Discard}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{x:Static app:AppTexts.Apply}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Discard}" />
             </StackPanel>
             <!-- A dialog with its own hints (a running driver install, #413 D2) hides the page's, so no "B Zurück" shows. -->
             <Panel IsVisible="{Binding Selected.ShowsPageHints}">
@@ -1795,7 +1795,7 @@
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsReordering}">
               <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="{x:Static app:AppTexts.KeyHintDrag}" Text="{x:Static app:AppTexts.Move}" />
               <ctl:KeyHint Pad="L3" Keys="C" Alt="{x:Static app:AppTexts.KeyHintRelease}" Text="{x:Static app:AppTexts.Drop}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding !Selected.IsReordering}">
               <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding FocusedRow?.CanChange, TargetNullValue=False}" />
@@ -1805,9 +1805,9 @@
               <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
               <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Selected.TurnText, FallbackValue=''}" IsVisible="{Binding Selected.TurnText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>
@@ -1840,7 +1840,7 @@
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                         <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
                         <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
-                        <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+                        <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -1918,7 +1918,7 @@
                     <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding !IsRemovingSisrPrompt}">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                         <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding PromptSelectText}" />
-                        <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
+                        <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding PromptBackText}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -1961,7 +1961,7 @@
                         </Button>
                         <Button Classes="plain action" Command="{Binding CancelCommand}">
                           <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ctl:KeyHint Pad="B" Keys="Esc" />
+                            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" />
                             <TextBlock Text="{x:Static app:AppTexts.Cancel}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
@@ -2064,7 +2064,7 @@
             <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding HasButtons}">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding ConfirmText}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding CancelText}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding CancelText}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -2124,7 +2124,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                   <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
                   <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding Legend}" />
-                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                  <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -2147,7 +2147,7 @@
               <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                   <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="OK" />
-                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                  <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -2175,7 +2175,7 @@
           <!-- Where the web page goes; the page itself lies over the window, outside the scaled layout (WebPageView). -->
           <Border Name="WebPageArea" Grid.Row="1" Margin="80,0" />
           <StackPanel Grid.Row="2" Margin="80,0" Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
           </StackPanel>
         </Grid>
       </Panel>

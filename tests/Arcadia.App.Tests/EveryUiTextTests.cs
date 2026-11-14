@@ -11,7 +11,7 @@ using Arcadia.Launchers.Steam;
 namespace Arcadia.App.Tests;
 
 /// <summary>
-/// Every text of every <c>*Texts.resx</c> in every language Arcadia offers (#480, #554): German UI cultures get the
+/// Every text of every <c>*Texts.resx</c> in every language Arcadia offers (#480, #554, #555): German UI cultures get the
 /// German neutral texts, every other offered language its own translation. That the translations
 /// are complete is <c>TranslationsTests</c>' job; this checks the built satellite assemblies are found.
 /// </summary>
@@ -29,7 +29,12 @@ public sealed class EveryUiTextTests
     [InlineData("de-AT", "")]
     [InlineData("en-US", "en")]
     [InlineData("en-GB", "en")]
+    [InlineData("fr-FR", "fr")]
+    [InlineData("fr-CA", "fr")]
+    [InlineData("fr-BE", "fr")]
+    [InlineData("fr-CH", "fr")]
     [Trait("TestCase", "T554-17")]
+    [Trait("TestCase", "T555-2")]
     public void Every_offered_ui_culture_gets_every_text_in_its_language(string culture, string language)
     {
         var differing = new List<string>();

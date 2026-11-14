@@ -28,6 +28,8 @@ public static class MetadataFolder
         return new MetadataService(new MetadataCache(Default), http, time)
         {
             Log = AppLog.Write,
+            Language = UiLanguage.Culture,
+            FirstAgeRatingBoard = AgeRatingRegion.System,
             Settings = () => settings.Current.Metadata,
             SeveralHits = () => settings.Current.Metadata.SeveralHitsOr(settings.Current.Artwork.WithValidValues().SeveralHits),
             Igdb = new IgdbAccess(store, new IgdbClient(http, time) { Log = AppLog.Write }, time),

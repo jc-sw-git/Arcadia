@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Arcadia.Launchers.Abstractions;
 
 /// <summary>
@@ -49,7 +51,8 @@ public interface IMetadataStore
     /// The <c>https</c> address of the game's page, holding nothing but the game's store id and the language; null if the
     /// game has none (an id that isn't the store's). Never throws.
     /// </summary>
-    Uri? AddressOf(Game game);
+    /// <param name="language">Arcadia's UI language (#557): the store's texts are wanted in it, English is the fallback.</param>
+    Uri? AddressOf(Game game, CultureInfo language);
 
     /// <summary>
     /// The store's answer for <paramref name="game"/>: its data, <see cref="GameMetadata.Empty"/> when the store says it has

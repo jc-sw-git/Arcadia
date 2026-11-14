@@ -58,7 +58,7 @@ public sealed class EpicMetadataTests : IDisposable
         Assert.Null(((ILauncherMetadata)metadata).Store);
         Assert.Equal([MetadataField.Developers], metadata.Fields);
 
-        var merged = MergedMetadata.Of([new ProviderMetadata(EpicIntegration.Info.DisplayName, MetadataCheck.Checked(found))]);
+        var merged = GermanPc.Merged([new ProviderMetadata(EpicIntegration.Info.DisplayName, MetadataCheck.Checked(found))]);
         Assert.Equal(EpicIntegration.Info.DisplayName, merged.Developers!.Source);
         Assert.Null(merged.Description);
     }

@@ -7,7 +7,8 @@ Index: [README.md](README.md).
   fades out at every edge so it reads over a bright image (#541). A long title shrinks to half
   its size before it wraps (two lines, then "…"), so the button row stays in place (#531). The page always opens on
   "Spielen" with "Übersicht" open. Under the title the info line (#493): genres · developer · year, cut with "…" in one
-  line, and the first age rating as a badge (USK before PEGI before ESRB); a missing part leaves no "·", none at all no line.
+  line, and the first age rating as a badge: the system region's board (#557; Windows' "Land oder Region": Germany and
+  Austria USK, USA and Canada ESRB, everywhere else PEGI), then USK before PEGI before ESRB, the same order in "Infos"; a missing part leaves no "·", none at all no line.
   A rating badge's border has the board's colour for that rating (#541): USK 0 white, 6 yellow, 12 green, 16 blue,
   18 red; PEGI 3/7 green, 12/16 orange, 18 red; ESRB, which has no colours, E/E10+ green, T orange, M/AO red.
 - Below, a panel with a rail of areas, each with a value line: "Übersicht", "Infos", "Controller" (Steam Controller mode,

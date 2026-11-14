@@ -17,7 +17,8 @@ public sealed class WaitingHitFacts
     /// <summary>The description is cut after this many characters; the box shows its start, not the whole text.</summary>
     public const int MaxDescription = 600;
 
-    public WaitingHitFacts(GameMetadata delivered)
+    /// <param name="firstBoard">The region's age rating board, named first (#557).</param>
+    public WaitingHitFacts(GameMetadata delivered, AgeRatingBoard firstBoard)
     {
         var data = MetadataCheck.Checked(delivered);
         var genres = data.Genres.Select(GenreNames.Of).ToList();
@@ -26,7 +27,7 @@ public sealed class WaitingHitFacts
         Add(facts, AppTexts.DetailGenresCaption, List(genres));
         Add(facts, AppTexts.DetailDevelopersCaption, List(data.Developers));
         Add(facts, AppTexts.DetailPublishersCaption, List(data.Publishers));
-        Add(facts, AppTexts.DetailAgeRatingCaption, List(data.AgeRatings.Select(DetailMetadata.BadgeOf)));
+        Add(facts, AppTexts.DetailAgeRatingCaption, List(AgeRatingRegion.Ordered(data.AgeRatings, rating => rating.Board, firstBoard).Select(DetailMetadata.BadgeOf)));
         Facts = facts;
         Description = Shortened(data.ShortDescription ?? data.Description);
         Line = string.Join(AppTexts.DetailInfoSeparator, new[] { genres.FirstOrDefault(), data.Developers.FirstOrDefault() }.OfType<string>());

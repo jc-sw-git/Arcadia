@@ -1,6 +1,6 @@
 # #586 B always goes back to the page you came from, also from a detail page opened in the search
 
-**Status:** Automated: T586-1 to T586-6, T586-9, T586-10 · QE: T586-7 · Open for the owner: T586-8
+**Status:** Automated: T586-1 to T586-6, T586-9, T586-10 · QE: T586-2, T586-7, T586-10 · Open for the owner: T586-8
 
 - [x] **T586-1** Search "river" with the controller, hold ≡ on the second hit, B on its detail page: back in the search
   with "river", the same hits, the keyboard out, the focus on that hit. · E2E: yes
@@ -14,7 +14,7 @@
 - [x] **T586-6** A library detail page, ≡, "Datenquellen", "Eigene Tags", a tag, a game: its detail page; B until the
   settings close: the tag's games, the tags, "Datenquellen", then the library detail page from before, with the tabs.
   · E2E: yes
-- [ ] **T586-7** Mouse: the back button (side button) on a detail page from the search, in the search, in a dialog and
+- [x] **T586-7** Mouse: the back button (side button) on a detail page from the search, in the search, in a dialog and
   in the settings acts as Esc there; while a text is written in the settings it ends the input like Esc. · E2E: no
   (window: a real mouse button)
 - [ ] **T586-8** **Owner:** own library, controller: search a game, open its details (≡ held), turn with RT, B: back in
@@ -43,3 +43,5 @@ History:
 |---|---|---|---|---|---|
 | T586-1 to T586-6 | 2026-11-14 | Claude | Debug, Linux cloud container, `dotnet test` (App tests 1047/1047) | ✅ | – |
 | T586-2, T586-7 | 2026-11-14 | Claude | Debug, Linux/Xvfb, `--demo`, keys and xdotool's mouse button 8: F, "a", → →, Enter held, E, Esc; Enter held, back button | ✅ Esc and the back button each return to the search with "a", 72 hits, the focus on the hit turned to (Crimson Signal, 4 of 72); log `Maus: Zurück-Taste → Back` | – |
+| T586-1 to T586-6, T586-9, T586-10 | 2026-11-14 | Claude (QE) | Debug, Linux cloud container, acceptance tests run against `main`'s view models | ✅ red on `main` except T586-5 (X already returned to the search before; kept as a guard) | – |
+| T586-2, T586-7, T586-10 | 2026-11-14 | Claude (QE) | Release, Linux/Xvfb, `--demo`, keys and xdotool's mouse button 8 | ✅ search "a": detail, 25 × E, Esc: the search on hit 29 on its result page; back button on the detail page, in the search, the game menu, the settings and on the key being typed acts as Esc there; "Change artwork", "To the data sources", Esc: the dialog again for the same game over its detail page, Esc: the detail page | – |

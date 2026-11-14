@@ -49,9 +49,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   in `MainViewModel.FirstRun.cs`.
 - `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
   hits shown in `TileSlotViewModel` places too).
-- `Keyboard/` (#110): `OnScreenKeyboardViewModel` (view `Views/OnScreenKeyboardView`), `BoardKeyViewModel`,
-  `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types into; its user greys out or
-  leaves out keys, `BoardKeyState`), `WindowInFrontTarget` (the mouse mode's), `SharedKeyboard` (taken in turn, #477).
+- Keyboards, layouts, region formats: [app-keyboard-and-region.md](app-keyboard-and-region.md).
 - `Messages/` (#433): `RecentMessages` (the last 50 toasts and status changes, any thread), `StatusMessageChanges`
   (the header's status messages turned into entries; fed by `StatusBarViewModel`), `ILogFiles`/`LogFiles` (the three
   logs by `LogKind`, never a path). `ToastViewModel.Show` takes a level and records every toast; the group "LOGGING" is
@@ -99,14 +97,11 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/LauncherLogos`: the user's logos copied as PNG into `%APPDATA%\Arcadia\logos`, the launchers' own as shapes.
 - `Services/SystemDialogs`: Windows' file and folder dialogs; opened from the controller they switch the mouse mode on
   (#138).
-- `Services/Formatting`: numbers and dates by region; `DatePattern` cuts a region's pattern field by field,
-  `RegionDatePatterns` checks the cuts once (#592).
 - `Services/GameTypeTexts`: a type's name, icon key and what A says (#141).
 - `Services/AppLogTraceListener`: Core's and the launchers' `Trace` lines into arcadia.log.
 - `Services/AppErrors`: the last line of defence: unexpected errors logged with stack trace and shown as a toast;
   `Guard`/`.Forget(context)` for work nobody awaits.
 - `Input/UiAction`/`UiActionMap`: keys and buttons as the actions `MainViewModel.Handle` routes.
-- `Input/KeyPosition`, `KeyLabels`, `WindowsKeyboardLayout` (#588): letter keys count by place; hints and `KeyTip` tooltips show the active layout's letter.
 - `Input/HeldPress`: whether the press being handled repeats a held button or key; where a step wraps round
   (`ListFocus.Cycle`, `ValueCycle.Step`, `GridFocus.Step`, `HitWindow.Turn`/`Move` with `held`), a repeat stops at the end (#476).
   `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.

@@ -12,7 +12,7 @@ code goes, then only the file of the project you touch.
 | `src/Arcadia.Input` | Every controller via SDL3, buttons to actions, the mouse mode | [input.md](input.md) |
 | `src/Arcadia.ControllerSupport` | The controller emulation for games: VIIPER pads, Steam's copy of the Steam Controller, Pan's client | [controller-support.md](controller-support.md) |
 | `src/Arcadia.Pan.Core`, `src/Arcadia.Pan` | Pan, the guardian service: its decisions, and `Pan.exe` | [controller-support.md](controller-support.md) |
-| `src/Arcadia.App` | Avalonia 12 UI (MVVM); Avalonia's pitfalls in [avalonia.md](avalonia.md) | [app.md](app.md), [app-detail-page.md](app-detail-page.md), [app-filter.md](app-filter.md), [app-mouse-mode.md](app-mouse-mode.md) |
+| `src/Arcadia.App` | Avalonia 12 UI (MVVM); Avalonia's pitfalls in [avalonia.md](avalonia.md) | [app.md](app.md), [app-detail-page.md](app-detail-page.md), [app-filter.md](app-filter.md), [app-mouse-mode.md](app-mouse-mode.md), [app-keyboard-and-region.md](app-keyboard-and-region.md) |
 | `src/Arcadia.Texts.Generator` | Typed access to the `*Texts.resx` files; where UI texts live and how to add one | [ui-texts.md](ui-texts.md) |
 
 ## Tests

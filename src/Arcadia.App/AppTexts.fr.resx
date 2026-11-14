@@ -60,7 +60,7 @@
   <data name="SearchNoHit" xml:space="preserve"><value>Aucun jeu ne correspond à « {term} ». Vérifiez l’orthographe ou ajoutez d’autres lanceurs.</value></data>
   <data name="SearchHitRange" xml:space="preserve"><value>{first}–{last} sur {count}</value></data>
   <data name="AllLaunchers" xml:space="preserve"><value>Tous les lanceurs</value></data>
-  <data name="SortedBy" xml:space="preserve"><value>Trié par {sort}</value></data>
+  <data name="SortedBy" xml:space="preserve"><value>Tri : {sort}</value></data>
   <data name="NoHits" xml:space="preserve"><value>Aucun résultat</value></data>
   <data name="UnexpectedError" xml:space="preserve"><value>Erreur inattendue ({context}) – détails dans arcadia.log.</value></data>
   <data name="UpdateCheckNoAnswer" xml:space="preserve"><value>La recherche de mises à jour a échoué : GitHub ne répond pas.</value></data>
@@ -868,7 +868,7 @@
   <data name="LauncherSettings" xml:space="preserve"><value>Paramètres du lanceur</value></data>
   <data name="ChangeFilter" xml:space="preserve"><value>Modifier le filtre</value></data>
   <data name="ChooseAction" xml:space="preserve"><value>Choisir une action</value></data>
-  <data name="Launcher" xml:space="preserve"><value>Lanceur</value></data>
+  <data name="Launcher" xml:space="preserve"><value>Lanceurs</value></data>
   <data name="Switch" xml:space="preserve"><value>Changer</value></data>
   <data name="HoldForDetails" xml:space="preserve"><value>maintenir : détails</value></data>
   <data name="Page" xml:space="preserve"><value>Page</value></data>
@@ -995,6 +995,7 @@
   <data name="TimeWithUnit" xml:space="preserve"><value>{time}</value></data>
   <data name="StatusSince" xml:space="preserve"><value>depuis {time}</value></data>
   <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} Go</value></data>
   <data name="MessageResolvedAt" xml:space="preserve"><value>Résolu {time}</value></data>
   <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
   <data name="LevelWarning" xml:space="preserve"><value>Avertissement</value></data>

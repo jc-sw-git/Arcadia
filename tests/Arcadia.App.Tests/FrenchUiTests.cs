@@ -9,7 +9,9 @@ namespace Arcadia.App.Tests;
 /// #555: French joins the row "Sprache" with its texts. A French system language (France, Canada, Belgium, Switzerland)
 /// gives a French Arcadia; "Français" applied restarts into French. That every text exists in French is
 /// <c>TranslationsTests</c>' job, that the satellite assembly is found <c>EveryUiTextTests</c>'.
+/// Not parallel: one test changes the Arcadia-wide region.
 /// </summary>
+[Collection(LocalizationSettingsTests.Name)]
 public sealed class FrenchUiTests
 {
     [AvaloniaFact]
@@ -58,6 +60,24 @@ public sealed class FrenchUiTests
         arcadia.Press(UiAction.Right).Press(UiAction.Right); // Français
 
         Assert.False(Assert.IsAssignableFrom<ActionRowViewModel>(arcadia.FocusRow(UiLanguageRows.ApplyKey)).IsEnabled);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T555-4")]
+    public void The_size_unit_is_French_and_the_number_keeps_the_region()
+    {
+        var ui = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");
+        Services.Formatting.UseRegion(CultureInfo.GetCultureInfo("en-US"));
+        try
+        {
+            Assert.Equal("12.5 Go", Services.Formatting.Size((long)(12.5 * 1024 * 1024 * 1024)));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = ui;
+            Services.Formatting.UseRegion(TestSystem.GermanRegion);
+        }
     }
 
     private static void OpenLocalization(ArcadiaDriver arcadia)

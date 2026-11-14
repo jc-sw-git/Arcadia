@@ -995,6 +995,7 @@
   <data name="TimeWithUnit" xml:space="preserve"><value>{time}</value></data>
   <data name="StatusSince" xml:space="preserve"><value>since {time}</value></data>
   <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} GB</value></data>
   <data name="MessageResolvedAt" xml:space="preserve"><value>Resolved {time}</value></data>
   <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
   <data name="LevelWarning" xml:space="preserve"><value>Warning</value></data>

@@ -26,6 +26,10 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     private readonly FakeMetadataSource _epicSource = new() { Store = null };
     private readonly List<string> _log = [];
     private MetadataSettings _settings = new();
+
+    // A German PC (#557), whatever the machine running the tests speaks and wherever it stands; tests of another UI
+    // language say so.
+    private System.Globalization.CultureInfo _language = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
     private SeveralHits _severalHits = SeveralHits.Ask;
     private IgdbAccess _access;
     private MetadataService _service;
@@ -50,8 +54,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
 
     private MetadataService NewService() => new(new MetadataCache(Path.Combine(_root, "metadata")), new HttpClient(_store), _time)
     {
-        // A German PC (#557), whatever the machine running the tests speaks and wherever it stands.
-        Language = System.Globalization.CultureInfo.GetCultureInfo("de-DE"),
+        Language = _language,
         FirstAgeRatingBoard = AgeRatingBoard.Usk,
         Log = line =>
         {

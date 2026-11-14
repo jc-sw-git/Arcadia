@@ -99,6 +99,8 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/LauncherLogos`: the user's logos copied as PNG into `%APPDATA%\Arcadia\logos`, the launchers' own as shapes.
 - `Services/SystemDialogs`: Windows' file and folder dialogs; opened from the controller they switch the mouse mode on
   (#138).
+- `Services/Formatting`: numbers, dates and times by region and UI language; `DatePattern` cuts the year or weekday out
+  of a region's pattern field by field, `RegionDatePatterns` checks the cut patterns once per region (#592).
 - `Services/GameTypeTexts`: a type's name, icon key and what A says (#141).
 - `Services/AppLogTraceListener`: Core's and the launchers' `Trace` lines into arcadia.log.
 - `Services/AppErrors`: the last line of defence: unexpected errors logged with stack trace and shown as a toast;

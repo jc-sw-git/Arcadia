@@ -45,7 +45,8 @@ pattern of `settings.md`.
   has none of its own.
 - Order and separators of dates and numbers follow the system's regional format ("1.234" / "1,234", "13.11.2026" /
   "11/13/2026"); day and month names, units and the space before "%" follow the UI language. A change in Windows shows
-  from Arcadia's next start.
+  from Arcadia's next start. Dates without the year (the header, "20.10., 23:14") keep the region's words ("sáb, 14 de
+  nov"); a region pattern Arcadia can't read gives way to the region's standard date, then to a plain one, never an error.
 
 ## Failure cases
 

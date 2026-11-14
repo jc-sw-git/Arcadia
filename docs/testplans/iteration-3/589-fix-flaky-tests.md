@@ -22,6 +22,14 @@ Causes, from the CI logs of the failed attempts:
 The new `WhenIdleAsync` has no seam for a deterministic regression test: the window is between a runner's last look at
 the queue and its end. The check below injected delays there (`[DEBUG-589]`, removed) to make it red.
 
+## #575 Flaky on Windows CI: ServiceTests' fake VIIPER times out and leaves the pipe for PipeServerTests
+
+No new test cases: covered here, see the `ServiceTests` row above.
+
+## #582 Flaky: T547-3 "Cancelling a reload keeps the old data" fails now and then
+
+No new test cases: covered here, see the T547-3 row above; T547-3 keeps its meaning.
+
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |

@@ -31,3 +31,5 @@ History:
 | T592-5 | 2026-11-14 | Claude | Debug, Linux/Xvfb, `LANG=es_ES.UTF-8`, `--demo`, on `main` before the fix | ❌ as expected: ends at start with `FormatException` in `Formatting.ShortDate` | fixed in this PR |
 | T592-5 | 2026-11-14 | Claude | Debug, Linux/Xvfb, `LANG=es_ES.UTF-8`, `--demo` | ✅ starts, header "sáb, 14 de nov 8:58" | – |
 | T592-2 | 2026-11-14 | Claude | Debug, Linux cloud container, `dotnet test` after the QE findings (weekday last, era) | ✅ | – |
+| T592-1 to T592-5 | 2026-11-14 | Claude (QE) | Debug, Linux cloud container (ICU), sweep over all 851 cultures and 300,000 random patterns | ❌ news date lost the day's sign before a last weekday (ja "2026年11月6", hu, ko, lt); era left without year (th, lo, ar-SA) | fixed in this PR (d204f26) |
+| T592-1 to T592-5 | 2026-11-14 | Claude (QE) | Debug, Linux/Xvfb, `LANG=es_ES.UTF-8` and `ja_JP.UTF-8`, `--demo`; sweep and fuzz again on d204f26 | ✅ starts, header "sáb, 14 de nov" / "11月14日Sat"; "2026年11月6日", no era without year | – |

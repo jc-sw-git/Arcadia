@@ -23,8 +23,9 @@ detail lives there, not here. The look (fonts, covers, raised buttons): `README.
   library, the launcher in the list). Greyed elements keep the focus where a row must explain itself
   (`settings.md`, `detail-page/page.md`).
 - **B goes back exactly one level:** a menu or the keyboard first, then the dialog, then the page; B never erases or
-  confirms. Each flow's way back is in its file (`search.md`, `settings.md`, `detail-page/`). A detail page opened from
-  the search goes back to the library, not to the search (`search.md`).
+  confirms. B always leads back to where the player came from, with no exception: a detail page to the library, the
+  search or the tag list it was opened from, the settings to the page they were opened over. Each flow's way back is in
+  its file (`search.md`, `settings.md`, `detail-page/`). Esc and the mouse's back button act as B (`controls.md`).
 
 ## Scrolling
 

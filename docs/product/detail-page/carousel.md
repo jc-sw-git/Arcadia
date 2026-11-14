@@ -14,5 +14,5 @@ Index: [README.md](README.md).
   library. From the search R3 does nothing. The wheel turns only over the background; over the panel it scrolls what is under it
   and never turns (#530). A turn on its own lets title and content jump
   in; a turn during that jump or as quickly after it (LT/RT tapped, the wheel spun) stops it and shows the game at once,
-  so nothing is replayed after the last press (#506). B from the buttons or the rail returns to the
-  library page of the game shown last. X opens the search over it; B in the search returns to it (#127).
+  so nothing is replayed after the last press (#506). B from the buttons or the rail returns to where
+  the page was opened from, on the game shown last: its library page, the search or the tag list (#586). X opens the search over it; B in the search returns to it (#127).

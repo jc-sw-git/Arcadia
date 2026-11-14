@@ -104,6 +104,8 @@ public partial class MainViewModel : IOwnTagsHost
     void IOwnTagsHost.ShowGame(TagListViewModel list, IReadOnlyList<Game> games, int index)
     {
         _tagListBehindDetail = list;
+        // The page under the settings is covered, not closed: B brings it back once the settings close (#586).
+        DetailBehindSettings ??= Detail;
         TagList = null;
         Settings = null;
         Detail = new GameDetailViewModel(null, games, index, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus: null, DetailInfoOf);

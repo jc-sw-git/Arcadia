@@ -333,6 +333,20 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    /// <summary>
+    /// The detail page the settings were opened over, while a game of the tag list shows in its place (#586); it comes back
+    /// once the settings close. Covered, not closed, so it stays among the live pages while kept here.
+    /// </summary>
+    private GameDetailViewModel? DetailBehindSettings
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPagesChanged();
+        }
+    }
+
     /// <summary>The file and folder dialogs over the window (#138); set once the window is there.</summary>
     public ISystemDialogs? Dialogs { get; set; }
 
@@ -716,23 +730,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>
-    /// B: always back to the library (owner, 2026-10-21), on the page of the game shown last and with the focus on it.
-    /// From the search that is the tab of the game's launcher, and the search closes.
+    /// B: back to where the page was opened from (#586), with the focus on the game shown last: the tag list, the search
+    /// with its text and hits, or the library on that game's page.
     /// </summary>
     [RelayCommand]
     private void CloseDetail()
     {
-        if (ReturnToTagList())
+        if (ReturnToTagList() || ReturnToSearch())
         {
-            return;
-        }
-
-        if (Detail is { IsFromSearch: true } fromSearch)
-        {
-            Detail = null;
-            DetailBehindSearch = null;
-            CloseSearch();
-            Library.Show(fromSearch.Current.Tile.Game);
             return;
         }
 
@@ -829,7 +834,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>
     /// X: the search over all launchers, with the on-screen keyboard. From a detail page opened from the search, back to
-    /// the search with its text; from any other detail page, the search over it, and B there leads back to it (#127).
+    /// the search as B does; from any other detail page, the search over it, and B there leads back to it (#127).
     /// </summary>
     [RelayCommand]
     private void OpenSearch()
@@ -839,10 +844,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        if (Detail is { IsFromSearch: true } fromSearch && Search is { } open)
+        if (ReturnToSearch())
         {
-            Detail = null;
-            open.FocusHit(fromSearch.Current.Tile.Game.Key);
             return;
         }
 
@@ -862,6 +865,22 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             CreateTile,
             _logos.BadgeOf,
             Input.Kind == InputKind.Gamepad);
+    }
+
+    /// <summary>
+    /// A detail page opened from the search closes onto it: its text, hits and keyboard as left, the focus on the game the
+    /// page showed last. False on any other page.
+    /// </summary>
+    private bool ReturnToSearch()
+    {
+        if (Detail is not { IsFromSearch: true } fromSearch || Search is not { } search)
+        {
+            return false;
+        }
+
+        Detail = null;
+        search.FocusHit(fromSearch.Current.Tile.Game.Key);
+        return true;
     }
 
     /// <summary>Back to the library, where it was before the search.</summary>
@@ -1077,7 +1096,32 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     [RelayCommand]
-    private void CloseSettings() => Settings = null;
+    private void CloseSettings() => LeaveSettings();
+
+    /// <summary>
+    /// B or ✕ on the settings: back to the page they were opened over (#586), also when a game of the tag list covered it
+    /// meanwhile.
+    /// </summary>
+    private void LeaveSettings()
+    {
+        Settings = null;
+        if (DetailBehindSettings is { } detail)
+        {
+            // Only onto the page it was covered by; a game of the tag list still open there keeps its way back. Shown
+            // before it is let go, so it is never closed in between.
+            if (Detail is null && StillShows(detail))
+            {
+                Detail = detail;
+            }
+
+            DetailBehindSettings = null;
+        }
+    }
+
+    /// <summary>A covered detail page takes its list as it is now; false when its game left that list.</summary>
+    private bool StillShows(GameDetailViewModel detail) => detail.IsFromLibrary
+        ? LauncherTabs.SelectedTab is { } tab && detail.Update(Library.ShownGames(tab), Library.SortLabel)
+        : Search is { } search && detail.Update(search.Hits, null);
 
     /// <summary>"Uhrzeit" as saved (#553): every time shown from now on follows it, the header clock at once.</summary>
     private void ApplyClock()
@@ -1146,7 +1190,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             _topPage = top;
         }
 
-        IReadOnlyList<IPage> live = DetailBehindSearch is { } kept ? [.. open, kept] : open;
+        IReadOnlyList<IPage> live = [.. open, .. new[] { DetailBehindSearch, DetailBehindSettings }.OfType<IPage>()];
         var closed = _livePages.Except(live).ToList();
         _livePages = live;
         ImageShow?.Restart();
@@ -1389,7 +1433,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
         else if (page == Settings)
         {
-            Settings = null;
+            LeaveSettings();
         }
     }
 

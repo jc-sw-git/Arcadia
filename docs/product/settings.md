@@ -2,7 +2,8 @@
 
 ## The page (#15)
 
-- A whole page in place of the library (≡, Enter, the chip); B or ✕ go back to the same place. Categories are tabs in
+- A whole page in place of the library (≡, Enter, the chip); B or ✕ go back to the same place, also
+  after a game of the tag list was shown in place of the settings (#586). Categories are tabs in
   the header like the launcher tabs (LB/RB, Shift+Q/E, a click; Q/E = LT/RT switch tabs inside a category, e.g.
   launcher pages, as in the library), only those with content; a warning or an error of a category shows its symbol
   beside the name, info nothing. Choosing a category's tab opens it at its top level (the launcher list, not the

@@ -47,7 +47,7 @@ Laid out at 1920 × 1080 for a TV seen from the sofa:
 - No text below 12 px; below 14 px only short captions in capitals, badges, chips and the letters in a button glyph
   (a small glyph's letter is 11 px). Reading text (descriptions, info panels, toasts) at least 16 px.
 - **Arcadia's own texts are never cut off**, in any language it offers: a label, a button, a row's title or subtitle, a
-  value line. The layout gives them room (the longest language decides). Only what comes from a game or a launcher (a
+  value line. The layout gives them room (the longest language decides) or a second line. Only what comes from a game or a launcher (a
   title, a path, a genre, a tag) may end in "…".
 - Every element the mouse can click is at least 44 × 44 px (the ✕ is 44 × 44) or a whole row, tile or pill.
 

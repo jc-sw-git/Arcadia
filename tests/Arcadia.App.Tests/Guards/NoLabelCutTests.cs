@@ -58,22 +58,28 @@ public sealed class NoLabelCutTests
 
     /// <summary>
     /// The detail page's areas from the inside (the page list walks only its rail): every row of every area focused once,
-    /// with its info box, as the player sees them after A.
+    /// with its info box, as the player sees them after A. Twice: the demo's first game (played, launcher default
+    /// "Arcadia"), and a never played game of the launcher with the longest name whose default is "Steam-Eingabe", the
+    /// longest controller mode and playtime source.
     /// </summary>
     [AvaloniaTheory]
     [Trait("TestCase", "T587-2")]
-    [InlineData("de-DE")]
-    [InlineData("en-US")]
-    [InlineData("fr-FR")]
-    [InlineData("es-ES")]
-    public async Task No_text_of_Arcadias_own_is_cut_off_in_any_row_of_the_detail_pages_areas(string language)
+    [InlineData("de-DE", false)]
+    [InlineData("en-US", false)]
+    [InlineData("fr-FR", false)]
+    [InlineData("es-ES", false)]
+    [InlineData("de-DE", true)]
+    [InlineData("en-US", true)]
+    [InlineData("fr-FR", true)]
+    [InlineData("es-ES", true)]
+    public async Task No_text_of_Arcadias_own_is_cut_off_in_any_row_of_the_detail_pages_areas(string language, bool longestValues)
     {
         var before = CultureInfo.CurrentUICulture;
         try
         {
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
             var own = OwnTexts(CultureInfo.CurrentUICulture);
-            using var arcadia = await ArcadiaWindow.ShowAsync();
+            using var arcadia = longestValues ? await WithLongestValuesAsync() : await ArcadiaWindow.ShowAsync();
             await GuardPages.OpenDetail(arcadia);
             var page = arcadia.Arcadia.Detail!.Current;
             var cut = new List<string>();
@@ -105,6 +111,19 @@ public sealed class NoLabelCutTests
         {
             CultureInfo.CurrentUICulture = before;
         }
+    }
+
+    /// <summary>One installed, never played game of the launcher with the longest name, its default "Steam-Eingabe".</summary>
+    private static Task<ArcadiaWindow> WithLongestValuesAsync()
+    {
+        var launcher = Launchers.KnownLaunchers.All.MaxBy(known => known.DisplayName.Length)!;
+        var game = TestGames.Installed(launcher, "Never Played", ArcadiaDriver.Now);
+        var settings = new Core.Settings.AppSettings
+        {
+            ActiveLaunchers = [launcher.Id],
+            Launchers = new Dictionary<string, Core.Settings.LauncherPreferences> { [launcher.Id] = new Core.Settings.LauncherPreferences { UsesArcadiaPad = false } },
+        };
+        return ArcadiaWindow.ShowAsync([LauncherSpec.With(launcher, game)], settings);
     }
 
     /// <summary>The texts drawn shorter than they are: ended with "…", or running past their bounds on one line.</summary>

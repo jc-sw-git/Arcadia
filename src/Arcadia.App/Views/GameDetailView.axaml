@@ -246,10 +246,9 @@
 
         <Panel Name="AreaContent" Margin="34,28">
           <!-- "Übersicht" (#500): left the quick selection, up to five rows of the other areas that act as their rows do, and set
-               apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so the
-               longest name in any language ("Modo del Steam Controller") and a value like "Standard (Arcadia)" fit side by side
-               uncut (#587). -->
-          <Grid Name="Overview" ColumnDefinitions="540,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
+               apart "Übersicht anpassen"; right the game's facts, which take no focus. Wider than the artboard's 384, so a
+               name and a value like "Standard (Steam-Eingabe)" fit side by side; a longer name takes a second line (#587). -->
+          <Grid Name="Overview" ColumnDefinitions="560,*" ColumnSpacing="34" IsVisible="{Binding OpenArea.IsOverview}">
             <!-- The places of five entries stay reserved (#541), so the note and "Übersicht anpassen" never move: the note right
                  under the fifth place, "Übersicht anpassen" in the middle between that place and the panel's lower edge (the
                  -28 reaches through AreaContent's margin to that edge). 5 × 56 + 4 × 8 = 312. -->
@@ -528,8 +527,8 @@
                   <Button Classes="plain detailRow" Classes.focused="{Binding IsFocused}" Classes.greyed="{Binding IsGreyed}" Classes.danger="{Binding IsDanger}"
                           Command="{Binding ClickCommand}" PointerEntered="OnRowPointerEntered">
                     <DockPanel>
-                      <!-- The value in the settings' chip (#506). -->
-                      <Border DockPanel.Dock="Right" Classes="valuePill" VerticalAlignment="Center" Margin="16,0,0,0" IsVisible="{Binding IsChoice}">
+                      <!-- The value in the settings' chip (#506), wider for "Standard (Steam-Eingabe)" (#587). -->
+                      <Border DockPanel.Dock="Right" Classes="valuePill wide" VerticalAlignment="Center" Margin="16,0,0,0" IsVisible="{Binding IsChoice}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
                           <Button Classes="plain valueArrow" Command="{Binding StepBackCommand}">
                             <Path Classes="chevronLeft" />
@@ -569,9 +568,13 @@
       <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <!-- Two lines before "…" (#587): "Ubisoft Connect n’en signale aucun" is Arcadia's own and stays whole; a long path
+         still ends in "…". -->
     <Style Selector="TextBlock.statSource">
       <Setter Property="FontSize" Value="14" />
       <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="MaxLines" Value="2" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
   </UserControl.Styles>

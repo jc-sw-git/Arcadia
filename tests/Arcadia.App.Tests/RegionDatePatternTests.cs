@@ -89,6 +89,44 @@ public sealed class RegionDatePatternTests : IDisposable
     }
 
     [Theory]
+    [Trait("TestCase", "T592-2")]
+    [InlineData("ja-JP", "yyyy年M月d日dddd", "2026年11月6日")]
+    [InlineData("zh-CN", "yyyy'年'M'月'd'日' dddd", "2026年11月6日")]
+    [InlineData("ko-KR", "yyyy'년' M'월' d'일' dddd", "2026년 11월 6일")]
+    [InlineData("hu-HU", "yyyy. MM. d., dddd", "2026. 11. 6.")]
+    [InlineData("lt-LT", "yyyy 'm'. MM 'mėn'. d 'd'., dddd", "2026 m. 11 mėn. 6 d.")]
+    [InlineData("de-DE", "dddd, d. MM. yyyy", "6. 11. 2026")]
+    public void A_news_entrys_date_drops_only_the_weekday_and_its_separator(string region, string longDate, string expected)
+    {
+        Formatting.UseRegion(WithPatterns(region, longDate, "dd/MM/yyyy"));
+
+        Assert.Equal(expected, Formatting.LongDate(new DateTimeOffset(2026, 11, 6, 12, 0, 0, TimeSpan.Zero)));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T592-2")]
+    [InlineData("th-TH", "dddd'ที่ 'd MMMM g yyyy", "d/M/yyyy")]
+    [InlineData("ar-SA", "dd/MMMM/yyyy g", "dd/MM/yy g")]
+    [InlineData("ja-JP", "gg y'年'M'月'd'日'", "gg y/M/d")]
+    public void The_era_goes_with_the_year(string region, string longDate, string shortDate)
+    {
+        var culture = WithPatterns(region, longDate, shortDate);
+        Formatting.UseRegion(culture);
+        var era = Now.ToString("gg", Formatting.Region);
+
+        Assert.DoesNotContain(era, Formatting.ShortDate(Now), StringComparison.Ordinal);
+        Assert.False(DatePattern.Has(Formatting.DayAndMonthPattern(), 'g'));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T592-2")]
+    [InlineData("MM yyyy", "MM")]
+    [InlineData("M yyyy", "%M")]
+    [InlineData("yyyy-d", "%d")]
+    public void A_cut_down_to_one_letter_stays_a_field_not_a_standard_format(string pattern, string expected) =>
+        Assert.Equal(expected, DatePattern.WithoutYear(pattern));
+
+    [Theory]
     [Trait("TestCase", "T592-3")]
     [InlineData("dddd, d 'de MMMM 'de' yyyy", "dd/MM/yyyy", null)]
     [InlineData("dddd, d \"de MMMM yyyy", "dd/MM/yyyy", null)]

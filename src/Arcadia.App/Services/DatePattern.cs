@@ -13,11 +13,22 @@ internal static class DatePattern
     // The letters .NET reads as fields in a custom date and time pattern.
     private const string FieldLetters = "dfFghHKmMstyz";
 
-    /// <summary>"dd.MM.yyyy" → "dd.MM.", "dddd, d 'de' MMMM 'de' yyyy" → "dddd, d 'de' MMMM", "yyyy'年'M'月'd'日'" → "M'月'd'日'".</summary>
-    public static string WithoutYear(string pattern) => Without(pattern, field => field[0] == 'y');
+    // What ends a literal only to part it from the next field: spaces and the commas of several scripts.
+    private const string Separators = ",،፣၊";
 
-    /// <summary>"dddd, d. MMMM yyyy" → "d. MMMM yyyy", "yyyy. MMMM d., dddd" → "yyyy. MMMM d.".</summary>
-    public static string WithoutWeekday(string pattern) => Without(pattern, field => field[0] == 'd' && field.Length >= 3);
+    /// <summary>
+    /// "dd.MM.yyyy" → "dd.MM.", "dddd, d 'de' MMMM 'de' yyyy" → "dddd, d 'de' MMMM", "yyyy'年'M'月'd'日'" → "M'月'd'日'".
+    /// The era goes with the year ("d MMMM g yyyy" → "d MMMM"). A dot stays where it ended a German day or month ("13.11.").
+    /// </summary>
+    public static string WithoutYear(string pattern) =>
+        Without(pattern, field => field[0] is 'y' or 'g', before => before.TrimEnd().EndsWith('.') ? "." : string.Empty);
+
+    /// <summary>
+    /// "dddd, d. MMMM yyyy" → "d. MMMM yyyy", "yyyy. MMMM d., dddd" → "yyyy. MMMM d.", "yyyy年M月d日dddd" → "yyyy年M月d日":
+    /// what stands before a weekday belongs to the day, only the separator goes.
+    /// </summary>
+    public static string WithoutWeekday(string pattern) =>
+        Without(pattern, field => field[0] == 'd' && field.Length >= 3, before => before.TrimEnd().TrimEnd(Separators.ToCharArray()).TrimEnd());
 
     /// <summary>The weekday and month by their abbreviated names: "dddd, d. MMMM" → "ddd, d. MMM".</summary>
     public static string Abbreviated(string pattern)
@@ -40,9 +51,9 @@ internal static class DatePattern
     public static bool Has(string pattern, char letter) => Tokens(pattern).Any(token => token.Field?[0] == letter);
 
     // Takes out every field that matches and the literal that joins it to the rest: the one after a first field, else
-    // the one before (a dot stays where it ended a German day or month, "13.11."); after a last field also the literal
-    // that only belongs to it ("yyyy 'г.'").
-    private static string Without(string pattern, Func<string, bool> matches)
+    // the one before, of which keptBefore says what stays; after a last field also the literal that only belongs to it
+    // ("yyyy 'г.'").
+    private static string Without(string pattern, Func<string, bool> matches, Func<string, string> keptBefore)
     {
         var tokens = Joined(Tokens(pattern));
         for (var i = tokens.FindIndex(t => t.Field is { } field && matches(field)); i >= 0; i = tokens.FindIndex(t => t.Field is { } field && matches(field)))
@@ -56,16 +67,21 @@ internal static class DatePattern
                 start = i - 1;
             }
 
-            var keepDot = start < i && tokens[start].Text.TrimEnd().EndsWith('.');
+            var kept = start < i ? keptBefore(tokens[start].Text) : string.Empty;
             tokens.RemoveRange(start, end - start);
-            if (keepDot)
+            if (kept.Length > 0)
             {
-                tokens.Insert(start, Token.Literal(".", "."));
+                tokens.Insert(start, Token.Literal(Quoted(kept), kept));
             }
         }
 
-        return string.Concat(tokens.Select(t => t.Raw)).Trim();
+        // A single letter left alone ("d") would be read as a standard format ("d" = short date with the year).
+        var cut = string.Concat(tokens.Select(t => t.Raw)).Trim();
+        return cut.Length == 1 && FieldLetters.Contains(cut[0]) ? "%" + cut : cut;
     }
+
+    private static string Quoted(string text) =>
+        "'" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'";
 
     // Neighbouring literals as one, so a field is joined to the rest by a single literal.
     private static List<Token> Joined(IEnumerable<Token> tokens)

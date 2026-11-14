@@ -5,8 +5,8 @@ pattern of `settings.md`.
 
 ## Group SPRACHE
 
-- "Sprache": "Systemsprache" (default) · "English" · "Français" · "Deutsch"; a language is offered only once all its texts exist
-  (Español with #556). Each language is named in its own language, only "Systemsprache" in the UI
+- "Sprache": "Systemsprache" (default) · "English" · "Français" · "Español" · "Deutsch"; a language is offered only once all its
+  texts exist. Each language is named in its own language, only "Systemsprache" in the UI
   language. ◀ ▶ save the choice at once and change nothing else: the language applies from the next start.
 - "Systemsprache" is the Windows display language, not the regional format; one Arcadia doesn't speak gives English,
   never German. The info names the system language (in the UI language) or says it isn't supported and English is

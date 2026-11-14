@@ -2,7 +2,7 @@
 
 Read before writing or changing any text the user sees. Controller buttons in texts: `docs/product/controls.md`.
 Where texts live and how to add one (resource files, placeholders, translations): `docs/architecture/ui-texts.md`.
-These are the German rules; English: `ui-texts-english.md`, French: `ui-texts-french.md`.
+These are the German rules; English: `ui-texts-english.md`, French: `ui-texts-french.md`, Spanish: `ui-texts-spanish.md`.
 
 - German UI terms, no English loan words where a German one exists: "Steam-Eingabe", not "Steam Input".
 - Arcadia doesn't speak as "Wir" in its messages; say what happens or what to do.

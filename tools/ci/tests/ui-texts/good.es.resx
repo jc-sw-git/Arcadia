@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Spanish: ¿…?, ¡…!, «…» with “…” inside, ü, the noun emulación. -->
+  <data name="Question" xml:space="preserve"><value>¿Reiniciar el PC?</value></data>
+  <data name="Praise" xml:space="preserve"><value>¡Todo listo!</value></data>
+  <data name="Quotes" xml:space="preserve"><value>Elige «Instalar “HidHide”» – sin ambigüedad.</value></data>
+  <data name="Emulation" xml:space="preserve"><value>La emulación de mandos se detuvo…</value></data>
+</root>

@@ -33,8 +33,11 @@ public sealed class EveryUiTextTests
     [InlineData("fr-CA", "fr")]
     [InlineData("fr-BE", "fr")]
     [InlineData("fr-CH", "fr")]
+    [InlineData("es-ES", "es")]
+    [InlineData("es-MX", "es")]
     [Trait("TestCase", "T554-17")]
     [Trait("TestCase", "T555-2")]
+    [Trait("TestCase", "T556-3")]
     public void Every_offered_ui_culture_gets_every_text_in_its_language(string culture, string language)
     {
         var differing = new List<string>();

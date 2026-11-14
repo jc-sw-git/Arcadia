@@ -114,13 +114,22 @@ public sealed class UiLanguageRows
     private static string NameOf(string choice) =>
         choice == UiLanguages.System ? AppTexts.LocalizationLanguageSystem : UiLanguages.OwnName(choice);
 
-    // The language alone ("Italienisch"), not the region ("Italienisch (Italien)").
+    // The language alone ("Italienisch"), not the region ("Italienisch (Italien)"). German and English write a
+    // language's name with a capital, Spanish doesn't ("El idioma del sistema es italiano"), so only they get one.
     private static string LanguageName(CultureInfo culture)
     {
         var language = culture.IsNeutralCulture || culture.Parent == CultureInfo.InvariantCulture ? culture : culture.Parent;
         var name = language.DisplayName;
-        return name.Length == 0 ? culture.Name : char.ToUpper(name[0], Services.Formatting.Culture) + name[1..];
+        if (name.Length == 0)
+        {
+            return culture.Name;
+        }
+
+        return CapitalizesLanguageNames(CultureInfo.CurrentUICulture) ? char.ToUpper(name[0], Services.Formatting.Culture) + name[1..] : name;
     }
+
+    private static bool CapitalizesLanguageNames(CultureInfo uiCulture) =>
+        uiCulture.TwoLetterISOLanguageName is "de" or "en" || uiCulture.Equals(CultureInfo.InvariantCulture);
 
     private void Choose(string choice)
     {

@@ -1417,6 +1417,8 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>From 00:00 to 23:59, for example 21:58.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>With AM and PM, for example 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Applies at once to the clock at the top, “since” in the status, the recent messages, “Last played” and every other time. Date and numbers follow the system’s regional format.</value></data>
+  <data name="LaunchersCategory" xml:space="preserve"><value>Launchers</value></data>
+  <data name="LauncherLogo" xml:space="preserve"><value>Logo</value></data>
   <data name="FilterGenre" xml:space="preserve"><value>Genre</value></data>
   <data name="FilterTags" xml:space="preserve"><value>Tags</value></data>
   <data name="FilterDevelopers" xml:space="preserve"><value>Developer</value></data>

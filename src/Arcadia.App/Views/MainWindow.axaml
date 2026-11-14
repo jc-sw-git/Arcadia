@@ -1267,7 +1267,7 @@
                         <Button Classes="plain neighbour breadcrumb" Margin="-6,0,0,0" Command="{Binding BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackToListTip}">
                           <StackPanel Orientation="Horizontal" Spacing="8">
                             <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Static app:AppTexts.Launcher}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static app:AppTexts.LaunchersCategory}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
                         <TextBlock Text="/" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />

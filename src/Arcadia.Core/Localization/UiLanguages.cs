@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Arcadia.Core.Localization;
 
 /// <summary>
-/// The languages Arcadia's interface speaks (#554) and which one a choice in the settings gives. The neutral texts are
+/// The languages Arcadia's interface speaks (#554, #556) and which one a choice in the settings gives. The neutral texts are
 /// German; every other language is a translation beside each <c>*Texts.resx</c>. A language is offered only once all
 /// its texts exist (<c>TranslationsTests</c>).
 /// </summary>
@@ -16,10 +16,10 @@ public static class UiLanguages
     public static CultureInfo English => Arcadia.Launchers.Abstractions.Texts.UiText.English;
 
     /// <summary>The languages besides the neutral German texts, by their two-letter code.</summary>
-    public static IReadOnlyList<string> Translations { get; } = ["en", "fr"];
+    public static IReadOnlyList<string> Translations { get; } = ["en", "fr", "es"];
 
     /// <summary>The values of the row "Sprache" in their order: the system language, then each language by its code.</summary>
-    public static IReadOnlyList<string> Choices { get; } = [System, "en", "fr", "de"];
+    public static IReadOnlyList<string> Choices { get; } = [System, "en", "fr", "es", "de"];
 
     /// <summary>Whether <paramref name="value"/> is one of <see cref="Choices"/>; anything else is read as <see cref="System"/>.</summary>
     public static bool IsChoice(string? value) => value is not null && Choices.Contains(value, StringComparer.Ordinal);

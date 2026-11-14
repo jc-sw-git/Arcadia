@@ -47,7 +47,7 @@ internal sealed class LauncherGeneralRows
             Prefix = SearchQuery.PrefixMarker.ToString(),
         };
         // Two buttons, not a choice (owner, 2026-10-23): uploading is always offered, going back only while an own logo is used.
-        _logoRow = new ActionRowViewModel("launcher-logo", "Logo", () => PickLogoAsync().Forget(AppTexts.ErrorContextPickLogo))
+        _logoRow = new ActionRowViewModel("launcher-logo", AppTexts.LauncherLogo, () => PickLogoAsync().Forget(AppTexts.ErrorContextPickLogo))
         {
             Group = GeneralGroup,
             ActionText = AppTexts.Upload,

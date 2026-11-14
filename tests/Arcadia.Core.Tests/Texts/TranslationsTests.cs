@@ -13,6 +13,7 @@ public sealed partial class TranslationsTests
 {
     [Fact]
     [Trait("TestCase", "T554-17")]
+    [Trait("TestCase", "T556-3")]
     public void Every_language_has_every_text_with_the_German_placeholders()
     {
         var neutralFiles = NeutralFiles().ToList();

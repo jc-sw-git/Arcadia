@@ -1,6 +1,6 @@
 # #568 Artwork and metadata caches live in Velopack's install folder
 
-**Status:** Automated: T568-1 to T568-3 · Open for the owner: T568-4
+**Status:** Automated: T568-1 to T568-3 · QE: – · Open for the owner: T568-4
 
 - [x] **T568-1** An old `%LOCALAPPDATA%\Arcadia\artwork` and `…\metadata` move with all files (own images included) to
   `%APPDATA%\Arcadia` at the start; the old folders are gone. · E2E: yes

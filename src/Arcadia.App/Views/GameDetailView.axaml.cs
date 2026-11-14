@@ -1,3 +1,4 @@
+using Arcadia.App.Controls;
 using Arcadia.App.Services;
 using Arcadia.App.ViewModels;
 using Avalonia;
@@ -46,6 +47,32 @@ public partial class GameDetailView : UserControl
         AreaContent.RenderTransform = new TranslateTransform();
         InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
         InfosScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
+        LayoutUpdated += (_, _) => FillWindow();
+    }
+
+    /// <summary>
+    /// The background reaches past the 1920 × 1080 layout to the window's edges (#612), so a window of another shape
+    /// shows the artwork in the bars beside or above and below the layout instead of a hard edge. Runs after every layout
+    /// pass (a resize scales the layout) and changes the background only when the window's area moved.
+    /// </summary>
+    private void FillWindow()
+    {
+        if (TopLevel.GetTopLevel(this) is not { } window || this.TransformToVisual(window) is not { } toWindow
+            || WindowArea.Of(toWindow, window.Bounds.Size) is not { } area)
+        {
+            return;
+        }
+
+        if (Canvas.GetLeft(Backdrop) == area.X && Canvas.GetTop(Backdrop) == area.Y
+            && Backdrop.Width == area.Width && Backdrop.Height == area.Height)
+        {
+            return;
+        }
+
+        Canvas.SetLeft(Backdrop, area.X);
+        Canvas.SetTop(Backdrop, area.Y);
+        Backdrop.Width = area.Width;
+        Backdrop.Height = area.Height;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

@@ -25,9 +25,13 @@
   <Viewbox Stretch="Uniform" ClipToBounds="False">
     <Grid Width="1920" Height="1080" RowDefinitions="104,72,*,72" Background="{StaticResource Bg}">
 
+      <!-- On the detail page header and footer lie on see-through bands over the artwork (#612), up to the window's edges. -->
+      <Border Grid.Row="0" Classes="detailBar" Margin="-1920,-1080,-1920,0" IsVisible="{Binding IsDetailOpen}" />
+
       <!-- Header: logo, launcher tabs, status. The tab strip sits in the middle between logo and status, as wide as its
            tabs need; at its widest it keeps 40 px to both sides, with a divider in the middle of each gap (owner, 2026-10-21). -->
-      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+      <!-- On the detail page its text casts the shadow of text on artwork (#612), so the softer grey reads on a bright one. -->
+      <Grid Grid.Row="0" Margin="80,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Classes.onArt="{Binding IsDetailOpen}">
         <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <Path Data="M4 30V16a13 13 0 0 1 26 0v14 M11 30v-8h12v8" Stroke="{StaticResource Accent}" StrokeThickness="3"
                 StrokeLineCap="Round" StrokeJoin="Round" Width="34" Height="34" />
@@ -470,9 +474,11 @@
       </Grid>
 
       <!-- Footer: button hints -->
-      <!-- The line bleeds into the bars beside the layout (Theme.axaml, bleed): 1920 + 80 padding. -->
-      <Border Grid.Row="3" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Margin="-1920,0" Padding="2000,0">
-        <Panel>
+      <!-- The line and, on the detail page, the band (#612) bleed into the bars beside and below the layout (Theme.axaml,
+           bleed): 1920 + 80 padding. -->
+      <Border Grid.Row="3" Classes.detailBar="{Binding IsDetailOpen}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0"
+              Margin="-1920,0,-1920,-1080" Padding="2000,0,2000,1080">
+        <Panel Classes.onArt="{Binding IsDetailOpen}">
         <!-- The hints name the input in use: the controller's buttons, or the keyboard's keys and the mouse (#127). Search
              and settings aren't listed: their chips in the header name their keys (owner, 2026-10-21). -->
         <!-- Detail page (#499): the position and the sort on the left, the hints follow the focus. -->

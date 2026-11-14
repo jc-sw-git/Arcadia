@@ -6,7 +6,7 @@
              xmlns:views="using:Arcadia.App.Views"
              x:Class="Arcadia.App.Views.GameDetailView"
              x:DataType="vm:GameDetailViewModel"
-             ClipToBounds="True">
+             ClipToBounds="False">
 
   <!-- The detail page (#499, design "Detailseite neu: Mischung aus A, B und C"), the whole 1920 × 1080 layout under the
        window's header and footer: the game's artwork as background, its cover in front beside title and buttons, the
@@ -31,7 +31,7 @@
 
   <Canvas Width="1920" Height="1080">
     <!-- The background: the game's artwork (#487), the game's hue with its rings until it is there (#13); the hue blends
-         to the next game's. -->
+         to the next game's. It fills the whole window, past the layout's edges (#612, code-behind FillWindow). -->
     <Border Name="Backdrop" Width="1920" Height="1080" Background="{Binding Current.Backdrop}">
       <Border.Transitions>
         <Transitions>
@@ -45,11 +45,11 @@
         <ctl:ArtworkImage Name="HeroArt" Fit="DetailPage" File="{Binding Current.Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
       </Panel>
     </Border>
-    <!-- Scrims only behind title and buttons, the header's tabs and the footer's hints (#565): they stay readable over any
-         image, which shows almost uncovered elsewhere. -->
-    <Border Width="1920" Height="440" Background="{StaticResource DetailScrimTitle}" IsHitTestVisible="False" />
-    <Border Width="1920" Height="110" Background="{StaticResource DetailScrimTop}" IsHitTestVisible="False" />
-    <Border Canvas.Top="1000" Width="1920" Height="80" Background="{StaticResource DetailScrimBottom}" IsHitTestVisible="False" />
+    <!-- A scrim only behind title and buttons (#565): they stay readable over any image, which shows almost uncovered
+         elsewhere. Header and footer have their own see-through bands (MainWindow, #612). -->
+    <!-- Larger than the ellipse on every side, so it fades out before the border's edge (#612): no hard line at its
+         lower edge, nor in the window's bars beside the layout. -->
+    <Border Canvas.Left="-400" Canvas.Top="-100" Width="2720" Height="700" Background="{StaticResource DetailScrimTitle}" IsHitTestVisible="False" />
 
     <!-- The covers: the shown game's in front, the others in the stacks; ctl:DepthSlot moves them when the carousel turns. -->
     <ItemsControl Name="CoverList" ItemsSource="{Binding Covers}" Width="1920" Height="1080" IsHitTestVisible="False">
@@ -71,6 +71,8 @@
               <Panel>
                 <ctl:ArtworkImage Name="DetailCoverArt" File="{Binding Tile.Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                 <Border Classes="shade" CornerRadius="12" IsVisible="{Binding !Tile.IsInstalled}" />
+                <!-- A quiet frame sets the cover off from the artwork behind it (#612). -->
+                <Border Classes="detailCoverFrame" IsHitTestVisible="False" />
                 <Grid RowDefinitions="*,Auto" Margin="18" IsVisible="{Binding !#DetailCoverArt.IsShowing}">
                   <TextBlock Text="{Binding Tile.Monogram}" FontSize="88" FontWeight="ExtraBold" Foreground="{Binding Tile.AccentBrush}" />
                   <TextBlock Grid.Row="1" Text="{Binding Tile.Title}" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
@@ -88,9 +90,15 @@
             Command="{Binding PreviousCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-          <TextBlock Classes="onArt" Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                     MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailBefore}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <!-- On the same soft cloud as the note under "Spielen" (#612), so the title reads on a bright image. -->
+          <Panel HorizontalAlignment="Center">
+            <Border Classes="detailNoteScrim stackTitle" IsHitTestVisible="False" />
+            <StackPanel Spacing="4">
+              <TextBlock Classes="onArt" Text="{Binding Previous?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                         MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+              <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailBefore}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Panel>
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" />
@@ -107,9 +115,15 @@
             Command="{Binding NextCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextGameTip}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-          <TextBlock Classes="onArt" Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                     MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
-          <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailAfter}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+          <!-- On the same soft cloud as the note under "Spielen" (#612), so the title reads on a bright image. -->
+          <Panel HorizontalAlignment="Center">
+            <Border Classes="detailNoteScrim stackTitle" IsHitTestVisible="False" />
+            <StackPanel Spacing="4">
+              <TextBlock Classes="onArt" Text="{Binding Next?.Title, TargetNullValue=''}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                         MaxWidth="220" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" />
+              <TextBlock Classes="label onArt section" Text="{x:Static app:AppTexts.DetailAfter}" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Panel>
           <!-- An arrow pointing the way the carousel turns, with its button inside (#530): under the stack, not above it. -->
           <Panel Classes="turnArrow" Margin="0,12,0,0" HorizontalAlignment="Center">
             <Path Classes="turnArrow" Data="M24,0 H130 Q140,0 140,10 V42 Q140,52 130,52 H24 L0,26 Z" RenderTransform="scaleX(-1)" />

@@ -67,9 +67,9 @@
               <Viewbox Stretch="Uniform">
                 <Canvas Width="1920" Height="1080" Background="{Binding HeroBackdrop}">
                   <ctl:ArtworkImage Width="1920" Height="1080" Fit="DetailPage" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                  <Border Width="1920" Height="440" Background="{StaticResource DetailScrimTitle}" />
-                  <Border Width="1920" Height="110" Background="{StaticResource DetailScrimTop}" />
-                  <Border Canvas.Top="1000" Width="1920" Height="80" Background="{StaticResource DetailScrimBottom}" />
+                  <Border Canvas.Left="-400" Canvas.Top="-100" Width="2720" Height="700" Background="{StaticResource DetailScrimTitle}" />
+                  <Border Classes="detailBar" Width="1920" Height="104" />
+                  <Border Classes="detailBar" Canvas.Top="1008" Width="1920" Height="72" />
                   <Border Classes="artworkMark hero" Width="1920" Height="1080" IsVisible="{Binding IsCurrentHeroMarked}" />
 
                   <Border Classes="artworkMiniStack" Canvas.Left="40" />
@@ -87,6 +87,7 @@
                     <Panel>
                       <ctl:ArtworkImage Name="MiniCover" File="{Binding Tile.Cover}" CornerRadius="12" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
                       <TextBlock Classes="artworkMonogram" Text="{Binding Tile.Monogram}" Foreground="{Binding Tile.AccentBrush}" IsVisible="{Binding !#MiniCover.IsShowing}" />
+                      <Border Classes="detailCoverFrame" />
                     </Panel>
                   </Border>
                   <Border Classes="artworkMark cover" Canvas.Left="262" Canvas.Top="98" IsVisible="{Binding IsCurrentCoverMarked}" />

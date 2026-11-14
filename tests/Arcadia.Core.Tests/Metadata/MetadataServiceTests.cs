@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using Arcadia.Core.Library;
 using Arcadia.Core.Metadata;
@@ -9,7 +10,7 @@ namespace Arcadia.Core.Tests.Metadata;
 /// <summary>
 /// #493: the background run that reads the launchers' local data and asks their store, with a fake store and fake time:
 /// fetching after scans, throttling, failures, the cache, the start, closing, the progress and "Alle Metadaten neu laden"
-/// (T493-16 to T493-19, T493-21 to T493-23, T493-25 to T493-27, T493-29).
+/// (T493-16 to T493-19, T493-21 to T493-23, T493-25 to T493-27, T493-29), the store asked in the UI language (T557-4).
 /// </summary>
 public sealed class MetadataServiceTests : IDisposable
 {
@@ -21,6 +22,7 @@ public sealed class MetadataServiceTests : IDisposable
     private readonly FakeMetadataSource _source = new();
     private readonly List<string> _log = [];
     private MetadataService _service;
+    private CultureInfo _language = CultureInfo.GetCultureInfo("de-DE");
 
     public MetadataServiceTests()
     {
@@ -50,6 +52,9 @@ public sealed class MetadataServiceTests : IDisposable
 
     private MetadataService NewService() => new(new MetadataCache(CacheFolder), new HttpClient(_server), _time)
     {
+        // A German PC (#557) unless the test changes the language, whatever the machine running the tests speaks.
+        Language = _language,
+        FirstAgeRatingBoard = AgeRatingBoard.Usk,
         Log = line =>
         {
             lock (_log)
@@ -603,5 +608,56 @@ public sealed class MetadataServiceTests : IDisposable
         public string About => "Made-up about";
 
         public IMetadataLookup Look(IReadOnlyCollection<Game> games) => throw new InvalidOperationException("made-up failure");
+    }
+
+    [Fact]
+    [Trait("TestCase", "T557-4")]
+    public async Task After_a_language_change_the_cached_texts_stay_until_a_reload_asks_the_store_in_the_new_language()
+    {
+        const string german = "Baue eine Stadt, die nicht zu klein ist und dir gefällt.";
+        const string english = "Build a city that is not too small and that you will like.";
+        _server.Serve("1", german);
+        Scan("1");
+        await RunToIdleAsync();
+        Assert.Equal(["https://store.example/app/1?l=de"], _server.Requests.Select(r => r.Request.RequestUri!.AbsoluteUri));
+
+        // Arcadia restarts in English: the German text loaded before stays, nothing is asked again.
+        _language = CultureInfo.GetCultureInfo("en-US");
+        Restart();
+        Scan("1");
+        await RunToIdleAsync();
+        Assert.Equal(german, _service.Of(Key("1")).Description!.Value);
+        Assert.Single(_server.Requests);
+
+        // "Alle Metadaten neu laden" asks in English, and the English text replaces the German one.
+        _server.Serve("1", english);
+        Assert.True(_service.ReloadAll());
+        await RunToIdleAsync();
+        Assert.Equal("https://store.example/app/1?l=en", _server.Requests[^1].Request.RequestUri!.AbsoluteUri);
+        Assert.Equal(english, _service.Of(Key("1")).Description!.Value);
+
+        // The cache keeps the language it was asked in: after the next start in English the text still shows.
+        Restart();
+        Scan("1");
+        await RunToIdleAsync();
+        Assert.Equal(english, _service.Of(Key("1")).Description!.Value);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T557-6")]
+    public async Task The_first_age_rating_is_the_regions()
+    {
+        _server.Serve("1", "-");
+        _source.Local["1"] = new GameMetadata
+        {
+            AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16"), new AgeRating(AgeRatingBoard.Pegi, "18"), new AgeRating(AgeRatingBoard.Esrb, "M")],
+        };
+        _service.Dispose();
+        _service = new MetadataService(new MetadataCache(CacheFolder), new HttpClient(_server), _time) { Language = _language, FirstAgeRatingBoard = AgeRatingBoard.Esrb };
+        _service.Open();
+        Scan("1");
+        await RunToIdleAsync();
+
+        Assert.Equal([AgeRatingBoard.Esrb, AgeRatingBoard.Usk, AgeRatingBoard.Pegi], _service.Of(Key("1")).AgeRatings.Select(r => r.Value.Board));
     }
 }

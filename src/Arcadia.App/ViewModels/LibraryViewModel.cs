@@ -38,6 +38,9 @@ public interface ILibraryHost : IPageHost
     /// <summary>A metadata run goes on: the filter's counts may still change (#466 case 16).</summary>
     bool IsMetadataLoading { get; }
 
+    /// <summary>The region's age rating board (#557), which "Altersfreigabe" opens on.</summary>
+    AgeRatingBoard FirstAgeRatingBoard { get; }
+
     /// <summary>The on-screen keyboard of the filter's value search (#466).</summary>
     FilterKeyboard FilterKeyboard { get; }
 }
@@ -446,7 +449,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         if (offer.HasAny)
         {
             var saved = _settings.Current.FilterOf(tab.Launcher.Id);
-            var setup = new FilterModalSetup(tab.Name, tab.Games, snapshot.Facts, offer, _time.GetLocalNow().Year, _host.IsMetadataLoading);
+            var setup = new FilterModalSetup(tab.Name, tab.Games, snapshot.Facts, offer, _time.GetLocalNow().Year, _host.FirstAgeRatingBoard, _host.IsMetadataLoading);
             _host.ShowFilter(new FilterModalViewModel(setup, saved.Within(offer), modal =>
             {
                 _host.CloseFilter(modal);

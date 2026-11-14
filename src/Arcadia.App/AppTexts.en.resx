@@ -1379,7 +1379,7 @@
   <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>The system language is {language}. Arcadia isn’t available in it yet, so with “System language” it is in English.</value></data>
   <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows names no display language, so with “System language” Arcadia is in English.</value></data>
   <data name="LocalizationLanguageInfo" xml:space="preserve"><value>The choice is saved at once and applies from the next start. “Apply language” below restarts Arcadia right away.</value></data>
-  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Metadata such as descriptions and genres stay in the language they were loaded in. “Reload all metadata” in “Data sources” gets them in the new language where they exist in it.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Descriptions stay in the language they were loaded in. “Reload all metadata” in “Data sources” gets them in the new language where they exist in it.</value></data>
   <data name="LocalizationApply" xml:space="preserve"><value>Apply language</value></data>
   <data name="LocalizationApplyAction" xml:space="preserve"><value>Restart</value></data>
   <data name="LocalizationApplySame" xml:space="preserve"><value>The chosen language is already on</value></data>

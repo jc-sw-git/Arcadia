@@ -50,6 +50,9 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
 
     private MetadataService NewService() => new(new MetadataCache(Path.Combine(_root, "metadata")), new HttpClient(_store), _time)
     {
+        // A German PC (#557), whatever the machine running the tests speaks and wherever it stands.
+        Language = System.Globalization.CultureInfo.GetCultureInfo("de-DE"),
+        FirstAgeRatingBoard = AgeRatingBoard.Usk,
         Log = line =>
         {
             lock (_log)

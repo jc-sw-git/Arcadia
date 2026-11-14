@@ -1433,6 +1433,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     bool ILibraryHost.IsMetadataLoading => _metadata?.IsBusy == true;
 
+    AgeRatingBoard ILibraryHost.FirstAgeRatingBoard => _metadata?.FirstAgeRatingBoard ?? AgeRatingRegion.System;
+
     FilterKeyboard ILibraryHost.FilterKeyboard => new(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack);
 
     LauncherRegistry ILauncherSettingsHost.Launchers => Session.Launchers;

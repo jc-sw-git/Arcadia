@@ -1045,6 +1045,66 @@
   <data name="FilterType" xml:space="preserve"><value>Typ</value></data>
   <data name="FilterValue" xml:space="preserve"><value>Wert</value></data>
   <data name="FilterValues" xml:space="preserve"><value>Werte</value></data>
+  <data name="FilterGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="FilterTags" xml:space="preserve"><value>Tags</value></data>
+  <data name="FilterDevelopers" xml:space="preserve"><value>Entwickler</value></data>
+  <data name="FilterPublishers" xml:space="preserve"><value>Publisher</value></data>
+  <data name="FilterYear" xml:space="preserve"><value>Erscheinungsjahr</value></data>
+  <data name="FilterAgeRating" xml:space="preserve"><value>Altersfreigabe</value></data>
+  <data name="FilterAllGenres" xml:space="preserve"><value>Alle Genres</value></data>
+  <data name="FilterAllTags" xml:space="preserve"><value>Alle Tags</value></data>
+  <data name="FilterAllDevelopers" xml:space="preserve"><value>Alle Entwickler</value></data>
+  <data name="FilterAllPublishers" xml:space="preserve"><value>Alle Publisher</value></data>
+  <data name="FilterAllYears" xml:space="preserve"><value>Alle Jahre</value></data>
+  <data name="FilterAllRatings" xml:space="preserve"><value>Alle Freigaben</value></data>
+  <data name="FilterSearchGenres" xml:space="preserve"><value>Genres durchsuchen</value></data>
+  <data name="FilterSearchTags" xml:space="preserve"><value>Tags durchsuchen</value></data>
+  <data name="FilterSearchDevelopers" xml:space="preserve"><value>Entwickler durchsuchen</value></data>
+  <data name="FilterSearchPublishers" xml:space="preserve"><value>Publisher durchsuchen</value></data>
+  <data name="FilterByFrequency" xml:space="preserve"><value>Häufigste zuerst</value></data>
+  <data name="FilterAlphabetical" xml:space="preserve"><value>A–Z</value></data>
+  <data name="FilterHintOrder" xml:space="preserve"><value>Reihenfolge: {order}</value></data>
+  <data name="FilterWithUnknown" xml:space="preserve"><value>Ohne Angabe einbeziehen</value></data>
+  <data name="FilterWithUnknownInfo" xml:space="preserve"><value>Zeigt zusätzlich Einträge ohne {what}.</value></data>
+  <data name="FilterLackingGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="FilterLackingTags" xml:space="preserve"><value>Tags</value></data>
+  <data name="FilterLackingDevelopers" xml:space="preserve"><value>Entwickler</value></data>
+  <data name="FilterLackingPublishers" xml:space="preserve"><value>Publisher</value></data>
+  <data name="FilterLackingYear" xml:space="preserve"><value>Erscheinungsjahr</value></data>
+  <data name="FilterLackingRating" xml:space="preserve"><value>{board}-Freigabe</value></data>
+  <data name="FilterSummaryWithUnknown" xml:space="preserve"><value>{summary} &amp; o. Angabe</value></data>
+  <data name="FilterMatchNote" xml:space="preserve"><value>Mehrere wählbar · ein Eintrag passt, wenn er einen davon hat</value></data>
+  <data name="FilterMatchNoteChosen" xml:space="preserve"><value>{count} gewählt · ein Eintrag passt, wenn er einen davon hat</value></data>
+  <data name="FilterSearchOneMatch" xml:space="preserve"><value>1 Wert passt</value></data>
+  <data name="FilterSearchMatches" xml:space="preserve"><value>{count} Werte passen</value></data>
+  <data name="FilterSearchNoMatch" xml:space="preserve"><value>Kein Wert passt</value></data>
+  <data name="FilterOwnTagsHeading" xml:space="preserve"><value>EIGENE TAGS</value></data>
+  <data name="FilterOtherTagsHeading" xml:space="preserve"><value>WEITERE TAGS</value></data>
+  <data name="FilterHintSearch" xml:space="preserve"><value>Durchsuchen</value></data>
+  <data name="FilterHintPage" xml:space="preserve"><value>Seite</value></data>
+  <data name="FilterHintLetter" xml:space="preserve"><value>Buchstabe</value></data>
+  <data name="FilterHintYear" xml:space="preserve"><value>Jahr</value></data>
+  <data name="FilterHintTenYears" xml:space="preserve"><value>10 Jahre</value></data>
+  <data name="FilterHintRow" xml:space="preserve"><value>Zeile</value></data>
+  <data name="FilterHintChoose" xml:space="preserve"><value>Wählen</value></data>
+  <data name="FilterHintSystem" xml:space="preserve"><value>System</value></data>
+  <data name="FilterHintType" xml:space="preserve"><value>Tippen</value></data>
+  <data name="FilterHintHideKeyboard" xml:space="preserve"><value>Tastatur ausblenden</value></data>
+  <data name="FilterYearFrom" xml:space="preserve"><value>VON</value></data>
+  <data name="FilterYearTo" xml:space="preserve"><value>BIS</value></data>
+  <data name="FilterYearRange" xml:space="preserve"><value>{from} – {to}</value></data>
+  <data name="FilterLastThreeYears" xml:space="preserve"><value>Letzte 3 Jahre</value></data>
+  <data name="FilterTwenties" xml:space="preserve"><value>2020er</value></data>
+  <data name="FilterTens" xml:space="preserve"><value>2010er</value></data>
+  <data name="FilterNoughties" xml:space="preserve"><value>2000er</value></data>
+  <data name="FilterBefore2000" xml:space="preserve"><value>Vor 2000</value></data>
+  <data name="FilterYearsChart" xml:space="preserve"><value>Einträge je Jahr von {from} bis {to}</value></data>
+  <data name="FilterSystem" xml:space="preserve"><value>SYSTEM</value></data>
+  <data name="FilterRatingNote" xml:space="preserve"><value>Mehrere wählbar. Es zählt nur die Angabe des gewählten Systems.</value></data>
+  <data name="FilterRatingSummary" xml:space="preserve"><value>{board} {ratings}</value></data>
+  <data name="FilterEntriesOne" xml:space="preserve"><value>1 Eintrag</value></data>
+  <data name="FilterEntries" xml:space="preserve"><value>{count} Einträge</value></data>
+  <data name="FilterMetadataLoading" xml:space="preserve"><value>Metadaten werden geladen … Kategorien und Zahlen können sich noch ändern.</value></data>
   <data name="LauncherOrderHeading" xml:space="preserve"><value>LAUNCHER-REIHENFOLGE</value></data>
   <data name="SteamDesktopGroup" xml:space="preserve"><value>DESKTOP-STEUERUNG</value></data>
   <data name="ControllerGroup" xml:space="preserve"><value>CONTROLLER</value></data>
@@ -1379,7 +1439,7 @@
   <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>Die Systemsprache ist {language}. Die gibt es in Arcadia noch nicht, mit „Systemsprache“ ist Arcadia deshalb auf Englisch.</value></data>
   <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows nennt keine Anzeigesprache, mit „Systemsprache“ ist Arcadia deshalb auf Englisch.</value></data>
   <data name="LocalizationLanguageInfo" xml:space="preserve"><value>Die Wahl wird sofort gespeichert und gilt ab dem nächsten Start. „Sprache anwenden“ darunter startet Arcadia gleich neu.</value></data>
-  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Metadaten wie Beschreibungen und Genres bleiben in der Sprache, in der sie geladen wurden. „Alle Metadaten neu laden“ in „Datenquellen“ holt sie in der neuen Sprache, wo es sie darin gibt.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Beschreibungen bleiben in der Sprache, in der sie geladen wurden. „Alle Metadaten neu laden“ in „Datenquellen“ holt sie in der neuen Sprache, wo es sie darin gibt.</value></data>
   <data name="LocalizationApply" xml:space="preserve"><value>Sprache anwenden</value></data>
   <data name="LocalizationApplyAction" xml:space="preserve"><value>Neu starten</value></data>
   <data name="LocalizationApplySame" xml:space="preserve"><value>Die gewählte Sprache ist schon an</value></data>

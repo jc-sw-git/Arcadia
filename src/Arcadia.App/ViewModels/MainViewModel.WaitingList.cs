@@ -31,7 +31,7 @@ public partial class MainViewModel
     }
 
     /// <summary>The text being written with the on-screen keyboard: a game's own title (#496) or tag (#495), the waiting list's own term or a text of the settings.</summary>
-    public TextEditorViewModel? OpenTextEditor => ChangeTitle?.Editor ?? TagDialog?.Editor ?? WaitingList?.Hits?.Editor ?? Settings?.Selected.Editor;
+    public TextEditorViewModel? OpenTextEditor => ChangeTitle?.Editor ?? TagDialog?.Editor ?? FilterModal?.Editor ?? WaitingList?.Hits?.Editor ?? Settings?.Selected.Editor;
 
     /// <summary>B or the ✕: the settings again, the focus on the row the list was opened from.</summary>
     private void CloseWaitingList(WaitingListViewModel list)

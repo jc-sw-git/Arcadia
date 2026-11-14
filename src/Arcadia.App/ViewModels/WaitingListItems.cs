@@ -125,7 +125,8 @@ public sealed partial class ArtworkHitViewModel(SteamGridDbHit hit, Action<Waiti
 /// An IGDB game offered for a metadata entry (#494): its name and year in the list, its facts in the info box beside it
 /// (#539), checked as any metadata before it is shown.
 /// </summary>
-public sealed class MetadataHitViewModel(IgdbGame hit, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
+/// <param name="firstBoard">The region's age rating board, named first in the info box (#557).</param>
+public sealed class MetadataHitViewModel(IgdbGame hit, AgeRatingBoard firstBoard, Action<WaitingHitViewModel> mark, Action<WaitingHitViewModel> take)
     : WaitingHitViewModel(mark, take)
 {
     private WaitingHitFacts? _facts;
@@ -139,7 +140,7 @@ public sealed class MetadataHitViewModel(IgdbGame hit, Action<WaitingHitViewMode
 
     public bool HasLine => Line.Length > 0;
 
-    public WaitingHitFacts Facts => _facts ??= new WaitingHitFacts(Hit.Data);
+    public WaitingHitFacts Facts => _facts ??= new WaitingHitFacts(Hit.Data, firstBoard);
 
     protected override int? Year => Hit.Year;
 }

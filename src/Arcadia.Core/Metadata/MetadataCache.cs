@@ -16,8 +16,19 @@ namespace Arcadia.Core.Metadata;
 /// <param name="StoreAt">When the store answered.</param>
 /// <param name="Igdb">IGDB's answer (#494); null while IGDB wasn't asked or found nothing by the game's name.</param>
 /// <param name="IgdbByName">IGDB's search by name while the game waits for the player's choice or after a skip; null otherwise.</param>
+/// <param name="StoreLanguage">
+/// The UI language the store was asked in, by two-letter code (#557); an answer from before languages were asked is
+/// German. Its texts stay in it until "Alle Metadaten neu laden".
+/// </param>
 public sealed record CachedMetadata(
-    string GameKey, string Source, GameMetadata? Local, GameMetadata? Store, DateTimeOffset? StoreAt, IgdbCached? Igdb = null, IgdbNameMatch? IgdbByName = null)
+    string GameKey,
+    string Source,
+    GameMetadata? Local,
+    GameMetadata? Store,
+    DateTimeOffset? StoreAt,
+    IgdbCached? Igdb = null,
+    IgdbNameMatch? IgdbByName = null,
+    string? StoreLanguage = null)
 {
     /// <summary>The provider's data: the local files' fields first, the store's for what they lack.</summary>
     public GameMetadata Data => (Local ?? GameMetadata.Empty).Or(Store);
@@ -151,13 +162,18 @@ public sealed class MetadataCache(string root)
                     MetadataCheck.Checked(igdb.Data),
                     at,
                     igdb.Reading ?? 0) : null,
-                StoredByName.Valid(stored.IgdbByName));
+                StoredByName.Valid(stored.IgdbByName),
+                stored.Store is null ? null : LanguageOf(stored.StoreLanguage));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException or ArgumentException)
         {
             return null;
         }
     }
+
+    // Every answer before #557 was asked in German; anything but a two-letter code isn't a language Arcadia wrote.
+    private static string LanguageOf(string? stored) =>
+        stored is null ? "de" : stored.Length == 2 && stored.All(char.IsAsciiLetterLower) ? stored : "de";
 
     private static void TryDelete(string file)
     {
@@ -183,6 +199,8 @@ public sealed class MetadataCache(string root)
 
         public DateTimeOffset? StoreAt { get; set; }
 
+        public string? StoreLanguage { get; set; }
+
         public StoredIgdb? Igdb { get; set; }
 
         public StoredByName? IgdbByName { get; set; }
@@ -194,6 +212,7 @@ public sealed class MetadataCache(string root)
             Local = Escaped(cached.Local),
             Store = Escaped(cached.Store),
             StoreAt = cached.StoreAt,
+            StoreLanguage = cached.Store is null ? null : cached.StoreLanguage,
             Igdb = cached.Igdb is { } igdb ? new StoredIgdb
             {
                 GameId = igdb.GameId,

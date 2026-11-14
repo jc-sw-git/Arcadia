@@ -31,4 +31,5 @@
   <data name="DemoMetadataTag7" xml:space="preserve"><value>Gráficos pixelados</value></data>
   <data name="DemoMetadataSummary" xml:space="preserve"><value>Los metadatos inventados de la demo</value></data>
   <data name="DemoMetadataAbout" xml:space="preserve"><value>La biblioteca de demostración trae descripciones, géneros, etiquetas y clasificaciones por edad inventadas. Arcadia no las pide en ningún sitio.</value></data>
+  <data name="DemoMetadataTopicTag" xml:space="preserve"><value>Tema {number}</value></data>
 </root>

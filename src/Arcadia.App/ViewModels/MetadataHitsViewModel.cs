@@ -78,7 +78,7 @@ public sealed class MetadataHitsViewModel : WaitingHitsViewModel
 
         foreach (var hit in search.Games)
         {
-            InsertHit(Hits.Count, new MetadataHitViewModel(hit, MarkFromClick, Take));
+            InsertHit(Hits.Count, new MetadataHitViewModel(hit, _metadata.FirstAgeRatingBoard, MarkFromClick, Take));
         }
 
         Done(Hits.Count > 0 ? null : AppTexts.WaitingNoHits);
@@ -92,7 +92,7 @@ public sealed class MetadataHitsViewModel : WaitingHitsViewModel
         Hits.Clear();
         foreach (var hit in hits)
         {
-            Hits.Add(new MetadataHitViewModel(hit, MarkFromClick, Take));
+            Hits.Add(new MetadataHitViewModel(hit, _metadata.FirstAgeRatingBoard, MarkFromClick, Take));
         }
 
         IntroChanged();

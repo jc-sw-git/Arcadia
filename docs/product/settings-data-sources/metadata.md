@@ -5,7 +5,7 @@ Index and the category's frame: [README.md](README.md). The specification is #43
 
 ## Where metadata comes from (#43, #493)
 
-- Providers: each launcher with metadata (Steam: `appinfo.vdf` and the store page `appdetails?l=german`, no key;
+- Providers: each launcher with metadata (Steam: `appinfo.vdf` and the store page `appdetails` in the UI language, no key;
   Epic's catalog: only the developer) and IGDB with the player's access (#494, [igdb.md](igdb.md)). Fields are merged
   per field in the order of "Reihenfolge für Metadaten"; a field missing from one comes from the next, and each keeps
   the provider it came from (shown only in "Infos").
@@ -16,12 +16,17 @@ Index and the category's frame: [README.md](README.md). The specification is #43
 - Doubtful titles: a launcher title with `?` (Epic's ASCII-only catalog) is replaced by IGDB's title regardless of the
   order, while IGDB is on; a title without `?` stays the launcher's. The broken title is listed only in "Infos",
   beside the corrected one. Own titles (#496) stand above both.
-- Language rule: a description that isn't German, or has a `?` inside a word, counts only when no provider has a German
-  one; a broken one only when there is no other.
-- Genres: Arcadia's fixed German list (Action, Abenteuer, Rollenspiel, Strategie, Simulation, Rennspiel, Sport, Shooter,
-  Puzzle, Plattformer, Kampfspiel, Gelegenheitsspiel, Indie, MMO, Arcade, Musik, Point-and-Click, Visual Novel, Karten-
-  und Brettspiel, Taktik); unmapped genres are dropped. Provider tags are taken as delivered.
-- Age ratings USK, PEGI, ESRB as delivered, unknown values dropped, merged per board (#541): each board's rating comes
+- Language rule (#557): a description (and short description) shows in the UI language, else in English, from the
+  first provider in the order that has one; a text in neither is left out, never another language. Steam's store is
+  asked in the UI language, IGDB's texts are English. A text with a `?` inside a word counts only when no whole one
+  fits. Cached texts stay in the language they were loaded in until "Alle Metadaten neu laden" asks again in the new
+  one (the info panel of "Sprache" says so); a text in the UI language or English from another provider still wins.
+- Genres: Arcadia's fixed list, kept by key and named in the UI language (German: Action, Abenteuer, Rollenspiel,
+  Strategie, Simulation, Rennspiel, Sport, Shooter, Puzzle, Plattformer, Kampfspiel, Gelegenheitsspiel, Indie, MMO,
+  Arcade, Musik, Point-and-Click, Visual Novel, Karten- und Brettspiel, Taktik); unmapped genres are dropped. Provider
+  tags are taken as delivered; Steam's are named from its tag list in the UI language.
+- Age ratings USK, PEGI, ESRB as delivered, unknown values dropped, merged per board (#541), the system region's board
+  first ([detail page](../detail-page/page.md)): each board's rating comes
   from the first provider in the order that has it, so IGDB adds the boards Steam lacks. Without a real USK from any
   provider, Steam's own rating for Germany counts as USK. Every rating names its provider the same way ("Steam", "IGDB").
 - When: after every scan, in the background, for the entries shown (a switched-off type asks nothing); one request at a

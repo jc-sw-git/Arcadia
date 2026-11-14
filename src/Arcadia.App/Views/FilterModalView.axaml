@@ -1,18 +1,37 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:app="using:Arcadia.App"
+             xmlns:app="using:Arcadia.App"
              xmlns:vm="using:Arcadia.App.ViewModels"
+             xmlns:kb="using:Arcadia.App.Keyboard"
              xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
              xmlns:filter="using:Arcadia.App.Filter"
              x:Class="Arcadia.App.Views.FilterModalView"
              x:DataType="filter:FilterModalViewModel">
 
-  <!-- "Filter" (#44, designs T44F02, T44F03, T44F09, T44Modal, T44Bausteine): categories left, the values of the one in
-       focus right. Sizes and colours are styles in Theme.axaml (filter…). -->
+  <UserControl.Resources>
+    <!-- A value of a long list: its check, label and hits; a slot's column keeps it and only rebinds. -->
+    <DataTemplate x:Key="FilterValueTemplate" x:DataType="filter:FilterValueViewModel">
+      <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+              Classes.noHits="{Binding HasNoHits}" Classes.own="{Binding IsOwn}" Command="{Binding PickCommand}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <Border Classes="filterCheck">
+            <Path Classes="filterCheckMark" />
+          </Border>
+          <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Label}" />
+          <TextBlock Grid.Column="2" Classes="filterValueCount" Text="{Binding CountText}" />
+        </Grid>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <!-- "Filter" (#44, #466, designs T44F02–T44F09, T44Modal, T44Bausteine): categories left, the values of the one in
+       focus right, a pane per kind of category. Sizes and colours are styles in Theme.axaml (filter…). -->
   <Panel>
     <Button Classes="plain bleedAll" Background="{StaticResource Scrim}" Cursor="Arrow" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
             Command="{Binding CloseCommand}" />
-    <Border Classes="prompt filterModal">
+    <!-- While the value search is written in, the modal moves up and shortens above the keyboard (design T44F04). -->
+    <Border Classes="prompt filterModal" Classes.writing="{Binding IsWriting}">
       <Panel>
         <DockPanel>
           <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="18" Margin="0,0,0,22"
@@ -29,10 +48,20 @@
             </StackPanel>
           </Grid>
 
+          <!-- A metadata run goes on: the counts are those of the opening (#466 case 16). -->
+          <Border DockPanel.Dock="Top" Classes="filterLoadingNote" IsVisible="{Binding IsMetadataLoading}">
+            <TextBlock Text="{x:Static filter:FilterModalViewModel.MetadataLoadingText}" />
+          </Border>
+
           <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" Margin="0,22,0,0">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{Binding MoveText}" IsVisible="{Binding !MovesInGrid}" />
-              <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding MoveText}" IsVisible="{Binding MovesInGrid}" />
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{Binding MoveText}" IsVisible="{Binding ShowsLineMoveHint}" />
+              <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{Binding MoveText}" IsVisible="{Binding ShowsGridMoveHint}" />
+              <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{Binding StepText}" IsVisible="{Binding StepText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="{Binding StepTenText}" IsVisible="{Binding StepTenText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="{Binding PageText}" IsVisible="{Binding PageText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="X" Keys="F" Text="{Binding SearchText}" IsVisible="{Binding SearchText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="L3" Keys="C" Text="{Binding OrderText}" IsVisible="{Binding OrderText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" />
               <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding BackText}" />
             </StackPanel>
@@ -66,10 +95,10 @@
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                           <TextBlock Classes="filterCategoryLabel" Text="{Binding Label}" />
-                          <!-- One line, never cut: the chosen values while they fit, else "Mehrere" (#44). -->
+                          <!-- One line: the chosen values while they fit, else "Mehrere" (#44); one value alone is cut at its end. -->
                           <ctl:FirstThatFits>
                             <TextBlock Classes="filterSummary" Text="{Binding Summary}" />
-                            <TextBlock Classes="filterSummary" Text="{Binding SummaryFallback}" />
+                            <TextBlock Classes="filterSummary" Text="{Binding SummaryFallback}" TextTrimming="CharacterEllipsis" />
                           </ctl:FirstThatFits>
                         </StackPanel>
                       </Grid>
@@ -81,52 +110,283 @@
 
             <Border Grid.Column="1" Classes="filterColumnDivider" />
 
-            <!-- "Installiert": one of three. -->
-            <ItemsControl Grid.Column="2" ItemsSource="{Binding Values}" IsVisible="{Binding ShowsRadios}" Width="680" HorizontalAlignment="Left" VerticalAlignment="Top">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Spacing="8" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="filter:FilterValueViewModel">
-                  <Button Classes="plain filterOption" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
-                          Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-                      <Border Classes="filterRadio">
-                        <Ellipse Classes="filterRadioDot" />
-                      </Border>
-                      <TextBlock Grid.Column="1" Classes="filterOptionLabel" Text="{Binding Label}" />
-                      <TextBlock Grid.Column="2" Classes="filterOptionCount" Text="{Binding CountText}" />
-                    </Grid>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <!-- Not clipped: the focus ring of a value at the pane's edge reaches past it. -->
+            <ContentControl Grid.Column="2" Content="{Binding Pane}" VerticalAlignment="Stretch" ClipToBounds="False">
+              <ContentControl.DataTemplates>
+                <DataTemplate x:DataType="filter:FilterOptionsPane">
+                  <Panel VerticalAlignment="Top">
+                    <!-- "Installiert": one of three. -->
+                    <ItemsControl ItemsSource="{Binding Values}" IsVisible="{Binding ShowsRadios}" Width="680" HorizontalAlignment="Left">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="filter:FilterValueViewModel">
+                          <Button Classes="plain filterOption" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                                  Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                              <Border Classes="filterRadio">
+                                <Ellipse Classes="filterRadioDot" />
+                              </Border>
+                              <TextBlock Grid.Column="1" Classes="filterOptionLabel" Text="{Binding Label}" />
+                              <TextBlock Grid.Column="2" Classes="filterOptionCount" Text="{Binding CountText}" />
+                            </Grid>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-            <!-- "Typ": several at once, "Alle Typen" first, each with its icon (#141). -->
-            <ItemsControl Grid.Column="2" ItemsSource="{Binding Values}" IsVisible="{Binding ShowsTypes}" VerticalAlignment="Top">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="{x:Static filter:FilterModalViewModel.TypeColumns}" ColumnSpacing="10" RowSpacing="10" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="filter:FilterValueViewModel">
-                  <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
-                          Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
-                      <Border Classes="filterCheck">
-                        <Path Classes="filterCheckMark" />
-                      </Border>
-                      <ctl:LineIcon Grid.Column="1" Classes="filterValueIcon" Icon="{Binding IconKey}" IsVisible="{Binding HasIcon}" />
-                      <TextBlock Grid.Column="2" Classes="filterValueLabel" Text="{Binding Label}" />
-                      <TextBlock Grid.Column="3" Classes="filterValueCount" Text="{Binding CountText}" />
-                    </Grid>
-                  </Button>
+                    <!-- "Typ": several at once, "Alle Typen" first, each with its icon (#141). -->
+                    <ItemsControl ItemsSource="{Binding Values}" IsVisible="{Binding ShowsTypes}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <UniformGrid Columns="{x:Static filter:FilterOptionsPane.TypeColumns}" ColumnSpacing="10" RowSpacing="10" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="filter:FilterValueViewModel">
+                          <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                                  Classes.noHits="{Binding HasNoHits}" Command="{Binding PickCommand}">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                              <Border Classes="filterCheck">
+                                <Path Classes="filterCheckMark" />
+                              </Border>
+                              <ctl:LineIcon Grid.Column="1" Classes="filterValueIcon" Icon="{Binding IconKey}" IsVisible="{Binding HasIcon}" />
+                              <TextBlock Grid.Column="2" Classes="filterValueLabel" Text="{Binding Label}" />
+                              <TextBlock Grid.Column="3" Classes="filterValueCount" Text="{Binding CountText}" />
+                            </Grid>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Panel>
                 </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+
+                <!-- Genre, tags, developer, publisher (design T44F04–T44F06): search and order above, the switch, then the
+                     values three a row in a window of rows the view model moves, A–Z with its letters at the side. -->
+                <DataTemplate x:DataType="filter:FilterListPane">
+                  <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="14" Margin="0,0,0,14">
+                      <Button Classes="plain filterSearch" Classes.writing="{Binding IsWriting}" Command="{Binding WriteSearchCommand}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                          <ctl:LineIcon Classes="filterSearchIcon" Icon="IconFilterSearch" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" ClipToBounds="True" VerticalAlignment="Center"
+                                      IsVisible="{Binding IsWriting}">
+                            <TextBlock Classes="filterSearchText" Text="{Binding Editor?.TextBeforeCaret, TargetNullValue=''}" />
+                            <Border Classes="caret fieldCaret" />
+                            <TextBlock Classes="filterSearchText" Text="{Binding Editor?.TextAfterCaret, TargetNullValue=''}" />
+                          </StackPanel>
+                          <Panel Grid.Column="1" IsVisible="{Binding !IsWriting}" VerticalAlignment="Center">
+                            <TextBlock Classes="filterSearchText" Text="{Binding Search}" IsVisible="{Binding HasSearch}" />
+                            <TextBlock Classes="filterSearchPlaceholder" Text="{Binding SearchLabel}" IsVisible="{Binding !HasSearch}" />
+                          </Panel>
+                        </Grid>
+                      </Button>
+                      <Button Grid.Column="1" Classes="plain filterOrder" Command="{Binding ToggleOrderCommand}">
+                        <StackPanel Orientation="Horizontal">
+                          <Border Classes="filterOrderPart" Classes.on="{Binding !IsAlphabetical}">
+                            <TextBlock Text="{x:Static app:AppTexts.FilterByFrequency}" />
+                          </Border>
+                          <Border Classes="filterOrderPart" Classes.on="{Binding IsAlphabetical}">
+                            <TextBlock Text="{x:Static app:AppTexts.FilterAlphabetical}" />
+                          </Border>
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+
+                    <Button DockPanel.Dock="Top" Classes="plain filterSwitchRow" Classes.focused="{Binding IsWithUnknownFocused}"
+                            IsVisible="{Binding ShowsWithUnknown}" Command="{Binding ToggleWithUnknownCommand}" Margin="0,0,0,14">
+                      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Classes="filterSwitchLabel" Text="{x:Static app:AppTexts.FilterWithUnknown}" />
+                          <TextBlock Classes="filterSwitchInfo" Text="{Binding WithUnknownInfo}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Classes="filterValueCount" Text="{Binding WithUnknownCount}" />
+                        <Border Grid.Column="2" Classes="switch" Classes.on="{Binding IsWithUnknown}" VerticalAlignment="Center">
+                          <Ellipse />
+                        </Border>
+                      </Grid>
+                    </Button>
+
+                    <TextBlock DockPanel.Dock="Bottom" Classes="filterMatchNote" Text="{Binding MatchNote}" />
+
+                    <ItemsControl DockPanel.Dock="Right" Classes="filterLetters" ItemsSource="{Binding Letters}" IsVisible="{Binding IsAlphabetical}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="filter:FilterLetter">
+                          <TextBlock Classes="filterLetter" Classes.current="{Binding IsCurrent}" Text="{Binding Letter}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Panel DockPanel.Dock="Right" IsVisible="{Binding HasScrollBar}" Margin="12,0,0,0">
+                      <ScrollBar Orientation="Vertical" Minimum="0" Maximum="{Binding ScrollEnd}" ViewportSize="{Binding ScrollLength}"
+                                 Value="{Binding ScrollStart, Mode=OneWay}" AllowAutoHide="False" IsHitTestVisible="False" />
+                    </Panel>
+
+                    <!-- The wheel moves the window of rows (FilterModalView.axaml.cs). -->
+                    <Panel Name="ListRows" Background="Transparent" VerticalAlignment="Top" PointerWheelChanged="OnListWheel">
+                      <!-- Fixed slots, each with a value template per column: a step or a page only rebinds them (#466 case 24). -->
+                      <ItemsControl ItemsSource="{Binding RowSlots}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="filter:FilterRowSlot">
+                            <Panel IsVisible="{Binding IsShown}">
+                              <TextBlock Classes="filterListHeading" Text="{Binding HeadingText}" IsVisible="{Binding IsHeading}" />
+                              <Grid ColumnDefinitions="36,*" IsVisible="{Binding IsValues}">
+                                <TextBlock Classes="filterListLead" Text="{Binding Lead}" IsVisible="{Binding HasLead}" />
+                                <UniformGrid Grid.Column="1" Columns="{x:Static filter:FilterListPane.Columns}" ColumnSpacing="10">
+                                  <ContentControl Content="{Binding First}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                  <ContentControl Content="{Binding Second}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                  <ContentControl Content="{Binding Third}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                </UniformGrid>
+                              </Grid>
+                            </Panel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <ctl:EdgeFade Edges="Start" Size="40" Duration="0:0:0" FadeColor="{StaticResource ModalSurfaceColor}" Condition="{Binding FadesTop}" />
+                      <ctl:EdgeFade Edges="End" Size="40" Duration="0:0:0" FadeColor="{StaticResource ModalSurfaceColor}" Condition="{Binding FadesBottom}" />
+                    </Panel>
+                  </DockPanel>
+                </DataTemplate>
+
+                <!-- "Erscheinungsjahr" (design T44F07): the chart, the quick picks, "von" and "bis", the switch. -->
+                <DataTemplate x:DataType="filter:FilterYearPane">
+                  <StackPanel Spacing="18" VerticalAlignment="Top">
+                    <StackPanel Spacing="6">
+                      <ItemsControl ItemsSource="{Binding Bars}" Classes="filterYearChart">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" ColumnSpacing="3" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="filter:FilterYearBar">
+                            <DockPanel>
+                              <TextBlock DockPanel.Dock="Bottom" Classes="filterYearLabel" Text="{Binding Label}" />
+                              <Border Classes="filterYearBar" Classes.inRange="{Binding IsInRange}" Classes.dimmed="{Binding IsChosenRange}"
+                                      Height="{Binding Height}" VerticalAlignment="Bottom" />
+                            </DockPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <TextBlock Classes="filterSwitchInfo" Text="{Binding ChartText}" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Picks}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel ItemSpacing="10" LineSpacing="10" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="filter:FilterChipViewModel">
+                          <Button Classes="plain filterPick" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                                  Classes.noHits="{Binding HasNoHits}" Content="{Binding Label}" Command="{Binding PickCommand}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                      <Border Classes="filterStepper" Classes.focused="{Binding IsFromFocused}">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
+                          <TextBlock Classes="filterStepperLabel" Text="{x:Static app:AppTexts.FilterYearFrom}" />
+                          <Button Grid.Column="1" Classes="plain filterStep" Content="◀" Command="{Binding FromEarlierCommand}" />
+                          <TextBlock Grid.Column="2" Classes="filterStepperValue" Text="{Binding FromText}" />
+                          <Button Grid.Column="3" Classes="plain filterStep" Content="▶" Command="{Binding FromLaterCommand}" />
+                        </Grid>
+                      </Border>
+                      <Border Grid.Column="1" Classes="filterStepper" Classes.focused="{Binding IsToFocused}">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
+                          <TextBlock Classes="filterStepperLabel" Text="{x:Static app:AppTexts.FilterYearTo}" />
+                          <Button Grid.Column="1" Classes="plain filterStep" Content="◀" Command="{Binding ToEarlierCommand}" />
+                          <TextBlock Grid.Column="2" Classes="filterStepperValue" Text="{Binding ToText}" />
+                          <Button Grid.Column="3" Classes="plain filterStep" Content="▶" Command="{Binding ToLaterCommand}" />
+                        </Grid>
+                      </Border>
+                    </Grid>
+
+                    <Button Classes="plain filterSwitchRow" Classes.focused="{Binding IsWithUnknownFocused}"
+                            IsVisible="{Binding ShowsWithUnknown}" Command="{Binding ToggleWithUnknownCommand}">
+                      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Classes="filterSwitchLabel" Text="{x:Static app:AppTexts.FilterWithUnknown}" />
+                          <TextBlock Classes="filterSwitchInfo" Text="{Binding WithUnknownInfo}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Classes="filterValueCount" Text="{Binding WithUnknownCount}" />
+                        <Border Grid.Column="2" Classes="switch" Classes.on="{Binding IsWithUnknown}" VerticalAlignment="Center">
+                          <Ellipse />
+                        </Border>
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </DataTemplate>
+
+                <!-- "Altersfreigabe" (design T44F08): the system, its ratings as tiles, the switch, the note. -->
+                <DataTemplate x:DataType="filter:FilterRatingPane">
+                  <StackPanel Spacing="18" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                      <TextBlock Classes="filterStepperLabel" Text="{x:Static app:AppTexts.FilterSystem}" VerticalAlignment="Center" />
+                      <ItemsControl ItemsSource="{Binding Systems}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="10" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="filter:FilterChipViewModel">
+                            <Button Classes="plain filterPick" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                                    Content="{Binding Label}" Command="{Binding PickCommand}" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Ratings}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel ItemSpacing="12" LineSpacing="12" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="filter:FilterRatingTile">
+                          <Button Classes="plain filterRatingTile" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+                                  Classes.noHits="{Binding HasNoHits}" Classes.all="{Binding IsAll}" Command="{Binding PickCommand}">
+                            <StackPanel Spacing="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <TextBlock Classes="filterRatingCaption" Text="{Binding Caption}" />
+                              <TextBlock Classes="filterRatingValue" Text="{Binding Value}" />
+                              <TextBlock Classes="filterRatingCount" Text="{Binding CountText}" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Classes="plain filterSwitchRow" Classes.focused="{Binding IsWithUnknownFocused}"
+                            IsVisible="{Binding ShowsWithUnknown}" Command="{Binding ToggleWithUnknownCommand}">
+                      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Classes="filterSwitchLabel" Text="{x:Static app:AppTexts.FilterWithUnknown}" />
+                          <TextBlock Classes="filterSwitchInfo" Text="{Binding WithUnknownInfo}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Classes="filterValueCount" Text="{Binding WithUnknownCount}" />
+                        <Border Grid.Column="2" Classes="switch" Classes.on="{Binding IsWithUnknown}" VerticalAlignment="Center">
+                          <Ellipse />
+                        </Border>
+                      </Grid>
+                    </Button>
+
+                    <TextBlock Classes="filterMatchNote" Text="{x:Static filter:FilterRatingPane.Note}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ContentControl.DataTemplates>
+            </ContentControl>
           </Grid>
         </DockPanel>
         <Button Classes="plain dialogClose" Margin="0,-14,-22,0" ToolTip.Tip="{x:Static app:AppTexts.Close}"
@@ -135,5 +395,18 @@
         </Button>
       </Panel>
     </Border>
+
+    <!-- The settings' shared keyboard for the value search, as in "Titel ändern"; built at the first search, not with the modal. -->
+    <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding IsWriting}" VerticalAlignment="Bottom">
+      <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
+        <ContentControl Content="{Binding Keyboard}" HorizontalAlignment="Center" IsVisible="{Binding Keyboard, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="kb:OnScreenKeyboardViewModel">
+              <views:OnScreenKeyboardView />
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+      </Border>
+    </ctl:RevealPanel>
   </Panel>
 </UserControl>

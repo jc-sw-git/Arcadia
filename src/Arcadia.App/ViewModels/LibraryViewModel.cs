@@ -34,6 +34,15 @@ public interface ILibraryHost : IPageHost
 
     /// <summary>The filter modal closes; the library then applies its choice.</summary>
     void CloseFilter(FilterModalViewModel modal);
+
+    /// <summary>A metadata run goes on: the filter's counts may still change (#466 case 16).</summary>
+    bool IsMetadataLoading { get; }
+
+    /// <summary>The region's age rating board (#557), which "Altersfreigabe" opens on.</summary>
+    AgeRatingBoard FirstAgeRatingBoard { get; }
+
+    /// <summary>The on-screen keyboard of the filter's value search (#466).</summary>
+    FilterKeyboard FilterKeyboard { get; }
 }
 
 /// <summary>
@@ -56,12 +65,14 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     private readonly ILibraryHost _host;
     private readonly TimeProvider _time;
     private readonly InstallFolderCheck _installFolders;
+    private readonly FilterFactsSource _facts;
     private readonly Dictionary<LauncherTabViewModel, SortedTab> _sorted = [];
     private int _requestedPage;
 
     /// <param name="saveView">Saves a changed view, and says so if it can't.</param>
     /// <param name="showStates">Gives a new cover its game's install and run state.</param>
     /// <param name="installFolders">Notices off the UI thread that a focused game's install folder is gone.</param>
+    /// <param name="facts">The games' metadata and own tags the filter reads (#466).</param>
     public LibraryViewModel(
         LauncherTabsViewModel tabs,
         SettingsService settings,
@@ -70,7 +81,8 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         Action<GameTileViewModel> showStates,
         ILibraryHost host,
         TimeProvider time,
-        InstallFolderCheck installFolders)
+        InstallFolderCheck installFolders,
+        FilterFactsSource facts)
     {
         _tabs = tabs;
         _settings = settings;
@@ -80,6 +92,7 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         _host = host;
         _time = time;
         _installFolders = installFolders;
+        _facts = facts;
     }
 
     public ObservableCollection<GameTileViewModel> PageGames { get; } = [];
@@ -285,6 +298,38 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         Refresh(FocusedGame is { } focused ? PageGames.IndexOf(focused) : 0, FocusedGame?.Game.Key);
     }
 
+    /// <summary>
+    /// The games' metadata or own tags changed (#466 case 15): a filtered tab shows its new hits at once, the focus stays
+    /// on its game, or goes on to the next hit if the game no longer matches. An unfiltered tab only offers new categories.
+    /// </summary>
+    public void FactsChanged()
+    {
+        if (_tabs.SelectedTab is not { } tab || EmptyTab is not null)
+        {
+            return;
+        }
+
+        var before = _sorted.GetValueOrDefault(tab);
+        var focusKey = FocusedGame?.Game.Key;
+        var after = Shown(tab);
+        if (before?.Shown is { } shown && shown.Games.SequenceEqual(after.Games) && before.Offer.HasAny == _sorted[tab].Offer.HasAny)
+        {
+            // Same hits, same funnel: the page stays as it is, without building its covers again.
+            return;
+        }
+
+        if (focusKey is null)
+        {
+            Refresh(focusIndex: 0);
+            return;
+        }
+
+        // The focused game where it is now; if it no longer matches, the next hit after it in the tab's order.
+        var all = _sorted[tab].Games;
+        ShowAt(Math.Max(0, Carousel.FindOrNext(after.Games, all, Carousel.Find(all, focusKey, 0))));
+        _host.ViewChanged();
+    }
+
     /// <summary>The library shows the selected tab from its first page.</summary>
     public void ShowTab()
     {
@@ -343,15 +388,22 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
         var sort = _settings.Current.LibrarySort;
         if (!_sorted.TryGetValue(tab, out var sorted) || !ReferenceEquals(sorted.Source, tab.Games) || sorted.Sort != sort)
         {
+            var facts = _facts.Of(tab.Games);
             sorted = new SortedTab(tab.Games, sort, GameSorter.Sort(tab.Games, sort, Formatting.Culture), TypeCountLine.Of(tab.Games),
-                FilterOffer.Of(tab.Games), null);
+                facts, _facts.Version, FilterOffer.Of(tab.Games, facts), null);
+        }
+        else if (sorted.FactsVersion != _facts.Version)
+        {
+            // New metadata or own tags (#466): the same sorted games, filtered and offered again.
+            var facts = _facts.Of(tab.Games);
+            sorted = sorted with { Facts = facts, FactsVersion = _facts.Version, Offer = FilterOffer.Of(tab.Games, facts), Shown = null };
         }
 
         // What the tab doesn't offer (a kind switched off, a rescan) drops out of the saved filter, which stays as it was (#44 case 17).
         var filter = _settings.Current.FilterOf(tab.Launcher.Id).Within(sorted.Offer);
         if (sorted.Shown is not { } shown || !shown.Filter.Equals(filter))
         {
-            shown = new ShownTab(filter, filter.Apply(sorted.Games));
+            shown = new ShownTab(filter, filter.Apply(sorted.Games, sorted.Facts));
             sorted = sorted with { Shown = shown };
         }
 
@@ -391,15 +443,18 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
             return;
         }
 
-        var offer = FilterOffer.Of(tab.Games);
+        Shown(tab);
+        var snapshot = _sorted[tab];
+        var offer = snapshot.Offer;
         if (offer.HasAny)
         {
             var saved = _settings.Current.FilterOf(tab.Launcher.Id);
-            _host.ShowFilter(new FilterModalViewModel(tab.Name, tab.Games, offer, saved.Within(offer), modal =>
+            var setup = new FilterModalSetup(tab.Name, tab.Games, snapshot.Facts, offer, _time.GetLocalNow().Year, _host.FirstAgeRatingBoard, _host.IsMetadataLoading);
+            _host.ShowFilter(new FilterModalViewModel(setup, saved.Within(offer), modal =>
             {
                 _host.CloseFilter(modal);
                 ApplyFilter(tab, modal.WasReset ? modal.Chosen : modal.Chosen.Over(saved, offer));
-            }));
+            }, _host.FilterKeyboard));
         }
     }
 
@@ -598,7 +653,15 @@ public sealed partial class LibraryViewModel : ViewModelBase, IPage
     }
 
     /// <summary>A tab's games sorted, what they were sorted from, its count line, what it offers to filter and what its filter shows.</summary>
-    private sealed record SortedTab(IReadOnlyList<Game> Source, SortOrder Sort, IReadOnlyList<Game> Games, TypeCountLine Counts, FilterOffer Offer, ShownTab? Shown);
+    private sealed record SortedTab(
+        IReadOnlyList<Game> Source,
+        SortOrder Sort,
+        IReadOnlyList<Game> Games,
+        TypeCountLine Counts,
+        FilterFacts Facts,
+        int FactsVersion,
+        FilterOffer Offer,
+        ShownTab? Shown);
 
     /// <summary>The tab's filter as it applies, and the sorted games it lets through.</summary>
     private sealed record ShownTab(GameFilter Filter, IReadOnlyList<Game> Games);

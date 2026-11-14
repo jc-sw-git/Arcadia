@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Metadata.Igdb;
@@ -90,6 +91,15 @@ public sealed partial class MetadataService : IDisposable
     /// <summary>IGDB with the player's access (#494); null: launcher data only.</summary>
     public IgdbAccess? Igdb { get; init; }
 
+    /// <summary>
+    /// The UI language (#557): the stores are asked in it, and the texts shown are in it, else in English. Fixed for a
+    /// run: a change of "Sprache" applies after the restart.
+    /// </summary>
+    public CultureInfo Language { get; init; } = CultureInfo.CurrentUICulture;
+
+    /// <summary>The board whose age rating comes first (#557): the system region's.</summary>
+    public AgeRatingBoard FirstAgeRatingBoard { get; init; } = AgeRatingRegion.System;
+
     /// <summary>The metadata of these games changed (any thread).</summary>
     public event EventHandler<IReadOnlyCollection<string>>? Changed;
 
@@ -109,6 +119,22 @@ public sealed partial class MetadataService : IDisposable
             lock (_gate)
             {
                 return _reloadAsked ? _progress with { Reload = true } : _progress;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A run goes on, from its start: also while it indexes the cache and reads the launchers' own files, which
+    /// <see cref="MetadataProgress.Running"/> leaves out because nothing is fetched then. The filter tells by it that
+    /// categories may still come (#466).
+    /// </summary>
+    public bool IsBusy
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _running;
             }
         }
     }
@@ -273,12 +299,16 @@ public sealed partial class MetadataService : IDisposable
                 _madeUp = madeUp;
             }
 
-            if (!_running)
+            if (_running)
             {
-                _running = true;
-                _runner = Task.Run(RunAsync);
+                return;
             }
+
+            _running = true;
+            _runner = Task.Run(RunAsync);
         }
+
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task RunAsync()
@@ -495,11 +525,11 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    private static IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
+    private IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
         libraries
             .Where(l => l.Source?.Store is not null)
             .SelectMany(l => l.Library.Games.Select(g => (g, l.Source!.Store!, l.Library.Launcher.DisplayName)))
-            .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g)) is not null)
+            .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g, Language)) is not null)
             .DistinctBy(g => g.g.Key, StringComparer.Ordinal);
 
     private bool IsMissing(Game game) => _reloadLeft.Contains(game.Key) || _records.GetValueOrDefault(game.Key)?.Store is null;
@@ -547,7 +577,7 @@ public sealed partial class MetadataService : IDisposable
 
     private async Task<Outcome> FetchGameAsync(Game game, IMetadataStore store, string source, FetchRun run, CancellationToken cancel)
     {
-        if (CheckedAddress(SafeAddressOf(store, game)) is not { } address)
+        if (CheckedAddress(SafeAddressOf(store, game, Language)) is not { } address)
         {
             _reloadLeft.Remove(game.Key);
             return Outcome.NoAddress;
@@ -586,7 +616,10 @@ public sealed partial class MetadataService : IDisposable
             }
 
             var known = _records.GetValueOrDefault(game.Key) ?? new CachedMetadata(game.Key, source, null, null, null);
-            var updated = known with { Source = source, Store = MetadataCheck.Checked(parsed), StoreAt = _time.GetUtcNow() };
+            var updated = known with
+            {
+                Source = source, Store = MetadataCheck.Checked(parsed), StoreAt = _time.GetUtcNow(), StoreLanguage = Language.TwoLetterISOLanguageName,
+            };
             Keep(updated);
             var changed = new List<string>();
             Show(updated.GameKey, changed);
@@ -599,11 +632,11 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    private static Uri? SafeAddressOf(IMetadataStore store, Game game)
+    private static Uri? SafeAddressOf(IMetadataStore store, Game game, CultureInfo language)
     {
         try
         {
-            return store.AddressOf(game);
+            return store.AddressOf(game, language);
         }
         catch (Exception e) when (e is ArgumentException or FormatException or UriFormatException)
         {
@@ -759,15 +792,16 @@ public sealed partial class MetadataService : IDisposable
         {
             if (source == MetadataSourceKind.Launcher)
             {
-                providers.Add(new ProviderMetadata(cached.Source, cached.Data));
+                providers.Add(new ProviderMetadata(cached.Source, cached.Data, cached.StoreLanguage));
             }
             else if (source == MetadataSourceKind.Igdb && withIgdb && cached.Igdb is { } igdb)
             {
-                providers.Add(new ProviderMetadata(IgdbName, igdb.Data));
+                // IGDB's texts are English (#557).
+                providers.Add(new ProviderMetadata(IgdbName, igdb.Data, "en"));
             }
         }
 
-        var merged = MergedMetadata.Of(providers);
+        var merged = MergedMetadata.Of(providers, Language.TwoLetterISOLanguageName, FirstAgeRatingBoard);
         return withIgdb && settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
             ? merged with { Title = new Sourced<string>(title, IgdbName), LauncherTitle = new Sourced<string>(launcherTitle!, cached.Source) }
             : merged;

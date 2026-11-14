@@ -22,7 +22,7 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
 
 **Steam** (`Steam/`)
 - `SteamMetadata` (#493, `docs/launchers/steam/metadata.md`): `SteamAppMetadata` (genres, companies, date, tags from
-  `appinfo.vdf`), `SteamAppDetails` (the store page: address and answer), `SteamGenres`, `SteamTags` (embedded German tag list).
+  `appinfo.vdf`), `SteamAppDetails` (the store page: address and answer), `SteamGenres`, `SteamTags` (embedded tag list per UI language, `SteamLanguage` names it).
 - `SteamArtwork`: the account's own images, Steam's library cache, Steam's image server (#487,
   `docs/launchers/steam/artwork.md`).
 - `SteamScanner`, `SteamInstallation`, `SteamInstallMonitor`, `SteamRunningGames`, `SteamProgram` (Steam the

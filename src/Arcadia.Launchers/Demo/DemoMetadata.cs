@@ -4,7 +4,7 @@ namespace Arcadia.Launchers.Demo;
 
 /// <summary>
 /// Made-up metadata for the demo libraries (#493), all from "local files" so it needs no store: long German texts with
-/// markup, short ones, an English one, none at all; long developer names; USK, Steam's own rating and none. Picked by
+/// markup, short ones, an English one, none at all; long developer names; USK, Steam's own rating and none; a long tag list. Picked by
 /// the game's id, so a game shows the same each start, and the budgets are measured with metadata in memory.
 /// </summary>
 public sealed class DemoMetadata : ILauncherMetadata
@@ -54,7 +54,9 @@ public sealed class DemoMetadata : ILauncherMetadata
                 Developers = [(n % 3) switch { 0 => DemoTexts.DemoMetadataDeveloper1, 1 => DemoTexts.DemoMetadataDeveloper2, _ => DemoTexts.DemoMetadataDeveloper3 }],
                 Publishers = n % 2 == 0 ? [DemoTexts.DemoMetadataPublisher] : [],
                 ReleaseDate = n % 7 == 6 ? null : new DateOnly(1995 + n % 31, 1 + n % 12, 1 + n % 28),
-                Tags = [.. tags.Skip(n % 3).Take(1 + n % tags.Length)],
+                // One numbered topic per game besides the common tags: with --demo-games the tag list grows to about a
+                // thousand values, the long list whose budget #466 measures.
+                Tags = [.. tags.Skip(n % 3).Take(1 + n % tags.Length), DemoTexts.DemoMetadataTopicTag(TopicOf(game.Id))],
                 AgeRatings = (n % 3) switch
                 {
                     0 => [new AgeRating(AgeRatingBoard.Usk, new[] { "0", "6", "12", "16", "18" }[n % 5]), new AgeRating(AgeRatingBoard.Pegi, "16")],
@@ -63,6 +65,8 @@ public sealed class DemoMetadata : ILauncherMetadata
                 },
             };
         }
+
+        private static string TopicOf(string id) => ((StableHash(id) / 1000 % 1000) + 1).ToString(System.Globalization.CultureInfo.CurrentCulture);
 
         // string.GetHashCode differs per process; the demo should look the same each start.
         private static uint StableHash(string text)

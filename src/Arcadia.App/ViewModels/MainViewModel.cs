@@ -132,6 +132,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
         AppErrors.Occurred += OnAppError;
         ControllerMode.FocusedGameChanged();
+        CreateImageShow();
     }
 
     /// <summary>The toasts and status changes since the start, for "Letzte Meldungen" (#433).</summary>
@@ -374,6 +375,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// </param>
     public void Handle(UiAction action, bool repeat = false)
     {
+        if (SwallowedByImageShow(action, repeat))
+        {
+            return;
+        }
+
         if (!_repeats.Allows(action, repeat, ShownLayer()))
         {
             return;
@@ -526,6 +532,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
+        if (ReleaseSwallowedByImageShow(action))
+        {
+            return;
+        }
+
         _repeats.Release(action);
         PanDialogs.Release(action);
         _actions.Release(action);
@@ -1134,6 +1145,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         IReadOnlyList<IPage> live = DetailBehindSearch is { } kept ? [.. open, kept] : open;
         var closed = _livePages.Except(live).ToList();
         _livePages = live;
+        ImageShow?.Restart();
         foreach (var page in closed.OfType<IDisposable>())
         {
             page.Dispose();
@@ -1170,6 +1182,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ControllerMode.Dispose();
         Status.Dispose();
         Toast.Dispose();
+        ImageShow.Dispose();
         SearchKeyboard.Dispose();
         SettingsKeyboard.Dispose();
         Session.Dispose();

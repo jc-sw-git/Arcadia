@@ -22,11 +22,20 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
   `Services/MetadataFolder`: its own client without cookies or redirects, the `IgdbAccess` with DPAPI on Windows; `MainViewModel.Metadata.cs`: its errors,
   the reload's warning, `MetadataOf`, `MetadataChanged`); `MainViewModel` gives each new tile its `GameArtwork` (with
   the install and run state, `ShowStates`) and, on `Changed`, the shown tiles theirs. `GameTileViewModel.Cover`/`Hero`.
-- `Controls/ArtworkImage`: draws one image cropped centred with rounded corners. It loads only when it is drawn (a hidden
+- `Controls/ArtworkImage`: draws one image with rounded corners, placed by its `Fit` (`Controls/ArtworkPlacement`, #565):
+  a cover fills cropped centred, a background loses at most 10 % (`AlmostWhole`, chosen by the image's kind), the detail
+  page uses `DetailPage`, "Bild ansehen" `Whole`. Where the image leaves its box uncovered it draws the blurred copy
+  (`Controls/BlurredCopy`: 64 px wide, box-blurred, made once per decode off the UI thread) under the theme's
+  `ArtworkBlurShade`; fading edges are opacity masks. It loads only when it is drawn (a hidden
   slot decodes nothing), at the size it has on the screen (layout size × the `Viewbox`'s scale × the screen's scaling); a render transform alone draws nothing anew, so `Controls/DepthSlot` redraws its cover's images when the cover arrives at its slot (#532),
   drops the image at once when its slot shows another game, and says `IsShowing`, which hides the placeholder's
   monogram and title. Badges and the shade lie above it in the views; on the detail page the background fills the
-  screen under the scrims `DetailScrimSide`/`Top`/`Bottom` (`Theme.axaml`), which keep title and buttons readable.
+  screen under the scrims `DetailScrimTitle`/`Top`/`Bottom` (`Theme.axaml`), only behind title, tabs and footer.
+- "Bild ansehen" (#565): `ViewModels/ImageShowViewModel` (the idle timer, two layers taking turns, `ImageShowOrder` for
+  the random order without repeats) and `MainViewModel.ImageShow.cs` (when it may run, the pool from the detail page's
+  games, swallowing the press that ends it with its repeats and release). `MainWindow` shows it over everything but the
+  toast, swallows keys, clicks and the wheel that end it, counts mouse moves as input and reports `Activated`/`Deactivated`
+  (`SetInFront`).
 - `Services/ArtworkLoader`: decodes off the UI thread, a few at a time; an image it can't decode is logged and reported
   to the service as broken, which loads it again at the next scan. `Decoded` and `Loaded` let tests count.
 

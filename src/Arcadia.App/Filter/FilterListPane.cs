@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
 using Arcadia.App.Input;
 using Arcadia.App.Services;
@@ -83,13 +82,15 @@ public sealed partial class FilterListPane : FilterPane
 
     public override bool IsWriting => Editor is not null;
 
-    private readonly ObservableCollection<FilterListRow> _visibleRows = [];
-
     /// <summary>
-    /// The rows in sight. Changed row by row, never replaced: a new list made the view build all nine rows again on every
-    /// press, 54–133 ms with a thousand tags (#466 case 24).
+    /// The view's rows: always <see cref="RowsInSight"/> slots that only change what they show. Built anew, the view
+    /// made all rows and values again at each step or page, 54–172 ms with a thousand tags (#466 case 24); a slot keeps
+    /// its controls and only binds to the new row.
     /// </summary>
-    public IReadOnlyList<FilterListRow> VisibleRows => _visibleRows;
+    public IReadOnlyList<FilterRowSlot> RowSlots { get; } = [.. Enumerable.Range(0, RowsInSight).Select(_ => new FilterRowSlot())];
+
+    /// <summary>The rows in sight.</summary>
+    public IReadOnlyList<FilterListRow> VisibleRows => [.. RowSlots.Select(slot => slot.Row).OfType<FilterListRow>()];
 
     /// <summary>The letters of "A–Z" beside the list, the focused value's highlighted.</summary>
     [ObservableProperty]
@@ -602,55 +603,12 @@ public sealed partial class FilterListPane : FilterPane
         }
     }
 
-    /// <summary>Brings the rows in sight to <paramref name="wanted"/> with as few changes as a scroll by some rows needs.</summary>
     private void ShowOnly(List<FilterListRow> wanted)
     {
-        var shown = _visibleRows;
-        var start = wanted.Count == 0 ? -1 : IndexOf(shown, wanted[0]);
-        if (start > 0)
+        for (var i = 0; i < RowSlots.Count; i++)
         {
-            for (var i = 0; i < start; i++)
-            {
-                shown.RemoveAt(0);
-            }
+            RowSlots[i].Show(i < wanted.Count ? wanted[i] : null);
         }
-        else if (start < 0 && shown.Count > 0 && IndexOf(wanted, shown[0]) is var below and > 0)
-        {
-            for (var i = 0; i < below; i++)
-            {
-                shown.Insert(i, wanted[i]);
-            }
-        }
-
-        for (var i = 0; i < wanted.Count; i++)
-        {
-            if (i == shown.Count)
-            {
-                shown.Add(wanted[i]);
-            }
-            else if (!ReferenceEquals(shown[i], wanted[i]))
-            {
-                shown[i] = wanted[i];
-            }
-        }
-
-        while (shown.Count > wanted.Count)
-        {
-            shown.RemoveAt(shown.Count - 1);
-        }
-    }
-
-    private static int IndexOf(IList<FilterListRow> rows, FilterListRow row)
-    {
-        for (var i = 0; i < rows.Count; i++)
-        {
-            if (ReferenceEquals(rows[i], row))
-            {
-                return i;
-            }
-        }
-
-        return -1;
     }
 
     private string LabelOf(string key) =>
@@ -710,6 +668,51 @@ public sealed record FilterListRow(string? HeadingText, string? Lead, List<Filte
     public bool HasLead => Lead is not null;
 
     public static FilterListRow Heading(string text) => new(text, null, []);
+}
+
+/// <summary>A row's place in the list's window: shows a row, or nothing below the list's end.</summary>
+public sealed partial class FilterRowSlot : ObservableObject
+{
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsShown), nameof(IsHeading), nameof(IsValues), nameof(HeadingText), nameof(Lead), nameof(HasLead))]
+    public partial FilterListRow? Row { get; private set; }
+
+    public bool IsShown => Row is not null;
+
+    public bool IsHeading => Row?.IsHeading == true;
+
+    public bool IsValues => Row is { IsHeading: false };
+
+    public string? HeadingText => Row?.HeadingText;
+
+    public string? Lead => Row?.Lead;
+
+    public bool HasLead => Row?.HasLead == true;
+
+    /// <summary>The row's values by column; null where the row ends early.</summary>
+    [ObservableProperty]
+    public partial FilterValueViewModel? First { get; private set; }
+
+    [ObservableProperty]
+    public partial FilterValueViewModel? Second { get; private set; }
+
+    [ObservableProperty]
+    public partial FilterValueViewModel? Third { get; private set; }
+
+    public void Show(FilterListRow? row)
+    {
+        if (ReferenceEquals(row, Row))
+        {
+            return;
+        }
+
+        Row = row;
+        First = CellOf(row, 0);
+        Second = CellOf(row, 1);
+        Third = CellOf(row, 2);
+    }
+
+    private static FilterValueViewModel? CellOf(FilterListRow? row, int column) => row is not null && column < row.Cells.Count ? row.Cells[column] : null;
 }
 
 /// <summary>A letter of the bar beside "A–Z"; the focused value's is highlighted.</summary>

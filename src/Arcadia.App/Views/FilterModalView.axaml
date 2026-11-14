@@ -9,6 +9,22 @@
              x:Class="Arcadia.App.Views.FilterModalView"
              x:DataType="filter:FilterModalViewModel">
 
+  <UserControl.Resources>
+    <!-- A value of a long list: its check, label and hits; a slot's column keeps it and only rebinds. -->
+    <DataTemplate x:Key="FilterValueTemplate" x:DataType="filter:FilterValueViewModel">
+      <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+              Classes.noHits="{Binding HasNoHits}" Classes.own="{Binding IsOwn}" Command="{Binding PickCommand}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <Border Classes="filterCheck">
+            <Path Classes="filterCheckMark" />
+          </Border>
+          <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Label}" />
+          <TextBlock Grid.Column="2" Classes="filterValueCount" Text="{Binding CountText}" />
+        </Grid>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+
   <!-- "Filter" (#44, #466, designs T44F02–T44F09, T44Modal, T44Bausteine): categories left, the values of the one in
        focus right, a pane per kind of category. Sizes and colours are styles in Theme.axaml (filter…). -->
   <Panel>
@@ -211,39 +227,24 @@
 
                     <!-- The wheel moves the window of rows (FilterModalView.axaml.cs). -->
                     <Panel Name="ListRows" Background="Transparent" VerticalAlignment="Top" PointerWheelChanged="OnListWheel">
-                      <ItemsControl ItemsSource="{Binding VisibleRows}">
+                      <!-- Fixed slots, each with a value template per column: a step or a page only rebinds them (#466 case 24). -->
+                      <ItemsControl ItemsSource="{Binding RowSlots}">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate>
                             <StackPanel Spacing="10" />
                           </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                          <DataTemplate x:DataType="filter:FilterListRow">
-                            <Panel>
+                          <DataTemplate x:DataType="filter:FilterRowSlot">
+                            <Panel IsVisible="{Binding IsShown}">
                               <TextBlock Classes="filterListHeading" Text="{Binding HeadingText}" IsVisible="{Binding IsHeading}" />
-                              <Grid ColumnDefinitions="36,*" IsVisible="{Binding !IsHeading}">
+                              <Grid ColumnDefinitions="36,*" IsVisible="{Binding IsValues}">
                                 <TextBlock Classes="filterListLead" Text="{Binding Lead}" IsVisible="{Binding HasLead}" />
-                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Cells}">
-                                  <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                      <UniformGrid Columns="{x:Static filter:FilterListPane.Columns}" ColumnSpacing="10" />
-                                    </ItemsPanelTemplate>
-                                  </ItemsControl.ItemsPanel>
-                                  <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="filter:FilterValueViewModel">
-                                      <Button Classes="plain filterValue" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
-                                              Classes.noHits="{Binding HasNoHits}" Classes.own="{Binding IsOwn}" Command="{Binding PickCommand}">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                          <Border Classes="filterCheck">
-                                            <Path Classes="filterCheckMark" />
-                                          </Border>
-                                          <TextBlock Grid.Column="1" Classes="filterValueLabel" Text="{Binding Label}" />
-                                          <TextBlock Grid.Column="2" Classes="filterValueCount" Text="{Binding CountText}" />
-                                        </Grid>
-                                      </Button>
-                                    </DataTemplate>
-                                  </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <UniformGrid Grid.Column="1" Columns="{x:Static filter:FilterListPane.Columns}" ColumnSpacing="10">
+                                  <ContentControl Content="{Binding First}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                  <ContentControl Content="{Binding Second}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                  <ContentControl Content="{Binding Third}" ContentTemplate="{StaticResource FilterValueTemplate}" ClipToBounds="False" />
+                                </UniformGrid>
                               </Grid>
                             </Panel>
                           </DataTemplate>

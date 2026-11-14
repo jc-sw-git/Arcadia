@@ -113,7 +113,6 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    /// <summary>The games of the last libraries a store or IGDB is asked for, e.g. for "Alle Metadaten neu laden?"; 0 before the first scan.</summary>
     /// <summary>
     /// A run goes on, from its start: also while it indexes the cache and reads the launchers' own files, which
     /// <see cref="MetadataProgress.Running"/> leaves out because nothing is fetched then. The filter tells by it that
@@ -130,6 +129,7 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
+    /// <summary>The games of the last libraries a store or IGDB is asked for, e.g. for "Alle Metadaten neu laden?"; 0 before the first scan.</summary>
     public int GameCount
     {
         get

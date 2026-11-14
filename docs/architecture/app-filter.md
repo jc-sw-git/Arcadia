@@ -12,8 +12,8 @@ The modal "Filter" (#44, part A #465, part B #466) over the library; what it doe
 - Panes, each with its focus, its values and its footer hints (`MoveText`, `AcceptText`, `SearchText`, `PageText`, …):
   - `FilterOptionsPane`: "Installiert" (radios) and "Typ" (a grid of three).
   - `FilterListPane`: genre, tags, developer, publisher. Rows of three in a window of 9 rows (4 while writing) that the
-    view model moves (no virtualizing panel; `VisibleRows` changes row by row, so a step builds at most the rows
-    scrolled in); own tags first under their heading; "Häufigste zuerst" or A–Z with
+    view model moves (no virtualizing panel: `RowSlots` are 9 fixed slots with a value template per column that a step, a page or L3
+    only rebinds); own tags first under their heading; "Häufigste zuerst" or A–Z with
     letter leads and a letter rail; the order is set when the list is arranged (opening, L3, search), not at each
     choice. The value search writes with the settings' on-screen keyboard (`IFilterPaneHost.Write`).
   - `FilterYearPane`: the bar chart, the quick picks (`YearPicks`), "von" and "bis".

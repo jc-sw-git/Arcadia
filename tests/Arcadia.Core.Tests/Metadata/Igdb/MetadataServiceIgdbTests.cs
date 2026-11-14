@@ -111,7 +111,8 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
         change();
         try
         {
-            return await changed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            // A net only: the merge runs on the thread pool, which a busy Windows runner served late (#589).
+            return await changed.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
         finally
         {

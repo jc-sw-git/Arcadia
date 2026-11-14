@@ -1,0 +1,1422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="PanJournalUnreadable" xml:space="preserve"><value>Pan n’a pas pu lire son journal – détails dans pan.log sous %ProgramData%\Arcadia\Pan</value></data>
+  <data name="ErrorContextUi" xml:space="preserve"><value>Interface</value></data>
+  <data name="ErrorContextArtwork" xml:space="preserve"><value>Jaquettes et arrière-plans</value></data>
+  <data name="ErrorContextImageShow" xml:space="preserve"><value>Affichage de l’image</value></data>
+  <data name="ErrorContextControllerWatch" xml:space="preserve"><value>Surveillance des manettes</value></data>
+  <data name="ErrorContextXboxPadForGames" xml:space="preserve"><value>Manette Xbox pour les jeux</value></data>
+  <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Vérification des installations</value></data>
+  <data name="ErrorContextUpdateCheck" xml:space="preserve"><value>Recherche de mises à jour</value></data>
+  <data name="ErrorContextRunningGames" xml:space="preserve"><value>Jeux en cours</value></data>
+  <data name="ErrorContextReturnAfterGame" xml:space="preserve"><value>Retour à Arcadia après le jeu</value></data>
+  <data name="ErrorContextReturnAfterRefusedStart" xml:space="preserve"><value>Retour à Arcadia après un démarrage annulé</value></data>
+  <data name="ErrorContextLoadLibrary" xml:space="preserve"><value>Chargement de la bibliothèque</value></data>
+  <data name="RestartFailed" xml:space="preserve"><value>Arcadia n’a pas pu redémarrer. Fermez Arcadia, puis relancez-le.</value></data>
+  <data name="ErrorContextFollowInstalls" xml:space="preserve"><value>Suivi des installations</value></data>
+  <data name="FilterTitle" xml:space="preserve"><value>Filtre</value></data>
+  <data name="FilterResetAll" xml:space="preserve"><value>Réinitialiser tous les filtres</value></data>
+  <data name="FilterOnlyNotInstalled" xml:space="preserve"><value>Non installés uniquement</value></data>
+  <data name="FilterHintReset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="FilterHintToggle" xml:space="preserve"><value>Activer/Désactiver</value></data>
+  <data name="Select" xml:space="preserve"><value>Choisir</value></data>
+  <data name="Back" xml:space="preserve"><value>Retour</value></data>
+  <data name="FilterHintCloseAndApply" xml:space="preserve"><value>Fermer et appliquer</value></data>
+  <data name="FilterOfTotal" xml:space="preserve"><value>sur {total} entrées</value></data>
+  <data name="FilterAllTypes" xml:space="preserve"><value>Tous les types</value></data>
+  <data name="FilterOnlyInstalled" xml:space="preserve"><value>Installés uniquement</value></data>
+  <data name="ControllersUnavailable" xml:space="preserve"><value>Les manettes ne sont pas détectées (SDL3 manque ou ne démarre pas). Le clavier et la souris fonctionnent – détails dans arcadia.log.</value></data>
+  <data name="FirmwareInGame" xml:space="preserve"><value>Pan : Steam ne peut pas mettre à jour le firmware tant qu’Arcadia gère le Steam Controller. Pour la mise à jour, fermez Arcadia après le jeu.</value></data>
+  <data name="ErrorContextFirmwareHint" xml:space="preserve"><value>Remarque sur la mise à jour du firmware</value></data>
+  <data name="SteamControllerPanLost" xml:space="preserve"><value>Steam Controller : connexion à Pan perdue – Arcadia retire la manette Xbox et se reconnecte</value></data>
+  <data name="SteamControllerTornDownNoAnswer" xml:space="preserve"><value>Steam Controller : Arcadia n’a pas répondu pendant 3 secondes, Pan a donc retiré la manette Xbox – elle revient dans un instant</value></data>
+  <data name="SteamControllerTornDownPanEnded" xml:space="preserve"><value>Steam Controller : Pan a été fermé et a retiré la manette Xbox – elle revient dès que Pan tourne à nouveau</value></data>
+  <data name="SteamControllerTornDown" xml:space="preserve"><value>Steam Controller : Pan a retiré la manette Xbox ({reason}) – elle revient dans un instant</value></data>
+  <data name="KeyDelete" xml:space="preserve"><value>Effacer</value></data>
+  <data name="LogFileNoProgram" xml:space="preserve"><value>Aucun programme n’est défini pour les fichiers .log.</value></data>
+  <data name="LogFileAccessDenied" xml:space="preserve"><value>L’accès au fichier a été refusé.</value></data>
+  <data name="FileGone" xml:space="preserve"><value>Le fichier n’existe plus.</value></data>
+  <data name="LogFileNoAnswer" xml:space="preserve"><value>Le système n’a pas répondu à temps.</value></data>
+  <data name="DetailsInArcadiaLog" xml:space="preserve"><value>Détails dans arcadia.log.</value></data>
+  <data name="UninstallIntro" xml:space="preserve"><value>Arcadia est en cours de désinstallation.
+
+</value></data>
+  <data name="UninstallAskRemoveData" xml:space="preserve"><value>Supprimer aussi les paramètres, les logos personnalisés et les journaux d’Arcadia ?
+
+</value></data>
+  <data name="UninstallKeepExplained" xml:space="preserve"><value>S’ils sont conservés, les paramètres reviennent après une nouvelle installation. </value></data>
+  <data name="UninstallTimeout" xml:space="preserve"><value>Sans réponse dans les {seconds} secondes, ils sont conservés.</value></data>
+  <data name="UninstallCaption" xml:space="preserve"><value>Désinstaller Arcadia</value></data>
+  <data name="SearchAllLaunchers" xml:space="preserve"><value>Rechercher dans tous les lanceurs</value></data>
+  <data name="SearchFilteredByKeyword" xml:space="preserve"><value>Filtré par raccourci : </value></data>
+  <data name="SearchIn" xml:space="preserve"><value>Rechercher dans : </value></data>
+  <data name="SearchUnknownKeyword" xml:space="preserve"><value>Raccourci inconnu : {prefix}{keyword}</value></data>
+  <data name="SearchUnknownKeywords" xml:space="preserve"><value>Raccourcis inconnus : </value></data>
+  <data name="SearchTypeTerm" xml:space="preserve"><value>Saisissez un terme de recherche</value></data>
+  <data name="SearchExplanation" xml:space="preserve"><value>Arcadia recherche dans les titres des jeux de tous les lanceurs choisis.</value></data>
+  <data name="SearchNoHit" xml:space="preserve"><value>Aucun jeu ne correspond à « {term} ». Vérifiez l’orthographe ou ajoutez d’autres lanceurs.</value></data>
+  <data name="SearchHitRange" xml:space="preserve"><value>{first}–{last} sur {count}</value></data>
+  <data name="AllLaunchers" xml:space="preserve"><value>Tous les lanceurs</value></data>
+  <data name="SortedBy" xml:space="preserve"><value>Tri : {sort}</value></data>
+  <data name="NoHits" xml:space="preserve"><value>Aucun résultat</value></data>
+  <data name="UnexpectedError" xml:space="preserve"><value>Erreur inattendue ({context}) – détails dans arcadia.log.</value></data>
+  <data name="UpdateCheckNoAnswer" xml:space="preserve"><value>La recherche de mises à jour a échoué : GitHub ne répond pas.</value></data>
+  <data name="UpdateCheckFailed" xml:space="preserve"><value>La recherche de mises à jour a échoué : {message}</value></data>
+  <data name="UpdateDownloadFailed" xml:space="preserve"><value>La mise à jour n’a pas pu être téléchargée : {message}</value></data>
+  <data name="UpdateDownloadStalled" xml:space="preserve"><value>La mise à jour n’a pas pu être téléchargée : aucune progression depuis {minutes} minutes. Réessayez plus tard.</value></data>
+  <data name="NeverPlayed" xml:space="preserve"><value>Jamais joué</value></data>
+  <data name="PlayedOverAYearAgo" xml:space="preserve"><value>Il y a plus d’un an</value></data>
+  <data name="SortNameAscending" xml:space="preserve"><value>Nom A–Z</value></data>
+  <data name="SortNameDescending" xml:space="preserve"><value>Nom Z–A</value></data>
+  <data name="SortInstalledOldest" xml:space="preserve"><value>Installé · plus ancien d’abord</value></data>
+  <data name="SortPlayedNewest" xml:space="preserve"><value>Dernière partie · plus récente d’abord</value></data>
+  <data name="SortPlayedOldest" xml:space="preserve"><value>Dernière partie · plus ancienne d’abord</value></data>
+  <data name="PlayedAWeekAgo" xml:space="preserve"><value>Il y a 1 semaine</value></data>
+  <data name="PlayedAMonthAgo" xml:space="preserve"><value>Il y a 1 mois</value></data>
+  <data name="SortInstalledNewest" xml:space="preserve"><value>Installé · plus récent d’abord</value></data>
+  <data name="GameTypeGame" xml:space="preserve"><value>Jeu</value></data>
+  <data name="GameTypeGames" xml:space="preserve"><value>Jeux</value></data>
+  <data name="GameTypeTinker" xml:space="preserve"><value>Bricoler</value></data>
+  <data name="ReturnToGame" xml:space="preserve"><value>Retour au jeu</value></data>
+  <data name="ContinueTinkering" xml:space="preserve"><value>Continuer à bricoler</value></data>
+  <data name="ErrorContextCheckInstallFolder" xml:space="preserve"><value>Vérification du dossier d’installation</value></data>
+  <data name="LogoFileUnreadable" xml:space="preserve"><value>Le fichier n’a pas pu être lu : {message}</value></data>
+  <data name="LogoImageUnreadable" xml:space="preserve"><value>L’image n’a pas pu être lue.</value></data>
+  <data name="LogoImageTooSmall" xml:space="preserve"><value>L’image fait moins de {minSide} × {minSide} pixels.</value></data>
+  <data name="LogoImageTooLarge" xml:space="preserve"><value>L’image fait plus de {maxSide} × {maxSide} pixels.</value></data>
+  <data name="LogoSvgEmpty" xml:space="preserve"><value>Le SVG n’affiche rien.</value></data>
+  <data name="ErrorContextAccountOf" xml:space="preserve"><value>Compte {launcher}</value></data>
+  <data name="ErrorContextRefreshLibrary" xml:space="preserve"><value>Nouvelle analyse de la bibliothèque</value></data>
+  <data name="MouseModeDisabledInGame" xml:space="preserve"><value>Le mode souris est désactivé dans ce jeu</value></data>
+  <data name="MouseModeOnForDialog" xml:space="preserve"><value>Mode souris activé tant que la boîte de dialogue est ouverte</value></data>
+  <data name="MouseModeOffByGame" xml:space="preserve"><value>Mode souris désactivé – bloqué dans ce jeu</value></data>
+  <data name="MouseModeOnGameSeesInput" xml:space="preserve"><value>Mode souris activé – le jeu voit toujours les saisies</value></data>
+  <data name="MouseModeOff" xml:space="preserve"><value>Mode souris désactivé</value></data>
+  <data name="ErrorContextOpenKeyboard" xml:space="preserve"><value>Ouverture du clavier virtuel</value></data>
+  <data name="ErrorContextPrepareMouseModeKeyboard" xml:space="preserve"><value>Préparation du clavier du mode souris</value></data>
+  <data name="MouseModeOn" xml:space="preserve"><value>Mode souris activé</value></data>
+  <data name="WebPageNotOfLauncher" xml:space="preserve"><value>La page n’appartient pas au lanceur.</value></data>
+  <data name="WebPageNoAnswer" xml:space="preserve"><value>La page n’a pas répondu à temps.</value></data>
+  <data name="WebPageWindowNotReady" xml:space="preserve"><value>La fenêtre des pages web n’est pas prête.</value></data>
+  <data name="ErrorContextLoadWebPage" xml:space="preserve"><value>Chargement d’une page web</value></data>
+  <data name="AboutLoading" xml:space="preserve"><value>Téléchargement de la version {version}… {percent} %</value></data>
+  <data name="AboutTitle" xml:space="preserve"><value>À propos d’Arcadia</value></data>
+  <data name="AboutChecksByItself" xml:space="preserve"><value>Arcadia vérifie aussi de lui-même toutes les 6 heures</value></data>
+  <data name="AboutInstallSubtitle" xml:space="preserve"><value>Arcadia se ferme, installe la mise à jour et redémarre</value></data>
+  <data name="AboutWhatsNew" xml:space="preserve"><value>Nouveautés</value></data>
+  <data name="AboutDevelopmentBuild" xml:space="preserve"><value>Version de développement – les mises à jour ne sont disponibles que pour l’Arcadia installé.</value></data>
+  <data name="AboutChecking" xml:space="preserve"><value>Recherche de mises à jour…</value></data>
+  <data name="AboutLoadedRestarting" xml:space="preserve"><value>La version {version} est téléchargée – Arcadia redémarre…</value></data>
+  <data name="AboutAvailable" xml:space="preserve"><value>La version {version} est disponible.</value></data>
+  <data name="AboutUpToDateCheckedAt" xml:space="preserve"><value>Arcadia est à jour. Dernière vérification : {time}.</value></data>
+  <data name="AboutUpToDate" xml:space="preserve"><value>Arcadia est à jour.</value></data>
+  <data name="AboutCheckRunning" xml:space="preserve"><value>Vérification…</value></data>
+  <data name="AboutCheck" xml:space="preserve"><value>Vérifier</value></data>
+  <data name="AboutInstallInfo" xml:space="preserve"><value>Arcadia se ferme, Velopack installe la mise à jour sans demander et redémarre Arcadia. Un jeu en cours continue de tourner.</value></data>
+  <data name="AboutCheckForUpdates" xml:space="preserve"><value>Rechercher des mises à jour</value></data>
+  <data name="UpdateNow" xml:space="preserve"><value>Mettre à jour</value></data>
+  <data name="ErrorContextUpdateArcadia" xml:space="preserve"><value>Mise à jour d’Arcadia</value></data>
+  <data name="AboutNewUpToVersion" xml:space="preserve"><value>Nouveautés jusqu’à la version {version}</value></data>
+  <data name="LayoutsTitle" xml:space="preserve"><value>Attribuer les manettes</value></data>
+  <data name="LayoutsText" xml:space="preserve"><value>Choisissez la disposition que reçoivent vos manettes connectées. La disposition s’applique par modèle, pas par manette : toutes les manettes DualSense reçoivent la même disposition.</value></data>
+  <data name="LayoutsHint" xml:space="preserve"><value>Les changements ne prennent effet qu’avec « Appliquer ». Si un jeu est en cours, la manette s’y reconnecte une fois.</value></data>
+  <data name="Apply" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="LayoutsLockNote" xml:space="preserve"><value>Le mode Arcadia du Steam Controller est pour l’instant limité à la disposition manette Xbox. Une mise à jour changera cela.</value></data>
+  <data name="LayoutsSteamControllerTitle" xml:space="preserve"><value>Steam Controller (mode « Arcadia »)</value></data>
+  <data name="ControllerCategory" xml:space="preserve"><value>Manettes</value></data>
+  <data name="ControllerSteamSettingsTitle" xml:space="preserve"><value>Paramètres de manette pour Steam</value></data>
+  <data name="ControllerSteamSettingsSubtitle" xml:space="preserve"><value>D’autres paramètres de manette pour Steam.</value></data>
+  <data name="SteamSettings" xml:space="preserve"><value>Paramètres de Steam</value></data>
+  <data name="ControllerSteamSettingsInfo" xml:space="preserve"><value>Arcadia a détecté que Steam est installé. Les paramètres du lanceur Steam contiennent d’autres paramètres de manette liés à Steam, dont le Steam Controller et l’autorisation de la disposition bureau de Steam.</value></data>
+  <data name="ErrorContextCheckRunningSteamGame" xml:space="preserve"><value>Vérification d’un jeu Steam en cours</value></data>
+  <data name="ErrorContextRefreshSettings" xml:space="preserve"><value>Rechargement des paramètres</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+  <data name="Restart" xml:space="preserve"><value>Redémarrer</value></data>
+  <data name="RestartWindowsTitle" xml:space="preserve"><value>Redémarrer le PC ?</value></data>
+  <data name="RestartWindowsText" xml:space="preserve"><value>Tous les programmes se ferment, Arcadia aussi. Enregistrez d’abord votre travail dans les autres programmes.</value></data>
+  <data name="DriversInstallTitle" xml:space="preserve"><value>Installer les pilotes ?</value></data>
+  <data name="DriversInstallText" xml:space="preserve"><value>Arcadia installe maintenant des pilotes et programmes tiers : usbip-win2, HidHide et VIIPER, ainsi que le gardien des manettes (Pan). Arcadia demande une seule fois les droits d’administrateur. Un redémarrage du PC est recommandé après l’installation.</value></data>
+  <data name="DriversPuckRestart" xml:space="preserve"><value>L’installation des pilotes redémarre le puck du Steam Controller. Steam ne doit pas le mettre à jour à ce moment-là.</value></data>
+  <data name="DriversHidHideRestart" xml:space="preserve"><value>Après l’installation de HidHide, Arcadia redémarre une fois. Ce n’est qu’ensuite qu’Arcadia voit les manettes que Pan cache aux autres programmes.</value></data>
+  <data name="DriversSteamCloses" xml:space="preserve"><value>Steam doit être fermé pendant l’installation. Arcadia relance ensuite Steam en arrière-plan.</value></data>
+  <data name="SteamStopTitle" xml:space="preserve"><value>Fermer Steam ?</value></data>
+  <data name="SteamStopForSisrMarker" xml:space="preserve"><value>Arcadia ne peut retirer l’entrée « SISR Marker » que lorsque Steam est fermé. Steam est fermé brièvement pour cela, puis relancé.</value></data>
+  <data name="SteamStopDetailHidHide" xml:space="preserve"><value>La réinstallation de HidHide redémarre le puck du Steam Controller. Steam ne doit pas le mettre à jour à ce moment-là. Arcadia demande une seule fois les droits d’administrateur.</value></data>
+  <data name="SteamStopDetailDrivers" xml:space="preserve"><value>L’installation des pilotes redémarre le puck du Steam Controller. Steam ne doit pas le mettre à jour à ce moment-là. Arcadia demande une seule fois les droits d’administrateur.</value></data>
+  <data name="DriversUsbLine" xml:space="preserve"><value>Pendant l’installation, la souris, le clavier et les manettes peuvent cesser brièvement de répondre. C’est normal.</value></data>
+  <data name="Continue" xml:space="preserve"><value>Continuer</value></data>
+  <data name="SteamStopAndInstall" xml:space="preserve"><value>Fermer Steam et installer</value></data>
+  <data name="Install" xml:space="preserve"><value>Installer</value></data>
+  <data name="GameRunningSisr" xml:space="preserve"><value>Fermez d’abord le jeu, Arcadia pourra ensuite retirer SISR.</value></data>
+  <data name="GameRunningInstall" xml:space="preserve"><value>Steam doit être fermé et relancé pour l’installation. Fermez d’abord le jeu, puis réessayez.</value></data>
+  <data name="RemovingSisrWithSteam" xml:space="preserve"><value>Cela ne prend qu’un instant. Steam redémarre ensuite de lui-même.</value></data>
+  <data name="RemovingSisr" xml:space="preserve"><value>Cela ne prend qu’un instant.</value></data>
+  <data name="ErrorContextAssignControllers" xml:space="preserve"><value>Attribution des manettes</value></data>
+  <data name="SisrRemoved" xml:space="preserve"><value>SISR est entièrement retiré.</value></data>
+  <data name="ErrorContextRestartWindows" xml:space="preserve"><value>Redémarrage du PC</value></data>
+  <data name="HidHideInstallTitle" xml:space="preserve"><value>Installer HidHide ?</value></data>
+  <data name="SisrKeep" xml:space="preserve"><value>Garder SISR</value></data>
+  <data name="ErrorContextRemoveSisr" xml:space="preserve"><value>Retrait de SISR</value></data>
+  <data name="ErrorContextFixProblem" xml:space="preserve"><value>Résolution d’un problème</value></data>
+  <data name="DriversUsbHintTitle" xml:space="preserve"><value>La souris, le clavier et les manettes peuvent cesser brièvement de répondre</value></data>
+  <data name="DriversUsbHintText" xml:space="preserve"><value>C’est normal pendant l’installation d’usbip-win2. N’éteignez pas le PC ; Arcadia vous prévient dès qu’il continue.</value></data>
+  <data name="DriversNoCancel" xml:space="preserve"><value>L’installation ne peut pas être annulée.</value></data>
+  <data name="DriversRestartFooter" xml:space="preserve"><value>À la fin, Arcadia redémarre une fois.</value></data>
+  <data name="DriversClosesByItself" xml:space="preserve"><value>La fenêtre se ferme d’elle-même.</value></data>
+  <data name="DriversStepOf" xml:space="preserve"><value>Étape {current} sur {count}</value></data>
+  <data name="InfoNoChangesListed" xml:space="preserve"><value>Aucun changement indiqué.</value></data>
+  <data name="LevelError" xml:space="preserve"><value>Erreur</value></data>
+  <data name="SignOut" xml:space="preserve"><value>Se déconnecter</value></data>
+  <data name="SignIn" xml:space="preserve"><value>Se connecter</value></data>
+  <data name="AccountOnlyWhenActive" xml:space="preserve"><value>{account} · uniquement avec {launcher} activé</value></data>
+  <data name="AccountOnlyWhenActiveNoAccount" xml:space="preserve"><value>Uniquement avec {launcher} activé</value></data>
+  <data name="AccountLauncherNotFound" xml:space="preserve"><value>{account} · {launcher} introuvable</value></data>
+  <data name="AccountLauncherNotFoundNoAccount" xml:space="preserve"><value>{launcher} introuvable</value></data>
+  <data name="AccountNeedsLauncherFound" xml:space="preserve"><value>La connexion et la déconnexion ne fonctionnent qu’une fois qu’Arcadia a trouvé {launcher} : sans {launcher}, rien ne peut être installé.</value></data>
+  <data name="AccountNeedsLauncherActive" xml:space="preserve"><value>La connexion et la déconnexion ne fonctionnent qu’une fois {launcher} activé. Une connexion enregistrée est conservée.</value></data>
+  <data name="AccountSigningIn" xml:space="preserve"><value>Connexion sur la page de {launcher}…</value></data>
+  <data name="AccountUnreachable" xml:space="preserve"><value>Impossible de joindre {launcher} – [A] réessaie</value></data>
+  <data name="AccountOtherSignedIn" xml:space="preserve"><value>{launcher} est actuellement connecté avec un autre compte qu’Arcadia. Tant que cela ne change pas, Arcadia ne peut lancer aucune installation. Les jeux installés risquent de ne pas démarrer ou d’utiliser les mauvaises sauvegardes.</value></data>
+  <data name="AccountBCancels" xml:space="preserve"><value>[B] annule la connexion.</value></data>
+  <data name="AccountPageNotLoaded" xml:space="preserve"><value>Arcadia n’a pas pu charger la page de connexion de {launcher}. Vérifiez la connexion Internet ; [A] réessaie.</value></data>
+  <data name="AccountSignedInAs" xml:space="preserve"><value>Connecté en tant que {account}. En plus de vos jeux installés, Arcadia affiche aussi les jeux que possède {account}.</value></data>
+  <data name="AccountGamesInAccount" xml:space="preserve"><value>Jeux du compte</value></data>
+  <data name="AccountNotLoadedYet" xml:space="preserve"><value>Pas encore chargés</value></data>
+  <data name="AccountSignOutExplained" xml:space="preserve"><value>Si vous vous déconnectez, seuls les jeux installés sont listés.</value></data>
+  <data name="AccountAskSignOut" xml:space="preserve"><value>Voulez-vous vraiment déconnecter {account} d’Arcadia ? Arcadia ne pourra alors lister que les jeux installés sur ce PC.</value></data>
+  <data name="TryAgain" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="LauncherControllerPanOff" xml:space="preserve"><value>Désactivé – uniquement avec le gardien des manettes (Pan)</value></data>
+  <data name="LauncherControllerUnsupported" xml:space="preserve"><value>Pas encore disponible sur ce système</value></data>
+  <data name="LauncherControllerResetTitle" xml:space="preserve"><value>Remettre tous les jeux sur le préréglage</value></data>
+  <data name="Reset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="LauncherControllerNeedsPan" xml:space="preserve"><value>Réglable dès que le gardien des manettes (Pan) est activé : Manettes → Pan.</value></data>
+  <data name="LauncherControllerPanUnsupported" xml:space="preserve"><value>Le gardien des manettes (Pan) ne fonctionne pas encore sur ce système, et sans lui, pas de mode Steam Controller.</value></data>
+  <data name="LauncherControllerPresetSubtitle" xml:space="preserve"><value>Préréglage pour les jeux de ce lanceur</value></data>
+  <data name="LauncherControllerPresetInfo" xml:space="preserve"><value>Le réglage par défaut de tous les jeux {launcher} quand le Steam Controller est utilisé. Chaque nouveau jeu {launcher} reçoit automatiquement ce mode. Il peut être changé par jeu dans ses détails.</value></data>
+  <data name="LauncherControllerOwnModeOne" xml:space="preserve"><value>1 jeu a son propre mode</value></data>
+  <data name="LauncherControllerOwnModeMany" xml:space="preserve"><value>{count} jeux ont leur propre mode</value></data>
+  <data name="LauncherControllerOwnModeInfo" xml:space="preserve"><value>Vous avez modifié vous-même ces jeux {launcher}. Ensuite, ils suivent de nouveau le préréglage « {preset} » :</value></data>
+  <data name="AppliesFromNextStart" xml:space="preserve"><value>S’applique au prochain démarrage d’un jeu.</value></data>
+  <data name="LauncherControllerAskReset" xml:space="preserve"><value>Remettre tous les jeux sur le préréglage ?</value></data>
+  <data name="LauncherControllerAskResetText" xml:space="preserve"><value>{games} de nouveau le mode « {preset} » : {titles}. S’applique au prochain démarrage d’un jeu.</value></data>
+  <data name="LauncherControllerResetGamesOne" xml:space="preserve"><value>1 jeu {launcher} reçoit</value></data>
+  <data name="LauncherControllerResetGamesMany" xml:space="preserve"><value>{count} jeux {launcher} reçoivent</value></data>
+  <data name="LauncherControllerAsksFirst" xml:space="preserve"><value>[A] demande d’abord.</value></data>
+  <data name="LauncherActiveSubtitle" xml:space="preserve"><value>Afficher comme onglet, dans la recherche et lors de l’analyse</value></data>
+  <data name="LauncherNameTitle" xml:space="preserve"><value>Nom du lanceur dans Arcadia</value></data>
+  <data name="LauncherNameSubtitle" xml:space="preserve"><value>Le nom qu’Arcadia donne au lanceur</value></data>
+  <data name="LauncherKeywordTitle" xml:space="preserve"><value>Raccourci de recherche</value></data>
+  <data name="ErrorContextPickLogo" xml:space="preserve"><value>Choix d’un logo</value></data>
+  <data name="Upload" xml:space="preserve"><value>Importer…</value></data>
+  <data name="LauncherActiveInfo" xml:space="preserve"><value>Si vous activez le lanceur, Arcadia gère tous ses jeux. Ils sont listés dans la bibliothèque d’Arcadia, trouvés par la recherche et démarrés depuis Arcadia, et le gardien des manettes (Pan) peut leur attribuer d’autres manettes.</value></data>
+  <data name="LauncherActiveOff" xml:space="preserve"><value>Arcadia n’affiche pas le lanceur comme onglet, n’analyse pas ses jeux et ne les trouve pas dans la recherche.</value></data>
+  <data name="LauncherNotFoundAnymore" xml:space="preserve"><value>Arcadia ne trouve plus {launcher} sur ce PC. S’il est désinstallé, désactivez-le ici et son onglet disparaît.</value></data>
+  <data name="LauncherNotFoundCannotActivate" xml:space="preserve"><value>Arcadia ne trouve pas {launcher} sur ce PC, il ne peut donc pas être activé.</value></data>
+  <data name="LauncherNameInfo" xml:space="preserve"><value>C’est le nom du lanceur dans l’onglet, dans la liste, dans la recherche et sur les jeux. {maxLength} caractères au maximum.</value></data>
+  <data name="LauncherKeywordSubtitle" xml:space="preserve"><value>Recherche uniquement dans ce lanceur avec {keyword}</value></data>
+  <data name="LauncherKeywordInfo" xml:space="preserve"><value>Avec le raccourci devant le terme de recherche, la recherche porte uniquement sur ce lanceur. Reliez plusieurs raccourcis avec « - ».</value></data>
+  <data name="LauncherKeywordSearchesIn" xml:space="preserve"><value>recherche dans {launcher} et {other}</value></data>
+  <data name="LauncherKeywordRules" xml:space="preserve"><value>Uniquement des minuscules et des chiffres, {maxLength} caractères au maximum. Pas de « - », qui sépare plusieurs lanceurs. Chaque raccourci n’existe qu’une fois.</value></data>
+  <data name="LauncherLogoInitialTile" xml:space="preserve"><value>l’initiale sur une tuile colorée</value></data>
+  <data name="LauncherLogoOf" xml:space="preserve"><value>le logo de {launcher}</value></data>
+  <data name="LauncherLogoOwnFitted" xml:space="preserve"><value>Image personnalisée · ajustée à 24 × 24 px dans l’onglet</value></data>
+  <data name="LauncherLogoDefaultFitted" xml:space="preserve"><value>Logo par défaut · ajusté à 24 × 24 px dans l’onglet</value></data>
+  <data name="LauncherLogoOwnInfo" xml:space="preserve"><value>Une image personnalisée remplace le logo partout : dans l’onglet, dans la liste, dans la recherche et sur les jeux. PNG, SVG, ICO ou WebP jusqu’à 2 Mo.</value></data>
+  <data name="LauncherLogoFitInfo" xml:space="preserve"><value>Dans l’onglet, chaque logo est ajusté dans un cadre de 24 × 24 px. Les proportions sont conservées ; l’espace libre reste vide.</value></data>
+  <data name="LauncherLogoRemoveInfo" xml:space="preserve"><value>Retire l’image personnalisée ; {launcher} affiche de nouveau {defaultLogo}.</value></data>
+  <data name="SettingNotApplied" xml:space="preserve"><value>{row} non appliqué : {reason}</value></data>
+  <data name="LauncherNameSetting" xml:space="preserve"><value>Nom du lanceur</value></data>
+  <data name="LauncherPickLogo" xml:space="preserve"><value>Choisir un logo pour {launcher}</value></data>
+  <data name="LauncherLogoNotApplied" xml:space="preserve"><value>Logo non appliqué : {problem}</value></data>
+  <data name="AppliesImmediately" xml:space="preserve"><value>Prend effet immédiatement, sans enregistrer.</value></data>
+  <data name="DefaultAppliesImmediately" xml:space="preserve"><value>Par défaut : {value}. Prend effet immédiatement, sans enregistrer.</value></data>
+  <data name="LauncherKeywordSearchesOnlyIn" xml:space="preserve"><value>recherche uniquement dans {launcher}</value></data>
+  <data name="DefaultKeywordAppliesImmediately" xml:space="preserve"><value>Par défaut : {prefix}{keyword}. Prend effet immédiatement, sans enregistrer.</value></data>
+  <data name="LauncherLogoRemove" xml:space="preserve"><value>Retirer l’image personnalisée</value></data>
+  <data name="ErrorContextPickFolder" xml:space="preserve"><value>Choix d’un dossier</value></data>
+  <data name="PickFolder" xml:space="preserve"><value>Choisir un dossier…</value></data>
+  <data name="LauncherFolderSubtitle" xml:space="preserve"><value>Arcadia ne trouve pas {launcher} de lui-même</value></data>
+  <data name="LauncherFolderInfo" xml:space="preserve"><value>Arcadia trouve normalement {launcher} automatiquement. Si cela échoue, vous pouvez indiquer vous-même ici le dossier d’installation de {launcher}.</value></data>
+  <data name="LauncherFolderCheckInfo" xml:space="preserve"><value>Quand vous choisissez un dossier, Arcadia vérifie aussitôt que {expected} s’y trouvent et ne retient le dossier que dans ce cas.</value></data>
+  <data name="Chosen" xml:space="preserve"><value>Choisi</value></data>
+  <data name="OnlyForActiveLauncher" xml:space="preserve"><value>Uniquement pour un lanceur activé</value></data>
+  <data name="Scanning" xml:space="preserve"><value>Analyse…</value></data>
+  <data name="LauncherRescanInfo" xml:space="preserve"><value>Analyse de nouveau les jeux de {launcher} tout de suite, par exemple après une installation qu’Arcadia n’a pas remarquée.</value></data>
+  <data name="OptionDefaultOffImmediate" xml:space="preserve"><value>Par défaut : désactivé. Prend effet immédiatement, sans enregistrer.</value></data>
+  <data name="LibraryOptionOff" xml:space="preserve"><value>Ces entrées ne figurent ni dans la bibliothèque ni dans la recherche.</value></data>
+  <data name="LibraryOptionOn" xml:space="preserve"><value>Ces entrées figurent dans l’onglet du lanceur et dans la recherche.</value></data>
+  <data name="LauncherPickFolder" xml:space="preserve"><value>Choisir le dossier de {launcher}</value></data>
+  <data name="LauncherFolderWrong" xml:space="preserve"><value>{launcher} ne se trouve pas ici : Arcadia cherche {expected}.</value></data>
+  <data name="Rescan" xml:space="preserve"><value>Réanalyser</value></data>
+  <data name="ScanNow" xml:space="preserve"><value>Analyser maintenant</value></data>
+  <data name="FoundAt" xml:space="preserve"><value>Trouvé dans</value></data>
+  <data name="NotFound" xml:space="preserve"><value>Introuvable</value></data>
+  <data name="LauncherNotFoundAnymoreSwitchOff" xml:space="preserve"><value>Arcadia ne trouve plus {launcher} sur ce PC. S’il est désinstallé, désactivez le lanceur ici et son onglet disparaît.</value></data>
+  <data name="NoGamesFound" xml:space="preserve"><value>Aucun jeu trouvé</value></data>
+  <data name="LauncherNoGamesInfo" xml:space="preserve"><value>{launcher} est installé, mais Arcadia n’y a trouvé aucun jeu. Dès que vous y achetez ou installez un jeu, il apparaît dans l’onglet.</value></data>
+  <data name="FactGames" xml:space="preserve"><value>Jeux</value></data>
+  <data name="FactScanning" xml:space="preserve"><value>en cours d’analyse</value></data>
+  <data name="FactNotScanned" xml:space="preserve"><value>non analysés</value></data>
+  <data name="FactLastScanned" xml:space="preserve"><value>Dernière analyse</value></data>
+  <data name="FactNotWatched" xml:space="preserve"><value>pas de suivi</value></data>
+  <data name="FactOnlyStartedFromArcadia" xml:space="preserve"><value>uniquement pour les lancements depuis Arcadia</value></data>
+  <data name="FactWatched" xml:space="preserve"><value>suivi actif</value></data>
+  <data name="FactRunningGames" xml:space="preserve"><value>Jeux en cours</value></data>
+  <data name="FactReportedByLauncher" xml:space="preserve"><value>signalés par le lanceur</value></data>
+  <data name="FactEntries" xml:space="preserve"><value>Entrées</value></data>
+  <data name="NotActive" xml:space="preserve"><value>Non activé</value></data>
+  <data name="NotInstalled" xml:space="preserve"><value>Non installé</value></data>
+  <data name="FactDetectedByProcesses" xml:space="preserve"><value>détectés par leurs processus</value></data>
+  <data name="Off" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="Open" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="RescanAll" xml:space="preserve"><value>Tout réanalyser</value></data>
+  <data name="RescanAllInfo" xml:space="preserve"><value>Analyse de nouveau les jeux de tous les lanceurs activés tout de suite, par exemple après une installation qu’Arcadia n’a pas remarquée.</value></data>
+  <data name="RescanAllSubtitle" xml:space="preserve"><value>Analyse de nouveau les jeux de tous les lanceurs activés</value></data>
+  <data name="LauncherGroupActive" xml:space="preserve"><value>ACTIVÉS · AFFICHÉS COMME ONGLETS</value></data>
+  <data name="LauncherGroupInactive" xml:space="preserve"><value>NON ACTIVÉS</value></data>
+  <data name="LauncherGroupDrop" xml:space="preserve"><value>NON ACTIVÉS · LE DÉPLACER ICI LE DÉSACTIVE</value></data>
+  <data name="NoLauncherActive" xml:space="preserve"><value>Aucun lanceur activé</value></data>
+  <data name="LauncherOrderPreviewSubtitle" xml:space="preserve"><value>Un aperçu de l’ordre dans lequel les lanceurs sont listés</value></data>
+  <data name="GameCountOne" xml:space="preserve"><value>1 jeu</value></data>
+  <data name="GameCountMany" xml:space="preserve"><value>{count} jeux</value></data>
+  <data name="JustNow" xml:space="preserve"><value>à l’instant</value></data>
+  <data name="LoggingListIntro" xml:space="preserve"><value>Les 50 derniers messages et changements d’état depuis le démarrage d’Arcadia, les plus récents d’abord. Tout ce qui précède est dans arcadia.log.</value></data>
+  <data name="LoggingEmpty" xml:space="preserve"><value>Aucun message depuis le démarrage d’Arcadia.</value></data>
+  <data name="LoggingAllHidden" xml:space="preserve"><value>Tous les niveaux sont masqués. Activez les infos, avertissements ou erreurs pour voir des messages.</value></data>
+  <data name="LoggingOpensWithMouse" xml:space="preserve"><value>Le fichier s’ouvre dans le programme défini pour les fichiers .log. Le mode souris s’active pour cela.</value></data>
+  <data name="LoggingPanNotInstalled" xml:space="preserve"><value>Pan n’est pas installé</value></data>
+  <data name="LoggingFileMissing" xml:space="preserve"><value>Le fichier n’existe pas encore</value></data>
+  <data name="Browse" xml:space="preserve"><value>Parcourir</value></data>
+  <data name="LoggingInfoSubtitle" xml:space="preserve"><value>Remarques et confirmations</value></data>
+  <data name="LoggingWarningSubtitle" xml:space="preserve"><value>Quelque chose n’a pas fonctionné et requiert votre attention</value></data>
+  <data name="LoggingErrorSubtitle" xml:space="preserve"><value>Échoué ou inattendu</value></data>
+  <data name="LoggingKeepsAll" xml:space="preserve"><value>arcadia.log conserve tous les messages</value></data>
+  <data name="LoggingOpenArcadiaLog" xml:space="preserve"><value>Ouvrir le journal d’Arcadia</value></data>
+  <data name="LoggingArcadiaLogInfo" xml:space="preserve"><value>Tout ce que fait Arcadia : démarrages de jeux, touches et boutons de manette, erreurs avec leurs détails. Ce fichier aide au dépannage.</value></data>
+  <data name="LoggingOpenViiperLog" xml:space="preserve"><value>Ouvrir le journal de VIIPER</value></data>
+  <data name="LoggingViiperLogInfo" xml:space="preserve"><value>Ce que fait VIIPER, le programme derrière les manettes virtuelles : quelles manettes il crée et retire, et ses erreurs.</value></data>
+  <data name="LoggingOpenPanLog" xml:space="preserve"><value>Ouvrir le journal de Pan</value></data>
+  <data name="LoggingPanLogInfo" xml:space="preserve"><value>Ce que fait Pan, le gardien des manettes : pilotes, manettes cachées et restauration. Le fichier n’existe qu’une fois Pan installé.</value></data>
+  <data name="LoggingNoMessagesYet" xml:space="preserve"><value>Pas encore de messages</value></data>
+  <data name="LoggingCountSinceStart" xml:space="preserve"><value>{count} depuis le démarrage d’Arcadia</value></data>
+  <data name="LoggingShownOf" xml:space="preserve"><value>{shown} sur {total} affichés</value></data>
+  <data name="LoggingArcadiaLogSubtitle" xml:space="preserve"><value>Démarrages de jeux, touches, manettes et erreurs</value></data>
+  <data name="LoggingViiperLogSubtitle" xml:space="preserve"><value>Les manettes virtuelles</value></data>
+  <data name="LoggingPanLogSubtitle" xml:space="preserve"><value>Le gardien des manettes</value></data>
+  <data name="LoggingListTitle" xml:space="preserve"><value>Messages récents</value></data>
+  <data name="LoggingClearList" xml:space="preserve"><value>Vider la liste</value></data>
+  <data name="LoggingRecentMessagesOf" xml:space="preserve"><value>Messages récents : {title}</value></data>
+  <data name="No" xml:space="preserve"><value>Non</value></data>
+  <data name="Yes" xml:space="preserve"><value>Oui</value></data>
+  <data name="MouseModeSubtitle" xml:space="preserve"><value>La manette déplace le pointeur de la souris, aussi en dehors d’Arcadia</value></data>
+  <data name="MouseModeHoldSubtitle" xml:space="preserve"><value>Combien de temps maintenir ⧉ et ≡.</value></data>
+  <data name="MouseModeSpeedSubtitle" xml:space="preserve"><value>La vitesse à laquelle [LS] déplace le pointeur.</value></data>
+  <data name="MouseModeSpeedInfo" xml:space="preserve"><value>La vitesse à laquelle [LS] déplace le pointeur. [L3] le ralentit.</value></data>
+  <data name="MouseModeForDialogsSubtitle" xml:space="preserve"><value>Pour les boîtes de dialogue comme le choix d’un fichier ou d’un dossier</value></data>
+  <data name="MouseModeForDialogsInfo" xml:space="preserve"><value>Il s’agit des fenêtres du système qui ne fonctionnent qu’avec souris et clavier, par exemple le choix d’un fichier quand vous importez vos propres logos ou illustrations.</value></data>
+  <data name="MouseModeForDialogsOff" xml:space="preserve"><value>Vous utilisez une boîte de dialogue du système avec souris et clavier.</value></data>
+  <data name="MouseModeForDialogsOn" xml:space="preserve"><value>Tant qu’une boîte de dialogue du système est ouverte, la manette déplace le pointeur.</value></data>
+  <data name="MouseModeEndInFrontTitle" xml:space="preserve"><value>Quitter le mode souris quand Arcadia est au premier plan</value></data>
+  <data name="MouseModeOnlyManual" xml:space="preserve"><value>Actif uniquement en mode « Manuel »</value></data>
+  <data name="MouseModeEndInFrontInfo" xml:space="preserve"><value>Si vous activez le mode souris à la main alors qu’Arcadia est déjà au premier plan, il reste activé jusqu’à la prochaine fois qu’Arcadia revient au premier plan, par exemple en cliquant ailleurs puis de nouveau dedans.</value></data>
+  <data name="MouseModeEndInFrontOff" xml:space="preserve"><value>Le mode souris reste activé jusqu’à ce que vous le quittiez avec ⧉ + ≡, même quand Arcadia est de nouveau au premier plan.</value></data>
+  <data name="MouseModeEndInFrontOn" xml:space="preserve"><value>Dès que vous cliquez dans la fenêtre d’Arcadia ou ramenez Arcadia au premier plan (par exemple avec « Retour à Arcadia avec ⧉ »), le mode souris se désactive.</value></data>
+  <data name="MouseModeForceEndInGamesTitle" xml:space="preserve"><value>Forcer la fin du mode souris dans les jeux</value></data>
+  <data name="MouseModeDefaultTitle" xml:space="preserve"><value>Par défaut pour « Individuel »</value></data>
+  <data name="MouseModeDefaultSubtitle" xml:space="preserve"><value>Présélectionné pour chaque jeu sur sa page de détails</value></data>
+  <data name="MouseModeDefaultInfo" xml:space="preserve"><value>« Par défaut » est présélectionné pour chaque jeu sur sa page de détails et suit ce réglage.</value></data>
+  <data name="MouseModeDefaultAllowedInfo" xml:space="preserve"><value>Le mode souris peut être activé dans chaque jeu réglé sur « Par défaut » sur sa page de détails.</value></data>
+  <data name="MouseModeDefaultDisabledInfo" xml:space="preserve"><value>Arcadia quitte le mode souris dans chaque jeu réglé sur « Par défaut » sur sa page de détails.</value></data>
+  <data name="MouseModeHelpL3" xml:space="preserve"><value>Appui : pointeur lent oui/non · Maintien : lent tant que maintenu</value></data>
+  <data name="MouseModeHelpRtOrA" xml:space="preserve"><value>RT ou A</value></data>
+  <data name="MouseModeHelpLeftClick" xml:space="preserve"><value>Bouton gauche de la souris (maintenir = glisser)</value></data>
+  <data name="MouseModeHelpLtOrX" xml:space="preserve"><value>LT ou X</value></data>
+  <data name="MouseModeHelpWheel" xml:space="preserve"><value>Molette de la souris, aussi latérale</value></data>
+  <data name="MouseModeHelpKeyboard" xml:space="preserve"><value>Clavier virtuel ([B] le masque)</value></data>
+  <data name="MouseModeHelpBackToArcadia" xml:space="preserve"><value>Ramène Arcadia au premier plan (réglage « Retour à Arcadia »)</value></data>
+  <data name="MouseModeHelpBackToController" xml:space="preserve"><value>Retour à la manette normale (avec « Automatique », jusqu’au retour d’Arcadia au premier plan)</value></data>
+  <data name="MouseModeLimitUac" xml:space="preserve"><value>Les demandes de droits d’administrateur s’affichent sur un écran protégé qu’aucune saisie d’Arcadia n’atteint.</value></data>
+  <data name="MouseModeLimitAdmin" xml:space="preserve"><value>Les fenêtres de programmes exécutés en tant qu’administrateur ne laissent pas passer les saisies d’un Arcadia sans droits d’administrateur.</value></data>
+  <data name="MouseModeLimitFullscreen" xml:space="preserve"><value>Au-dessus des jeux en plein écran exclusif, la bordure, la remarque et le clavier virtuel ne s’affichent pas ; vous ne sentez alors le changement que par une vibration.</value></data>
+  <data name="MouseModeHelp" xml:space="preserve"><value>Maintenez ⧉ + ≡ jusqu’à ce que la bordure de l’écran soit pleine : la manette déplace maintenant la souris, aussi dans les fenêtres en dehors d’Arcadia. Maintenir de nouveau ⧉ + ≡ quitte le mode souris. Chaque manette connectée peut basculer et déplacer le pointeur.</value></data>
+  <data name="MouseModeActivationOff" xml:space="preserve"><value>La manette reste toujours une manette.</value></data>
+  <data name="MouseModeActivationAutomatic" xml:space="preserve"><value>Arcadia passe en mode souris dès que ni Arcadia ni un jeu connu d’Arcadia n’est au premier plan, et le quitte dès que l’un d’eux revient au premier plan.</value></data>
+  <data name="MouseModeActivationManual" xml:space="preserve"><value>Maintenir ⧉ + ≡ active le mode souris, le maintenir de nouveau le désactive.</value></data>
+  <data name="MouseModeInGamesEnd" xml:space="preserve"><value>Le mode souris se termine automatiquement et ne peut pas non plus être activé à la main tant qu’un jeu est au premier plan. Le jeu doit pour cela figurer dans la bibliothèque d’Arcadia.</value></data>
+  <data name="MouseModeInGamesPerGame" xml:space="preserve"><value>Vous décidez par jeu (sur sa page de détails) si le mode souris se termine ou est autorisé.</value></data>
+  <data name="MouseModeInGamesAllow" xml:space="preserve"><value>Le mode souris reste actif aussi dans les jeux et peut être activé pendant que le jeu est au premier plan.</value></data>
+  <data name="MouseModeBackToArcadiaGroup" xml:space="preserve"><value>RETOUR À ARCADIA</value></data>
+  <data name="MouseModeBackToArcadiaTitle" xml:space="preserve"><value>Retour à Arcadia avec ⧉</value></data>
+  <data name="MouseModeBackToArcadiaSubtitle" xml:space="preserve"><value>Maintenir ⧉ ramène Arcadia au premier plan</value></data>
+  <data name="MouseModeBackToArcadiaInfo" xml:space="preserve"><value>Maintenir ⧉ ramène Arcadia au premier plan quand il est en arrière-plan.</value></data>
+  <data name="MouseModeBackToArcadiaOff" xml:space="preserve"><value>Maintenir ⧉ ne ramène pas Arcadia au premier plan.</value></data>
+  <data name="MouseModeBackHoldSubtitle" xml:space="preserve"><value>Combien de temps maintenir ⧉.</value></data>
+  <data name="MouseModeBackHoldInfo" xml:space="preserve"><value>Combien de temps maintenir ⧉ pour ramener Arcadia au premier plan.</value></data>
+  <data name="BackToArcadia" xml:space="preserve"><value>Retour à Arcadia</value></data>
+  <data name="MouseModeManual" xml:space="preserve"><value>Manuel</value></data>
+  <data name="MouseModeForDialogsTitle" xml:space="preserve"><value>Activer pour les boîtes de dialogue du système</value></data>
+  <data name="MouseModeHelpRightClick" xml:space="preserve"><value>Bouton droit de la souris</value></data>
+  <data name="MouseModeHelpShiftTab" xml:space="preserve"><value>Maj+Tab / Tab</value></data>
+  <data name="MouseModeHowItWorks" xml:space="preserve"><value>FONCTIONNEMENT</value></data>
+  <data name="MouseModeDefaultAllowed" xml:space="preserve"><value>Par défaut (autorisé)</value></data>
+  <data name="MouseModeDefaultDisabled" xml:space="preserve"><value>Par défaut (désactivé)</value></data>
+  <data name="PanTitle" xml:space="preserve"><value>Gardien des manettes (Pan)</value></data>
+  <data name="PanInfoTitle" xml:space="preserve"><value>PAN, LE GARDIEN DES MANETTES</value></data>
+  <data name="Change" xml:space="preserve"><value>Modifier</value></data>
+  <data name="PanUpdateDueSubtitle" xml:space="preserve"><value>Nouvelle version de Pan disponible</value></data>
+  <data name="PanUpdatingSubtitle" xml:space="preserve"><value>Mise à jour de Pan…</value></data>
+  <data name="PanUpdateDueInfo" xml:space="preserve"><value>Quand vous activez le gardien des manettes, Pan est d’abord mis à jour. Arcadia demande pour cela les droits d’administrateur.</value></data>
+  <data name="PanExcludedSubtitle" xml:space="preserve"><value>Activé – Steam Controller et puck libérés jusqu’à ce que vous désactiviez puis réactiviez Pan</value></data>
+  <data name="PanNotUpdatedToast" xml:space="preserve"><value>Pan : non mis à jour, le gardien des manettes reste désactivé</value></data>
+  <data name="PanRestoreControllers" xml:space="preserve"><value>Restaurer les manettes</value></data>
+  <data name="ErrorContextRestoreControllers" xml:space="preserve"><value>Restauration des manettes</value></data>
+  <data name="PanRestoreSubtitle" xml:space="preserve"><value>Quand les manettes ne répondent pas ou saisissent en double</value></data>
+  <data name="PanRestoreInfo" xml:space="preserve"><value>Restaure vos manettes quand elles cessent de répondre de façon inattendue ou provoquent des saisies en double. Pan libère alors toutes les manettes et nettoie les manettes virtuelles. Arcadia demande pour cela les droits d’administrateur.</value></data>
+  <data name="PanRestoreInfoNormal" xml:space="preserve"><value>Normalement, ce n’est pas nécessaire, mais mieux vaut l’avoir sans en avoir besoin.</value></data>
+  <data name="PanRestoreManual" xml:space="preserve"><value>Ouvrez la configuration de HidHide depuis le menu Démarrer, décochez vos manettes, retirez Arcadia de la liste des programmes et désactivez « Enable device hiding ».</value></data>
+  <data name="PanLayoutsSubtitle" xml:space="preserve"><value>Changer la disposition de vos manettes connectées</value></data>
+  <data name="Installing" xml:space="preserve"><value>Installation…</value></data>
+  <data name="DriversInstall" xml:space="preserve"><value>Installer les pilotes</value></data>
+  <data name="PanLayoutsInfo" xml:space="preserve"><value>Pan vous permet de donner une autre disposition à vos manettes connectées. Les manettes comme la DualSense, la manette Xbox ou la Nintendo Switch 2 Pro Controller sont prises en charge nativement par Pan : elles sont traduites 1:1 et ont d’emblée leur bonne disposition. Les manettes que Pan ne peut pas traduire nativement (par exemple la manette GameCube ou les manettes d’autres fabricants) sont traitées comme des manettes Xbox.</value></data>
+  <data name="PanLayoutsInfoWhen" xml:space="preserve"><value>Changer la disposition peut être utile si vous voulez utiliser des manettes dans des jeux qui ne les prennent pas en charge, ou si votre manette d’un autre fabricant a un pavé tactile ou un gyroscope comme une DualSense.</value></data>
+  <data name="PanLayoutsInfoNotApplied" xml:space="preserve"><value>Avec « Ne pas appliquer », Pan ignore ce modèle de manette. Ses saisies arrivent alors directement au jeu, comme si Pan était désactivé.</value></data>
+  <data name="PanLayoutNotApplied" xml:space="preserve"><value>Non appliquée</value></data>
+  <data name="PanSubtitleInstallAborted" xml:space="preserve"><value>Installation annulée – le panneau d’infos indique pourquoi</value></data>
+  <data name="PanSubtitleDescription" xml:space="preserve"><value>Pan gère la façon dont les jeux, programmes et lanceurs utilisent vos manettes</value></data>
+  <data name="PanSubtitleGameRunning" xml:space="preserve"><value>Modifiable uniquement une fois « {game} » terminé</value></data>
+  <data name="PanSubtitleOff" xml:space="preserve"><value>Désactivé – Arcadia ne gère pas vos manettes</value></data>
+  <data name="PanSubtitlePaused" xml:space="preserve"><value>En pause – la raison est indiquée ci-dessous</value></data>
+  <data name="PanSubtitleProblem" xml:space="preserve"><value>Il y a un problème. Consultez les avertissements ci-dessous.</value></data>
+  <data name="PanSubtitleOn" xml:space="preserve"><value>Activé – Arcadia gère vos manettes</value></data>
+  <data name="PanSubtitleReadyNoController" xml:space="preserve"><value>Prêt – aucune manette connectée</value></data>
+  <data name="PanSubtitleSettingUp" xml:space="preserve"><value>Configuration…</value></data>
+  <data name="PanRestartAfterHidHide" xml:space="preserve"><value>« Redémarrer Arcadia » après l’installation de HidHide</value></data>
+  <data name="PanEmulationNotStarting" xml:space="preserve"><value>L’émulation ne démarre pas</value></data>
+  <data name="PanNotAnswering" xml:space="preserve"><value>Pan ne répond pas</value></data>
+  <data name="PanSteamControllerNotHiddenTitle" xml:space="preserve"><value>Le Steam Controller ne peut pas être caché</value></data>
+  <data name="PanSteamControllerNotHiddenInfo" xml:space="preserve"><value>Pan n’a pas pu cacher le Steam Controller aux autres programmes, par exemple parce que le système ne l’a pas laissé se reconnecter. Tant qu’il n’est pas caché, Arcadia ne le virtualise pas, pour qu’aucune saisie n’arrive en double. Pan réessaie toutes les 10 secondes ; la raison de l’échec est dans pan.log.</value></data>
+  <data name="PanEmulationGaveUpSubtitle" xml:space="preserve"><value>Plus de 3 échecs en 5 minutes ; Arcadia ne réessaie plus de lui-même</value></data>
+  <data name="PanEmulationGaveUpInfo" xml:space="preserve"><value>L’émulation a échoué plusieurs fois de suite. Pour que les jeux ne perdent pas et ne retrouvent pas sans cesse leurs manettes, Arcadia attend maintenant votre action. « Réessayer » la relance. Si cela ne suffit pas, « Restaurer les manettes ».</value></data>
+  <data name="PanCleaningUp" xml:space="preserve"><value>Pan fait encore le ménage</value></data>
+  <data name="PanCleaningUpSubtitle" xml:space="preserve"><value>Il reprend de lui-même dans un instant</value></data>
+  <data name="PanCleaningUpInfo" xml:space="preserve"><value>Après la dernière fin de l’émulation, Pan rend les manettes réelles. Arcadia remet ensuite en place l’émulation de lui-même ; cela prend quelques secondes.</value></data>
+  <data name="PanRestartGameRunning" xml:space="preserve"><value>Possible uniquement une fois « {game} » terminé</value></data>
+  <data name="FirmwareToolTheDualSense" xml:space="preserve"><value>la DualSense</value></data>
+  <data name="FirmwareToolXboxAccessories" xml:space="preserve"><value>Accessoires Xbox</value></data>
+  <data name="FirmwareToolTheXboxController" xml:space="preserve"><value>la manette Xbox</value></data>
+  <data name="FirmwareToolOpen" xml:space="preserve"><value>{tool} est ouvert</value></data>
+  <data name="FirmwareToolWaiting" xml:space="preserve"><value>Arcadia reprend {controller} dès que vous fermez {it}</value></data>
+  <data name="FirmwareToolGroup" xml:space="preserve"><value>EN ATTENTE DE REPRISE</value></data>
+  <data name="PanNotHiddenOne" xml:space="preserve"><value>Impossible de cacher {controller}</value></data>
+  <data name="PanNotHiddenMany" xml:space="preserve"><value>Impossible de cacher {count} manettes</value></data>
+  <data name="PanNotHiddenSubtitle" xml:space="preserve"><value>Les jeux les voient directement, et les combinaisons de boutons d’Arcadia les atteignent aussi</value></data>
+  <data name="PanNotHiddenInfo" xml:space="preserve"><value>Pan n’a pas pu cacher ces manettes aux jeux. Pour qu’aucune saisie n’arrive en double, Arcadia ne les virtualise pas : les jeux les voient directement, comme si Arcadia ne tournait pas.</value></data>
+  <data name="PanNotHiddenInArcadia" xml:space="preserve"><value>Dans Arcadia, elles fonctionnent comme d’habitude. Seules les combinaisons de boutons comme « Retour à Arcadia » atteignent aussi le jeu.</value></data>
+  <data name="PanNotHiddenReplug" xml:space="preserve"><value>Si vous rebranchez la manette, Pan réessaie. Si vous ne voulez aucune émulation, désactivez le gardien des manettes.</value></data>
+  <data name="PanNotVisibleGroup" xml:space="preserve"><value>PLUS VISIBLES POUR ARCADIA</value></data>
+  <data name="PanNotVisibleTitle" xml:space="preserve"><value>Arcadia ne voit plus vos manettes</value></data>
+  <data name="PanNotVisibleSubtitle" xml:space="preserve"><value>Pan les a libérées. Redémarrer Arcadia règle le problème</value></data>
+  <data name="PanNotVisibleInfo" xml:space="preserve"><value>Pan a caché ces manettes aux autres programmes. Arcadia lui-même devrait encore les voir ensuite pour les copier pour Steam et les jeux, mais ne les a plus vues depuis qu’elles sont cachées. Cela arrive quand HidHide a été installé pendant qu’Arcadia tournait. Pan a donc libéré les manettes : Steam et les jeux les voient directement. Tant qu’Arcadia n’a pas redémarré, Pan ne cache rien.</value></data>
+  <data name="PanNotVisibleAgain" xml:space="preserve"><value>Si ce message revient après le redémarrage d’Arcadia, redémarrez le PC.</value></data>
+  <data name="RestartArcadia" xml:space="preserve"><value>Redémarrer Arcadia</value></data>
+  <data name="PanRestartPendingTitle" xml:space="preserve"><value>Arcadia redémarre après l’installation de HidHide</value></data>
+  <data name="PanRestartPendingSubtitle" xml:space="preserve"><value>D’ici là, Pan ne cache aucune manette</value></data>
+  <data name="PanRestartPendingInfo" xml:space="preserve"><value>Seul un Arcadia redémarré voit les manettes que Pan cache aux autres programmes. Si Arcadia ne redémarre pas de lui-même, redémarrez-le ici.</value></data>
+  <data name="PanRestartReason" xml:space="preserve"><value>« Redémarrer Arcadia » : Arcadia ne voit pas les manettes cachées</value></data>
+  <data name="PanNotHiddenReasonReconnect" xml:space="preserve"><value>Le système ne libère cette manette qu’une fois reconnectée. D’ici là, les programmes qui l’ont déjà ouverte la voient directement.</value></data>
+  <data name="PanNotHiddenReasonNothing" xml:space="preserve"><value>Pan ne trouve rien sur cette manette qu’il puisse cacher aux jeux.</value></data>
+  <data name="PanNotHiddenReasonNotFound" xml:space="preserve"><value>Pan ne trouve pas cette manette parmi les périphériques de ce PC.</value></data>
+  <data name="PanNotHiddenReasonFailed" xml:space="preserve"><value>Pan n’a pas pu cacher cette manette. La cause est dans pan.log.</value></data>
+  <data name="PanStartFailedInfo" xml:space="preserve"><value>Arcadia n’a pas pu créer les manettes virtuelles. Pan a donc de nouveau libéré les manettes réelles ; Steam et les jeux les voient directement. Arcadia réessaie de lui-même à la prochaine tentative ; détails dans arcadia.log.</value></data>
+  <data name="Retrying" xml:space="preserve"><value>Nouvelle tentative…</value></data>
+  <data name="PanUsbipSubtitle" xml:space="preserve"><value>Crée les manettes virtuelles</value></data>
+  <data name="PanUsbipInfo" xml:space="preserve"><value>Grâce au pilote usbip (usbip-win2), Arcadia crée les manettes virtuelles que voient les jeux et Steam. « Installer » met en place toutes les parties manquantes en une étape. {admin}</value></data>
+  <data name="PanUsbipOutdatedInfo" xml:space="preserve"><value>Arcadia est testé avec usbip-win2 {minimumVersion} et versions ultérieures. « Mettre à jour » installe cette version. {admin}</value></data>
+  <data name="PanRestartPcHelps" xml:space="preserve"><value>Un redémarrage du PC aide en général</value></data>
+  <data name="PanUsbipNotLoadedInfo" xml:space="preserve"><value>Le pilote est installé mais n’a pas été chargé. Un redémarrage du PC aide en général, sinon une réinstallation. {admin}</value></data>
+  <data name="PanViiperSubtitle" xml:space="preserve"><value>Transmet les signaux des manettes aux jeux et programmes</value></data>
+  <data name="PanServiceSubtitle" xml:space="preserve"><value>Rend vos manettes si Arcadia plante</value></data>
+  <data name="PanServiceInfo" xml:space="preserve"><value>Pan tourne comme service en arrière-plan et veille : si Arcadia plante ou se bloque, Pan arrête l’émulation et rend les manettes réelles à tous les programmes. Sans Pan, Arcadia ne virtualise aucune manette. {admin}</value></data>
+  <data name="PanServiceReinstallHelps" xml:space="preserve"><value>« Reconfigurer » règle en général le problème</value></data>
+  <data name="PanHidHideSubtitle" xml:space="preserve"><value>Cache les manettes réelles aux autres programmes</value></data>
+  <data name="PanHidHideInfo" xml:space="preserve"><value>HidHide cache des périphériques aux programmes. Pan y inscrit vos manettes réelles pendant qu’Arcadia les virtualise, et les en retire quand Arcadia se termine. D’ici là, seul Arcadia les voit. {admin}</value></data>
+  <data name="PanHidHideNeedsVersion" xml:space="preserve"><value>Arcadia a besoin de HidHide {version} ou plus récent</value></data>
+  <data name="PanHidHideNotRunningInfo" xml:space="preserve"><value>HidHide est installé, mais son pilote ne tourne pas encore. Un redémarrage du PC aide en général.</value></data>
+  <data name="PanHidHideReinstallHelps" xml:space="preserve"><value>Réinstaller HidHide {version} aide</value></data>
+  <data name="PanHidHideUnknownRequestInfo" xml:space="preserve"><value>Le pilote HidHide ne connaît pas une requête dont Pan a besoin. Réinstaller HidHide {version} aide : {url}</value></data>
+  <data name="PanHidHideCloseIt" xml:space="preserve"><value>Veuillez la fermer. Ensuite, tout reprend de soi-même.</value></data>
+  <data name="PanHidHideConfigOpenInfo" xml:space="preserve"><value>La configuration de HidHide est ouverte. Tant qu’elle est ouverte, Pan ne peut pas surveiller vos manettes et la gestion des manettes d’Arcadia est en pause. Fermez la fenêtre de configuration de HidHide ; ensuite, tout reprend de soi-même.</value></data>
+  <data name="PanHidHideInverseSubtitle" xml:space="preserve"><value>Désactivez « Inverse application cloak » dans HidHide</value></data>
+  <data name="PanHidHideInverseInfo" xml:space="preserve"><value>« Inverse application cloak » est activé dans HidHide. HidHide cache alors les périphériques à Arcadia au lieu de tous les autres. Désactivez-le dans la configuration de HidHide.</value></data>
+  <data name="PanHidHideHidingOffSubtitle" xml:space="preserve"><value>Sinon, Pan y cacherait aussi vos autres périphériques</value></data>
+  <data name="PanHidHideHidingOffInfo" xml:space="preserve"><value>Des périphériques sont listés dans HidHide, mais « Enable device hiding » est désactivé. Pan devrait l’activer et cacherait alors aussi ces périphériques, il ne le fait donc pas. Activez-le dans la configuration de HidHide ou retirez-y les périphériques.</value></data>
+  <data name="PanModeArcadiaCard" xml:space="preserve"><value>+ Dans chaque jeu, aussi sans Steam
++ Le jeu voit une manette Xbox
+− Pas de dispositions Steam, pas de gyroscope, pas de pavés tactiles</value></data>
+  <data name="PanModeSteamCard" xml:space="preserve"><value>+ Dispositions de Steam, aussi celles de la communauté, gyroscope et pavés tactiles
+− En dehors de Steam, uniquement la disposition bureau de Steam</value></data>
+  <data name="PanMainInfo1" xml:space="preserve"><value>Pan est le gardien des manettes d’Arcadia. Il fait en sorte qu’Arcadia puisse utiliser pleinement chaque manette, et décide comment les autres lanceurs, jeux et programmes s’en servent. Pour cela, Pan « cache » vos manettes aux autres programmes et jeux et crée à la place une copie virtuelle qu’il contrôle.</value></data>
+  <data name="PanOffInfo" xml:space="preserve"><value>Les autres programmes et jeux voient vos manettes réelles. Arcadia ne crée aucune manette virtuelle.</value></data>
+  <data name="PanOnInfo" xml:space="preserve"><value>Pan cache vos manettes aux autres programmes et jeux et contrôle à la place leurs copies virtuelles.</value></data>
+  <data name="PanMainInfo2" xml:space="preserve"><value>Ainsi, les fonctions d’Arcadia comme le mode souris ou « Retour à Arcadia » marchent partout sans que d’autres lanceurs y réagissent aussi, comme la disposition bureau de Steam. Arcadia devient le centre de contrôle de vos manettes. Pan veille à ce que manettes réelles et virtuelles fonctionnent ensemble sans erreur, et rend aussitôt vos manettes, par exemple si Arcadia se termine de façon inattendue.</value></data>
+  <data name="PanMainInfo3" xml:space="preserve"><value>Pan vous permet aussi d’attribuer n’importe quelle manette virtuelle à vos manettes réelles. Vous pouvez ainsi utiliser des manettes dans des jeux qui ne les prennent pas en charge autrement, par exemple le Steam Controller.</value></data>
+  <data name="PanMainInfo4" xml:space="preserve"><value>D’origine, le Steam Controller ne fonctionne comme manette réelle que dans Steam. Arcadia le fait donc fonctionner dans deux modes, « Steam Input » et « Arcadia », pour qu’il marche aussi en dehors de Steam, par exemple dans les jeux de l’Epic Games Launcher ou du Xbox Game Pass. Vous pouvez régler le mode utilisé par les jeux par lanceur comme par jeu.</value></data>
+  <data name="PanMainInfo5" xml:space="preserve"><value>Comme Pan crée des copies virtuelles de vos manettes, les mises à jour du firmware ne les atteignent pas toujours. Arcadia détecte de nombreuses mises à jour du firmware de manettes courantes (DualSense, Xbox, Steam Controller) et libère les manettes pour celles-ci. Sinon, fermez Arcadia ou désactivez le gardien des manettes avant de mettre à jour vos manettes – en particulier celles d’autres fabricants.</value></data>
+  <data name="PanFirmwareUpdatesHeading" xml:space="preserve"><value>Mises à jour du firmware des manettes</value></data>
+  <data name="PanMainInfoDrivers" xml:space="preserve"><value>Pan a besoin de quelques pilotes et programmes tiers, mis en place avant son premier démarrage :</value></data>
+  <data name="PanHidHideMainSubtitle" xml:space="preserve"><value>Cache les manettes réelles pour que rien n’arrive en double</value></data>
+  <data name="PanMainInfoAdmin" xml:space="preserve"><value>L’installation demande une seule fois les droits d’administrateur. Un redémarrage du PC est recommandé ensuite.</value></data>
+  <data name="PanAdminOnce" xml:space="preserve"><value>Arcadia demande une seule fois les droits d’administrateur.</value></data>
+  <data name="PanIfThatFails" xml:space="preserve"><value>SI CELA N’AIDE PAS NON PLUS</value></data>
+  <data name="PanGamesSee" xml:space="preserve"><value>LES JEUX VOIENT</value></data>
+  <data name="PanAdminOnceSubtitle" xml:space="preserve"><value>Arcadia demande une seule fois les droits d’administrateur</value></data>
+  <data name="ErrorContextUpdatePan" xml:space="preserve"><value>Mise à jour de Pan</value></data>
+  <data name="PanRetriesSoon" xml:space="preserve"><value>Pan réessaie dans un instant</value></data>
+  <data name="ArcadiaRetriesSoon" xml:space="preserve"><value>Arcadia réessaie dans un instant</value></data>
+  <data name="PanEmulationStoppedTitle" xml:space="preserve"><value>Émulation arrêtée</value></data>
+  <data name="SteamControllerGroup" xml:space="preserve"><value>STEAM CONTROLLER</value></data>
+  <data name="PanWhatItNeeds" xml:space="preserve"><value>CE DONT PAN A BESOIN</value></data>
+  <data name="SettingNotSaved" xml:space="preserve"><value>La modification n’a pas pu être enregistrée et ne vaut que jusqu’à la fermeture d’Arcadia – détails dans arcadia.log.</value></data>
+  <data name="Seconds" xml:space="preserve"><value>{value} secondes</value></data>
+  <data name="On" xml:space="preserve"><value>Activé</value></data>
+  <data name="SisrHideSubtitle" xml:space="preserve"><value>Masque cette section ; SISR reste installé</value></data>
+  <data name="SisrHideInfo" xml:space="preserve"><value>Si vous utilisez SISR pour d’autres programmes, masquez cette section. SISR, son entrée dans Steam et le contrôle à distance de Steam restent alors tels quels.</value></data>
+  <data name="SisrHideInfoWarns" xml:space="preserve"><value>Si SISR tourne pendant que Pan est activé, Arcadia avertit toujours sous Pan.</value></data>
+  <data name="SisrHideInfoReturns" xml:space="preserve"><value>La section revient après « Rétablir les paramètres d’usine ». Lors de la désinstallation d’Arcadia, il demande quand même s’il faut aussi retirer SISR.</value></data>
+  <data name="SisrNotRemoved" xml:space="preserve"><value>SISR n’a pas été retiré</value></data>
+  <data name="SisrNotAllRemoved" xml:space="preserve"><value>Tout n’a pas pu être retiré</value></data>
+  <data name="SisrReplacedByPan" xml:space="preserve"><value>Pan remplace SISR. Arcadia n’en a plus besoin.</value></data>
+  <data name="SisrSteamEntryLeft" xml:space="preserve"><value>Il reste une entrée dans Steam</value></data>
+  <data name="SisrInfoPast" xml:space="preserve"><value>Auparavant, Arcadia rendait le Steam Controller utilisable dans les jeux hors de Steam avec SISR. C’est maintenant le rôle de Pan, et Arcadia ne démarre plus SISR. Si vous avez besoin de SISR pour un autre programme, vous pouvez le garder.</value></data>
+  <data name="SisrInfoNotBoth" xml:space="preserve"><value>N’utilisez pas SISR et Pan en même temps. Les deux accèdent au Steam Controller, et les jeux reçoivent alors les saisies en double ou pas du tout.</value></data>
+  <data name="SisrSteamEntryInfo" xml:space="preserve"><value>Arcadia ne peut modifier l’entrée dans Steam que lorsque Steam est fermé. Steam est fermé brièvement pour cela, puis relancé.</value></data>
+  <data name="SisrKeeps" xml:space="preserve"><value>Le mode par jeu (« Arcadia » ou « Steam Input ») et le pilote usbip-win2 dont Pan a besoin.</value></data>
+  <data name="SisrDisappearsWhenRemoved" xml:space="preserve"><value>Une fois tout retiré, cette section disparaît.</value></data>
+  <data name="SisrRemovedFiles" xml:space="preserve"><value>SISR avec ses fichiers et paramètres</value></data>
+  <data name="SisrRemovedMarker" xml:space="preserve"><value>L’entrée « SISR Marker » dans votre bibliothèque Steam</value></data>
+  <data name="SisrRemovedRemoteControl" xml:space="preserve"><value>Le contrôle à distance de Steam (débogage CEF) que SISR a activé</value></data>
+  <data name="SisrRemove" xml:space="preserve"><value>Retirer SISR</value></data>
+  <data name="SisrWhatIsRemoved" xml:space="preserve"><value>CE QUI EST RETIRÉ</value></data>
+  <data name="SisrWhatStays" xml:space="preserve"><value>CE QUI RESTE</value></data>
+  <data name="SteamDesktopIgnored" xml:space="preserve"><value>La disposition bureau de Steam est actuellement ignorée</value></data>
+  <data name="SteamDesktopAllowed" xml:space="preserve"><value>La disposition bureau de Steam est actuellement active</value></data>
+  <data name="SteamDesktopInfo1" xml:space="preserve"><value>Steam permet à chaque manette de contrôler le bureau ; par exemple, maintenir le bouton Guide ([Guide]) et utiliser le stick droit ([RS]) déplace le pointeur de la souris, et ⧉ + ≡ déclenche Alt+Tab.</value></data>
+  <data name="SteamDesktopInfo2" xml:space="preserve"><value>C’est surtout utile si vous avez configuré votre propre disposition bureau dans Steam, par exemple avec des raccourcis, des macros ou un contrôle gyroscopique, et voulez aussi l’utiliser à côté d’Arcadia.</value></data>
+  <data name="SteamDesktopInfo3" xml:space="preserve"><value>Dans certains cas, cette fonction de Steam peut gêner des fonctions d’Arcadia comme le mode souris ou « Retour à Arcadia ».</value></data>
+  <data name="SteamDesktopInfo4" xml:space="preserve"><value>Avec le Steam Controller (quand il fonctionne dans le jeu d’actions « Bureau »), les saisies dans Arcadia peuvent aussi être exécutées en double – par exemple, appuyer sur [A] déclenche à la fois [A] et Entrée. Quand « Autoriser la disposition bureau de Steam » est activé, utilisez donc le Steam Controller dans le jeu d’actions « Manette ».</value></data>
+  <data name="SteamDesktopOff" xml:space="preserve"><value>Arcadia bloque la disposition bureau de Steam pour toutes les manettes.</value></data>
+  <data name="SteamDesktopOn" xml:space="preserve"><value>La disposition bureau de Steam fonctionne aussi à côté d’Arcadia, par exemple votre propre disposition bureau de Steam.</value></data>
+  <data name="SteamDesktopInfo6" xml:space="preserve"><value>Pour bloquer le changement de jeu d’actions (⧉ + ≡) du Steam Controller, le gardien des manettes (Pan) doit aussi être activé : Paramètres → Manettes → Pan.</value></data>
+  <data name="SteamDesktopTitle" xml:space="preserve"><value>Autoriser la disposition bureau de Steam</value></data>
+  <data name="FirstRunNotFound" xml:space="preserve"><value>Introuvable sur ce PC</value></data>
+  <data name="FirstRunFoundNoGames" xml:space="preserve"><value>Trouvé · pas encore de jeux</value></data>
+  <data name="FirstRunOnBecomesTab" xml:space="preserve"><value>Activé · devient l’onglet {tab}</value></data>
+  <data name="FirstRunOffNoTab" xml:space="preserve"><value>Désactivé · pas d’onglet</value></data>
+  <data name="ToSettings" xml:space="preserve"><value>Aller aux paramètres</value></data>
+  <data name="StatusEmpty" xml:space="preserve"><value>Rien à voir ici.</value></data>
+  <data name="NewestFirst" xml:space="preserve"><value>Les plus récents d’abord</value></data>
+  <data name="StatusAllDone" xml:space="preserve"><value>Tout est fait !</value></data>
+  <data name="StatusPraise" xml:space="preserve"><value>Vous avez fait ça à merveille !</value></data>
+  <data name="EmptyTabNotFoundTitle" xml:space="preserve"><value>{tab} introuvable</value></data>
+  <data name="EmptyTabScanFailedTitle" xml:space="preserve"><value>{tab} n’a pas pu être analysé</value></data>
+  <data name="EmptyTabNoGamesTitle" xml:space="preserve"><value>Aucun jeu dans {tab}</value></data>
+  <data name="EmptyTabNoLaunchersText" xml:space="preserve"><value>Dans les paramètres, sous « Lanceurs », activez ceux dont vous voulez voir les jeux ici.</value></data>
+  <data name="EmptyTabNotFoundText" xml:space="preserve"><value>Arcadia ne trouve plus {tab} sur ce PC. S’il est désinstallé, désactivez le lanceur dans les paramètres et cet onglet disparaît.</value></data>
+  <data name="EmptyTabScanFailedText" xml:space="preserve"><value>Arcadia n’a pas pu lire les jeux de {tab} à l’instant, par exemple parce qu’un de ses fichiers est verrouillé. Réessayez dans un instant.</value></data>
+  <data name="EmptyTabNoGamesText" xml:space="preserve"><value>{tab} est installé, mais Arcadia n’y a trouvé aucun jeu. Dès que vous achetez ou installez un jeu dans {tab}, il apparaît ici.</value></data>
+  <data name="EmptyTabNotFoundSummary" xml:space="preserve"><value>Lanceur introuvable</value></data>
+  <data name="EmptyTabNoGamesSummary" xml:space="preserve"><value>Aucun jeu</value></data>
+  <data name="EmptyTabScanFailedSummary" xml:space="preserve"><value>Échec de l’analyse</value></data>
+  <data name="SearchAgain" xml:space="preserve"><value>Rechercher à nouveau</value></data>
+  <data name="FirmwareRelease" xml:space="preserve"><value>Libérer les manettes</value></data>
+  <data name="ErrorContextReleaseForFirmware" xml:space="preserve"><value>Libération des manettes pour la mise à jour du firmware</value></data>
+  <data name="QuitArcadia" xml:space="preserve"><value>Quitter Arcadia</value></data>
+  <data name="FirmwareAttemptTitle" xml:space="preserve"><value>Steam veut mettre à jour le firmware</value></data>
+  <data name="FirmwareAttemptMessage" xml:space="preserve"><value>Tant qu’Arcadia gère le Steam Controller et le puck, aucune mise à jour du firmware ne les atteint, et Steam signale donc une erreur. Pour la mise à jour, libérez les manettes ou quittez Arcadia, puis relancez-la dans Steam.</value></data>
+  <data name="FirmwareReleasedTitle" xml:space="preserve"><value>Steam Controller et puck libérés</value></data>
+  <data name="FirmwareReleasedText" xml:space="preserve"><value>Steam les voit maintenant directement. Relancez la mise à jour du firmware dans Steam et attendez qu’elle soit terminée.</value></data>
+  <data name="FirmwareReleasedNext" xml:space="preserve"><value>Pour qu’Arcadia les reprenne : désactivez puis réactivez Pan dans les paramètres des manettes, ou redémarrez Arcadia.</value></data>
+  <data name="FirmwareHelpRelease" xml:space="preserve"><value>Libérer les manettes : Steam voit de nouveau directement le Steam Controller et le puck, Arcadia continue de tourner.</value></data>
+  <data name="FirmwareHelpQuit" xml:space="preserve"><value>Quitter Arcadia : Arcadia libère toutes les manettes et se ferme.</value></data>
+  <data name="FirmwareHelpClose" xml:space="preserve"><value>Fermer : Arcadia garde le Steam Controller et le puck. La mise à jour du firmware ne fonctionne alors qu’une fois que vous les libérez ou quittez Arcadia.</value></data>
+  <data name="HoldToSelect" xml:space="preserve"><value>Maintenir (1 s) : choisir</value></data>
+  <data name="GameBeingUninstalled" xml:space="preserve"><value>« {game} » est en cours de désinstallation.</value></data>
+  <data name="GameAlreadyStarting" xml:space="preserve"><value>« {game} » est déjà en train de démarrer…</value></data>
+  <data name="ErrorContextReturnToGame" xml:space="preserve"><value>Retour au jeu</value></data>
+  <data name="GameOpeningInLauncher" xml:space="preserve"><value>Ouverture de « {game} » dans {launcher}…</value></data>
+  <data name="DemoWouldPlay" xml:space="preserve"><value>Démo : « {game} » serait lu maintenant.</value></data>
+  <data name="ErrorContextShowSoundtrack" xml:space="preserve"><value>Affichage d’une bande originale dans le lanceur</value></data>
+  <data name="ErrorContextStartAfterUpdate" xml:space="preserve"><value>Démarrage du jeu après la mise à jour</value></data>
+  <data name="GameStartFailed" xml:space="preserve"><value>« {game} » n’a pas pu être démarré : {message}</value></data>
+  <data name="GameStartFailedUnexpected" xml:space="preserve"><value>« {game} » n’a pas pu être démarré à cause d’une erreur inattendue – détails dans arcadia.log.</value></data>
+  <data name="GameStartOtherStarting" xml:space="preserve"><value>Un autre jeu est en train de démarrer – relancez « {game} » dans un instant.</value></data>
+  <data name="GameNoWindow" xml:space="preserve"><value>Arcadia ne trouve aucune fenêtre de « {game} » – il démarre peut-être encore ou tourne sans fenêtre.</value></data>
+  <data name="GameNotToFront" xml:space="preserve"><value>« {game} » n’a pas pu être ramené au premier plan.</value></data>
+  <data name="GameInstallBlocked" xml:space="preserve"><value>« {game} » ne peut pas être installé pour l’instant : {reason}.</value></data>
+  <data name="GameInstallOpenLauncher" xml:space="preserve"><value>Ouverture de {launcher} – lancez-y vous-même l’installation de « {game} ».</value></data>
+  <data name="GameInstallOpening" xml:space="preserve"><value>Ouverture de l’installation de « {game} » dans {launcher}…</value></data>
+  <data name="DemoWouldInstall" xml:space="preserve"><value>Jeu de démo : « {game} » serait installé maintenant.</value></data>
+  <data name="GameInstallOnlyInLauncher" xml:space="preserve"><value>« {game} » ne peut être installé que directement dans {launcher}.</value></data>
+  <data name="GameInstallOpenFailed" xml:space="preserve"><value>L’installation de « {game} » n’a pas pu être ouverte : {message}</value></data>
+  <data name="LauncherStartingInBackground" xml:space="preserve"><value>Démarrage de {launcher} en arrière-plan…</value></data>
+  <data name="LauncherNotRespondingStillAsking" xml:space="preserve"><value>{launcher} ne répond pas – demande de « {game} » malgré tout…</value></data>
+  <data name="GameStartingMaybeUpdate" xml:space="preserve"><value>Démarrage de « {game} » – {launcher} installera peut-être d’abord la mise à jour…</value></data>
+  <data name="GameStarting" xml:space="preserve"><value>Démarrage de « {game} »…</value></data>
+  <data name="DemoWouldStart" xml:space="preserve"><value>Jeu de démo : « {game} » démarrerait maintenant.</value></data>
+  <data name="GameNotStartedCheckLauncher" xml:space="preserve"><value>« {game} » n’a pas démarré – vérifiez dans {launcher}.</value></data>
+  <data name="LauncherDoesNotOffer" xml:space="preserve"><value>{launcher} ne propose pas cela pour « {game} ».</value></data>
+  <data name="LauncherOpenFailed" xml:space="preserve"><value>{launcher} n’a pas pu être ouvert : {message}</value></data>
+  <data name="LauncherOpening" xml:space="preserve"><value>Ouverture de {launcher}…</value></data>
+  <data name="DemoWouldOpenLauncher" xml:space="preserve"><value>Jeu de démo : {launcher} s’ouvrirait maintenant.</value></data>
+  <data name="GameUninstallOnlyInLauncher" xml:space="preserve"><value>« {game} » ne peut être désinstallé que dans {launcher} – ouverture de {launcher}…</value></data>
+  <data name="GameAskUninstall" xml:space="preserve"><value>Désinstaller « {game} » ?</value></data>
+  <data name="GameAskUninstallText" xml:space="preserve"><value>{launcher} retire le jeu de ce PC et vous demandera peut-être lui-même de confirmer.</value></data>
+  <data name="Uninstall" xml:space="preserve"><value>Désinstaller</value></data>
+  <data name="GameUninstallOpening" xml:space="preserve"><value>Ouverture de la désinstallation de « {game} » dans {launcher}…</value></data>
+  <data name="DemoWouldUninstall" xml:space="preserve"><value>Jeu de démo : « {game} » serait désinstallé maintenant.</value></data>
+  <data name="ErrorContextWindowToFront" xml:space="preserve"><value>Mise au premier plan d’une fenêtre</value></data>
+  <data name="ActionNotYetAvailable" xml:space="preserve"><value>Arrive dans une version ultérieure</value></data>
+  <data name="ActionNextStartOnly" xml:space="preserve"><value>S’applique seulement au prochain démarrage – modifiable une fois le jeu terminé</value></data>
+  <data name="ActionPauseAndCancelIn" xml:space="preserve"><value>Mettre en pause et annuler dans {launcher}</value></data>
+  <data name="ActionInstallOpensIn" xml:space="preserve"><value>L’installation s’ouvre dans {launcher}</value></data>
+  <data name="ActionLauncherMayUpdate" xml:space="preserve"><value>{launcher} installera peut-être d’abord la mise à jour</value></data>
+  <data name="ActionAddToFavorites" xml:space="preserve"><value>Ajouter aux favoris</value></data>
+  <data name="ActionChangeArtworkMore" xml:space="preserve"><value>Modifier les illustrations…</value></data>
+  <data name="ActionChangeArtwork" xml:space="preserve"><value>Modifier les illustrations</value></data>
+  <data name="ActionOpenIn" xml:space="preserve"><value>Ouvrir dans {launcher}</value></data>
+  <data name="ActionLauncherNotOpenable" xml:space="preserve"><value>{launcher} ne peut pas être ouvert depuis Arcadia</value></data>
+  <data name="ActionUninstallMore" xml:space="preserve"><value>Désinstaller…</value></data>
+  <data name="ActionAfterInstall" xml:space="preserve"><value>Uniquement une fois l’installation en cours terminée</value></data>
+  <data name="ActionAfterGameEnded" xml:space="preserve"><value>Uniquement une fois le jeu terminé</value></data>
+  <data name="ActionOnlyInLauncherOpens" xml:space="preserve"><value>Possible uniquement dans {launcher} – ouvre {launcher}</value></data>
+  <data name="ActionOnlyInLauncher" xml:space="preserve"><value>Possible uniquement dans {launcher}</value></data>
+  <data name="ActionSwitchesTo" xml:space="preserve"><value>Passe à « {mode} »</value></data>
+  <data name="ActionSteamControllerMode" xml:space="preserve"><value>Steam Controller : {mode}</value></data>
+  <data name="ActionPanNotRunning" xml:space="preserve"><value>Pan ne tourne pas – ouvre les paramètres des manettes, qui en donnent la raison</value></data>
+  <data name="IndividualMouseModeCaption" xml:space="preserve"><value>MODE SOURIS INDIVIDUEL</value></data>
+  <data name="ActionShowDetails" xml:space="preserve"><value>Afficher les détails</value></data>
+  <data name="ActionToFavorites" xml:space="preserve"><value>Ajouter aux favoris</value></data>
+  <data name="DetailLauncherReportsNone" xml:space="preserve"><value>{launcher} n’en signale aucun</value></data>
+  <data name="DetailUpdateNote" xml:space="preserve"><value>{launcher} l’installera peut-être avant le démarrage.</value></data>
+  <data name="DetailSoundtrackNote" xml:space="preserve"><value>{launcher} lit la bande originale.</value></data>
+  <data name="DetailPosition" xml:space="preserve"><value>{position} sur {count}</value></data>
+  <data name="DetailAreas" xml:space="preserve"><value>Sections</value></data>
+  <data name="DetailAreaOverview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="DetailAreaController" xml:space="preserve"><value>Manette</value></data>
+  <data name="DetailAreaManage" xml:space="preserve"><value>Gérer</value></data>
+  <data name="DetailAreaInfos" xml:space="preserve"><value>Infos</value></data>
+  <data name="DetailNoDescription" xml:space="preserve"><value>Il n’y a pas de description pour ce jeu.</value></data>
+  <data name="DetailInfosNone" xml:space="preserve"><value>Pas encore d’infos</value></data>
+  <data name="DetailInfosNoneText" xml:space="preserve"><value>Arcadia n’a pas encore d’infos sur ce jeu : ni description, ni genres, ni développeur.</value></data>
+  <data name="DetailInfoSeparator" xml:space="preserve"><value> · </value></data>
+  <data name="DetailListSeparator" xml:space="preserve"><value>, </value></data>
+  <data name="DetailMoreTags" xml:space="preserve"><value>+{count}</value></data>
+  <data name="DetailAgeRating" xml:space="preserve"><value>{board} {rating}</value></data>
+  <data name="DetailDescriptionCaption" xml:space="preserve"><value>DESCRIPTION</value></data>
+  <data name="DetailTitleCaption" xml:space="preserve"><value>TITRE</value></data>
+  <data name="DetailGenresCaption" xml:space="preserve"><value>GENRES</value></data>
+  <data name="DetailDevelopersCaption" xml:space="preserve"><value>DÉVELOPPEUR</value></data>
+  <data name="DetailPublishersCaption" xml:space="preserve"><value>ÉDITEUR</value></data>
+  <data name="DetailReleasedCaption" xml:space="preserve"><value>SORTIE</value></data>
+  <data name="DetailAgeRatingCaption" xml:space="preserve"><value>CLASSIFICATION</value></data>
+  <data name="DetailTagsCaption" xml:space="preserve"><value>TAGS DES SOURCES</value></data>
+  <data name="DetailOverviewLine" xml:space="preserve"><value>{lastPlayed} · {playtime}</value></data>
+  <data name="DetailControllerLine" xml:space="preserve"><value>Mode « {mode} »</value></data>
+  <data name="DetailManageLine" xml:space="preserve"><value>Illustrations, tags, titre et plus</value></data>
+  <data name="DetailQuickSelectionCaption" xml:space="preserve"><value>SÉLECTION RAPIDE</value></data>
+  <data name="DetailCustomizeOverview" xml:space="preserve"><value>Personnaliser l’aperçu</value></data>
+  <data name="QuickSelectionDialogSubtitle" xml:space="preserve"><value>Jusqu’à 5 entrées pour la sélection rapide de {game}.</value></data>
+  <data name="QuickSelectionCount" xml:space="preserve"><value>{count} sur {max}</value></data>
+  <data name="QuickSelectionFull" xml:space="preserve"><value>{max} sur {max} choisies. Désélectionnez d’abord une entrée pour en ajouter une autre.</value></data>
+  <data name="QuickSelectionPerGame" xml:space="preserve"><value>Chaque jeu a sa propre sélection rapide.</value></data>
+  <data name="QuickSelectionPerGameText" xml:space="preserve"><value>Cette sélection peut être appliquée à tous les jeux.</value></data>
+  <data name="QuickSelectionApplyToAll" xml:space="preserve"><value>Appliquer à tous les jeux</value></data>
+  <data name="QuickSelectionAskReplace" xml:space="preserve"><value>Remplacer la sélection rapide de tous les jeux ?</value></data>
+  <data name="QuickSelectionAskReplaceText" xml:space="preserve"><value>Les sélections propres aux autres jeux sont perdues.</value></data>
+  <data name="QuickSelectionReplace" xml:space="preserve"><value>Remplacer</value></data>
+  <data name="QuickSelectionApplied" xml:space="preserve"><value>Appliquée à tous les jeux.</value></data>
+  <data name="QuickSelectionMoveHint" xml:space="preserve"><value>Choisir</value></data>
+  <data name="DetailInfoCaption" xml:space="preserve"><value>INFOS</value></data>
+  <data name="DetailBefore" xml:space="preserve"><value>PRÉCÉDENT</value></data>
+  <data name="DetailAfter" xml:space="preserve"><value>SUIVANT</value></data>
+  <data name="DetailUpdateAvailable" xml:space="preserve"><value>Mise à jour disponible</value></data>
+  <data name="DetailControllerModeTitle" xml:space="preserve"><value>Mode du Steam Controller</value></data>
+  <data name="DetailControllerModeSubtitle" xml:space="preserve"><value>Qui contrôle le Steam Controller dans ce jeu</value></data>
+  <data name="DetailControllerModeInfo" xml:space="preserve"><value>S’applique au prochain démarrage du jeu.</value></data>
+  <data name="DetailControllerModeDefaultInfo" xml:space="preserve"><value>Suit le préréglage du lanceur dans les paramètres.</value></data>
+  <data name="DetailControllerModeArcadiaInfo" xml:space="preserve"><value>Arcadia transforme le Steam Controller en manette virtuelle que chaque jeu comprend.</value></data>
+  <data name="DetailControllerModeSteamInfo" xml:space="preserve"><value>Steam contrôle la manette avec vos dispositions Steam.</value></data>
+  <data name="DetailMouseModeTitle" xml:space="preserve"><value>Mode souris individuel</value></data>
+  <data name="DetailMouseModeSubtitle" xml:space="preserve"><value>Si le mode souris peut être activé dans ce jeu</value></data>
+  <data name="DetailMouseModeDefaultInfo" xml:space="preserve"><value>Suit le réglage par défaut pour « Individuel » : Manettes → Mode souris.</value></data>
+  <data name="DetailMouseModeAllowedInfo" xml:space="preserve"><value>Le mode souris peut aussi être activé dans ce jeu, par exemple pour des menus qui ne fonctionnent qu’avec la souris.</value></data>
+  <data name="DetailMouseModeBlockedInfo" xml:space="preserve"><value>Arcadia quitte le mode souris dès que le jeu est au premier plan.</value></data>
+  <data name="DetailMouseModeNotPerGame" xml:space="preserve"><value>Réglable quand « Forcer la fin du mode souris dans les jeux » est sur « Individuel » : Manettes → Mode souris.</value></data>
+  <data name="DetailModeNoSteamController" xml:space="preserve"><value>Réglable dès qu’un Steam Controller est connecté.</value></data>
+  <data name="DetailSetAfterInstall" xml:space="preserve"><value>Réglable une fois le jeu installé.</value></data>
+  <data name="DetailArtworkSubtitle" xml:space="preserve"><value>Choisir la jaquette et l’arrière-plan</value></data>
+  <data name="DetailArtworkInfo" xml:space="preserve"><value>Choisissez une jaquette et un arrière-plan pour ce jeu parmi les suggestions des sources de données, ou utilisez votre propre image.</value></data>
+  <data name="ActionChangeTitle" xml:space="preserve"><value>Modifier le titre</value></data>
+  <data name="ActionChangeTitleMore" xml:space="preserve"><value>Modifier le titre…</value></data>
+  <data name="ActionResetTitle" xml:space="preserve"><value>Rétablir le titre</value></data>
+  <data name="DetailChangeTitleSubtitle" xml:space="preserve"><value>Saisissez votre propre titre pour ce jeu</value></data>
+  <data name="DetailChangeTitleInfo" xml:space="preserve"><value>Votre propre titre s’applique partout : dans la bibliothèque, dans la recherche et lors du tri par nom. Un titre vide rétablit l’original.</value></data>
+  <data name="DetailResetTitleSubtitle" xml:space="preserve"><value>Retour au titre d’origine</value></data>
+  <data name="DetailResetTitleInfo" xml:space="preserve"><value>Supprime votre propre titre. Le jeu reprend le nom que lui donne le lanceur ou une source de données.</value></data>
+  <data name="DetailNoOwnTitle" xml:space="preserve"><value>Le jeu n’a pas de titre personnalisé.</value></data>
+  <data name="UserDataUnreadable" xml:space="preserve"><value>Vos propres tags et titres ne peuvent pas être lus pour l’instant : Arcadia n’écrase pas le fichier user-data.json. Réparez-le ou supprimez-le, puis redémarrez Arcadia.</value></data>
+  <data name="DetailOriginalTitle" xml:space="preserve"><value>Titre d’origine : {title}</value></data>
+  <data name="DetailOriginalTitleHint" xml:space="preserve"><value>Titre d’origine</value></data>
+  <data name="ChangeTitleNote" xml:space="preserve"><value>Laisser vide ou saisir « {title} » rétablit le titre d’origine.</value></data>
+  <data name="ChangeTitleTooLong" xml:space="preserve"><value>{count} caractères au maximum</value></data>
+  <data name="TextAtMaxLength" xml:space="preserve"><value>Longueur maximale atteinte : {count} caractères au maximum</value></data>
+  <data name="ChangeTitleTake" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="UserDataStatus" xml:space="preserve"><value>Vos propres titres et tags ne peuvent pas être lus</value></data>
+  <data name="UserDataStatusShort" xml:space="preserve"><value>Sans vos propres titres et tags jusqu’à ce que user-data.json puisse être lu</value></data>
+  <data name="DataSourcesUserDataGroup" xml:space="preserve"><value>VOS PROPRES DONNÉES</value></data>
+  <data name="DataSourcesUserData" xml:space="preserve"><value>Vos propres titres et tags</value></data>
+  <data name="DataSourcesUserDataUnreadable" xml:space="preserve"><value>user-data.json ne peut pas être lu</value></data>
+  <data name="DataSourcesUserDataInfo" xml:space="preserve"><value>Arcadia n’a pas pu lire user-data.json au démarrage : le fichier est endommagé, verrouillé ou provient d’une version plus récente d’Arcadia. D’ici là, chaque jeu affiche son titre d’origine et aucun de vos tags, et ni l’un ni l’autre ne peut être modifié. Arcadia n’écrase pas le fichier et en place une copie à côté sous le nom user-data.json.broken. Réparez ou supprimez le fichier dans le dossier %APPDATA%\Arcadia et redémarrez Arcadia.</value></data>
+  <data name="ErrorContextUserData" xml:space="preserve"><value>Enregistrement de vos propres titres et tags</value></data>
+  <data name="ActionTags" xml:space="preserve"><value>Tags</value></data>
+  <data name="ActionTagsMore" xml:space="preserve"><value>Tags…</value></data>
+  <data name="DetailTagsSubtitle" xml:space="preserve"><value>Ajouter ou retirer vos propres tags</value></data>
+  <data name="DetailTagsInfo" xml:space="preserve"><value>Donnez vos propres tags à vos jeux pour mieux les filtrer. Vous pouvez aussi gérer vos tags sous Paramètres → Sources de données.</value></data>
+  <data name="DetailTagsOfGameNone" xml:space="preserve"><value>Ce jeu n’a pas encore de tags à vous.</value></data>
+  <data name="DetailTagsNone" xml:space="preserve"><value>Aucun</value></data>
+  <data name="DetailTagsOne" xml:space="preserve"><value>1 tag</value></data>
+  <data name="DetailTagsMany" xml:space="preserve"><value>{count} tags</value></data>
+  <data name="DetailOwnTagsCaption" xml:space="preserve"><value>VOS TAGS</value></data>
+  <data name="TagsWindowHeading" xml:space="preserve"><value>Tags · {game}</value></data>
+  <data name="TagsNew" xml:space="preserve"><value>Nouveau tag</value></data>
+  <data name="TagsRename" xml:space="preserve"><value>Renommer le tag</value></data>
+  <data name="TagsHintToggle" xml:space="preserve"><value>Attribuer</value></data>
+  <data name="TagsHintDelete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="TagsHintRename" xml:space="preserve"><value>Renommer</value></data>
+  <data name="TagsHintGames" xml:space="preserve"><value>Afficher les jeux</value></data>
+  <data name="TagsHintCreate" xml:space="preserve"><value>Créer</value></data>
+  <data name="TagsNameNote" xml:space="preserve"><value>Un tag s’applique à tous les lanceurs. Majuscules et minuscules ne comptent pas : « coop canapé » est « Coop Canapé ».</value></data>
+  <data name="TagsDeleteQuestion" xml:space="preserve"><value>Supprimer « {name} » ?</value></data>
+  <data name="TagsDeleteGamesNone" xml:space="preserve"><value>Aucun jeu n’a ce tag.</value></data>
+  <data name="TagsDeleteGamesOne" xml:space="preserve"><value>1 jeu perd le tag.</value></data>
+  <data name="TagsDeleteGamesMany" xml:space="preserve"><value>{count} jeux perdent le tag.</value></data>
+  <data name="TagsDeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="TagsMergeQuestion" xml:space="preserve"><value>Fusionner avec « {name} » ?</value></data>
+  <data name="TagsMergeText" xml:space="preserve"><value>Tous les jeux de « {from} » reçoivent « {into} », et « {from} » disparaît.</value></data>
+  <data name="TagsMergeConfirm" xml:space="preserve"><value>Fusionner</value></data>
+  <data name="TagsGamesNone" xml:space="preserve"><value>Aucun jeu n’a ce tag.</value></data>
+  <data name="OwnTagsTitle" xml:space="preserve"><value>Vos tags</value></data>
+  <data name="OwnTagsCount" xml:space="preserve"><value>{count} tags</value></data>
+  <data name="DataSourcesOwnTags" xml:space="preserve"><value>Vos tags ({count})</value></data>
+  <data name="DataSourcesOwnTagsAction" xml:space="preserve"><value>Gérer</value></data>
+  <data name="DataSourcesOwnTagsSubtitle" xml:space="preserve"><value>Créer, renommer et supprimer des tags et afficher leurs jeux</value></data>
+  <data name="DataSourcesOwnTagsInfo" xml:space="preserve"><value>Vos propres tags s’appliquent à tous les lanceurs. Ici, vous en créez de nouveaux, les renommez, en fusionnez deux ou en supprimez un de tous les jeux. Pour chaque tag, vous voyez ses jeux et pouvez ouvrir leur page de détails. Vous attribuez des tags à un jeu sur sa page de détails sous « Gérer » ou dans le menu contextuel.</value></data>
+  <data name="DetailUninstallSubtitle" xml:space="preserve"><value>Passe la main à {launcher}</value></data>
+  <data name="DetailUninstallInfo" xml:space="preserve"><value>Demande d’abord, puis laisse {launcher} désinstaller le jeu. Il reste dans votre bibliothèque et peut être réinstallé à tout moment.</value></data>
+  <data name="TileUninstalling" xml:space="preserve"><value>Désinstallation…</value></data>
+  <data name="TileInstallVerb" xml:space="preserve"><value>{verb}…</value></data>
+  <data name="TileStarting" xml:space="preserve"><value>Démarrage…</value></data>
+  <data name="TileRunningSince" xml:space="preserve"><value>En cours depuis {time}</value></data>
+  <data name="TileRunning" xml:space="preserve"><value>En cours</value></data>
+  <data name="TileStartInLauncher" xml:space="preserve"><value>Démarrez dans {launcher}</value></data>
+  <data name="TileConfirmInLauncher" xml:space="preserve"><value>Confirmez dans {launcher}</value></data>
+  <data name="TileQueuedAt" xml:space="preserve"><value>En file d’attente · position {position}</value></data>
+  <data name="TileQueued" xml:space="preserve"><value>En file d’attente</value></data>
+  <data name="TileFinishing" xml:space="preserve"><value>Finalisation…</value></data>
+  <data name="TileConfirm" xml:space="preserve"><value>Confirmer</value></data>
+  <data name="TileLoading" xml:space="preserve"><value>Téléchargement</value></data>
+  <data name="TileUpdatingVerb" xml:space="preserve"><value>Mise à jour</value></data>
+  <data name="TileInstallingVerb" xml:space="preserve"><value>Installation</value></data>
+  <data name="TileAlmostDone" xml:space="preserve"><value>Presque terminé</value></data>
+  <data name="ToastGameInstalled" xml:space="preserve"><value>« {game} » est maintenant installé.</value></data>
+  <data name="ToastGamesInstalled" xml:space="preserve"><value>{count} jeux sont maintenant installés.</value></data>
+  <data name="ToastRescanningAll" xml:space="preserve"><value>Nouvelle analyse de tous les lanceurs…</value></data>
+  <data name="ToastRescanning" xml:space="preserve"><value>Nouvelle analyse de {launcher}…</value></data>
+  <data name="ToastGameUninstalled" xml:space="preserve"><value>« {game} » a été désinstallé.</value></data>
+  <data name="ToastInstallCancelled" xml:space="preserve"><value>Installation de « {game} » annulée.</value></data>
+  <data name="ToastInstallFailed" xml:space="preserve"><value>L’installation de « {game} » a échoué – vérifiez dans le lanceur.</value></data>
+  <data name="QuotedTitle" xml:space="preserve"><value>« {title} »</value></data>
+  <data name="ToastTheGame" xml:space="preserve"><value>Le jeu</value></data>
+  <data name="ToastNotStarted" xml:space="preserve"><value>{game} n’a pas été démarré.</value></data>
+  <data name="ToastStartCancelledByLauncher" xml:space="preserve"><value>{game} : {launcher} a annulé le démarrage.</value></data>
+  <data name="ToastStillNoLauncher" xml:space="preserve"><value>Toujours aucun lanceur activé.</value></data>
+  <data name="ToastAllRescanned" xml:space="preserve"><value>Tous les lanceurs ont été analysés de nouveau.</value></data>
+  <data name="ToastLauncherNotActive" xml:space="preserve"><value>{launcher} n’est pas activé.</value></data>
+  <data name="ToastLauncherStillNotFound" xml:space="preserve"><value>{launcher} reste introuvable.</value></data>
+  <data name="ToastStillNoGames" xml:space="preserve"><value>Toujours aucun jeu dans {launcher}.</value></data>
+  <data name="ToastFoundOneGame" xml:space="preserve"><value>1 jeu trouvé dans {launcher}.</value></data>
+  <data name="ToastFoundGames" xml:space="preserve"><value>{count} jeux trouvés dans {launcher}.</value></data>
+  <data name="ToastRescanFailedKeep" xml:space="preserve"><value>{who} relire les jeux ; les derniers jeux lus restent.</value></data>
+  <data name="ToastScanFailed" xml:space="preserve"><value>{who} lire les jeux.</value></data>
+  <data name="LibraryNoFilterHits" xml:space="preserve"><value>Aucune entrée ne correspond à vos filtres.</value></data>
+  <data name="ViewOptionsForLibraryInfo" xml:space="preserve"><value>S’applique à la bibliothèque ; la page de détails affiche toujours un seul jeu. Le jeu actuel reste au milieu, et ses voisins suivent le nouvel ordre de tri.</value></data>
+  <data name="LibraryFilteredOf" xml:space="preserve"><value>{shown} sur {total}</value></data>
+  <data name="LibraryPageRange" xml:space="preserve"><value>{first}–{last} sur {count}</value></data>
+  <data name="LibrarySortAndPageSize" xml:space="preserve"><value>{sort}  ·  {pageSize} par page</value></data>
+  <data name="FirstRunNotSaved" xml:space="preserve"><value>Le choix des lanceurs n’a pas pu être enregistré et ne vaut que jusqu’à la fermeture d’Arcadia – détails dans arcadia.log.</value></data>
+  <data name="ErrorContextOpenLog" xml:space="preserve"><value>Ouverture d’un journal</value></data>
+  <data name="LogOpenFailed" xml:space="preserve"><value>{log} n’a pas pu être ouvert : {reason}</value></data>
+  <data name="ViewNotSaved" xml:space="preserve"><value>L’affichage n’a pas pu être enregistré et ne vaut que jusqu’à la fermeture d’Arcadia – détails dans arcadia.log.</value></data>
+  <data name="ErrorContextRescanLaunchers" xml:space="preserve"><value>Nouvelle analyse des lanceurs</value></data>
+  <data name="PanUpdateNotice" xml:space="preserve"><value>Cette version d’Arcadia apporte une nouvelle version de Pan, votre gardien des manettes. Sans la mise à jour, Arcadia désactive le gardien des manettes.</value></data>
+  <data name="PanUpdateNoticeHint" xml:space="preserve"><value>Arcadia demande ensuite les droits d’administrateur pour installer Pan.</value></data>
+  <data name="PanUpdatingTitle" xml:space="preserve"><value>Mise à jour de Pan</value></data>
+  <data name="PanUpdatingText" xml:space="preserve"><value>Cette version d’Arcadia a besoin d’une nouvelle version de Pan, votre gardien des manettes.</value></data>
+  <data name="PanUpdatePromptHint" xml:space="preserve"><value>Confirmez la demande de droits d’administrateur. Pour l’instant, elle ne peut être confirmée qu’à la souris ou au clavier.</value></data>
+  <data name="PanStoppingTitle" xml:space="preserve"><value>Arrêt de Pan</value></data>
+  <data name="PanStoppingText" xml:space="preserve"><value>Arcadia attend que l’ancien Pan ait libéré vos manettes. Cela prend en général environ 30 secondes.</value></data>
+  <data name="PanCountdownCaption" xml:space="preserve"><value>au maximum</value></data>
+  <data name="PanStuckText" xml:space="preserve"><value>L’ancien Pan n’a pas libéré vos manettes. Des manettes ou le puck Steam sont peut-être encore invisibles pour les jeux.</value></data>
+  <data name="PanRestoringTitle" xml:space="preserve"><value>Restauration des manettes</value></data>
+  <data name="PanManualTitle" xml:space="preserve"><value>Libérer les manettes à la main</value></data>
+  <data name="PanManualText" xml:space="preserve"><value>La restauration n’a pas fonctionné. Voici comment libérer les manettes dans HidHide (souris ou clavier uniquement) :</value></data>
+  <data name="PanRestoreDeclined" xml:space="preserve"><value>La restauration a été refusée dans la demande de droits d’administrateur.</value></data>
+  <data name="PanDeclinedToast" xml:space="preserve"><value>Pan : non mis à jour, gardien des manettes désactivé</value></data>
+  <data name="PanFailedToast" xml:space="preserve"><value>Pan : échec de la mise à jour, gardien des manettes désactivé</value></data>
+  <data name="PanRestoredToast" xml:space="preserve"><value>Pan : manettes restaurées, gardien des manettes désactivé</value></data>
+  <data name="PanManualStep1" xml:space="preserve"><value>1. Dans le menu Démarrer, ouvrez « HidHide Configuration Client » et confirmez la demande de droits d’administrateur.</value></data>
+  <data name="PanManualStep2" xml:space="preserve"><value>2. Onglet « Devices » : décochez vos manettes et le puck Steam.</value></data>
+  <data name="PanManualStep3" xml:space="preserve"><value>3. Onglet « Applications » : retirez Arcadia de la liste.</value></data>
+  <data name="PanManualStep4" xml:space="preserve"><value>4. Désactivez « Enable device hiding » et fermez le programme.</value></data>
+  <data name="PanManualStep5" xml:space="preserve"><value>5. Choisissez ici « Vérifier à nouveau ».</value></data>
+  <data name="Update" xml:space="preserve"><value>Mettre à jour</value></data>
+  <data name="CheckAgain" xml:space="preserve"><value>Vérifier à nouveau</value></data>
+  <data name="ErrorContextWaitForOldPan" xml:space="preserve"><value>Attente de la fin de l’ancien Pan</value></data>
+  <data name="PanNewVersionTitle" xml:space="preserve"><value>Nouvelle version de Pan</value></data>
+  <data name="PanRestoreHint" xml:space="preserve"><value>Arcadia demande les droits d’administrateur lors de la restauration.</value></data>
+  <data name="PanUpdatedToast" xml:space="preserve"><value>Pan : mis à jour</value></data>
+  <data name="ContinueWithoutPan" xml:space="preserve"><value>Continuer sans Pan</value></data>
+  <data name="PanNotRunning" xml:space="preserve"><value>Pan ne tourne pas</value></data>
+  <data name="PanWhyInSettings" xml:space="preserve"><value>Les paramètres des manettes indiquent pourquoi.</value></data>
+  <data name="UpdateShortText" xml:space="preserve"><value>Arcadia se ferme, installe la mise à jour et redémarre.</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>Arcadia {version} disponible</value></data>
+  <data name="StatusSuffix" xml:space="preserve"><value> – {text}</value></data>
+  <data name="ViewOptionsAllPageSizes" xml:space="preserve"><value>{tab} a {count} jeux – toutes les tailles de page peuvent être choisies.</value></data>
+  <data name="ViewOptionsTitle" xml:space="preserve"><value>Affichage</value></data>
+  <data name="ViewOptionsSubtitle" xml:space="preserve"><value>Ordre de tri et entrées par page, pour tous les lanceurs</value></data>
+  <data name="ViewOptionsSearchTitle" xml:space="preserve"><value>Filtre et ordre de tri</value></data>
+  <data name="ViewOptionsSearchSubtitle" xml:space="preserve"><value>S’applique uniquement à cette recherche</value></data>
+  <data name="SortName" xml:space="preserve"><value>Nom</value></data>
+  <data name="SortOldestFirst" xml:space="preserve"><value>Les plus anciens d’abord</value></data>
+  <data name="SortLastPlayed" xml:space="preserve"><value>Dernière partie</value></data>
+  <data name="JoinAnd" xml:space="preserve"><value> et </value></data>
+  <data name="BestHitsFirst" xml:space="preserve"><value>Meilleurs résultats d’abord</value></data>
+  <data name="KeyboardOfSearch" xml:space="preserve"><value>de la recherche</value></data>
+  <data name="KeyboardOfSettings" xml:space="preserve"><value>des paramètres</value></data>
+  <data name="ErrorContextOpenWebPage" xml:space="preserve"><value>Ouverture d’une page web</value></data>
+  <data name="WebPageBrowserNotStarting" xml:space="preserve"><value>Le navigateur ne démarre pas.</value></data>
+  <data name="WebPageCannotDeleteCookies" xml:space="preserve"><value>Ce navigateur ne peut pas supprimer les cookies.</value></data>
+  <data name="WebPageNotLoaded" xml:space="preserve"><value>La page n’a pas pu être chargée.</value></data>
+  <data name="ErrorContextReadWebPage" xml:space="preserve"><value>Lecture d’une page web</value></data>
+  <data name="KeyboardDockDown" xml:space="preserve"><value>Déplacer en bas</value></data>
+  <data name="KeyboardDockUp" xml:space="preserve"><value>Déplacer en haut</value></data>
+  <data name="ErrorContextHideToast" xml:space="preserve"><value>Masquage d’un message</value></data>
+  <data name="SearchHitsInOneLauncher" xml:space="preserve"><value>{count} résultats dans 1 lanceur</value></data>
+  <data name="SearchHitsInLaunchers" xml:space="preserve"><value>{count} résultats dans {launchers} lanceurs</value></data>
+  <data name="AboutLicense" xml:space="preserve"><value>Logiciel libre sous GPL-3.0 · Code source : {repository}</value></data>
+  <data name="LauncherControllerFactorySteam" xml:space="preserve"><value>Réglage d’usine : {mode}, car les jeux de {launcher} utilisent les dispositions de Steam. S’applique au prochain démarrage d’un jeu.</value></data>
+  <data name="LauncherControllerFactoryArcadia" xml:space="preserve"><value>Réglage d’usine : {mode}. S’applique au prochain démarrage d’un jeu.</value></data>
+  <data name="TitleListAndMore" xml:space="preserve"><value>{titles} et {more} autres</value></data>
+  <data name="PanServiceEndsInfo" xml:space="preserve"><value>Pan se termine juste après son démarrage. « Reconfigurer » réinstalle Pan et recrée son dossier. La raison de l’arrêt est dans {logPath}. {admin}</value></data>
+  <data name="FirmwareToolItMasculine" xml:space="preserve"><value>l’application</value></data>
+  <data name="FirmwareToolItNeuter" xml:space="preserve"><value>l’application</value></data>
+  <data name="FirmwareToolInfoDualSense" xml:space="preserve"><value>Avec {tool}, vous mettez à jour le firmware de votre DualSense. Pour qu’une mise à jour ne soit pas interrompue, Arcadia ne reprend la manette qu’une fois {tool} fermé.</value></data>
+  <data name="FirmwareToolInfoXbox" xml:space="preserve"><value>Avec {tool}, vous mettez à jour le firmware de votre manette Xbox. Pour qu’une mise à jour ne soit pas interrompue, Arcadia ne reprend la manette qu’une fois {tool} fermé.</value></data>
+  <data name="GameAlreadyUpdating" xml:space="preserve"><value>« {game} » est déjà en cours de mise à jour – mettez en pause et annulez dans {launcher}.</value></data>
+  <data name="GameAlreadyInstalling" xml:space="preserve"><value>« {game} » est déjà en cours d’installation – mettez en pause et annulez dans {launcher}.</value></data>
+  <data name="LauncherCould" xml:space="preserve"><value>{launcher} n’a pas pu</value></data>
+  <data name="LaunchersCould" xml:space="preserve"><value>{launchers} n’ont pas pu</value></data>
+  <data name="LibraryFilterHidesTheOne" xml:space="preserve"><value>{tab} a 1 entrée ; le filtre la masque en ce moment.</value></data>
+  <data name="LibraryFilterHidesAll" xml:space="preserve"><value>{tab} a {count} entrées ; le filtre les masque toutes en ce moment.</value></data>
+  <data name="ViewOptionsPageSizeBlocked" xml:space="preserve"><value>{tab} a {count} jeux – {largest} par page les affiche déjà tous, {sizes} ne peut donc pas être choisi.</value></data>
+  <data name="ViewOptionsPageSizesBlocked" xml:space="preserve"><value>{tab} a {count} jeux – {largest} par page les affiche déjà tous, {sizes} ne peuvent donc pas être choisis.</value></data>
+  <data name="KeyboardLayoutCaption" xml:space="preserve"><value>DISPOSITION DU CLAVIER</value></data>
+  <data name="MouseModeWindowTitle" xml:space="preserve"><value>Mode souris d’Arcadia</value></data>
+  <data name="PreviousLauncherTip" xml:space="preserve"><value>Lanceur précédent (Maj+Q)</value></data>
+  <data name="NextLauncherTip" xml:space="preserve"><value>Lanceur suivant (Maj+E)</value></data>
+  <data name="PanSettingUpTip" xml:space="preserve"><value>Pan cache le Steam Controller réel et met en place les manettes virtuelles</value></data>
+  <data name="ControllerSettingUp" xml:space="preserve"><value>Configuration de la manette…</value></data>
+  <data name="StatusTip" xml:space="preserve"><value>État (V)</value></data>
+  <data name="SearchTip" xml:space="preserve"><value>Recherche (F)</value></data>
+  <data name="SettingsTip" xml:space="preserve"><value>Paramètres (Entrée)</value></data>
+  <data name="FilterTip" xml:space="preserve"><value>Filtre (G)</value></data>
+  <data name="BackTip" xml:space="preserve"><value>Retour (Échap)</value></data>
+  <data name="Library" xml:space="preserve"><value>Bibliothèque</value></data>
+  <data name="Search" xml:space="preserve"><value>Recherche</value></data>
+  <data name="MoreActionsTip" xml:space="preserve"><value>Plus d’actions (R ou clic droit sur une jaquette)</value></data>
+  <data name="Options" xml:space="preserve"><value>Options</value></data>
+  <data name="DetailLauncherMayUpdateSuffix" xml:space="preserve"><value> installera peut-être la mise à jour avant le démarrage</value></data>
+  <data name="DetailInstallOpensInPrefix" xml:space="preserve"><value>L’installation s’ouvre dans </value></data>
+  <data name="DetailInstallOpensInSuffix" xml:space="preserve"><value></value></data>
+  <data name="DetailPauseAndCancelInPrefix" xml:space="preserve"><value>Mettre en pause et annuler dans </value></data>
+  <data name="UpdateAvailableLabel" xml:space="preserve"><value>Mise à jour disponible</value></data>
+  <data name="LastPlayedCaption" xml:space="preserve"><value>DERNIÈRE PARTIE</value></data>
+  <data name="PlaytimeCaption" xml:space="preserve"><value>TEMPS DE JEU</value></data>
+  <data name="InstallSizeCaption" xml:space="preserve"><value>TAILLE</value></data>
+  <data name="LauncherCaption" xml:space="preserve"><value>LANCEUR</value></data>
+  <data name="LocationCaption" xml:space="preserve"><value>EMPLACEMENT</value></data>
+  <data name="MouseModeClickTip" xml:space="preserve"><value>Un clic bascule entre « Par défaut », « Autorisé » et « Désactivé »</value></data>
+  <data name="ControllerModeClickTip" xml:space="preserve"><value>Un clic bascule entre « Par défaut », « Arcadia » et « Steam Input »</value></data>
+  <data name="NotInstalledATip" xml:space="preserve"><value>Non installé – A installe</value></data>
+  <data name="PreviousPageTip" xml:space="preserve"><value>Page précédente (Q, Page ↑ ou Maj+←)</value></data>
+  <data name="NextPageTip" xml:space="preserve"><value>Page suivante (E, Page ↓ ou Maj+→)</value></data>
+  <data name="LibraryLoading" xml:space="preserve"><value>Chargement de la bibliothèque…</value></data>
+  <data name="LauncherSettings" xml:space="preserve"><value>Paramètres du lanceur</value></data>
+  <data name="ChangeFilter" xml:space="preserve"><value>Modifier le filtre</value></data>
+  <data name="ChooseAction" xml:space="preserve"><value>Choisir une action</value></data>
+  <data name="Launcher" xml:space="preserve"><value>Lanceurs</value></data>
+  <data name="Switch" xml:space="preserve"><value>Changer</value></data>
+  <data name="HoldForDetails" xml:space="preserve"><value>maintenir : détails</value></data>
+  <data name="Page" xml:space="preserve"><value>Page</value></data>
+  <data name="CloseSearchTip" xml:space="preserve"><value>Fermer la recherche (Échap)</value></data>
+  <data name="SearchGamesWatermark" xml:space="preserve"><value>Rechercher des jeux…</value></data>
+  <data name="FilterAndSortTip" xml:space="preserve"><value>Filtre et ordre de tri (L3)</value></data>
+  <data name="Keyboard" xml:space="preserve"><value>Clavier</value></data>
+  <data name="Enter" xml:space="preserve"><value>Entrée</value></data>
+  <data name="KeyboardRetract" xml:space="preserve"><value>Rentrer le clavier</value></data>
+  <data name="ChooseHit" xml:space="preserve"><value>Choisir un résultat</value></data>
+  <data name="MoreHits" xml:space="preserve"><value>Plus de résultats</value></data>
+  <data name="Click" xml:space="preserve"><value>Clic</value></data>
+  <data name="MouseWheel" xml:space="preserve"><value>Molette</value></data>
+  <data name="DoubleClick" xml:space="preserve"><value>Double-clic</value></data>
+  <data name="RightClick" xml:space="preserve"><value>Clic droit</value></data>
+  <data name="KeyHintDrag" xml:space="preserve"><value>Glisser</value></data>
+  <data name="KeyHintRelease" xml:space="preserve"><value>Relâcher</value></data>
+  <data name="PageUpDown" xml:space="preserve"><value>Page ↑ ↓</value></data>
+  <data name="MenuKey" xml:space="preserve"><value>Touche Menu</value></data>
+  <data name="ToggleKeyboardTip" xml:space="preserve"><value>Afficher ou masquer le clavier virtuel</value></data>
+  <data name="PreviousHitsTip" xml:space="preserve"><value>Résultats précédents (LT, Page ↑, molette)</value></data>
+  <data name="MoreHitsTip" xml:space="preserve"><value>Plus de résultats (RT, Page ↓, molette)</value></data>
+  <data name="SortByCaption" xml:space="preserve"><value>TRIER PAR</value></data>
+  <data name="PageSizeCaption" xml:space="preserve"><value>ENTRÉES PAR PAGE</value></data>
+  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="PreviousCategoryTip" xml:space="preserve"><value>Catégorie précédente (⇧ Q)</value></data>
+  <data name="NextCategoryTip" xml:space="preserve"><value>Catégorie suivante (⇧ E)</value></data>
+  <data name="SomethingWrongTip" xml:space="preserve"><value>Quelque chose ne va pas ici</value></data>
+  <data name="CloseTip" xml:space="preserve"><value>Fermer (Échap)</value></data>
+  <data name="BackToListTip" xml:space="preserve"><value>Retour à la liste</value></data>
+  <data name="PreviousLauncher" xml:space="preserve"><value>Lanceur précédent</value></data>
+  <data name="NextLauncher" xml:space="preserve"><value>Lanceur suivant</value></data>
+  <data name="Toggle" xml:space="preserve"><value>Basculer</value></data>
+  <data name="NotInstalledOnThisPc" xml:space="preserve"><value>Non installé sur ce PC</value></data>
+  <data name="NoLauncherActiveLibraryEmpty" xml:space="preserve"><value>Aucun lanceur activé – la bibliothèque reste vide.</value></data>
+  <data name="Space" xml:space="preserve"><value>Espace</value></data>
+  <data name="Discard" xml:space="preserve"><value>Abandonner</value></data>
+  <data name="Move" xml:space="preserve"><value>Déplacer</value></data>
+  <data name="Drop" xml:space="preserve"><value>Déposer</value></data>
+  <data name="Category" xml:space="preserve"><value>Catégorie</value></data>
+  <data name="SteamGameRunning" xml:space="preserve"><value>Jeu Steam en cours</value></data>
+  <data name="SisrBeingRemoved" xml:space="preserve"><value>Retrait de SISR</value></data>
+  <data name="RunsOverSteamSuffix" xml:space="preserve"><value> tourne en ce moment via Steam.</value></data>
+  <data name="SecondsUnit" xml:space="preserve"><value>secondes</value></data>
+  <data name="AfterwardsCaption" xml:space="preserve"><value>ENSUITE</value></data>
+  <data name="CancelTip" xml:space="preserve"><value>Annuler (B)</value></data>
+  <data name="SortingLabel" xml:space="preserve"><value>Ordre de tri :</value></data>
+  <data name="Message" xml:space="preserve"><value>Message</value></data>
+  <data name="ButtonLabel" xml:space="preserve"><value>Bouton</value></data>
+  <data name="WithThisSelection" xml:space="preserve"><value>Avec cette sélection</value></data>
+  <data name="Setup" xml:space="preserve"><value>Configuration</value></data>
+  <data name="WelcomeCaption" xml:space="preserve"><value>BIENVENUE</value></data>
+  <data name="FirstRunQuestion" xml:space="preserve"><value>Quels lanceurs Arcadia doit-il utiliser ?</value></data>
+  <data name="FirstRunExplanation" xml:space="preserve"><value>Arcadia active automatiquement les lanceurs qu’il trouve. Les lanceurs activés apparaissent dans la bibliothèque, chacun avec son onglet</value></data>
+  <data name="FirstRunSearching" xml:space="preserve"><value>Arcadia cherche des lanceurs…</value></data>
+  <data name="FoundCaption" xml:space="preserve"><value>TROUVÉS</value></data>
+  <data name="NotFoundCaption" xml:space="preserve"><value>INTROUVABLES</value></data>
+  <data name="DoneTip" xml:space="preserve"><value>Terminé (Entrée)</value></data>
+  <data name="Done" xml:space="preserve"><value>Terminé</value></data>
+  <data name="ChangeableLater" xml:space="preserve"><value>Modifiable plus tard</value></data>
+  <data name="FirstRunLaterInfo" xml:space="preserve"><value>Sous Paramètres › Lanceurs, il y a d’autres options, comme l’ordre des onglets ou la connexion à un lanceur.</value></data>
+  <data name="FirstRunDataSourcesQuestion" xml:space="preserve"><value>D’où doivent venir les images et les infos ?</value></data>
+  <data name="FirstRunDataSourcesExplanation" xml:space="preserve"><value>Avec une clé pour SteamGridDB et un accès à IGDB, même les jeux sans jaquette ni description reçoivent les deux. Gratuit, et possible à tout moment plus tard</value></data>
+  <data name="FirstRunFinishGroup" xml:space="preserve"><value>TERMINER</value></data>
+  <data name="FirstRunSkip" xml:space="preserve"><value>Passer</value></data>
+  <data name="FirstRunSkipSubtitle" xml:space="preserve"><value>Vers la bibliothèque sans clé</value></data>
+  <data name="FirstRunDataSourcesDoneSubtitle" xml:space="preserve"><value>Vers la bibliothèque ; le reste se charge en arrière-plan</value></data>
+  <data name="FirstRunDataSourcesWithoutInfo" xml:space="preserve"><value>Sans clé ni accès, Arcadia affiche ce que les lanceurs fournissent eux-mêmes : leurs jaquettes et, pour Steam, aussi la description, les genres et la date de sortie, aussi lentement que le magasin le permet. SteamGridDB et IGDB ne reçoivent alors aucune requête. La bibliothèque est là tout de suite ; ce qui manque encore se charge en arrière-plan.</value></data>
+  <data name="FirstRunDataSourcesDoneInfo" xml:space="preserve"><value>La bibliothèque est là tout de suite. Ce qui manque encore aux jeux des lanceurs choisis se charge en arrière-plan, aussi vite que SteamGridDB, IGDB et le magasin le permettent ; Paramètres › Sources de données affiche la progression.</value></data>
+  <data name="FirstRunDataSourcesLaterHeading" xml:space="preserve"><value>MODIFIABLE PLUS TARD</value></data>
+  <data name="FirstRunDataSourcesLaterInfo" xml:space="preserve"><value>La clé et l’accès peuvent être saisis, vérifiés ou supprimés à tout moment sous Paramètres › Sources de données.</value></data>
+  <data name="OnOff" xml:space="preserve"><value>Activé / Désactivé</value></data>
+  <data name="KeyboardWindowTitle" xml:space="preserve"><value>Clavier virtuel d’Arcadia</value></data>
+  <data name="ChooseKeys" xml:space="preserve"><value>Choisir des touches</value></data>
+  <data name="Type" xml:space="preserve"><value>Saisir</value></data>
+  <data name="MousePointer" xml:space="preserve"><value>Pointeur de la souris</value></data>
+  <data name="LeftClick" xml:space="preserve"><value>Clic gauche</value></data>
+  <data name="SlowPointer" xml:space="preserve"><value>Pointeur lent</value></data>
+  <data name="TypeKey" xml:space="preserve"><value>Saisir la touche</value></data>
+  <data name="UpdateAvailableCaption" xml:space="preserve"><value>MISE À JOUR DISPONIBLE</value></data>
+  <data name="InstalledOnCaption" xml:space="preserve"><value>INSTALLÉ LE</value></data>
+  <data name="SizeCaption" xml:space="preserve"><value>TAILLE</value></data>
+  <data name="PreviousGameTip" xml:space="preserve"><value>Jeu précédent (Q, Page ↑ ou molette)</value></data>
+  <data name="NextGameTip" xml:space="preserve"><value>Jeu suivant (E, Page ↓ ou molette)</value></data>
+  <data name="TypeCountOfThemInstalled" xml:space="preserve"><value>{total}, dont {installed} installés</value></data>
+  <data name="ActionMouseMode" xml:space="preserve"><value>Mode souris : {mode}</value></data>
+  <data name="TileRemoving" xml:space="preserve"><value>Retrait</value></data>
+  <data name="ErrorContextPrepareKeyboard" xml:space="preserve"><value>Préparation du clavier {whose}</value></data>
+  <data name="Remove" xml:space="preserve"><value>Retirer</value></data>
+  <data name="LevelNow" xml:space="preserve"><value>Désormais {level}</value></data>
+  <data name="Installed" xml:space="preserve"><value>Installé</value></data>
+  <data name="LibraryGroup" xml:space="preserve"><value>BIBLIOTHÈQUE</value></data>
+  <data name="GamesScannedAgo" xml:space="preserve"><value>{games} · analysé {ago}</value></data>
+  <data name="ScannedAgo" xml:space="preserve"><value>· analysé {ago}</value></data>
+  <data name="MouseModeGroup" xml:space="preserve"><value>MODE SOURIS</value></data>
+  <data name="MouseMode" xml:space="preserve"><value>Mode souris</value></data>
+  <data name="AccountGroup" xml:space="preserve"><value>COMPTE</value></data>
+  <data name="AccountAskSignOutTitle" xml:space="preserve"><value>Déconnecter {account} ?</value></data>
+  <data name="LayoutDefault" xml:space="preserve"><value>Par défaut : {layout}</value></data>
+  <data name="Restore" xml:space="preserve"><value>Restaurer</value></data>
+  <data name="FilterAll" xml:space="preserve"><value>Tous</value></data>
+  <data name="Found" xml:space="preserve"><value>Trouvé</value></data>
+  <data name="FoundWithGames" xml:space="preserve"><value>Trouvé · {games}</value></data>
+  <data name="CountOfThemInstalled" xml:space="preserve"><value>{count} · {installed} installés</value></data>
+  <data name="StatusTitle" xml:space="preserve"><value>État</value></data>
+  <data name="StatusUrgency" xml:space="preserve"><value>Urgence</value></data>
+  <data name="MessageCountOne" xml:space="preserve"><value>1 message</value></data>
+  <data name="MessageCountMany" xml:space="preserve"><value>{count} messages</value></data>
+  <data name="KeyShift" xml:space="preserve"><value>Maj</value></data>
+  <data name="KeySpace" xml:space="preserve"><value>Espace</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Entrée</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Échap</value></data>
+  <data name="Hide" xml:space="preserve"><value>Masquer</value></data>
+  <data name="ControllerModeSteam" xml:space="preserve"><value>Steam Input</value></data>
+  <data name="ControllerModeDefault" xml:space="preserve"><value>Par défaut ({mode})</value></data>
+  <data name="TileBadgeStarting" xml:space="preserve"><value>Démarrage</value></data>
+  <data name="TileBadgePaused" xml:space="preserve"><value>En pause</value></data>
+  <data name="TilePausedAt" xml:space="preserve"><value>En pause · {percent}</value></data>
+  <data name="TileBadgeWaiting" xml:space="preserve"><value>En attente</value></data>
+  <data name="TileBadgeWaitingAt" xml:space="preserve"><value>En attente · {position}</value></data>
+  <data name="DetailPlaytimeFrom" xml:space="preserve"><value>Selon {launcher}</value></data>
+  <data name="SortInstalledAt" xml:space="preserve"><value>Date d’installation</value></data>
+  <data name="SortRelevance" xml:space="preserve"><value>Pertinence</value></data>
+  <data name="MinutesAgo" xml:space="preserve"><value>il y a {minutes} min</value></data>
+  <data name="AtTime" xml:space="preserve"><value>à {time}</value></data>
+  <data name="TimeWithUnit" xml:space="preserve"><value>{time}</value></data>
+  <data name="StatusSince" xml:space="preserve"><value>depuis {time}</value></data>
+  <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} Go</value></data>
+  <data name="MessageResolvedAt" xml:space="preserve"><value>Résolu {time}</value></data>
+  <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
+  <data name="LevelWarning" xml:space="preserve"><value>Avertissement</value></data>
+  <data name="LauncherActiveTab" xml:space="preserve"><value>Activé · onglet {tab}</value></data>
+  <data name="FactInstalls" xml:space="preserve"><value>Installations</value></data>
+  <data name="FactsLocation" xml:space="preserve"><value>EMPLACEMENT</value></data>
+  <data name="MouseModeAutomatic" xml:space="preserve"><value>Automatique</value></data>
+  <data name="MouseModeIndividual" xml:space="preserve"><value>Individuel</value></data>
+  <data name="HoldTime" xml:space="preserve"><value>Durée de maintien</value></data>
+  <data name="PointerSpeed" xml:space="preserve"><value>Vitesse du pointeur</value></data>
+  <data name="MouseModeHelpArrowKeys" xml:space="preserve"><value>Touches fléchées</value></data>
+  <data name="MouseModeHelpHoldView" xml:space="preserve"><value>Maintenir ⧉</value></data>
+  <data name="MouseModeHelpHoldViewMenu" xml:space="preserve"><value>Maintenir ⧉ + ≡</value></data>
+  <data name="MouseModeLimitsHeading" xml:space="preserve"><value>LIMITES</value></data>
+  <data name="GameMouseAllowed" xml:space="preserve"><value>Autorisé</value></data>
+  <data name="GameMouseBlocked" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="Active" xml:space="preserve"><value>Activé</value></data>
+  <data name="FactListedAt" xml:space="preserve"><value>Au</value></data>
+  <data name="LoggingWarnings" xml:space="preserve"><value>Avertissements</value></data>
+  <data name="LoggingErrors" xml:space="preserve"><value>Erreurs</value></data>
+  <data name="Clear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="Folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Assign" xml:space="preserve"><value>Attribuer</value></data>
+  <data name="Fix" xml:space="preserve"><value>Corriger</value></data>
+  <data name="DefaultLogo" xml:space="preserve"><value>Logo par défaut</value></data>
+  <data name="DefaultLogoNamed" xml:space="preserve"><value>Par défaut : {logo}.</value></data>
+  <data name="Images" xml:space="preserve"><value>Images</value></data>
+  <data name="InfoTextScroll" xml:space="preserve"><value>Texte d’info</value></data>
+  <data name="SecondOne" xml:space="preserve"><value>1 seconde</value></data>
+  <data name="HoldToAct" xml:space="preserve"><value>Maintenir ({seconds} s) : {action}</value></data>
+  <data name="Today" xml:space="preserve"><value>Aujourd’hui</value></data>
+  <data name="Yesterday" xml:space="preserve"><value>Hier</value></data>
+  <data name="DaysAgo" xml:space="preserve"><value>Il y a {days} jours</value></data>
+  <data name="WeeksAgo" xml:space="preserve"><value>Il y a {weeks} semaines</value></data>
+  <data name="MonthsAgo" xml:space="preserve"><value>Il y a {months} mois</value></data>
+  <data name="Hours" xml:space="preserve"><value>{hours} h</value></data>
+  <data name="Drive" xml:space="preserve"><value>Lecteur {letter}:</value></data>
+  <data name="GameTypeTool" xml:space="preserve"><value>Outil</value></data>
+  <data name="GameTypeTools" xml:space="preserve"><value>Outils</value></data>
+  <data name="GameTypeSoundtrack" xml:space="preserve"><value>Bande originale</value></data>
+  <data name="GameTypeSoundtracks" xml:space="preserve"><value>Bandes originales</value></data>
+  <data name="GameTypeSoftware" xml:space="preserve"><value>Logiciel</value></data>
+  <data name="GameTypePlay" xml:space="preserve"><value>Jouer</value></data>
+  <data name="GameTypeRock" xml:space="preserve"><value>Écouter</value></data>
+  <data name="FilterSeveral" xml:space="preserve"><value>Plusieurs</value></data>
+  <data name="FilterType" xml:space="preserve"><value>Type</value></data>
+  <data name="FilterValue" xml:space="preserve"><value>Valeur</value></data>
+  <data name="FilterValues" xml:space="preserve"><value>Valeurs</value></data>
+  <data name="LauncherOrderHeading" xml:space="preserve"><value>ORDRE DES LANCEURS</value></data>
+  <data name="SteamDesktopGroup" xml:space="preserve"><value>DISPOSITION BUREAU</value></data>
+  <data name="ControllerGroup" xml:space="preserve"><value>MANETTE</value></data>
+  <data name="LauncherDetailsHeading" xml:space="preserve"><value>DÉTAILS DU LANCEUR</value></data>
+  <data name="LoggingGroup" xml:space="preserve"><value>JOURNALISATION</value></data>
+  <data name="ArcadiaLogHeading" xml:space="preserve"><value>JOURNAL D’ARCADIA</value></data>
+  <data name="ViiperLogHeading" xml:space="preserve"><value>JOURNAL DE VIIPER</value></data>
+  <data name="PanLogHeading" xml:space="preserve"><value>JOURNAL DE PAN</value></data>
+  <data name="VersionGroup" xml:space="preserve"><value>VERSION</value></data>
+  <data name="AffectedHeading" xml:space="preserve"><value>CONCERNÉ</value></data>
+  <data name="GeneralGroup" xml:space="preserve"><value>GÉNÉRAL</value></data>
+  <data name="ReleaseVersion" xml:space="preserve"><value>Version {version}</value></data>
+  <data name="ArcadiaVersion" xml:space="preserve"><value>Arcadia {version}</value></data>
+  <data name="KeyLayout" xml:space="preserve"><value>Disposition : {code}</value></data>
+  <data name="DataSourcesTitle" xml:space="preserve"><value>Sources de données</value></data>
+  <data name="DataSourcesArtworkTab" xml:space="preserve"><value>Illustrations</value></data>
+  <data name="DataSourcesMetadataTab" xml:space="preserve"><value>Métadonnées</value></data>
+  <data name="DataSourcesTabTurn" xml:space="preserve"><value>Onglet</value></data>
+  <data name="DataSourcesSteamGridDbGroup" xml:space="preserve"><value>STEAMGRIDDB</value></data>
+  <data name="DataSourcesOrderGroup" xml:space="preserve"><value>ORDRE DES ILLUSTRATIONS</value></data>
+  <data name="DataSourcesArtworkGroup" xml:space="preserve"><value>ILLUSTRATIONS</value></data>
+  <data name="DataSourcesKey" xml:space="preserve"><value>Clé</value></data>
+  <data name="DataSourcesKeyNone" xml:space="preserve"><value>Aucune clé saisie</value></data>
+  <data name="DataSourcesKeyConnected" xml:space="preserve"><value>Connecté</value></data>
+  <data name="DataSourcesKeyUnchecked" xml:space="preserve"><value>Pas encore vérifiée</value></data>
+  <data name="DataSourcesKeyRejected" xml:space="preserve"><value>Clé non valide · SteamGridDB est ignoré</value></data>
+  <data name="DataSourcesKeyMissing" xml:space="preserve"><value>Aucune clé saisie · SteamGridDB est ignoré</value></data>
+  <data name="DataSourcesKeyChecking" xml:space="preserve"><value>Vérification…</value></data>
+  <data name="DataSourcesKeyEnter" xml:space="preserve"><value>Saisir</value></data>
+  <data name="DataSourcesKeyInfo" xml:space="preserve"><value>Avec la clé, Arcadia charge des jaquettes et des arrière-plans depuis SteamGridDB, dans l’ordre défini sous « Ordre des illustrations ». La clé est gratuite. Connectez-vous sur steamgriddb.com et copiez-la sous Preferences › API.</value></data>
+  <data name="DataSourcesKeyHowTo" xml:space="preserve"><value>[A] ouvre le clavier virtuel. Si vous avez déjà copié la clé, « Coller » est plus rapide. Un champ vide laisse la clé telle quelle.</value></data>
+  <data name="DataSourcesNextStepsHeading" xml:space="preserve"><value>ET ENSUITE</value></data>
+  <data name="DataSourcesKeyRejectedInfo" xml:space="preserve"><value>SteamGridDB refuse la clé. Tant qu’elle n’est pas de nouveau valide, Arcadia n’utilise que les images des lanceurs et, à défaut, les images de remplacement. Créez une nouvelle clé sur la page des clés et collez-la ici.</value></data>
+  <data name="DataSourcesSendsHeading" xml:space="preserve"><value>CE QU’ARCADIA ENVOIE</value></data>
+  <data name="DataSourcesSendsInfo" xml:space="preserve"><value>L’ID du jeu chez le lanceur, ou son nom si SteamGridDB ne connaît pas l’ID, plus votre clé. Rien d’autre. Sans clé, Arcadia n’envoie aucune requête. La clé est enregistrée chiffrée sur cet appareil, jamais en clair.</value></data>
+  <data name="DataSourcesSendsInfoInMemory" xml:space="preserve"><value>L’ID du jeu chez le lanceur, ou son nom si SteamGridDB ne connaît pas l’ID, plus votre clé. Rien d’autre. Sans clé, Arcadia n’envoie aucune requête. Sur ce système, la clé n’est gardée que jusqu’à la fermeture d’Arcadia et n’est enregistrée nulle part.</value></data>
+  <data name="DataSourcesKeyProblem" xml:space="preserve"><value>Une clé compte 32 lettres et chiffres</value></data>
+  <data name="DataSourcesKeySaved" xml:space="preserve"><value>Clé enregistrée et vérifiée : connecté.</value></data>
+  <data name="DataSourcesKeyPasted" xml:space="preserve"><value>Clé collée et vérifiée : connecté.</value></data>
+  <data name="DataSourcesKeySavedSearching" xml:space="preserve"><value>Clé enregistrée. Recherche des images manquantes.</value></data>
+  <data name="DataSourcesKeyPastedSearching" xml:space="preserve"><value>Clé collée. Recherche des images manquantes.</value></data>
+  <data name="DataSourcesKeyRejectedToast" xml:space="preserve"><value>SteamGridDB refuse la clé. Tant qu’elle n’est pas valide, Arcadia n’utilise que les images des lanceurs.</value></data>
+  <data name="DataSourcesKeyKeptNoConnection" xml:space="preserve"><value>Pas de connexion à SteamGridDB. La clé est enregistrée ; Arcadia la vérifie lors de la prochaine recherche.</value></data>
+  <data name="DataSourcesKeyDelete" xml:space="preserve"><value>Supprimer la clé</value></data>
+  <data name="DataSourcesKeyDeleteSubtitle" xml:space="preserve"><value>Arcadia n’interroge alors plus SteamGridDB</value></data>
+  <data name="DataSourcesKeyDeleteAction" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DataSourcesKeyDeleteInfo" xml:space="preserve"><value>Supprime la clé de cet appareil. Les images déjà présentes restent.</value></data>
+  <data name="DataSourcesKeyNotDeleted" xml:space="preserve"><value>La clé ne s’applique plus mais n’a pas pu être supprimée du disque. Après un redémarrage, elle revient.</value></data>
+  <data name="DataSourcesKeyNotStored" xml:space="preserve"><value>Clé vérifiée : connecté. Elle n’a pas pu être enregistrée et ne vaut que jusqu’à la fermeture d’Arcadia.</value></data>
+  <data name="DataSourcesKeyDeleted" xml:space="preserve"><value>Clé supprimée. Arcadia n’interroge plus SteamGridDB.</value></data>
+  <data name="DataSourcesPaste" xml:space="preserve"><value>Coller depuis le presse-papiers</value></data>
+  <data name="DataSourcesPasteSubtitle" xml:space="preserve"><value>Pour une clé que vous avez copiée</value></data>
+  <data name="DataSourcesPasteAction" xml:space="preserve"><value>Coller</value></data>
+  <data name="DataSourcesPasteInfo" xml:space="preserve"><value>Colle la clé depuis le presse-papiers et la vérifie aussitôt.</value></data>
+  <data name="DataSourcesPasteInfoNoKey" xml:space="preserve"><value>S’il n’y a pas de clé de 32 caractères, la précédente reste, et un message vous le signale.</value></data>
+  <data name="DataSourcesPasteNoKey" xml:space="preserve"><value>Le presse-papiers ne contient pas de clé SteamGridDB. La précédente reste.</value></data>
+  <data name="DataSourcesKeyPage" xml:space="preserve"><value>Ouvrir la page des clés</value></data>
+  <data name="DataSourcesKeyPageSubtitle" xml:space="preserve"><value>Ouvre la page API de SteamGridDB dans le navigateur</value></data>
+  <data name="DataSourcesKeyPageAction" xml:space="preserve"><value>Ouvrir ↗</value></data>
+  <data name="DataSourcesKeyPageInfo" xml:space="preserve"><value>Ouvre la page steamgriddb.com/profile/preferences/api dans le navigateur par défaut. Connectez-vous-y et copiez la clé.</value></data>
+  <data name="DataSourcesKeyPageMouse" xml:space="preserve"><value>Vous utilisez le navigateur avec la souris : le mode souris s’active pour cela, puis se désactive.</value></data>
+  <data name="DataSourcesKeyPageOpening" xml:space="preserve"><value>Ouverture de SteamGridDB dans le navigateur…</value></data>
+  <data name="DataSourcesKeyPageFailed" xml:space="preserve"><value>La page des clés de SteamGridDB n’a pas pu être ouverte dans le navigateur.</value></data>
+  <data name="DataSourcesTest" xml:space="preserve"><value>Tester la connexion</value></data>
+  <data name="DataSourcesTestAction" xml:space="preserve"><value>Tester</value></data>
+  <data name="DataSourcesTestNeedsKey" xml:space="preserve"><value>Possible uniquement avec une clé</value></data>
+  <data name="DataSourcesTestNotYet" xml:space="preserve"><value>Demande à SteamGridDB si la clé est valide</value></data>
+  <data name="DataSourcesTestOk" xml:space="preserve"><value>Dernière vérification à {time} · OK</value></data>
+  <data name="DataSourcesTestRejected" xml:space="preserve"><value>Vérifié à {time} · SteamGridDB refuse la clé</value></data>
+  <data name="DataSourcesTestNoConnection" xml:space="preserve"><value>Pas de connexion</value></data>
+  <data name="DataSourcesTestInfo" xml:space="preserve"><value>Demande une fois à SteamGridDB si la clé est valide.</value></data>
+  <data name="DataSourcesTestInfoTimeout" xml:space="preserve"><value>Sans réponse dans les 10 secondes, « Pas de connexion » s’affiche ici. La clé reste alors telle quelle.</value></data>
+  <data name="DataSourcesTestOkToast" xml:space="preserve"><value>La connexion à SteamGridDB est OK.</value></data>
+  <data name="DataSourcesTestNoConnectionToast" xml:space="preserve"><value>Pas de connexion à SteamGridDB. La clé reste telle quelle.</value></data>
+  <data name="DataSourcesLauncherImages" xml:space="preserve"><value>Images des lanceurs</value></data>
+  <data name="DataSourcesLauncherImagesSubtitle" xml:space="preserve"><value>Les images propres aux lanceurs, sans clé</value></data>
+  <data name="DataSourcesLauncherImagesInfo" xml:space="preserve"><value>Les images officielles des lanceurs. Elles n’ont pas besoin de clé.</value></data>
+  <data name="DataSourcesWhoDeliversHeading" xml:space="preserve"><value>QUI FOURNIT QUOI</value></data>
+  <data name="DataSourcesWhoDelivers" xml:space="preserve"><value>Steam fournit la jaquette et l’arrière-plan. Epic Games fournit une jaquette et un arrière-plan en 16:9 pour la plupart des jeux. Les autres lanceurs ne fournissent pas d’images.</value></data>
+  <data name="DataSourcesOrderHeading" xml:space="preserve"><value>ORDRE</value></data>
+  <data name="DataSourcesOrderInfo" xml:space="preserve"><value>Arcadia interroge les sources de haut en bas. Si l’une n’a pas d’image qui convient, la suivante est interrogée. Une jaquette convient si un recadrage centré au format portrait 2:3 n’en retire pas plus de 15 %. Un arrière-plan convient en 16:9 comme la page de détails ou au format plat de Steam et SteamGridDB ; chaque arrière-plan s’affiche presque en entier. Si aucune source n’a d’image qui convient, Arcadia prend celle de la première source qui en a une.</value></data>
+  <data name="DataSourcesOrderMove" xml:space="preserve"><value>[L3] soulève une source, ▲ ▼ la déplacent, [L3] la dépose, [B] annule. À la souris, vous la faites glisser.</value></data>
+  <data name="DataSourcesSourceOffInfo" xml:space="preserve"><value>Arcadia n’interroge pas la source et masque ses images jusqu’à ce que vous l’activiez. Les images choisies à la main restent.</value></data>
+  <data name="DataSourcesSourceOnInfo" xml:space="preserve"><value>Arcadia interroge la source à sa place dans l’ordre.</value></data>
+  <data name="DataSourcesOrderWhen" xml:space="preserve"><value>Immédiatement, sans recherche. SteamGridDB est interrogé pour les nouveaux jeux et avec « Rechercher maintenant ».</value></data>
+  <data name="DataSourcesSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
+  <data name="DataSourcesSteamGridDbSubtitle" xml:space="preserve"><value>Comble les manques : images portrait, mods, entrées personnalisées</value></data>
+  <data name="DataSourcesSteamGridDbSkipped" xml:space="preserve"><value>Ignoré tant qu’il n’y a pas de clé valide</value></data>
+  <data name="DataSourcesSourceOffSubtitle" xml:space="preserve"><value>Désactivé · non interrogé, ses images sont masquées</value></data>
+  <data name="DataSourcesSteamGridDbInfo" xml:space="preserve"><value>Une collection d’images que les joueurs importent et notent. Arcadia prend l’image la mieux notée.</value></data>
+  <data name="DataSourcesOrderPlace" xml:space="preserve"><value>{place}. {source}</value></data>
+  <data name="DataSourcesMissing" xml:space="preserve"><value>Jaquettes et arrière-plans manquants</value></data>
+  <data name="DataSourcesMissingCounts" xml:space="preserve"><value>{covers} jeux sans jaquette, {heroes} sans arrière-plan</value></data>
+  <data name="DataSourcesMissingNone" xml:space="preserve"><value>Tous les jeux ont une jaquette et un arrière-plan</value></data>
+  <data name="DataSourcesMissingNotYet" xml:space="preserve"><value>Arcadia cherche de lui-même après l’analyse</value></data>
+  <data name="DataSourcesSearchRunning" xml:space="preserve"><value>Recherche · {done} jeux sur {total}</value></data>
+  <data name="DataSourcesSearchFound" xml:space="preserve"><value>Terminé : {covers} jaquettes et {heroes} arrière-plans trouvés</value></data>
+  <data name="DataSourcesSearchLauncherOnly" xml:space="preserve"><value>Terminé : sans clé, seules les images des lanceurs ont été vérifiées</value></data>
+  <data name="DataSourcesSearchNow" xml:space="preserve"><value>Rechercher maintenant</value></data>
+  <data name="DataSourcesSearchBusy" xml:space="preserve"><value>En cours…</value></data>
+  <data name="DataSourcesSearchCancel" xml:space="preserve"><value>Annuler la recherche</value></data>
+  <data name="DataSourcesMissingInfo" xml:space="preserve"><value>De lui-même, Arcadia ne cherche que pour les jeux nouveaux dans la bibliothèque, et une fois pour tous les jeux dès qu’il y a une clé valide. Arcadia ne cherche pas lors d’une nouvelle analyse, après un jeu ou après une installation.</value></data>
+  <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>« Rechercher maintenant » cherche pour tous les jeux auxquels il manque une image ou dont l’image ne remplit le cadre que recadrée. « Annuler la recherche » arrête la recherche ; ce qui a été trouvé reste.</value></data>
+  <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB est désactivé, il n’y a donc rien à chercher. Vous le réactivez sous « Ordre des illustrations ».</value></data>
+  <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Pas de connexion à SteamGridDB. Arcadia réessaie lors de la prochaine recherche.</value></data>
+  <data name="DataSourcesReload" xml:space="preserve"><value>Recharger toutes les illustrations</value></data>
+  <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Annuler le rechargement</value></data>
+  <data name="DataSourcesReloadKeeps" xml:space="preserve"><value>Les images choisies à la main restent</value></data>
+  <data name="DataSourcesReloadReplaces" xml:space="preserve"><value>Les images choisies à la main sont aussi remplacées</value></data>
+  <data name="DataSourcesReloadAction" xml:space="preserve"><value>Recharger</value></data>
+  <data name="DataSourcesReloadInfo" xml:space="preserve"><value>Recharge les jaquettes et arrière-plans de tous les jeux, par exemple quand SteamGridDB en a de meilleurs entre-temps. Arcadia demande d’abord.</value></data>
+  <data name="DataSourcesReloadAsk" xml:space="preserve"><value>Recharger toutes les illustrations ?</value></data>
+  <data name="DataSourcesReloadAskKeeps" xml:space="preserve"><value>Arcadia recharge les jaquettes et arrière-plans des {count} jeux. Les images choisies à la main restent telles quelles.</value></data>
+  <data name="DataSourcesReloadAskReplaces" xml:space="preserve"><value>Arcadia recharge les jaquettes et arrière-plans des {count} jeux. Les images choisies à la main sont aussi remplacées, car « Écraser les illustrations choisies à la main » est activé.</value></data>
+  <data name="DataSourcesReloadRunning" xml:space="preserve"><value>Rechargement · {done} jeux sur {total}</value></data>
+  <data name="DataSourcesOverwrite" xml:space="preserve"><value>Écraser les illustrations choisies à la main</value></data>
+  <data name="DataSourcesOverwriteSubtitle" xml:space="preserve"><value>S’applique au rechargement de toutes les illustrations</value></data>
+  <data name="DataSourcesOverwriteInfo" xml:space="preserve"><value>Choisie à la main désigne une image que vous avez choisie dans « Modifier les illustrations », y compris un fichier à vous.</value></data>
+  <data name="DataSourcesOverwriteOff" xml:space="preserve"><value>Ces images restent telles quelles lors du rechargement.</value></data>
+  <data name="DataSourcesOverwriteOn" xml:space="preserve"><value>Elles sont aussi remplacées, par l’image qu’Arcadia choisirait lui-même.</value></data>
+  <data name="DataSourcesSeveralHits" xml:space="preserve"><value>Avec plusieurs résultats</value></data>
+  <data name="DataSourcesSeveralHitsSubtitle" xml:space="preserve"><value>Quand un jeu n’est trouvé que par son nom</value></data>
+  <data name="DataSourcesSeveralHitsAsk" xml:space="preserve"><value>Choisir moi-même</value></data>
+  <data name="DataSourcesSeveralHitsFirst" xml:space="preserve"><value>Prendre le premier</value></data>
+  <data name="DataSourcesSeveralHitsInfo" xml:space="preserve"><value>SteamGridDB trouve les jeux Steam et Epic sans ambiguïté. Plusieurs résultats n’apparaissent que lorsqu’un jeu est cherché par son nom et que plusieurs jeux correspondent.</value></data>
+  <data name="DataSourcesSeveralHitsAskInfo" xml:space="preserve"><value>Les jeux vont dans la liste d’attente ci-dessous. Tant que vous n’avez pas choisi, ils gardent l’image du lanceur ou l’image de remplacement.</value></data>
+  <data name="DataSourcesSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia prend aussitôt le premier jeu qui correspond. C’est plus rapide, mais il arrive que ce soit la mauvaise image.</value></data>
+  <data name="MetadataSeveralHitsInfo" xml:space="preserve"><value>IGDB trouve les jeux Steam sans ambiguïté. Plusieurs résultats n’apparaissent que lorsqu’un jeu est cherché par son nom et que plusieurs jeux correspondent.</value></data>
+  <data name="MetadataSeveralHitsAskInfo" xml:space="preserve"><value>Les jeux vont dans la liste d’attente ci-dessous. Tant que vous n’avez pas choisi, ils affichent les données du lanceur.</value></data>
+  <data name="MetadataSeveralHitsFirstInfo" xml:space="preserve"><value>Arcadia prend aussitôt le premier jeu qui correspond. C’est plus rapide, mais il arrive que ce soit le mauvais jeu sur IGDB.</value></data>
+  <data name="DataSourcesTookFirstHits" xml:space="preserve"><value>{count} jeux : Arcadia a pris chaque fois le premier résultat.</value></data>
+  <data name="DataSourcesTookFirstHitOne" xml:space="preserve"><value>1 jeu : Arcadia a pris le premier résultat.</value></data>
+  <data name="DataSourcesWaiting" xml:space="preserve"><value>En attente de votre choix</value></data>
+  <data name="DataSourcesWaitingSubtitle" xml:space="preserve"><value>D’ici là, ils affichent ce que le lanceur a</value></data>
+  <data name="DataSourcesWaitingMore" xml:space="preserve"><value>et {count} autres</value></data>
+  <data name="DataSourcesWaitingNone" xml:space="preserve"><value>Aucun jeu en attente</value></data>
+  <data name="DataSourcesWaitingOnlyAsk" xml:space="preserve"><value>Uniquement avec « Choisir moi-même »</value></data>
+  <data name="DataSourcesWaitingSteamGridDbOff" xml:space="preserve"><value>SteamGridDB est désactivé</value></data>
+  <data name="DataSourcesWaitingAction" xml:space="preserve"><value>Choisir</value></data>
+  <data name="DataSourcesWaitingInfo" xml:space="preserve"><value>SteamGridDB n’a trouvé ces jeux que par leur nom, et plusieurs jeux correspondent. [A] ouvre la liste, où vous choisissez le bon pour chaque jeu ou le passez.</value></data>
+  <data name="MetadataWaitingInfo" xml:space="preserve"><value>IGDB n’a trouvé ces jeux que par leur nom, et plusieurs jeux correspondent. [A] ouvre la liste, où vous choisissez le bon pour chaque jeu ou le passez.</value></data>
+  <data name="DataSourcesWaitingInfoNone" xml:space="preserve"><value>Aucun jeu n’est en attente pour l’instant. Si la prochaine recherche ne trouve un jeu que par son nom et que plusieurs correspondent, il apparaît ici.</value></data>
+  <data name="DataSourcesWaitingInfoOff" xml:space="preserve"><value>La liste d’attente n’existe que si « Avec plusieurs résultats » est sur « Choisir moi-même ». Avec « Prendre le premier », Arcadia choisit de lui-même aussitôt.</value></data>
+  <data name="DataSourcesWaitingInfoSteamGridDbOff" xml:space="preserve"><value>Tant que SteamGridDB est désactivé, Arcadia ne cherche pas par nom. Les jeux en attente restent dans la liste et reviennent quand vous le réactivez.</value></data>
+  <data name="WaitingGames" xml:space="preserve"><value>{count} JEUX</value></data>
+  <data name="WaitingGamesOne" xml:space="preserve"><value>1 JEU</value></data>
+  <data name="WaitingTitle" xml:space="preserve"><value>En attente de votre choix</value></data>
+  <data name="WaitingQuestion" xml:space="preserve"><value>De quel jeu s’agit-il ?</value></data>
+  <data name="WaitingPosition" xml:space="preserve"><value>Jeu {number} sur {count}</value></data>
+  <data name="WaitingIntro" xml:space="preserve"><value>SteamGridDB connaît {count} jeux portant ce nom. Après votre choix, Arcadia charge {loads} de ce jeu.</value></data>
+  <data name="WaitingIntroOwnTerm" xml:space="preserve"><value>SteamGridDB trouve {count} jeux avec des images pour votre terme de recherche. Après votre choix, Arcadia charge {loads} de ce jeu.</value></data>
+  <data name="WaitingIntroMetadata" xml:space="preserve"><value>IGDB connaît {count} jeux portant ce nom. Après votre choix, Arcadia affiche la description, les genres, l’année de sortie et la classification d’âge de ce jeu.</value></data>
+  <data name="WaitingIntroMetadataOwnTerm" xml:space="preserve"><value>IGDB trouve {count} jeux pour votre terme de recherche. Après votre choix, Arcadia affiche la description, les genres, l’année de sortie et la classification d’âge de ce jeu.</value></data>
+  <data name="WaitingLoadsBoth" xml:space="preserve"><value>la jaquette et l’arrière-plan</value></data>
+  <data name="WaitingLoadsCover" xml:space="preserve"><value>la jaquette</value></data>
+  <data name="WaitingLoadsHero" xml:space="preserve"><value>l’arrière-plan</value></data>
+  <data name="WaitingSoughtBoth" xml:space="preserve"><value>Recherché : jaquette et arrière-plan</value></data>
+  <data name="WaitingSoughtCover" xml:space="preserve"><value>Recherché : jaquette</value></data>
+  <data name="WaitingSoughtHero" xml:space="preserve"><value>Recherché : arrière-plan</value></data>
+  <data name="WaitingSoughtMetadata" xml:space="preserve"><value>Recherché : métadonnées</value></data>
+  <data name="WaitingChecking" xml:space="preserve"><value>Vérification des résultats…</value></data>
+  <data name="WaitingNoHits" xml:space="preserve"><value>Aucun résultat</value></data>
+  <data name="WaitingUnreachable" xml:space="preserve"><value>Impossible de joindre SteamGridDB</value></data>
+  <data name="WaitingIgdbUnreachable" xml:space="preserve"><value>Impossible de joindre IGDB</value></data>
+  <data name="WaitingTerm" xml:space="preserve"><value>Terme de recherche personnalisé</value></data>
+  <data name="WaitingReset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="WaitingTermTooLong" xml:space="preserve"><value>{count} caractères au maximum</value></data>
+  <data name="WaitingOpenHitsHint" xml:space="preserve"><value>Voir les résultats</value></data>
+  <data name="WaitingChooseHitHint" xml:space="preserve"><value>Choisir un résultat</value></data>
+  <data name="WaitingSearchHint" xml:space="preserve"><value>Modifier le terme de recherche</value></data>
+  <data name="WaitingNote" xml:space="preserve"><value>Aucun ne convient ? [Y] passe le jeu. Il garde l’image du lanceur ou l’image de remplacement et n’est plus proposé. Vous pouvez choisir vous-même une image à tout moment avec « Modifier les illustrations ».</value></data>
+  <data name="WaitingNoteMetadata" xml:space="preserve"><value>Aucun ne convient ? [Y] passe le jeu. Il garde les données du lanceur et n’est plus cherché par nom sur IGDB.</value></data>
+  <data name="WaitingDoneTitle" xml:space="preserve"><value>Tout est fait.</value></data>
+  <data name="WaitingDoneText" xml:space="preserve"><value>Plus aucun jeu n’attend votre choix.</value></data>
+  <data name="WaitingChooseHint" xml:space="preserve"><value>Choisir le jeu</value></data>
+  <data name="WaitingSkipHint" xml:space="preserve"><value>Passer</value></data>
+  <data name="WaitingTakeHint" xml:space="preserve"><value>Appliquer, au suivant</value></data>
+  <data name="WaitingTakeCoverHint" xml:space="preserve"><value>Prendre la jaquette, puis l’arrière-plan</value></data>
+  <data name="WaitingTakeHeroHint" xml:space="preserve"><value>Prendre l’arrière-plan, puis la jaquette</value></data>
+  <data name="WaitingIntroCoverTab" xml:space="preserve"><value>SteamGridDB connaît {count} jeux portant ce nom et ayant une jaquette. Vous choisissez la jaquette et l’arrière-plan chacun dans son onglet, de jeux différents si vous le voulez.</value></data>
+  <data name="WaitingIntroCoverTabOwnTerm" xml:space="preserve"><value>SteamGridDB trouve {count} jeux avec une jaquette pour votre terme de recherche. Vous choisissez la jaquette et l’arrière-plan chacun dans son onglet, de jeux différents si vous le voulez.</value></data>
+  <data name="WaitingIntroHeroTab" xml:space="preserve"><value>SteamGridDB connaît {count} jeux portant ce nom et ayant un arrière-plan. Vous choisissez la jaquette et l’arrière-plan chacun dans son onglet, de jeux différents si vous le voulez.</value></data>
+  <data name="WaitingIntroHeroTabOwnTerm" xml:space="preserve"><value>SteamGridDB trouve {count} jeux avec un arrière-plan pour votre terme de recherche. Vous choisissez la jaquette et l’arrière-plan chacun dans son onglet, de jeux différents si vous le voulez.</value></data>
+  <data name="WaitingChosenHero" xml:space="preserve"><value>VOTRE ARRIÈRE-PLAN</value></data>
+  <data name="WaitingNotChosen" xml:space="preserve"><value>Pas encore choisi</value></data>
+  <data name="WaitingChosenCover" xml:space="preserve"><value>VOTRE JAQUETTE</value></data>
+  <data name="WaitingFactsNone" xml:space="preserve"><value>IGDB n’a pas d’autres détails sur ce jeu.</value></data>
+  <data name="DataSourcesWhenHeading" xml:space="preserve"><value>QUAND CELA S’APPLIQUE</value></data>
+  <data name="DataSourcesKeyStatus" xml:space="preserve"><value>Clé SteamGridDB non valide</value></data>
+  <data name="DataSourcesKeyStatusShort" xml:space="preserve"><value>SteamGridDB est ignoré tant qu’il n’y a pas de clé valide</value></data>
+  <data name="ErrorContextSteamGridDb" xml:space="preserve"><value>SteamGridDB</value></data>
+  <data name="ArtworkGameLine" xml:space="preserve"><value>{game} · {launcher}</value></data>
+  <data name="ArtworkTabCover" xml:space="preserve"><value>Jaquette</value></data>
+  <data name="ArtworkTabHero" xml:space="preserve"><value>Arrière-plan</value></data>
+  <data name="ArtworkPreviewHeading" xml:space="preserve"><value>APERÇU SUR LA PAGE DE DÉTAILS</value></data>
+  <data name="ArtworkLoading1" xml:space="preserve"><value>On feuillette la galerie d’images…</value></data>
+  <data name="ArtworkLoading2" xml:space="preserve"><value>On dépoussière les cadres…</value></data>
+  <data name="ArtworkLoading3" xml:space="preserve"><value>On fouille dans les vieilles boîtes de jeux…</value></data>
+  <data name="ArtworkLoading4" xml:space="preserve"><value>On astique les pixels…</value></data>
+  <data name="ArtworkLoading5" xml:space="preserve"><value>On cherche le plus beau cliché…</value></data>
+  <data name="ArtworkLoading6" xml:space="preserve"><value>On développe les négatifs…</value></data>
+  <data name="ArtworkCoverHeading" xml:space="preserve"><value>JAQUETTE · 2:3</value></data>
+  <data name="ArtworkHeroHeading" xml:space="preserve"><value>ARRIÈRE-PLAN · 16 : 9</value></data>
+  <data name="ArtworkSuggestionCount" xml:space="preserve"><value> · {count} SUGGESTIONS</value></data>
+  <data name="ArtworkSourceRow" xml:space="preserve"><value>Source</value></data>
+  <data name="ArtworkFileRow" xml:space="preserve"><value>Fichier</value></data>
+  <data name="ArtworkFormatRow" xml:space="preserve"><value>Format</value></data>
+  <data name="ArtworkSetRow" xml:space="preserve"><value>Choisi</value></data>
+  <data name="ArtworkSourcePlaceholder" xml:space="preserve"><value>Image de remplacement</value></data>
+  <data name="ArtworkSourceLauncher" xml:space="preserve"><value>{launcher} (du lanceur)</value></data>
+  <data name="ArtworkSourceOwnFile" xml:space="preserve"><value>Fichier personnel</value></data>
+  <data name="ArtworkSetByHand" xml:space="preserve"><value>à la main</value></data>
+  <data name="ArtworkSetAutomatically" xml:space="preserve"><value>automatiquement (par défaut)</value></data>
+  <data name="ArtworkImageSize" xml:space="preserve"><value>{width} × {height}</value></data>
+  <data name="ArtworkOwnFile" xml:space="preserve"><value>Fichier personnel</value></data>
+  <data name="ArtworkOwnFileTag" xml:space="preserve"><value>FICHIER PERSONNEL</value></data>
+  <data name="ArtworkOwnFileFormats" xml:space="preserve"><value>PNG, JPG, WebP · jusqu’à 20 Mo</value></data>
+  <data name="ArtworkSuggestionHero" xml:space="preserve"><value>SteamGridDB · {size}</value></data>
+  <data name="ArtworkNoKeyTitle" xml:space="preserve"><value>Plus de suggestions avec SteamGridDB</value></data>
+  <data name="ArtworkNoKeyText" xml:space="preserve"><value>Avec une clé gratuite, Arcadia affiche ici jusqu’à 20 images par jeu. Vous la saisissez dans les paramètres sous « Sources de données ».</value></data>
+  <data name="ArtworkBadKeyTitle" xml:space="preserve"><value>La clé SteamGridDB n’est pas valide</value></data>
+  <data name="ArtworkBadKeyText" xml:space="preserve"><value>Tant qu’elle n’est pas de nouveau valide, il n’y a ici que l’image du lanceur et vos propres fichiers. Vous en saisissez une nouvelle dans les sources de données.</value></data>
+  <data name="ArtworkSteamGridDbOffTitle" xml:space="preserve"><value>SteamGridDB est désactivé</value></data>
+  <data name="ArtworkSteamGridDbOffText" xml:space="preserve"><value>Tant qu’il est désactivé, Arcadia n’affiche ici aucune image de SteamGridDB. Vous le réactivez sous « Sources de données ».</value></data>
+  <data name="ArtworkLauncherImagesOffTitle" xml:space="preserve"><value>Les images des lanceurs sont désactivées</value></data>
+  <data name="ArtworkLauncherImagesOffText" xml:space="preserve"><value>Tant qu’elles sont désactivées, Arcadia n’affiche ici aucune image du lanceur. Vous les réactivez sous « Sources de données ».</value></data>
+  <data name="ArtworkSourcesOffTitle" xml:space="preserve"><value>Les images des lanceurs et SteamGridDB sont désactivés</value></data>
+  <data name="ArtworkSourcesOffText" xml:space="preserve"><value>Il n’y a ici que vos propres fichiers jusqu’à ce que vous réactiviez une source sous « Sources de données ».</value></data>
+  <data name="ArtworkToDataSources" xml:space="preserve"><value>Aller aux sources de données</value></data>
+  <data name="ArtworkTabsHint" xml:space="preserve"><value>Jaquette / Arrière-plan</value></data>
+  <data name="ArtworkChooseHint" xml:space="preserve"><value>Choisir une image</value></data>
+  <data name="ArtworkUseHint" xml:space="preserve"><value>Utiliser</value></data>
+  <data name="ArtworkOtherFileHint" xml:space="preserve"><value>Autre fichier</value></data>
+  <data name="ArtworkRestoreHint" xml:space="preserve"><value>Rétablir par défaut</value></data>
+  <data name="ArtworkPickCoverTitle" xml:space="preserve"><value>Choisir une image pour la jaquette</value></data>
+  <data name="ArtworkPickHeroTitle" xml:space="preserve"><value>Choisir une image pour l’arrière-plan</value></data>
+  <data name="ArtworkImagesType" xml:space="preserve"><value>Images</value></data>
+  <data name="ArtworkFileTooLarge" xml:space="preserve"><value>L’image dépasse 20 Mo et n’a pas été appliquée.</value></data>
+  <data name="ArtworkFileNoImage" xml:space="preserve"><value>Le fichier n’est pas une image qu’Arcadia peut lire et n’a pas été appliqué.</value></data>
+  <data name="ArtworkFileUnreadable" xml:space="preserve"><value>Le fichier n’a pas pu être lu et n’a pas été appliqué.</value></data>
+  <data name="ArtworkOfferFailed" xml:space="preserve"><value>L’image n’a pas pu être chargée. La précédente reste.</value></data>
+  <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Modification des illustrations</value></data>
+  <data name="ErrorContextWaitingList" xml:space="preserve"><value>En attente de votre choix</value></data>
+  <data name="ErrorContextMetadata" xml:space="preserve"><value>Métadonnées</value></data>
+  <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>MÉTADONNÉES</value></data>
+  <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Métadonnées manquantes</value></data>
+  <data name="DataSourcesMetadataMissingCount" xml:space="preserve"><value>{missing} sur {total}</value></data>
+  <data name="DataSourcesMetadataMissingMinutes" xml:space="preserve"><value>{missing} sur {total}, encore environ {minutes} minutes</value></data>
+  <data name="DataSourcesMetadataMissingOneMinute" xml:space="preserve"><value>{missing} sur {total}, encore environ 1 minute</value></data>
+  <data name="DataSourcesMetadataMissingUnderAMinute" xml:space="preserve"><value>{missing} sur {total}, moins d’une minute</value></data>
+  <data name="DataSourcesMetadataMissingNone" xml:space="preserve"><value>Toutes les métadonnées sont chargées</value></data>
+  <data name="DataSourcesMetadataMissingNotYet" xml:space="preserve"><value>Arcadia charge de lui-même après l’analyse</value></data>
+  <data name="DataSourcesMetadataMissingInfo" xml:space="preserve"><value>Après chaque analyse, Arcadia charge en arrière-plan ce qui manque encore aux jeux, un jeu après l’autre et aussi lentement que le magasin le permet. Sans réseau ou sans réponse, Arcadia réessaie lors de la prochaine analyse. Ce qui est chargé une fois reste disponible aussi hors ligne.</value></data>
+  <data name="DataSourcesMetadataMissingInfoNow" xml:space="preserve"><value>« Rechercher maintenant » demande aussitôt tout ce qui manque encore, sans nouvelle analyse, par exemple quand le réseau était coupé pendant l’analyse.</value></data>
+  <data name="DataSourcesMetadataReload" xml:space="preserve"><value>Recharger toutes les métadonnées</value></data>
+  <data name="DataSourcesMetadataReloadSubtitle" xml:space="preserve"><value>Les anciennes restent visibles jusqu’à l’arrivée des nouvelles</value></data>
+  <data name="DataSourcesMetadataReloadRunning" xml:space="preserve"><value>Rechargement</value></data>
+  <data name="DataSourcesMetadataReloadAction" xml:space="preserve"><value>Recharger</value></data>
+  <data name="DataSourcesMetadataReloadInfo" xml:space="preserve"><value>Recharge la description, les genres, le développeur et les classifications d’âge de tous les jeux, par exemple quand le magasin les a modifiés entre-temps. Arcadia demande d’abord. Vos propres titres et tags restent tels quels.</value></data>
+  <data name="DataSourcesMetadataReloadAsk" xml:space="preserve"><value>Recharger toutes les métadonnées ?</value></data>
+  <data name="DataSourcesMetadataReloadAskText" xml:space="preserve"><value>Arcadia recharge les métadonnées des {count} jeux. Les anciennes restent visibles jusqu’à l’arrivée des nouvelles ; vos propres titres et tags restent tels quels.</value></data>
+  <data name="DataSourcesMetadataReloadNoConnection" xml:space="preserve"><value>Métadonnées non rechargées : pas de connexion au magasin. Les précédentes restent.</value></data>
+  <data name="DataSourcesIgdbGroup" xml:space="preserve"><value>IGDB</value></data>
+  <data name="DataSourcesIgdb" xml:space="preserve"><value>IGDB</value></data>
+  <data name="ErrorContextIgdb" xml:space="preserve"><value>IGDB</value></data>
+  <data name="DataSourcesIgdbClientId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="DataSourcesIgdbSecret" xml:space="preserve"><value>Client secret</value></data>
+  <data name="DataSourcesIgdbNone" xml:space="preserve"><value>Aucun accès saisi</value></data>
+  <data name="DataSourcesIgdbSecretMissing" xml:space="preserve"><value>Client secret manquant</value></data>
+  <data name="DataSourcesIgdbRejected" xml:space="preserve"><value>Accès non valide · IGDB est ignoré</value></data>
+  <data name="DataSourcesIgdbSecretNone" xml:space="preserve"><value>Aucun client secret saisi</value></data>
+  <data name="DataSourcesIgdbSecretStored" xml:space="preserve"><value>Saisi · pas encore vérifié</value></data>
+  <data name="DataSourcesIgdbInfo" xml:space="preserve"><value>Avec un accès, Arcadia charge la description, les genres, la date de sortie et les classifications d’âge depuis IGDB et corrige les titres aux caractères spéciaux cassés. IGDB autorise 4 requêtes par seconde ; Arcadia n’en fait jamais plus. L’accès est gratuit et se compose du client ID et du client secret d’une application sur Twitch.</value></data>
+  <data name="DataSourcesIgdbHowTo" xml:space="preserve"><value>[A] ouvre le clavier virtuel. Si vous avez déjà copié la valeur, « Coller » est plus rapide. Un champ vide laisse la valeur telle quelle. Dès que les deux valeurs sont là, Arcadia vérifie aussitôt l’accès.</value></data>
+  <data name="DataSourcesIgdbSecretInfo" xml:space="preserve"><value>Twitch n’affiche le client secret qu’une fois, quand vous le créez pour votre application. Arcadia n’en affiche que les quatre derniers caractères.</value></data>
+  <data name="DataSourcesIgdbRejectedInfo" xml:space="preserve"><value>Twitch ou IGDB refuse l’accès. Tant qu’il n’est pas de nouveau valide, Arcadia n’utilise que les données des lanceurs. Créez un nouveau client secret dans la console développeur de Twitch et collez-le ici.</value></data>
+  <data name="DataSourcesIgdbSendsInfo" xml:space="preserve"><value>L’ID du jeu sur Steam ou son nom, plus votre accès. Rien d’autre. Sans accès, Arcadia n’envoie aucune requête. Le client ID et le client secret sont enregistrés chiffrés sur cet appareil, jamais en clair.</value></data>
+  <data name="DataSourcesIgdbSendsInfoInMemory" xml:space="preserve"><value>L’ID du jeu sur Steam ou son nom, plus votre accès. Rien d’autre. Sans accès, Arcadia n’envoie aucune requête. Sur ce système, l’accès n’est gardé que jusqu’à la fermeture d’Arcadia et n’est enregistré nulle part.</value></data>
+  <data name="DataSourcesIgdbValueProblem" xml:space="preserve"><value>Le client ID et le client secret comptent de 20 à 64 lettres et chiffres</value></data>
+  <data name="DataSourcesIgdbPasteClientIdSubtitle" xml:space="preserve"><value>Pour un client ID que vous avez copié</value></data>
+  <data name="DataSourcesIgdbPasteSecretSubtitle" xml:space="preserve"><value>Pour un client secret que vous avez copié</value></data>
+  <data name="DataSourcesIgdbPasteInfo" xml:space="preserve"><value>Colle la valeur depuis le presse-papiers. Dès que les deux valeurs sont là, Arcadia vérifie aussitôt l’accès.</value></data>
+  <data name="DataSourcesIgdbPasteInfoNoValue" xml:space="preserve"><value>S’il n’y a pas de valeur de 20 à 64 lettres et chiffres, la précédente reste, et un message vous le signale.</value></data>
+  <data name="DataSourcesIgdbPasteNoClientId" xml:space="preserve"><value>Le presse-papiers ne contient pas de client ID. Le précédent reste.</value></data>
+  <data name="DataSourcesIgdbPasteNoSecret" xml:space="preserve"><value>Le presse-papiers ne contient pas de client secret. Le précédent reste.</value></data>
+  <data name="DataSourcesIgdbClientIdSavedNeedsSecret" xml:space="preserve"><value>Client ID enregistré. Il manque encore le client secret.</value></data>
+  <data name="DataSourcesIgdbSecretSavedNeedsClientId" xml:space="preserve"><value>Client secret enregistré. Il manque encore le client ID.</value></data>
+  <data name="DataSourcesIgdbSaved" xml:space="preserve"><value>Accès enregistré et vérifié : connecté.</value></data>
+  <data name="DataSourcesIgdbSavedLoading" xml:space="preserve"><value>Accès enregistré. Chargement des métadonnées manquantes.</value></data>
+  <data name="DataSourcesIgdbNotStored" xml:space="preserve"><value>Accès vérifié : connecté. Il n’a pas pu être enregistré et ne vaut que jusqu’à la fermeture d’Arcadia.</value></data>
+  <data name="DataSourcesIgdbRejectedToast" xml:space="preserve"><value>Twitch refuse l’accès. Tant qu’il n’est pas valide, Arcadia n’utilise que les données des lanceurs.</value></data>
+  <data name="DataSourcesIgdbKeptNoConnection" xml:space="preserve"><value>Pas de connexion à Twitch. L’accès est enregistré ; Arcadia le vérifie lors du prochain chargement.</value></data>
+  <data name="DataSourcesIgdbConsole" xml:space="preserve"><value>Créer un accès</value></data>
+  <data name="DataSourcesIgdbConsoleSubtitle" xml:space="preserve"><value>Ouvre la console développeur de Twitch dans le navigateur</value></data>
+  <data name="DataSourcesIgdbConsoleInfo" xml:space="preserve"><value>Ouvre dev.twitch.tv/console/apps dans le navigateur par défaut. Connectez-vous-y, créez une application et copiez le client ID et le client secret.</value></data>
+  <data name="DataSourcesIgdbConsoleOpening" xml:space="preserve"><value>Ouverture de la console développeur de Twitch dans le navigateur…</value></data>
+  <data name="DataSourcesIgdbConsoleFailed" xml:space="preserve"><value>La console développeur de Twitch n’a pas pu être ouverte dans le navigateur.</value></data>
+  <data name="DataSourcesIgdbNeedsAccess" xml:space="preserve"><value>Possible uniquement avec client ID et client secret</value></data>
+  <data name="DataSourcesIgdbTestNotYet" xml:space="preserve"><value>Demande à Twitch si l’accès est valide</value></data>
+  <data name="DataSourcesIgdbTestOk" xml:space="preserve"><value>Vérifié à {time} · Connecté</value></data>
+  <data name="DataSourcesIgdbTestRejected" xml:space="preserve"><value>Vérifié à {time} · Twitch refuse l’accès</value></data>
+  <data name="DataSourcesIgdbTestInfo" xml:space="preserve"><value>Demande une fois à Twitch si l’accès est valide.</value></data>
+  <data name="DataSourcesIgdbTestInfoTimeout" xml:space="preserve"><value>Sans réponse dans les 10 secondes, « Pas de connexion » s’affiche ici. L’accès reste alors tel quel.</value></data>
+  <data name="DataSourcesIgdbTestOkToast" xml:space="preserve"><value>La connexion à IGDB est OK.</value></data>
+  <data name="DataSourcesIgdbTestNoConnectionToast" xml:space="preserve"><value>Pas de connexion à Twitch. L’accès reste tel quel.</value></data>
+  <data name="DataSourcesIgdbDelete" xml:space="preserve"><value>Supprimer l’accès</value></data>
+  <data name="DataSourcesIgdbDeleteSubtitle" xml:space="preserve"><value>Arcadia n’interroge alors plus IGDB</value></data>
+  <data name="DataSourcesIgdbDeleteInfo" xml:space="preserve"><value>Supprime le client ID et le client secret de cet appareil. Les métadonnées déjà présentes restent.</value></data>
+  <data name="DataSourcesIgdbDeleted" xml:space="preserve"><value>Accès supprimé. Arcadia n’interroge plus IGDB.</value></data>
+  <data name="DataSourcesIgdbNotDeleted" xml:space="preserve"><value>L’accès ne s’applique plus mais n’a pas pu être supprimé du disque. Après un redémarrage, il revient.</value></data>
+  <data name="DataSourcesIgdbStatus" xml:space="preserve"><value>Accès IGDB non valide</value></data>
+  <data name="DataSourcesIgdbStatusShort" xml:space="preserve"><value>IGDB est ignoré tant qu’il n’y a pas d’accès valide</value></data>
+  <data name="DataSourcesMetadataOrderGroup" xml:space="preserve"><value>ORDRE DES MÉTADONNÉES</value></data>
+  <data name="DataSourcesLauncherData" xml:space="preserve"><value>Données des lanceurs</value></data>
+  <data name="DataSourcesLauncherDataSubtitle" xml:space="preserve"><value>Ce que fournissent les lanceurs et leurs magasins, sans accès</value></data>
+  <data name="DataSourcesLauncherDataInfo" xml:space="preserve"><value>Les données propres aux lanceurs, issues de leurs fichiers et magasins, sans accès.</value></data>
+  <data name="DataSourcesIgdbSourceSubtitle" xml:space="preserve"><value>Comble les manques : description, genres, année de sortie, classification d’âge</value></data>
+  <data name="DataSourcesIgdbSkipped" xml:space="preserve"><value>Ignoré tant qu’il n’y a pas d’accès valide</value></data>
+  <data name="DataSourcesIgdbSourceInfo" xml:space="preserve"><value>Une grande base de données de jeux. Ses descriptions sont en anglais ; une description dans la langue de l’interface venant d’une autre source passe toujours en premier. IGDB remplace un titre aux caractères spéciaux cassés quel que soit l’ordre.</value></data>
+  <data name="DataSourcesMetadataOrderInfo" xml:space="preserve"><value>Pour chaque champ, Arcadia prend la source la plus haute qui l’a. S’il manque là, il vient de la suivante.</value></data>
+  <data name="DataSourcesMetadataOrderWhen" xml:space="preserve"><value>Immédiatement, sans nouvelle requête : Arcadia recompose les champs à partir des données déjà chargées.</value></data>
+  <data name="DataSourcesMetadataSourceOffInfo" xml:space="preserve"><value>Arcadia n’interroge pas la source et masque ses champs et titres corrigés jusqu’à ce que vous l’activiez. Ce qui est chargé reste enregistré.</value></data>
+  <data name="DataSourcesMetadataSourceOffSubtitle" xml:space="preserve"><value>Désactivé · non interrogé, ses champs sont masqués</value></data>
+  <data name="LocalizationTitle" xml:space="preserve"><value>Localisation</value></data>
+  <data name="LocalizationLanguageGroup" xml:space="preserve"><value>LANGUE</value></data>
+  <data name="LocalizationLanguage" xml:space="preserve"><value>Langue</value></data>
+  <data name="LocalizationLanguageSubtitle" xml:space="preserve"><value>La langue des textes d’Arcadia</value></data>
+  <data name="LocalizationLanguageSystem" xml:space="preserve"><value>Langue du système</value></data>
+  <data name="LocalizationLanguageSystemValue" xml:space="preserve"><value>Arcadia suit la langue d’affichage de Windows.</value></data>
+  <data name="LocalizationLanguageFixedValue" xml:space="preserve"><value>Arcadia reste dans cette langue, quelle que soit la langue affichée par Windows.</value></data>
+  <data name="LocalizationLanguageSystemSpoken" xml:space="preserve"><value>Langue du système : {language}. Avec « Langue du système », Arcadia utilise cette langue.</value></data>
+  <data name="LocalizationLanguageSystemUnsupported" xml:space="preserve"><value>Langue du système : {language}. Arcadia n’est pas encore disponible dans cette langue ; avec « Langue du système », il est donc en anglais.</value></data>
+  <data name="LocalizationLanguageSystemUnknown" xml:space="preserve"><value>Windows n’indique aucune langue d’affichage, donc avec « Langue du système », Arcadia est en anglais.</value></data>
+  <data name="LocalizationLanguageInfo" xml:space="preserve"><value>Le choix est enregistré aussitôt et s’applique au prochain démarrage. « Appliquer la langue » ci-dessous redémarre Arcadia tout de suite.</value></data>
+  <data name="LocalizationLanguageMetadata" xml:space="preserve"><value>Les métadonnées comme les descriptions et les genres restent dans la langue dans laquelle elles ont été chargées. « Recharger toutes les métadonnées » dans « Sources de données » les obtient dans la nouvelle langue là où elles existent.</value></data>
+  <data name="LocalizationApply" xml:space="preserve"><value>Appliquer la langue</value></data>
+  <data name="LocalizationApplyAction" xml:space="preserve"><value>Redémarrer</value></data>
+  <data name="LocalizationApplySame" xml:space="preserve"><value>La langue choisie est déjà active</value></data>
+  <data name="LocalizationApplyRestarts" xml:space="preserve"><value>Arcadia redémarre et revient ici</value></data>
+  <data name="LocalizationApplyInfo" xml:space="preserve"><value>Arcadia redémarre dans la langue choisie et rouvre cette page sur « Langue » : en plein écran s’il est en plein écran maintenant, sinon dans une fenêtre.</value></data>
+  <data name="LocalizationApplyStopsReload" xml:space="preserve"><value>Le rechargement des illustrations ou des métadonnées s’arrête et ne reprend pas après le redémarrage.</value></data>
+  <data name="LocalizationApplyWaitsForGame" xml:space="preserve"><value>Uniquement une fois « {game} » terminé</value></data>
+  <data name="LocalizationApplyGameNote" xml:space="preserve"><value>Arcadia ne peut redémarrer qu’une fois « {game} » terminé.</value></data>
+  <data name="LocalizationApplyWaitsForDrivers" xml:space="preserve"><value>Uniquement après l’installation des pilotes</value></data>
+  <data name="LocalizationApplyDriversNote" xml:space="preserve"><value>Arcadia ne peut redémarrer qu’une fois l’installation des pilotes terminée.</value></data>
+  <data name="LocalizationApplyWaitsForUpdate" xml:space="preserve"><value>Uniquement après la mise à jour d’Arcadia</value></data>
+  <data name="LocalizationApplyUpdateNote" xml:space="preserve"><value>Arcadia ne peut redémarrer qu’une fois la mise à jour terminée.</value></data>
+  <data name="LocalizationKeyboardGroup" xml:space="preserve"><value>CLAVIER VIRTUEL</value></data>
+  <data name="LocalizationDefaultLayout" xml:space="preserve"><value>Disposition par défaut</value></data>
+  <data name="LocalizationDefaultLayoutSubtitle" xml:space="preserve"><value>Le clavier virtuel s’ouvre avec cette disposition</value></data>
+  <data name="LocalizationDefaultLayoutValue" xml:space="preserve"><value>Disposition des touches {kind}. Chaque clavier virtuel s’ouvre avec cette disposition : dans la recherche, dans les champs de texte et en mode souris.</value></data>
+  <data name="LocalizationDefaultLayoutInfo" xml:space="preserve"><value>Avec [R3], vous passez sur le clavier virtuel à une autre disposition de la sélection rapide. Le changement vaut jusqu’à la fermeture du clavier virtuel ; à la prochaine ouverture, la disposition par défaut revient.</value></data>
+  <data name="LocalizationLayoutName" xml:space="preserve"><value>{name} · {kind}</value></data>
+  <data name="LocalizationQuickLayout" xml:space="preserve"><value>Sélection rapide</value></data>
+  <data name="LocalizationQuickLayoutSubtitle" xml:space="preserve"><value>Dans la sélection rapide du clavier virtuel</value></data>
+  <data name="LocalizationQuickLayoutOff" xml:space="preserve"><value>Le clavier virtuel ouvert ne propose pas de passer à cette disposition.</value></data>
+  <data name="LocalizationQuickLayoutOn" xml:space="preserve"><value>Le clavier virtuel ouvert propose de passer à cette disposition.</value></data>
+  <data name="LocalizationQuickLayoutInfo" xml:space="preserve"><value>Si seule la disposition par défaut est dans la sélection rapide, « Disposition » est grisé sur le clavier.</value></data>
+  <data name="LocalizationDefaultAlwaysIn" xml:space="preserve"><value>La disposition par défaut est toujours incluse.</value></data>
+  <data name="LocalizationClockGroup" xml:space="preserve"><value>HEURE</value></data>
+  <data name="LocalizationClock" xml:space="preserve"><value>Heure</value></data>
+  <data name="LocalizationClockSubtitle" xml:space="preserve"><value>Pour chaque heure qu’affiche Arcadia</value></data>
+  <data name="LocalizationClockSystem" xml:space="preserve"><value>Comme le système</value></data>
+  <data name="LocalizationClock24" xml:space="preserve"><value>24 heures</value></data>
+  <data name="LocalizationClock12" xml:space="preserve"><value>12 heures</value></data>
+  <data name="LocalizationClockSystemInfo" xml:space="preserve"><value>Arcadia affiche l’heure comme le système l’affiche.</value></data>
+  <data name="LocalizationClock24Info" xml:space="preserve"><value>De 00:00 à 23:59, par exemple 21:58.</value></data>
+  <data name="LocalizationClock12Info" xml:space="preserve"><value>Avec AM et PM, par exemple 9:58 PM.</value></data>
+  <data name="LocalizationClockInfo" xml:space="preserve"><value>S’applique aussitôt à l’horloge en haut, à « depuis » dans l’état, aux messages récents, à « Dernière partie » et à toutes les autres heures. La date et les nombres suivent le format régional du système.</value></data>
+  <data name="LaunchersCategory" xml:space="preserve"><value>Lanceurs</value></data>
+  <data name="LauncherLogo" xml:space="preserve"><value>Logo</value></data>
+</root>

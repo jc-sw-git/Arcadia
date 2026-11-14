@@ -10,8 +10,8 @@ Every case runs with the gamepad alone unless it says otherwise; keys follow `do
 **Language**
 
 - [x] **T556-1** "Systemsprache" on a Spanish Windows (es-ES, es-MX): Arcadia is in Spanish; "Español" chosen on a German
-  one: Spanish after "Sprache anwenden". The row "Sprache" shows "Systemsprache · English · Español · Deutsch"
-  ("Français" joins with #555 between English and Español). · E2E: yes
+  one: Spanish after "Sprache anwenden". The row "Sprache" shows "Systemsprache · English · Français · Español ·
+  Deutsch". · E2E: yes
 - [x] **T556-2** In Spanish, the info of "Idioma" names an unsupported system language in lowercase, as Spanish writes
   it ("El idioma del sistema es italiano …"); German and English keep the capital. · E2E: yes
 

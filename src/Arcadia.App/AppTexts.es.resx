@@ -1477,4 +1477,6 @@
   <data name="FilterYearRange" xml:space="preserve"><value>{from} – {to}</value></data>
   <data name="FilterYearTo" xml:space="preserve"><value>HASTA</value></data>
   <data name="FilterYearsChart" xml:space="preserve"><value>Entradas por año de {from} a {to}</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Esc</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} GB</value></data>
 </root>

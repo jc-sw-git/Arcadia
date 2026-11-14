@@ -980,6 +980,8 @@
   <data name="MessageCountMany" xml:space="preserve"><value>{count} Meldungen</value></data>
   <data name="KeyShift" xml:space="preserve"><value>Umschalt</value></data>
   <data name="KeySpace" xml:space="preserve"><value>Leertaste</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Esc</value></data>
   <data name="Hide" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="ControllerModeSteam" xml:space="preserve"><value>Steam-Eingabe</value></data>
   <data name="ControllerModeDefault" xml:space="preserve"><value>Standard ({mode})</value></data>
@@ -996,6 +998,7 @@
   <data name="TimeWithUnit" xml:space="preserve"><value>{time} Uhr</value></data>
   <data name="StatusSince" xml:space="preserve"><value>seit {time}</value></data>
   <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} GB</value></data>
   <data name="MessageResolvedAt" xml:space="preserve"><value>Behoben {time}</value></data>
   <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
   <data name="LevelWarning" xml:space="preserve"><value>Warnung</value></data>
@@ -1474,7 +1477,6 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>Von 00:00 bis 23:59, zum Beispiel 21:58 Uhr.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>Mit AM und PM, zum Beispiel 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Gilt sofort für die Uhr oben, „seit“ im Status, die letzten Meldungen, „Zuletzt gespielt“ und jede andere Uhrzeit. Datum und Zahlen folgen dem Regionsformat des Systems.</value></data>
-  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
   <data name="LaunchersCategory" xml:space="preserve"><value>Launcher</value></data>
   <data name="LauncherLogo" xml:space="preserve"><value>Logo</value></data>
 </root>

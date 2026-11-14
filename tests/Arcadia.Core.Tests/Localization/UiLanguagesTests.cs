@@ -13,12 +13,15 @@ public sealed class UiLanguagesTests
     [InlineData("system", "de-AT", "de-AT")]
     [InlineData("system", "en-US", "en-US")]
     [InlineData("system", "en-GB", "en-GB")]
+    [InlineData("system", "fr-FR", "fr-FR")]
+    [InlineData("system", "fr-CA", "fr-CA")]
     [InlineData("system", "es-ES", "es-ES")]
     [InlineData("system", "es-MX", "es-MX")]
     [InlineData("system", "it-IT", "en")]
     [InlineData("system", "", "en")]
     [InlineData("en", "de-DE", "en")]
     [InlineData("de", "it-IT", "de")]
+    [InlineData("fr", "de-DE", "fr")]
     [InlineData("es", "de-DE", "es")]
     public void A_choice_gives_its_language_and_the_system_one_falls_back_to_English(string choice, string system, string expected) =>
         Assert.Equal(expected, UiLanguages.Resolve(choice, CultureInfo.GetCultureInfo(system)).Name);
@@ -29,7 +32,8 @@ public sealed class UiLanguagesTests
     [InlineData("")]
     [InlineData(null)]
     [InlineData("EN")]
-    [InlineData("fr")]
+    [InlineData("FR")]
+    [InlineData("it")]
     public void An_unknown_choice_counts_as_the_system_language(string? choice)
     {
         Assert.False(UiLanguages.IsChoice(choice));
@@ -41,6 +45,7 @@ public sealed class UiLanguagesTests
     [InlineData("de-DE", "de", true)]
     [InlineData("en-US", "en", true)]
     [InlineData("de-DE", "en", false)]
+    [InlineData("fr-CA", "fr", true)]
     [InlineData("es-MX", "es", true)]
     public void Two_cultures_of_one_language_count_as_the_same(string inUse, string chosen, bool same) =>
         Assert.Equal(same, UiLanguages.SameLanguage(CultureInfo.GetCultureInfo(inUse), CultureInfo.GetCultureInfo(chosen)));
@@ -49,7 +54,7 @@ public sealed class UiLanguagesTests
     [Trait("TestCase", "T554-1")]
     public void The_row_offers_the_system_language_and_every_translated_language_each_named_in_its_own()
     {
-        Assert.Equal(["system", "en", "es", "de"], UiLanguages.Choices);
-        Assert.Equal(["English", "Español", "Deutsch"], UiLanguages.Choices.Skip(1).Select(UiLanguages.OwnName));
+        Assert.Equal(["system", "en", "fr", "es", "de"], UiLanguages.Choices);
+        Assert.Equal(["English", "Français", "Español", "Deutsch"], UiLanguages.Choices.Skip(1).Select(UiLanguages.OwnName));
     }
 }

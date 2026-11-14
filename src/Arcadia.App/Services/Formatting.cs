@@ -62,8 +62,9 @@ public static class Formatting
     public static string Playtime(TimeSpan? playtime) =>
         playtime is { } value ? AppTexts.Hours(Math.Max(1, (int)value.TotalHours)) : "–";
 
+    /// <summary>An install size in GB ("Go" in French), the number in the region's format.</summary>
     public static string Size(long? bytes) =>
-        bytes is { } value ? (value / 1024d / 1024d / 1024d).ToString("0.0", Region) + " GB" : "–";
+        bytes is { } value ? AppTexts.Gigabytes((value / 1024d / 1024d / 1024d).ToString("0.0", Region)) : "–";
 
     /// <summary>0…1 → "42 %" (the UI language's spacing). Floors, so 99.9 % never shows as 100 %.</summary>
     public static string Percent(double fraction) => AppTexts.Percent(Number((int)Math.Floor(Math.Clamp(fraction, 0, 1) * 100)));

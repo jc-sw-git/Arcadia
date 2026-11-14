@@ -140,7 +140,7 @@ public sealed class MouseModeRows
         new(AppTexts.MouseModeHelpLtOrX, AppTexts.MouseModeHelpRightClick),
         new("RS", AppTexts.MouseModeHelpWheel),
         new("D-Pad", AppTexts.MouseModeHelpArrowKeys),
-        new("B", "Esc"),
+        new("B", AppTexts.KeyEscape),
         new("LB / RB", AppTexts.MouseModeHelpShiftTab),
         new("≡", AppTexts.KeyEnter),
         new("Y", AppTexts.MouseModeHelpKeyboard),

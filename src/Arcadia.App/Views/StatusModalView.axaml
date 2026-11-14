@@ -116,7 +116,7 @@
                 <ctl:KeyHint Pad="▲▼" Keys="W|S" Text="{x:Static app:AppTexts.Message}" IsVisible="{Binding HasSeveral}" />
                 <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.ButtonLabel}" IsVisible="{Binding FocusedHasFix}" />
                 <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding AcceptText}" IsVisible="{Binding HasEntries}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
               </StackPanel>
             </DockPanel>
           </Border>

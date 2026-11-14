@@ -980,6 +980,8 @@
   <data name="MessageCountMany" xml:space="preserve"><value>{count} messages</value></data>
   <data name="KeyShift" xml:space="preserve"><value>Shift</value></data>
   <data name="KeySpace" xml:space="preserve"><value>Space</value></data>
+  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
+  <data name="KeyEscape" xml:space="preserve"><value>Esc</value></data>
   <data name="Hide" xml:space="preserve"><value>Hide</value></data>
   <data name="ControllerModeSteam" xml:space="preserve"><value>Steam Input</value></data>
   <data name="ControllerModeDefault" xml:space="preserve"><value>Default ({mode})</value></data>
@@ -996,6 +998,7 @@
   <data name="TimeWithUnit" xml:space="preserve"><value>{time}</value></data>
   <data name="StatusSince" xml:space="preserve"><value>since {time}</value></data>
   <data name="Percent" xml:space="preserve"><value>{value} %</value></data>
+  <data name="Gigabytes" xml:space="preserve"><value>{value} GB</value></data>
   <data name="MessageResolvedAt" xml:space="preserve"><value>Resolved {time}</value></data>
   <data name="LevelInfo" xml:space="preserve"><value>Info</value></data>
   <data name="LevelWarning" xml:space="preserve"><value>Warning</value></data>
@@ -1414,7 +1417,6 @@
   <data name="LocalizationClock24Info" xml:space="preserve"><value>From 00:00 to 23:59, for example 21:58.</value></data>
   <data name="LocalizationClock12Info" xml:space="preserve"><value>With AM and PM, for example 9:58 PM.</value></data>
   <data name="LocalizationClockInfo" xml:space="preserve"><value>Applies at once to the clock at the top, “since” in the status, the recent messages, “Last played” and every other time. Date and numbers follow the system’s regional format.</value></data>
-  <data name="KeyEnter" xml:space="preserve"><value>Enter</value></data>
   <data name="LaunchersCategory" xml:space="preserve"><value>Launchers</value></data>
   <data name="LauncherLogo" xml:space="preserve"><value>Logo</value></data>
   <data name="FilterGenre" xml:space="preserve"><value>Genre</value></data>

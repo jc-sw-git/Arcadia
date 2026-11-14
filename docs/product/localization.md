@@ -5,8 +5,8 @@ pattern of `settings.md`.
 
 ## Group SPRACHE
 
-- "Sprache": "Systemsprache" (default) · "English" · "Deutsch"; a language is offered only once all its texts exist
-  (Français, Español with #555, #556). Each language is named in its own language, only "Systemsprache" in the UI
+- "Sprache": "Systemsprache" (default) · "English" · "Français" · "Español" · "Deutsch"; a language is offered only once all its
+  texts exist. Each language is named in its own language, only "Systemsprache" in the UI
   language. ◀ ▶ save the choice at once and change nothing else: the language applies from the next start.
 - "Systemsprache" is the Windows display language, not the regional format; one Arcadia doesn't speak gives English,
   never German. The info names the system language (in the UI language) or says it isn't supported and English is
@@ -17,7 +17,7 @@ pattern of `settings.md`.
   (compared by language: "Deutsch" on a German system changes nothing); greyed out, with the reason in its subtitle and
   a blue note, while a game runs or starts, the driver installation runs or an Arcadia update downloads or installs.
   An artwork or metadata reload doesn't hold it up; its info says the reload stops.
-- No language step at the first start. Texts and the glossary per language: `ui-texts.md`, `ui-texts-english.md`.
+- No language step at the first start. Texts and the glossary per language: `ui-texts.md`, `ui-texts-english.md`, `ui-texts-french.md`.
 
 ## Group BILDSCHIRMTASTATUR
 

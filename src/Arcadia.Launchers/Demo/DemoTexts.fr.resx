@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="DemoToolsInfo" xml:space="preserve"><value>Affiche les outils de la bibliothèque de démonstration.</value></data>
+  <data name="DemoSoftwareInfo" xml:space="preserve"><value>Affiche les logiciels de la bibliothèque de démonstration.</value></data>
+  <data name="DemoSoundtracksInfo" xml:space="preserve"><value>Affiche les bandes originales de la bibliothèque de démonstration.</value></data>
+  <data name="DemoToolsTitle" xml:space="preserve"><value>Inclure les outils</value></data>
+  <data name="DemoSoftwareTitle" xml:space="preserve"><value>Inclure les logiciels</value></data>
+  <data name="DemoSoundtracksTitle" xml:space="preserve"><value>Inclure les bandes originales</value></data>
+  <data name="DemoToolsSubtitle" xml:space="preserve"><value>Outils de démonstration</value></data>
+  <data name="DemoSoftwareSubtitle" xml:space="preserve"><value>Logiciels de démonstration</value></data>
+  <data name="DemoSoundtracksSubtitle" xml:space="preserve"><value>Bandes originales de démonstration</value></data>
+  <data name="DemoLocation" xml:space="preserve"><value>Données de démonstration</value></data>
+  <data name="DemoMetadataDescriptionLong" xml:space="preserve"><value>&lt;h2&gt;À propos du jeu&lt;/h2&gt;Explorez un monde inventé, plein de villes abandonnées, de machines mystérieuses et de forêts paisibles. Vous rassemblez des pièces, construisez votre propre camp et rencontrez des personnages qui ont chacun leur propre histoire.&lt;br&gt;&lt;br&gt;&lt;ul class='bb_ul'&gt;&lt;li&gt;&lt;strong&gt;Vaste monde :&lt;/strong&gt; plus de vingt zones à visiter dans l’ordre de votre choix.&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Votre propre camp :&lt;/strong&gt; construisez, aménagez et invitez vos amis.&lt;/li&gt;&lt;li&gt;Une musique calme et une météo qui change au fil du temps 🌧️&lt;/li&gt;&lt;/ul&gt;&lt;img src='https://example.invalid/bild.png'&gt;&lt;a href='https://example.invalid'&gt;En savoir plus&lt;/a&gt;&lt;br&gt;Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. Chaque section de cette description inventée n’est là que pour montrer un long texte qui se lit dans la zone « Infos » et doit défiler. </value></data>
+  <data name="DemoMetadataShortLong" xml:space="preserve"><value>Explorez un monde inventé, plein de villes abandonnées et de machines mystérieuses, construisez votre propre camp et rencontrez des personnages qui ont chacun leur histoire. Un voyage paisible qui vous accompagne aussi longtemps que vous le voulez et vous révèle en chemin bien des petits secrets.</value></data>
+  <data name="DemoMetadataDescriptionShort" xml:space="preserve"><value>Un petit jeu de course inventé, à deux sur un seul écran.</value></data>
+  <data name="DemoMetadataDescriptionEnglish" xml:space="preserve"><value>You explore a made-up island with your friends and the weather that changes over the day. This game exists only in English, so its description is English too.</value></data>
+  <data name="DemoMetadataDeveloper1" xml:space="preserve"><value>Studio inventé</value></data>
+  <data name="DemoMetadataDeveloper2" xml:space="preserve"><value>Pixelwerk Games, au nom plutôt long pour la ligne d’infos, SARL</value></data>
+  <data name="DemoMetadataDeveloper3" xml:space="preserve"><value>Nordlicht Games</value></data>
+  <data name="DemoMetadataPublisher" xml:space="preserve"><value>Éditeur inventé</value></data>
+  <data name="DemoMetadataTag1" xml:space="preserve"><value>Solo</value></data>
+  <data name="DemoMetadataTag2" xml:space="preserve"><value>Atmosphérique</value></data>
+  <data name="DemoMetadataTag3" xml:space="preserve"><value>Exploration</value></data>
+  <data name="DemoMetadataTag4" xml:space="preserve"><value>Coopération</value></data>
+  <data name="DemoMetadataTag5" xml:space="preserve"><value>Belle histoire</value></data>
+  <data name="DemoMetadataTag6" xml:space="preserve"><value>Relaxant</value></data>
+  <data name="DemoMetadataTag7" xml:space="preserve"><value>Pixel art</value></data>
+  <data name="DemoMetadataSummary" xml:space="preserve"><value>Les métadonnées inventées de la démo</value></data>
+  <data name="DemoMetadataAbout" xml:space="preserve"><value>La bibliothèque de démonstration apporte des descriptions, genres, tags et classifications d’âge inventés. Arcadia ne les demande nulle part.</value></data>
+</root>

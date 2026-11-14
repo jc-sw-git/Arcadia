@@ -77,6 +77,21 @@ forbidden = {
         # ü is Spanish too (ambigüedad)
         ("German letter, text left untranslated?", re.compile(r"[äöÄÖß]")),
     ],
+    "fr": common + [
+        # "émuler" as a verb: a controller is "virtuelle" and Arcadia "virtualise"; "émulation" stays
+        ("émuler…, use virtuel/virtualiser", re.compile(r"\bémul(er|é|ée|és|ées|e|es|ent|ant)\b", re.IGNORECASE)),
+        ("p. ex./c.-à-d., use “par exemple”", re.compile(r"\b(p\.\s?ex|c\.-à-d)\.", re.IGNORECASE)),
+        ("redémarrer Windows, use “redémarrer le PC”", re.compile(r"(redémarr\w*\s+(de\s+)?Windows|Windows\s+redémarr)", re.IGNORECASE)),
+        ("Steam-Input, use “Steam Input”", re.compile(r"Steam-Input")),
+        ("straight quote, use « … »", re.compile(r'"')),
+        ("straight apostrophe, use ’", re.compile(r"'(?![^<]*>)")),
+        ("German or English quote, use « … »", re.compile(r"[„“”‘]")),
+        ("« without a no-break space after it", re.compile(r"«(?!\u00a0)")),
+        ("» without a no-break space before it", re.compile(r"(?<!\u00a0)»")),
+        ("space before : ; ! ?, use a no-break space", re.compile(r"[ \t][:;!?]")),
+        ("space before …", re.compile(r"\s…")),
+        ("German letter, text left untranslated?", re.compile(r"[äöüÄÖÜß]")),
+    ],
 }
 failed = False
 for path in sys.argv[1:]:

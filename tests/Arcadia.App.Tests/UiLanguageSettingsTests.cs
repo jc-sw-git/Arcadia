@@ -30,7 +30,7 @@ public sealed class UiLanguageSettingsTests
         Assert.True(category.Rows[0].HasGroupHeading);
         Assert.Equal(1, category.Rows[1].Indent);
         var language = Language(arcadia);
-        Assert.Equal([AppTexts.LocalizationLanguageSystem, "English", "Español", "Deutsch"], Values(language));
+        Assert.Equal([AppTexts.LocalizationLanguageSystem, "English", "Français", "Español", "Deutsch"], Values(language));
         Assert.Equal(AppTexts.LocalizationLanguageSystem, language.ValueText);
         Assert.Equal(4, language.ValueBoxes.Count);
         Assert.True(language.ValueBoxes[0].IsCurrent);
@@ -112,7 +112,7 @@ public sealed class UiLanguageSettingsTests
         arcadia.Press(UiAction.Right);
         Assert.Equal("en", arcadia.Settings.Current.Localization.Language);
         arcadia.Press(UiAction.Right);
-        Assert.Equal("es", arcadia.Settings.Current.Localization.Language);
+        Assert.Equal("fr", arcadia.Settings.Current.Localization.Language);
         arcadia.Click(language.StepBackCommand);
         Assert.Equal("en", arcadia.Settings.Current.Localization.Language);
         Assert.Empty(arcadia.Restarts);
@@ -142,6 +142,10 @@ public sealed class UiLanguageSettingsTests
 
         Language(arcadia);
         arcadia.Press(UiAction.Left); // Español
+        Assert.True(Apply(arcadia).IsEnabled);
+
+        Language(arcadia);
+        arcadia.Press(UiAction.Left); // Français
         apply = Apply(arcadia);
         Assert.True(apply.IsEnabled);
         Assert.Equal(AppTexts.LocalizationApplyRestarts, apply.Subtitle);

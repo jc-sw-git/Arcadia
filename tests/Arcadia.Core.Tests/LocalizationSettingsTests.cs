@@ -140,7 +140,7 @@ public sealed class LocalizationSettingsTests : IDisposable
     [Theory]
     [Trait("TestCase", "T554-13")]
     [InlineData("""{ "Localization": { "Language": "xx" } }""")]
-    [InlineData("""{ "Localization": { "Language": "fr" } }""")] // not offered yet (#555)
+    [InlineData("""{ "Localization": { "Language": "it" } }""")] // not offered
     [InlineData("""{ "Localization": { "Language": "" } }""")]
     [InlineData("""{ "Localization": { "Language": 42 } }""")]
     [InlineData("""{ "Localization": { "Language": null } }""")]

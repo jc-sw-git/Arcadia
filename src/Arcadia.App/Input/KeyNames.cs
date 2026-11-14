@@ -13,7 +13,7 @@ public static class KeyNames
         new Dictionary<string, (Key, KeyModifiers, string)>(StringComparer.Ordinal)
         {
             ["A"] = (Key.Space, KeyModifiers.None, AppTexts.KeySpace),
-            ["B"] = (Key.Escape, KeyModifiers.None, "Esc"),
+            ["B"] = (Key.Escape, KeyModifiers.None, AppTexts.KeyEscape),
             ["X"] = (Key.F, KeyModifiers.None, "F"),
             ["Y"] = (Key.V, KeyModifiers.None, "V"),
             ["LB"] = (Key.Q, KeyModifiers.Shift, "⇧ Q"),

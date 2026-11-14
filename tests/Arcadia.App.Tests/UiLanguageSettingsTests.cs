@@ -32,7 +32,7 @@ public sealed class UiLanguageSettingsTests
         var language = Language(arcadia);
         Assert.Equal([AppTexts.LocalizationLanguageSystem, "English", "Français", "Español", "Deutsch"], Values(language));
         Assert.Equal(AppTexts.LocalizationLanguageSystem, language.ValueText);
-        Assert.Equal(4, language.ValueBoxes.Count);
+        Assert.Equal(5, language.ValueBoxes.Count);
         Assert.True(language.ValueBoxes[0].IsCurrent);
 
         // ◀ ▶ wrap at both ends.

@@ -207,7 +207,9 @@ public sealed class ChangeTitleTests
         Assert.Equal(DataSourcesSettingsViewModel.UserDataRowKey, restarted.Main.Settings!.FocusedRow?.Key);
         Assert.Equal(AppTexts.DataSourcesUserDataUnreadable, restarted.Main.Settings.FocusedRow!.Subtitle);
         Assert.Equal(HealthSeverity.Warning, restarted.Main.Settings.Selected.Marker);
-        restarted.Press(UiAction.Back);
+
+        // B: the status modal again (#586), B: the library.
+        restarted.Press(UiAction.Back, times: 2);
 
         restarted.Hold(UiAction.Accept, PastHoldTime);
         var change = restarted.FocusDetailRow(DetailAreaViewModel.ManageKey, GameActionKind.ChangeTitle);

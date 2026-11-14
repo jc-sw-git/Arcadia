@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Arcadia.Core.Library;
 using Arcadia.Core.Settings;
 using Avalonia;
@@ -88,11 +87,7 @@ public static class Formatting
     public static string Date(DateOnly value) => value.ToString("d", Region);
 
     /// <summary>"9. Oktober 2026" in local time: the region's long date without the weekday.</summary>
-    public static string LongDate(DateTimeOffset value)
-    {
-        var withoutWeekday = Regex.Replace(Region.DateTimeFormat.LongDatePattern, "dddd[^dMy]*", string.Empty).Trim();
-        return value.ToLocalTime().ToString(withoutWeekday.Length > 0 ? withoutWeekday : "D", Region);
-    }
+    public static string LongDate(DateTimeOffset value) => value.ToLocalTime().ToString(Dates.LongDate, Region);
 
     /// <summary>"Laufwerk D:" for a Windows path, otherwise null.</summary>
     public static string? Drive(string? path) =>
@@ -133,59 +128,25 @@ public static class Formatting
     };
 
     /// <summary>Uses <paramref name="region"/> as the system's regional format from now on, e.g. in a test; null reads the system's again.</summary>
-    internal static void UseRegion(CultureInfo? region) => _region = region is null ? null : RegionWithNamesOf(region, Culture);
+    internal static void UseRegion(CultureInfo? region)
+    {
+        _region = region is null ? null : RegionWithNamesOf(region, Culture);
+        _dates = null;
+    }
 
     /// <summary>The header's date: weekday, day and month, short, in the region's order ("Sa., 24. Okt." or "Sat, Oct 24").</summary>
-    public static string ShortDate(DateTimeOffset now) =>
-        now.ToString(WithoutYear(Region.DateTimeFormat.LongDatePattern).Replace("dddd", "ddd", StringComparison.Ordinal).Replace("MMMM", "MMM", StringComparison.Ordinal), Region);
+    public static string ShortDate(DateTimeOffset now) => now.ToString(Dates.HeaderDate, Region);
 
     /// <summary>
     /// The region's short date without the year ("dd.MM." of "dd.MM.yyyy", "M/d" of "M/d/yyyy"); the region's
     /// day and month pattern if its short date can't be cut.
     /// </summary>
-    internal static string DayAndMonthPattern()
-    {
-        var pattern = WithoutYear(Region.DateTimeFormat.ShortDatePattern);
-        return pattern.Contains('d') && pattern.Contains('M') ? pattern : Region.DateTimeFormat.MonthDayPattern;
-    }
+    internal static string DayAndMonthPattern() => Dates.DayAndMonth;
 
-    // The year and the separator that joins it to the rest; a dot stays where it ended a German day or month ("13.11.").
-    private static string WithoutYear(string pattern)
-    {
-        var start = pattern.IndexOf('y');
-        if (start < 0)
-        {
-            return pattern;
-        }
+    // Cut from the region's patterns once, with the region (#592).
+    private static RegionDatePatterns Dates => _dates ??= RegionDatePatterns.Of(Region);
 
-        var end = start;
-        while (end < pattern.Length && pattern[end] == 'y')
-        {
-            end++;
-        }
-
-        var before = start;
-        while (before > 0 && !IsField(pattern[before - 1]))
-        {
-            before--;
-        }
-
-        if (before > 0)
-        {
-            var separator = pattern[before..start];
-            return pattern[..before] + (separator.TrimEnd().EndsWith('.') ? "." : string.Empty) + pattern[end..];
-        }
-
-        var after = end;
-        while (after < pattern.Length && !IsField(pattern[after]))
-        {
-            after++;
-        }
-
-        return pattern[after..];
-    }
-
-    private static bool IsField(char c) => c is 'd' or 'M' or 'y' or 'H' or 'h' or 'm' or 's' or 't' or 'g';
+    private static RegionDatePatterns? _dates;
 
     private static CultureInfo RegionWithNamesOf(CultureInfo region, CultureInfo language)
     {

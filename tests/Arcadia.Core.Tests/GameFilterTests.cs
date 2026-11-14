@@ -194,13 +194,20 @@ public sealed class GameFilterTests
         var filter = GameFilter.Of(InstalledChoice.Installed, [GameType.Tool, GameType.Soundtrack]);
         filter.Count(games);
 
-        var watch = Stopwatch.StartNew();
-        for (var i = 0; i < 10; i++)
+        // The fastest of five tries: slower code slows every try, a runner busy with other tests only some (#589).
+        var fastest = TimeSpan.MaxValue;
+        for (var attempt = 0; attempt < 5; attempt++)
         {
-            filter.Count(games);
-            filter.Apply(games);
+            var watch = Stopwatch.StartNew();
+            for (var i = 0; i < 10; i++)
+            {
+                filter.Count(games);
+                filter.Apply(games);
+            }
+
+            fastest = watch.Elapsed < fastest ? watch.Elapsed : fastest;
         }
 
-        Assert.True(watch.Elapsed < TimeSpan.FromMilliseconds(160), $"10 × count and apply took {watch.Elapsed.TotalMilliseconds:0.0} ms");
+        Assert.True(fastest < TimeSpan.FromMilliseconds(160), $"10 × count and apply took {fastest.TotalMilliseconds:0.0} ms at best");
     }
 }

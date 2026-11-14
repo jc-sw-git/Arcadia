@@ -167,7 +167,7 @@ public sealed class StatusModalTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T166-7")]
-    public async Task Zu_den_Einstellungen_on_Pan_laeuft_nicht_opens_the_row_that_says_why_and_B_returns_to_the_library()
+    public async Task Zu_den_Einstellungen_on_Pan_laeuft_nicht_opens_the_row_that_says_why_and_B_returns_to_the_modal_then_the_library()
     {
         using var arcadia = await StartWithPanAsync();
         arcadia.Pan.HidingHolds = PanReason.HidingLost;
@@ -189,6 +189,8 @@ public sealed class StatusModalTests
         Assert.Equal("pan:hide-failed", controller.FocusedRow?.Key);
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.True(arcadia.Main.IsStatusModalOpen);
+        arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsStatusModalOpen);
         Assert.True(arcadia.Main.IsLibraryShown);
     }

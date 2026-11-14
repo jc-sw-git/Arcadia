@@ -2,6 +2,11 @@
 
 Index: [README.md](README.md).
 
+- The game's background fills the page behind header and footer (#565): a flat one (wider than 16 : 9) runs edge to
+  edge at the top, uncut, and fades softly at its lower edge into its blurred, darkened copy below; a 16 : 9 one fills
+  the screen; a taller one loses at most 10 % and shows the blurred copy at its sides. Scrims darken only behind title
+  and buttons, the header's tabs and the footer's hints.
+
 - On the game's artwork beside its cover: title, then one button row "Spielen", "Zu Favoriten", "In … öffnen" and
   a quiet note under "Spielen" (update, installation, soundtrack) that the focus never takes, on a soft dark cloud that
   fades out at every edge so it reads over a bright image (#541). A long title shrinks to half

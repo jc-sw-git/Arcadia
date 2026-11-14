@@ -48,6 +48,12 @@ public partial class MainWindow : Window
     private const double PointerMoveThreshold = 6;
 
     private readonly HashSet<Key> _keysDown = [];
+
+    // Keys whose press ended "Bild ansehen" (#565): their repeats and release do nothing either.
+    private readonly HashSet<Key> _keysSwallowedByImageShow = [];
+
+    // Where the mouse was when it last counted as input for "Bild ansehen".
+    private Point? _imageShowPointer;
     private MainViewModel? _viewModel;
     private Point? _restingPointer;
 
@@ -112,6 +118,10 @@ public partial class MainWindow : Window
         // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
         AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
 
+        // Any use of the mouse ends "Bild ansehen" (#565), and a click or turn of the wheel that ends it does nothing else.
+        AddHandler(PointerPressedEvent, OnPointerInputForImageShow, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerInputForImageShow, RoutingStrategies.Tunnel);
+
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -133,14 +143,20 @@ public partial class MainWindow : Window
         Deactivated += (_, _) =>
         {
             _keysDown.Clear();
+            _keysSwallowedByImageShow.Clear();
             _viewModel?.CancelHold();
+            _viewModel?.SetInFront(false);
         };
         _tabs = new TabStrip(TabScroller, TabList, TabDividerLeft, TabDividerRight, () => _viewModel?.IsTabStripShown != false);
         _categories = new TabStrip(CategoryScroller, CategoryList, CategoryDividerLeft, CategoryDividerRight, () => true);
         InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
-        Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
+        Activated += (_, _) =>
+        {
+            _viewModel?.SetInFront(true);
+            _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
+        };
     }
 
     private void UpdateSortDivider()
@@ -244,6 +260,12 @@ public partial class MainWindow : Window
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
         var pressedAt = InputLatency.Now();
+        if (SwallowedByImageShow(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
         _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
@@ -293,9 +315,40 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>A key that ends "Bild ansehen" (#565) does nothing else, nor do its repeats.</summary>
+    private bool SwallowedByImageShow(Key key)
+    {
+        if (_keysSwallowedByImageShow.Contains(key))
+        {
+            return true;
+        }
+
+        if (_viewModel?.TakeInputForImageShow() == true)
+        {
+            _keysSwallowedByImageShow.Add(key);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void OnPointerInputForImageShow(object? sender, PointerEventArgs e)
+    {
+        if (_viewModel?.TakePointerInputForImageShow() == true)
+        {
+            e.Handled = true;
+        }
+    }
+
     private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
     {
         _keysDown.Remove(e.Key);
+        if (_keysSwallowedByImageShow.Remove(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (_viewModel is not null && (ActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers)) is { } action)
         {
             _viewModel.Release(action);
@@ -381,6 +434,17 @@ public partial class MainWindow : Window
     private void OnPointerMovedAnywhere(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);
+        if (_imageShowPointer is not { } last || Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) > PointerMoveThreshold)
+        {
+            // The first move only marks where the mouse rests: a pointer that didn't move isn't input.
+            if (_imageShowPointer is not null)
+            {
+                _viewModel?.TakeInputForImageShow();
+            }
+
+            _imageShowPointer = position;
+        }
+
         if (_viewModel is null || _viewModel.Input.ShowsCloseButtons)
         {
             _restingPointer = position;

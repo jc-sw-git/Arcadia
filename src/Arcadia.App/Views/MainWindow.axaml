@@ -8,7 +8,6 @@
         xmlns:settings="using:Arcadia.App.Settings"
         xmlns:status="using:Arcadia.App.Status"
         xmlns:filter="using:Arcadia.App.Filter"
-        xmlns:setup="using:Arcadia.App.Setup"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -1820,7 +1819,7 @@
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->
-              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding Selected.FinishText, TargetNullValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>

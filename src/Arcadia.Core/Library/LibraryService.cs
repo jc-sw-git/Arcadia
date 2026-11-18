@@ -34,25 +34,35 @@ public sealed class LibraryService(LauncherRegistry launchers, TimeProvider? tim
     /// Every active launcher in tab order, also one without games or one that is no longer found: it keeps its tab, which
     /// says so (#136).
     /// </returns>
-    public async Task<IReadOnlyList<LauncherLibrary>> LoadAsync(CancellationToken cancellationToken = default)
-    {
-        // Launchers come and go between scans; without a choice of the user, the ones found decide which are active.
-        await Task.Run(launchers.Locate, cancellationToken);
-        return await Task.WhenAll(launchers.Enabled.Select(integration => ScanAsync(integration, cancellationToken)));
-    }
+    /// <remarks>
+    /// Runs on the thread pool as a whole, and so does the other overload: a continuation that waited for the UI thread held every
+    /// scan back while the UI thread was busy, at start for as long as the window was being built (#637).
+    /// </remarks>
+    public Task<IReadOnlyList<LauncherLibrary>> LoadAsync(CancellationToken cancellationToken = default) =>
+        Task.Run<IReadOnlyList<LauncherLibrary>>(
+            async () =>
+            {
+                // Launchers come and go between scans; without a choice of the user, the ones found decide which are active.
+                launchers.Locate();
+                return await Task.WhenAll(launchers.Enabled.Select(integration => ScanAsync(integration, cancellationToken)));
+            },
+            cancellationToken);
 
     /// <summary>
     /// Reads one active launcher again, e.g. "Neu einlesen" on its page (#137), without scanning the others; null if it
     /// isn't active.
     /// </summary>
-    public async Task<LauncherLibrary?> LoadAsync(string launcherId, CancellationToken cancellationToken = default)
-    {
-        // Its folder may just have been chosen (#138), so it is looked for again first.
-        await Task.Run(launchers.Locate, cancellationToken);
-        return launchers.Enabled.FirstOrDefault(i => i.Launcher.Id == launcherId) is { } integration
-            ? await ScanAsync(integration, cancellationToken)
-            : null;
-    }
+    public Task<LauncherLibrary?> LoadAsync(string launcherId, CancellationToken cancellationToken = default) =>
+        Task.Run(
+            async () =>
+            {
+                // Its folder may just have been chosen (#138), so it is looked for again first.
+                launchers.Locate();
+                return launchers.Enabled.FirstOrDefault(i => i.Launcher.Id == launcherId) is { } integration
+                    ? await ScanAsync(integration, cancellationToken)
+                    : null;
+            },
+            cancellationToken);
 
     private async Task<LauncherLibrary> ScanAsync(ILauncherIntegration integration, CancellationToken cancellationToken)
     {

@@ -28,11 +28,13 @@ public sealed class KeyHint : StackPanel
     /// <summary>Glyphs on an accent surface, e.g. inside "Spielen".</summary>
     public static readonly StyledProperty<bool> IsDarkProperty = AvaloniaProperty.Register<KeyHint, bool>(nameof(IsDark));
 
+    /// <summary>The children don't show the properties and the input in use yet; the next measure builds them.</summary>
+    private bool _stale = true;
+
     public KeyHint()
     {
         Orientation = Orientation.Horizontal;
         Spacing = 10;
-        Rebuild();
     }
 
     public string? Pad
@@ -69,7 +71,7 @@ public sealed class KeyHint : StackPanel
     {
         base.OnAttachedToVisualTree(e);
         InputHints.Changed += OnInputChanged;
-        Rebuild();
+        MarkStale();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -84,14 +86,45 @@ public sealed class KeyHint : StackPanel
         if (change.Property == PadProperty || change.Property == KeysProperty || change.Property == AltProperty
             || change.Property == TextProperty || change.Property == IsDarkProperty)
         {
-            Rebuild();
+            MarkStale();
         }
     }
 
-    private void OnInputChanged(object? sender, EventArgs e) => Rebuild();
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (_stale)
+        {
+            Rebuild();
+        }
+
+        return base.MeasureOverride(availableSize);
+    }
+
+    private void OnInputChanged(object? sender, EventArgs e) => MarkStale();
+
+    /// <summary>
+    /// Builds the children when the hint is next measured, not at every change (#637): XAML sets the properties one by one,
+    /// and the hints of pages that aren't shown (settings, search, dialogs) aren't measured, so the start builds only the
+    /// visible ones, once.
+    /// </summary>
+    private void MarkStale()
+    {
+        _stale = true;
+
+        // Hidden for having nothing to show, the hint isn't measured: it rebuilds at once, or it would never come back.
+        if (Classes.Contains("noKeys"))
+        {
+            Rebuild();
+        }
+        else
+        {
+            InvalidateMeasure();
+        }
+    }
 
     private void Rebuild()
     {
+        _stale = false;
         var controller = InputHints.UsesController;
         var buttons = Split(controller ? Pad : Keys);
         var alternatives = controller ? [] : Split(Alt);

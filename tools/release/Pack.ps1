@@ -36,8 +36,9 @@ $Version = $Version.TrimStart('v')
 
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 
+# ReadyToRun: Arcadia's and Avalonia's code is compiled ahead, not at the start; that halves the way to the library (#637).
 dotnet publish (Join-Path $root 'src\Arcadia.App\Arcadia.App.csproj') `
-    --configuration Release --runtime win-x64 --self-contained `
+    --configuration Release --runtime win-x64 --self-contained -p:PublishReadyToRun=true `
     -p:Version=$Version --output $publish
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 

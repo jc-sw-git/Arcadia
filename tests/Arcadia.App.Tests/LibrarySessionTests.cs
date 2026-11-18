@@ -125,6 +125,96 @@ public sealed class LibrarySessionTests
         }
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task The_reading_started_before_the_window_is_the_one_the_load_shows()
+    {
+        using var setup = new SessionSetup([Installed(Launcher, "Alpha", ArcadiaDriver.Now)]);
+        var session = setup.Session;
+        var changes = 0;
+        session.LibrariesChanged += (_, _) => changes++;
+
+        session.StartReading();
+        Assert.True(session.IsLoading);
+        Assert.Equal(0, changes);
+        await session.LoadAsync();
+
+        Assert.Equal(1, setup.Launcher.Scanner.Scans);
+        Assert.Equal(1, changes);
+        Assert.False(session.IsLoading);
+        Assert.Equal(["Alpha"], session.LibraryOf(Launcher.Id)!.Games.Select(g => g.Title));
+
+        // The reading was taken: a later load reads again.
+        await session.LoadAsync();
+        Assert.Equal(2, setup.Launcher.Scanner.Scans);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task A_launcher_switched_off_while_the_libraries_are_read_stays_off()
+    {
+        var gog = new SlowLauncher(KnownLaunchers.Gog, Installed(KnownLaunchers.Gog, "Alpha", ArcadiaDriver.Now));
+        var epic = new SlowLauncher(KnownLaunchers.Epic, Installed(KnownLaunchers.Epic, "Beta", ArcadiaDriver.Now));
+        IReadOnlyList<string> active = ["gog", "epic"];
+        var registry = new LauncherRegistry([gog, epic], () => active);
+        var time = new FakeTimeProvider(ArcadiaDriver.Now);
+        var launchedGames = new LaunchedGames();
+        using var session = new LibrarySession(
+            new LibraryService(registry, time),
+            new InstallTracker(registry, time),
+            new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time),
+            launchedGames,
+            time);
+        await session.LoadAsync();
+
+        // A rescan reads both; Epic is switched off before it ends.
+        epic.Gate = new TaskCompletionSource();
+        var rescan = session.RefreshLibraryAsync(force: true);
+        active = ["gog"];
+        session.ShowChosenLaunchers();
+        Assert.Equal(["gog"], session.Libraries.Select(l => l.Launcher.Id));
+        epic.Gate.SetResult();
+        await rescan;
+
+        Assert.Equal(["gog"], session.Libraries.Select(l => l.Launcher.Id));
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task A_launcher_switched_on_while_the_libraries_are_read_is_read_after_them()
+    {
+        var gog = new SlowLauncher(KnownLaunchers.Gog, Installed(KnownLaunchers.Gog, "Alpha", ArcadiaDriver.Now));
+        var epic = new SlowLauncher(KnownLaunchers.Epic, Installed(KnownLaunchers.Epic, "Beta", ArcadiaDriver.Now));
+        IReadOnlyList<string> active = ["gog"];
+        var registry = new LauncherRegistry([gog, epic], () => active);
+        var time = new FakeTimeProvider(ArcadiaDriver.Now);
+        var launchedGames = new LaunchedGames();
+        using var session = new LibrarySession(
+            new LibraryService(registry, time),
+            new InstallTracker(registry, time),
+            new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time),
+            launchedGames,
+            time);
+
+        // The start's reading still runs when Epic is switched on.
+        gog.Gate = new TaskCompletionSource();
+        var load = session.LoadAsync();
+        await gog.AtGate.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        active = ["gog", "epic"];
+        session.ShowChosenLaunchers();
+        gog.Gate.SetResult();
+        await load;
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (session.Libraries.Count < 2 && watch.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(["gog", "epic"], session.Libraries.Select(l => l.Launcher.Id));
+    }
+
     /// <summary>A session over one launcher whose games and install reports the test sets, on a fake clock.</summary>
     private sealed class SessionSetup : IDisposable
     {
@@ -183,6 +273,42 @@ public sealed class LibrarySessionTests
         public IReadOnlyCollection<string> ProgramNames => [];
 
         public string? Locate() => "Test";
+    }
+
+    /// <summary>A launcher whose scan waits for <see cref="Gate"/> while one is set.</summary>
+    private sealed class SlowLauncher(LauncherInfo launcher, params Game[] games) : ILauncherIntegration, ILauncherScanner
+    {
+        public TaskCompletionSource? Gate { get; set; }
+
+        /// <summary>Done once a scan waits at the <see cref="Gate"/>: the launchers to read were chosen.</summary>
+        public TaskCompletionSource AtGate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public LauncherInfo Launcher => launcher;
+
+        public ILauncherScanner Scanner => this;
+
+        public IReadOnlyList<LibraryTypeOption> LibraryOptions => [];
+
+        public ILauncherClient? Client => null;
+
+        public IInstallMonitor? InstallMonitor => null;
+
+        public IRunningGamesMonitor? RunningGames => null;
+
+        public IReadOnlyCollection<string> ProgramNames => [];
+
+        public string? Locate() => "Test";
+
+        public async Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
+        {
+            if (Gate is { } gate)
+            {
+                AtGate.TrySetResult();
+                await gate.Task;
+            }
+
+            return games;
+        }
     }
 
     /// <summary>Reports an install's end once, at the next poll, as a launcher's log does.</summary>

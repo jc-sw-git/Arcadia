@@ -40,7 +40,8 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
 
 **Library**
 - `LibraryService`/`LibraryRefresher`: scan and rescan; every active launcher keeps a library, also empty or not
-  found, `ScannedAt`. `LibraryTypes`: which types a tab shows by the launcher's switches, counts per type.
+  found, `ScannedAt`; a load runs wholly on the thread pool, never waiting for the UI thread (#637). At start
+  `LibrarySession.StartReading` begins it before the window is built. `LibraryTypes`: which types a tab shows by the launcher's switches, counts per type.
 - `GameSorter`, `PageSizes`/`PageWindow`, `Carousel` (detail page neighbours).
 - `GameFilter` (#44, #466): a tab's filter (installed, types, `NameChoice` per genre / tags / developer / publisher,
   `YearChoice`, `RatingChoice`), what is left of it `Within` a tab's `FilterOffer` (the categories and values that tell

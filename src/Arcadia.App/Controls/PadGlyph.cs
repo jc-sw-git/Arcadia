@@ -29,6 +29,9 @@ public sealed class PadGlyph : Border
     private ButtonSymbol? _shown;
     private string? _shownKey;
 
+    /// <summary>The badge doesn't show the properties and the controller in use yet; the next measure draws it (#637).</summary>
+    private bool _stale = true;
+
     public PadGlyph()
     {
         Classes.Add("glyph");
@@ -63,7 +66,7 @@ public sealed class PadGlyph : Border
         InputHints.Changed += OnInputChanged;
         _shown = null;
         _shownKey = null;
-        Update();
+        MarkStale();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -77,14 +80,35 @@ public sealed class PadGlyph : Border
         base.OnPropertyChanged(change);
         if (change.Property == ButtonProperty || change.Property == SymbolsProperty || change.Property == KeysProperty)
         {
-            Update();
+            MarkStale();
         }
     }
 
-    private void OnInputChanged(object? sender, EventArgs e) => Update();
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (_stale)
+        {
+            Update();
+        }
+
+        return base.MeasureOverride(availableSize);
+    }
+
+    private void OnInputChanged(object? sender, EventArgs e) => MarkStale();
+
+    /// <summary>
+    /// Draws the badge when it is next measured, not at every change: XAML sets the properties one by one, and badges on
+    /// pages that aren't shown aren't measured, so the start draws only the visible ones, once (#637).
+    /// </summary>
+    private void MarkStale()
+    {
+        _stale = true;
+        InvalidateMeasure();
+    }
 
     private void Update()
     {
+        _stale = false;
         if (!InputHints.UsesController && Keys is { Length: > 0 } key)
         {
             ShowKey(KeyLabels.Printed(key));

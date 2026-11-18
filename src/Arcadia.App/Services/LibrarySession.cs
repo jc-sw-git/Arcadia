@@ -35,6 +35,15 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
     private readonly HashSet<string> _changedWhileLoading = new(StringComparer.Ordinal);
+
+    /// <summary>The reading <see cref="StartReading"/> started and <see cref="LoadAsync"/> hasn't taken yet.</summary>
+    private (Task<IReadOnlyList<LauncherLibrary>> Libraries, System.Diagnostics.Stopwatch Watch)? _reading;
+
+    /// <summary>Launchers were switched on, off or moved while the libraries were read.</summary>
+    private bool _launchersChosenWhileLoading;
+
+    /// <summary>Rescans started and not yet shown; counted on the UI thread.</summary>
+    private int _refreshing;
     private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
 
     /// <param name="artwork">Brings the games' covers and backgrounds into the cache after each read (#487); null: placeholders only.</param>
@@ -141,15 +150,34 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>Like <see cref="RunStateOf"/>, but null for a game that only seems to run (demo data, #307).</summary>
     public RunState? RealRunStateOf(string gameKey) => _running.RealStateOf(gameKey);
 
+    /// <summary>
+    /// A rescan runs, or its result is still to be shown. The scans run on the thread pool (#637), so the tests wait for it
+    /// rather than for the UI thread's jobs.
+    /// </summary>
+    internal bool IsRefreshing => _refreshing > 0;
+
     /// <summary>The library read last of <paramref name="launcherId"/>; null if the launcher isn't active.</summary>
     public LauncherLibrary? LibraryOf(string launcherId) => Libraries.FirstOrDefault(l => l.Launcher.Id == launcherId);
 
-    public async Task LoadAsync()
+    /// <summary>
+    /// Starts reading the libraries now, off the UI thread, for the next <see cref="LoadAsync"/> to show: at start the scan runs
+    /// while the window is still being built (#637).
+    /// </summary>
+    public void StartReading()
     {
         IsLoading = true;
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        var libraries = await _library.LoadAsync();
+        _reading ??= (_library.LoadAsync(), System.Diagnostics.Stopwatch.StartNew());
+    }
+
+    /// <summary>Reads the libraries, or takes the reading <see cref="StartReading"/> started, and shows them.</summary>
+    public async Task LoadAsync()
+    {
+        StartReading();
+        var (reading, watch) = _reading!.Value;
+        _reading = null;
+        var libraries = await reading;
         var scanned = watch.ElapsedMilliseconds;
+        StartTimeline.Mark("Bibliothek gelesen"); // not a UI text (log)
         IsLoading = false;
         Show(libraries);
         foreach (var launcherId in _changedWhileLoading)
@@ -158,6 +186,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         }
 
         _changedWhileLoading.Clear();
+        if (_launchersChosenWhileLoading)
+        {
+            _launchersChosenWhileLoading = false;
+            ShowChosenLaunchers();
+        }
 
         // The scan runs off the UI thread; only showing it blocks the UI (#136 measures both). Time since the process
         // started and memory are what the budgets in CLAUDE.md name (start < 2 s with 1,000 games, < 400 MB with 5,000).
@@ -284,16 +317,24 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        var scans = _refresher.Scans;
-        if (await _refresher.RefreshAsync(() => _scanned, force) is { } libraries)
+        _refreshing++;
+        try
         {
-            Show(libraries);
+            var scans = _refresher.Scans;
+            if (await _refresher.RefreshAsync(() => _scanned, force) is { } libraries)
+            {
+                Show(libraries);
+            }
+            else if (_refresher.Scans != scans)
+            {
+                // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
+                // store answers that failed before (#493).
+                UpdateGameData();
+            }
         }
-        else if (_refresher.Scans != scans)
+        finally
         {
-            // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
-            // store answers that failed before (#493).
-            UpdateGameData();
+            _refreshing--;
         }
 
         // "Zuletzt eingelesen" changed even if nothing else did.
@@ -333,6 +374,8 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     {
         if (IsLoading)
         {
+            // The load shows only the launchers active when it ends; one switched on meanwhile is read right after it.
+            _launchersChosenWhileLoading = true;
             return;
         }
 
@@ -403,16 +446,24 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
             return;
         }
 
-        var scans = _refresher.Scans;
-        if (await _refresher.RefreshAsync(() => _scanned, launcherId) is { } libraries)
+        _refreshing++;
+        try
         {
-            Show(libraries);
+            var scans = _refresher.Scans;
+            if (await _refresher.RefreshAsync(() => _scanned, launcherId) is { } libraries)
+            {
+                Show(libraries);
+            }
+            else if (_refresher.Scans != scans)
+            {
+                // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
+                // store answers that failed before (#493).
+                UpdateGameData();
+            }
         }
-        else if (_refresher.Scans != scans)
+        finally
         {
-            // An unchanged library can still have new images (an own cover set in Steam, a download that failed offline) and
-            // store answers that failed before (#493).
-            UpdateGameData();
+            _refreshing--;
         }
 
         LaunchersRead?.Invoke(this, EventArgs.Empty);
@@ -514,6 +565,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         _launcherGames.TryGetValue(gameKey, out var launcherGame)
         && !string.Equals(Titles.Shown(launcherGame).Title, _shownTitles.GetValueOrDefault(gameKey), StringComparison.Ordinal);
 
+    private IReadOnlyList<LauncherLibrary> InChosenOrder(IReadOnlyList<LauncherLibrary> libraries) =>
+        _library.Launchers.ActiveIds.Select(id => libraries.FirstOrDefault(l => l.Launcher.Id == id)).OfType<LauncherLibrary>().ToList();
+
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
         // A scan still running when the session ended shows nothing: the window is closing.
@@ -521,6 +575,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         {
             return;
         }
+
+        // The libraries are read off the UI thread, so a launcher can be switched off or moved while one is read (#637): a
+        // scan that began before shows only the active launchers, in their order (#136). One switched on meanwhile is read
+        // by the rescan ShowChosenLaunchers asks for, after the load if it came during one.
+        libraries = InChosenOrder(libraries);
 
         // A tab without games says itself that its scan failed; one that keeps the games read before needs a word (#369).
         var newlyFailed = libraries

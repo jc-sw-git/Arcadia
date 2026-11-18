@@ -806,11 +806,16 @@ internal sealed class ArcadiaDriver : IDisposable
         return true;
     }
 
-    /// <summary>As the App starts: the library, and which games already run.</summary>
+    /// <summary>
+    /// As the App starts: the library, and which games already run. The focused game's folder check and the rescan it may
+    /// ask for run on the thread pool; waited for, so their result doesn't land in the middle of a test's first steps.
+    /// </summary>
     private async Task LoadAsync()
     {
         await Main.Session.LoadAsync();
         await Main.Session.PollRunningGamesAsync();
+        await FolderChecksAnsweredAsync();
+        await WaitUntilAsync(() => !Main.Session.IsRefreshing, "Neu eingelesen nach der Prüfung des Installordners");
         Dispatcher.UIThread.RunJobs();
     }
 }

@@ -46,6 +46,45 @@ public sealed class LibraryServiceTests
     }
 
     [Fact]
+    [Trait("TestCase", "T637-1")]
+    public async Task A_load_never_waits_for_the_thread_that_started_it()
+    {
+        // At start the UI thread builds the window for a second or more; a scan that needed it in between waited that long.
+        var service = new LibraryService(FakeIntegration.Registry(new FakeIntegration(KnownLaunchers.Gog) { Scanner = _gog }));
+        Task<IReadOnlyList<LauncherLibrary>> all;
+        Task<LauncherLibrary?> one;
+        var previous = SynchronizationContext.Current;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new BusyThread());
+            all = service.LoadAsync();
+            one = service.LoadAsync(KnownLaunchers.Gog.Id);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previous);
+        }
+
+        // Times out (TimeoutException) where a continuation waits for the busy thread.
+        var libraries = await all.WaitAsync(TimeSpan.FromSeconds(10));
+        var library = await one.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(["chess"], libraries.Single().Games.Select(g => g.Id));
+        Assert.Equal(["chess"], library!.Games.Select(g => g.Id));
+    }
+
+    /// <summary>A thread that never gets to what is posted to it, as the UI thread while it builds the window.</summary>
+    private sealed class BusyThread : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+        }
+
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+        }
+    }
+
+    [Fact]
     public async Task Cancelling_the_load_still_cancels_it()
     {
         using var cancel = new CancellationTokenSource();

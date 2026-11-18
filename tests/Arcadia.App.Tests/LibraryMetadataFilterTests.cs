@@ -444,6 +444,31 @@ public sealed class LibraryMetadataFilterTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T681-1")]
+    public async Task Von_and_bis_stack_so_up_and_down_alone_reach_both_and_left_right_only_step_the_year()
+    {
+        var (spec, _, _) = SteamWith(Library());
+        using var arcadia = await StartAsync(spec);
+        var year = OpenAt(arcadia, "Erscheinungsjahr").YearPane!;
+        Assert.True(year.IsFromFocused);
+
+        arcadia.Press(UiAction.Down);
+        Assert.True(year.IsToFocused);
+        arcadia.Press(UiAction.Left);
+        Assert.True(year.IsToFocused);
+        Assert.Equal("2025", year.ToText);
+
+        arcadia.Press(UiAction.Up);
+        Assert.True(year.IsFromFocused);
+        arcadia.Press(UiAction.Right);
+        Assert.True(year.IsFromFocused);
+        Assert.Equal("1999", year.FromText);
+
+        arcadia.Press(UiAction.Up);
+        Assert.False(year.IsFromFocused || year.IsToFocused);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T466-12")]
     public async Task Quick_picks_cover_the_last_three_years_and_the_decades_and_one_without_hits_is_greyed()
     {

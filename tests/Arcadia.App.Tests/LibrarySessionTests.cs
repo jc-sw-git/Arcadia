@@ -149,6 +149,36 @@ public sealed class LibrarySessionTests
         Assert.Equal(2, setup.Launcher.Scanner.Scans);
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task A_launcher_switched_off_while_the_libraries_are_read_stays_off()
+    {
+        var gog = new SlowLauncher(KnownLaunchers.Gog, Installed(KnownLaunchers.Gog, "Alpha", ArcadiaDriver.Now));
+        var epic = new SlowLauncher(KnownLaunchers.Epic, Installed(KnownLaunchers.Epic, "Beta", ArcadiaDriver.Now));
+        IReadOnlyList<string> active = ["gog", "epic"];
+        var registry = new LauncherRegistry([gog, epic], () => active);
+        var time = new FakeTimeProvider(ArcadiaDriver.Now);
+        var launchedGames = new LaunchedGames();
+        using var session = new LibrarySession(
+            new LibraryService(registry, time),
+            new InstallTracker(registry, time),
+            new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time),
+            launchedGames,
+            time);
+        await session.LoadAsync();
+
+        // A rescan reads both; Epic is switched off before it ends.
+        epic.Gate = new TaskCompletionSource();
+        var rescan = session.RefreshLibraryAsync(force: true);
+        active = ["gog"];
+        session.ShowChosenLaunchers();
+        Assert.Equal(["gog"], session.Libraries.Select(l => l.Launcher.Id));
+        epic.Gate.SetResult();
+        await rescan;
+
+        Assert.Equal(["gog"], session.Libraries.Select(l => l.Launcher.Id));
+    }
+
     /// <summary>A session over one launcher whose games and install reports the test sets, on a fake clock.</summary>
     private sealed class SessionSetup : IDisposable
     {
@@ -207,6 +237,38 @@ public sealed class LibrarySessionTests
         public IReadOnlyCollection<string> ProgramNames => [];
 
         public string? Locate() => "Test";
+    }
+
+    /// <summary>A launcher whose scan waits for <see cref="Gate"/> while one is set.</summary>
+    private sealed class SlowLauncher(LauncherInfo launcher, params Game[] games) : ILauncherIntegration, ILauncherScanner
+    {
+        public TaskCompletionSource? Gate { get; set; }
+
+        public LauncherInfo Launcher => launcher;
+
+        public ILauncherScanner Scanner => this;
+
+        public IReadOnlyList<LibraryTypeOption> LibraryOptions => [];
+
+        public ILauncherClient? Client => null;
+
+        public IInstallMonitor? InstallMonitor => null;
+
+        public IRunningGamesMonitor? RunningGames => null;
+
+        public IReadOnlyCollection<string> ProgramNames => [];
+
+        public string? Locate() => "Test";
+
+        public async Task<IReadOnlyList<Game>> ScanAsync(CancellationToken cancellationToken = default)
+        {
+            if (Gate is { } gate)
+            {
+                await gate.Task;
+            }
+
+            return games;
+        }
     }
 
     /// <summary>Reports an install's end once, at the next poll, as a launcher's log does.</summary>

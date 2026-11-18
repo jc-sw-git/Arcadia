@@ -64,6 +64,9 @@ public sealed class SettingsTests
         // B closes; the library shows the launcher switched off as gone.
         arcadia.Press(UiAction.Back);
         Assert.False(arcadia.Main.IsSettingsOpen);
+
+        // The libraries are read again off the UI thread (#637).
+        await arcadia.WaitUntilAsync(() => arcadia.Main.LauncherTabs.Items.Count == 2, "Bibliothek neu eingelesen");
         Assert.Equal(["GOG Galaxy", "Amazon Games"], arcadia.Main.LauncherTabs.Items.Select(tab => tab.Name));
     }
 }

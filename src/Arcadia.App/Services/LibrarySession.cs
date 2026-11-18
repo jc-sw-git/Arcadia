@@ -530,6 +530,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         _launcherGames.TryGetValue(gameKey, out var launcherGame)
         && !string.Equals(Titles.Shown(launcherGame).Title, _shownTitles.GetValueOrDefault(gameKey), StringComparison.Ordinal);
 
+    private IReadOnlyList<LauncherLibrary> InChosenOrder(IReadOnlyList<LauncherLibrary> libraries) =>
+        _library.Launchers.ActiveIds.Select(id => libraries.FirstOrDefault(l => l.Launcher.Id == id)).OfType<LauncherLibrary>().ToList();
+
     private void Show(IReadOnlyList<LauncherLibrary> libraries)
     {
         // A scan still running when the session ended shows nothing: the window is closing.
@@ -537,6 +540,11 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
         {
             return;
         }
+
+        // The libraries are read off the UI thread, so a launcher can be switched off or moved while one is read (#637): a
+        // scan that began before shows only the active launchers, in their order (#136). One switched on meanwhile is read
+        // by the rescan ShowChosenLaunchers asked for.
+        libraries = InChosenOrder(libraries);
 
         // A tab without games says itself that its scan failed; one that keeps the games read before needs a word (#369).
         var newlyFailed = libraries

@@ -53,6 +53,8 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
     private uint _currentGeneration;
     private uint _tornDownGeneration;
     private bool _teardownPending;
+    // The generation whose teardown Pan said still runs when Arcadia acknowledged it; asked again until Pan takes it.
+    private uint _teardownToAcknowledge;
     private DateTimeOffset _beingShownUntil;
     private bool _emulating;
     // Pan announced a restart of its own (this request number) and hasn't said it's over: a lost link ends it too.
@@ -213,7 +215,10 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         }
     }
 
-    /// <summary>False while Pan's teardown of that generation still runs; Arcadia asks again when the notice has come.</summary>
+    /// <summary>
+    /// False while Pan's teardown of that generation still runs; Arcadia asks again at every heartbeat until Pan takes it
+    /// (<see cref="AcknowledgeAgainAsync"/>), as a teardown Pan began because the client was gone ends without a notice (#680).
+    /// </summary>
     private async Task<bool> AcknowledgeAsync(uint generation, CancellationToken cancellationToken)
     {
         var reply = await RequestAsync(PanMessage.Of(PanCommand.TeardownAcknowledged, generation), cancellationToken);
@@ -221,6 +226,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
         lock (_lock)
         {
             _teardownPending = stillRunning;
+            _teardownToAcknowledge = stillRunning ? generation : 0;
         }
 
         if (reply.Reply == PanReply.Rejected && !stillRunning)
@@ -859,12 +865,41 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             await Task.Delay(Guardian.HeartbeatInterval, _time, token);
             try
             {
+                await AcknowledgeAgainAsync(token);
                 await SendHeartbeatAsync(token);
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
             {
                 ReportUnexpected(ex, ControllerSupportTexts.ErrorContextPanHeartbeat);
             }
+        }
+    }
+
+    /// <summary>
+    /// A teardown that still ran when Arcadia acknowledged it is acknowledged again, until Pan takes it: a new Arcadia
+    /// that connected while Pan tore down its predecessor's emulation (ClientGone) gets no notice when it ends (#680).
+    /// </summary>
+    private async Task AcknowledgeAgainAsync(CancellationToken token)
+    {
+        uint generation;
+        lock (_lock)
+        {
+            if (_link is null || !_teardownPending || _teardownToAcknowledge == 0 || _requests.CurrentCount == 0)
+            {
+                return;
+            }
+
+            generation = _teardownToAcknowledge;
+        }
+
+        try
+        {
+            await AcknowledgeAsync(generation, token);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !token.IsCancellationRequested)
+        {
+            // Already dropped and logged by RequestAsync; the next connection's hello says what is still open.
+            _ = ex;
         }
     }
 

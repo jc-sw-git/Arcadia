@@ -218,6 +218,32 @@ public sealed class PanClientTests : IAsyncDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T680-1")]
+    public async Task An_Arcadia_that_connects_while_Pan_tears_down_its_predecessors_emulation_starts_its_own_once_Pan_is_done()
+    {
+        // The Arcadia before (a restart, #680) emulated and ended without its planned exit.
+        var server = _server.Guardian;
+        server.Register(new ClientIdentity(Environment.ProcessId, 1, InConsoleSession: true, ArcadiaImage));
+        await server.HandleAsync(PanMessage.Of(PanCommand.Hello));
+        var before = (await server.HandleAsync(PanMessage.Of(PanCommand.EmulationStarted, value: (uint)FakeCleanupForClient.ViiperPort))).Generation;
+
+        // Pan tears its emulation down, which takes a moment, and sends no notice: nobody is left to hear it.
+        var gate = new SemaphoreSlim(0);
+        _server.Cleanup.TeardownGate = gate;
+        server.ClientGone();
+
+        // The new Arcadia connects meanwhile: its acknowledgement is too early, so it waits for Pan.
+        await ConnectedAsync();
+        Assert.Equal(PanClient.CleaningUp, _client.Unavailable());
+
+        // The teardown ends without a notice: Arcadia asks again by itself and may emulate.
+        gate.Release();
+        await AdvanceUntil(() => _client.Unavailable() is null, "Abbau bestätigt");
+        Assert.Empty(_tornDown);
+        Assert.Equal(before + 1, await LoggedAsync(() => _client.EmulationStartedAsync(FakeCleanupForClient.ViiperPort, CancellationToken.None)));
+    }
+
+    [Fact]
     public async Task A_request_the_caller_gives_up_on_cannot_answer_the_next_one()
     {
         // Review point 5 (reproduced there): the reply to a cancelled request arrived while the next one waited and

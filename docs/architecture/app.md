@@ -106,7 +106,7 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
   (`ListFocus.Cycle`, `ValueCycle.Step`, `GridFocus.Step`, `HitWindow.Turn`/`Move` with `held`), a repeat stops at the end (#476).
   `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.
 - `Services/InputLatency`: each key or button press timed to the frame that shows it, one `Bild:` line in arcadia.log
-  (#229).
+  (#229); none for a gamepad press while a text is being written, nor its `Gamepad:` line (#640).
 
 ## Artwork
 

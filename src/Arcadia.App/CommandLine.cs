@@ -12,6 +12,12 @@ internal static class CommandLine
     /// <summary>With <see cref="DemoArgument"/>: this many demo games in all, e.g. 5000 to measure a large library.</summary>
     public const string DemoGamesArgument = "--demo-games";
 
+    /// <summary>
+    /// With a folder: everything Arcadia writes lives below it, nothing is read from or written to the user's own folders
+    /// (<c>LogLocation.UseDataFolder</c>). With <see cref="DemoArgument"/> a measuring run that leaves the real data alone.
+    /// </summary>
+    public const string DataFolderArgument = "--data-folder";
+
     /// <summary>Shows the first start's question again, even after it was answered (#139), e.g. to try it out.</summary>
     public const string FirstRunArgument = "--first-run";
 
@@ -36,6 +42,13 @@ internal static class CommandLine
             && count is > 0 and <= 100_000
             ? count
             : null;
+    }
+
+    /// <summary>The folder after <see cref="DataFolderArgument"/>; null without one (or without a folder after it).</summary>
+    public static string? DataFolder(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals(DataFolderArgument, StringComparison.OrdinalIgnoreCase));
+        return at >= 0 && at + 1 < args.Length && !string.IsNullOrWhiteSpace(args[at + 1]) ? args[at + 1] : null;
     }
 
     /// <summary>

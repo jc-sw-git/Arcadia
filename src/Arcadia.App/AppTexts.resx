@@ -18,6 +18,7 @@
   <data name="ErrorContextReturnAfterRefusedStart" xml:space="preserve"><value>Nach abgebrochenem Start zurück zu Arcadia</value></data>
   <data name="ErrorContextLoadLibrary" xml:space="preserve"><value>Bibliothek laden</value></data>
   <data name="RestartFailed" xml:space="preserve"><value>Arcadia konnte sich nicht neu starten. Beende Arcadia und starte es dann wieder.</value></data>
+  <data name="StartupFailed" xml:space="preserve"><value>Arcadia konnte nicht starten. Details stehen in dieser Datei:</value></data>
   <data name="ErrorContextFollowInstalls" xml:space="preserve"><value>Installationen verfolgen</value></data>
   <data name="FilterTitle" xml:space="preserve"><value>Filter</value></data>
   <data name="FilterResetAll" xml:space="preserve"><value>Alle Filter zurücksetzen</value></data>

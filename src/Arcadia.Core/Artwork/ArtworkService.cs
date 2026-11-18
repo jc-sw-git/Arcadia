@@ -454,7 +454,6 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         _indexed = true;
-        ReleaseGarbage();
         Log($"Artwork: {_records.Count} Spiele im Cache, in {watch.ElapsedMilliseconds} ms gelesen");
     }
 
@@ -527,11 +526,6 @@ public sealed partial class ArtworkService : IDisposable
         {
             // Closing Arcadia saves only the games the run reached: the others are still new at the next start.
             Known.Save();
-        }
-
-        if (run.Copied + run.Downloaded > ManyImages)
-        {
-            ReleaseGarbage();
         }
 
         if (run.ShowsProgress)
@@ -640,15 +634,6 @@ public sealed partial class ArtworkService : IDisposable
         SearchChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>
-    /// Reading the cache at start, or copying many images, leaves tens of MB of garbage (file handles, JSON, the copies) that
-    /// the runtime would keep for a long while; with 5,000 games that cost 50 MB of the 400 MB budget (#487, measured). One
-    /// collection right after such a run gives it back.
-    /// </summary>
-    private static void ReleaseGarbage() => GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-
-    private const int ManyImages = 100;
-
     /// <summary>Brings one game's images not set by hand up to date; the caller holds <see cref="_write"/>.</summary>
     private async Task UpdateGameAsync(Game game, IArtworkLookup lookup, RunState run, ChangeBatcher changes, CancellationToken cancel)
     {
@@ -705,7 +690,16 @@ public sealed partial class ArtworkService : IDisposable
                     ? await PickAsync(game, kind, lookup, null, null, null, null, run, cancel) ?? (pickedSize is null ? null : new Pick.Keep())
                     : await PickAsync(game, kind, lookup, switchedOff is null ? image : null, pickedSize, off, offSize, run, cancel);
                 written |= pick is Pick.Take or Pick.SetOn;
-                artwork = Apply(artwork, kind, pick, run);
+                if (switchedOff is not null && pick is null)
+                {
+                    // No other source has an image: Apply would delete the file, but the image of a source switched off stays on disk.
+                    run.Missing++;
+                }
+                else
+                {
+                    artwork = Apply(artwork, kind, pick, run);
+                }
+
                 if (switchedOff is not null && artwork.Of(kind) == switchedOff)
                 {
                     // Nothing took its place: kept aside for when its source is switched on.

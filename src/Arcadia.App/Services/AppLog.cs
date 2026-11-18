@@ -18,7 +18,9 @@ public static class AppLog
     private static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
     /// <summary>Set only by the App's tests, so they never write into the user's own log.</summary>
-    public static string Directory { get; internal set; } = LogLocation.Directory;
+    public static string Directory { get => _directory ?? LogLocation.Directory; internal set => _directory = value; }
+
+    private static string? _directory;
 
     /// <summary>
     /// Opens the file per line and for itself alone, as another Arcadia process may append too (each line names its

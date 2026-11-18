@@ -5,7 +5,9 @@ namespace Arcadia.App.Services;
 /// stays in the process until the GC runs, and at idle nothing makes it run: on a desktop CPU the first generation takes
 /// tens of megabytes before it collects, and the old ones far more. Once enough was allocated since the last trim and the
 /// player has left Arcadia alone for a moment, one full, compacting collection hands the free memory back to Windows.
-/// Never while the player presses: the collection pauses every thread for a moment.
+/// The collection pauses every thread for a moment (about 200 ms with 5,000 games): never while the player presses, and
+/// never while a game runs or Arcadia isn't in front, where it would stall the pads' forwarding (budget: 4 ms). A trim
+/// put off then follows once Arcadia is back in front.
 /// </summary>
 public sealed class MemoryTrim(TimeProvider time, Func<DateTimeOffset> lastInput, Func<long> allocatedBytes, Action collect)
 {
@@ -24,10 +26,13 @@ public sealed class MemoryTrim(TimeProvider time, Func<DateTimeOffset> lastInput
     public static MemoryTrim ForProcess(TimeProvider time, Func<DateTimeOffset> lastInput) =>
         new(time, lastInput, () => GC.GetTotalAllocatedBytes(), () => GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true));
 
-    /// <summary>Trims if it is worth it and the player is quiet; true if it trimmed.</summary>
-    public bool TrimIfDue()
+    /// <summary>
+    /// Trims if it is worth it and the player is quiet; true if it trimmed. <paramref name="mayPause"/>: Arcadia is in
+    /// front and no game runs, so a pause stalls nothing the player plays with.
+    /// </summary>
+    public bool TrimIfDue(bool mayPause)
     {
-        if (time.GetUtcNow() - lastInput() < QuietTime || allocatedBytes() - _allocatedAtLastTrim < WorthTrimming)
+        if (!mayPause || time.GetUtcNow() - lastInput() < QuietTime || allocatedBytes() - _allocatedAtLastTrim < WorthTrimming)
         {
             return false;
         }

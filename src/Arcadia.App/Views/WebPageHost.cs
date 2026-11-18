@@ -29,7 +29,7 @@ public sealed class WebPageHost : Decorator
     /// <summary>A web view starts within a few seconds; WebView2 takes longest on its first start.</summary>
     private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(20);
 
-    private static readonly string ProfileFolder = Path.Combine(LogLocation.DataFolder, "WebView");
+    private static string ProfileFolder => Path.Combine(LogLocation.DataFolder, "WebView");
 
     // Counts loads, so a settle wait knows whether the page went on in the meantime.
     private int _loads;

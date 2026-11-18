@@ -7,7 +7,9 @@ about the launchers themselves: `docs/launchers/`. The other projects: [README.m
 - `BuiltInLaunchers`: the one place a launcher is registered; `KnownLaunchers` its launchers in tab order (Steam and
   Epic build their own `LauncherInfo`, the others are demo tabs). Integrations: `SteamIntegration` with
   `SteamFolderChoice` and `SteamProgram`, `EpicIntegration`, `DemoIntegration` (`DemoScanner`: a fictional library per
-  launcher).
+  launcher). `--demo` makes every launcher a demo library, Steam and Epic too (nothing is read from the PC), unless
+  `LauncherFolders` are passed (the acceptance tests); with `--data-folder` a measuring run touches only that folder and the
+  OS temp folder (`DemoArtwork`).
 - `Demo/DemoArtwork`: made-up covers and backgrounds for `--demo-games`, so the budgets are measured with images (#487);
   every fourth in Epic's formats, 3 : 4 and 16 : 9, to look at the crop (#488).
 - `DirectLauncherClient`, `GameLaunchService` (every game start, `TryStartAsync` never throws).

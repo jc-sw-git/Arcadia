@@ -27,6 +27,27 @@ public sealed class LogLocationTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T634-1")]
+    public void An_own_data_folder_moves_the_settings_and_the_logs_below_it()
+    {
+        var own = Path.Combine(_root, "own");
+        try
+        {
+            LogLocation.UseDataFolder(own);
+
+            Assert.Equal(Path.GetFullPath(own), LogLocation.DataFolder);
+            Assert.Equal(Path.Combine(own, "logs"), LogLocation.Directory);
+            Assert.Equal(Path.Combine(own, "settings.json"), Arcadia.Core.Settings.SettingsStore.CreateDefault().Path);
+        }
+        finally
+        {
+            LogLocation.UseDataFolder(null);
+        }
+
+        Assert.NotEqual(Path.GetFullPath(own), LogLocation.DataFolder);
+    }
+
+    [Fact]
     public void The_logs_live_beside_the_settings()
     {
         Assert.Equal(Path.Combine(_root, "Roaming", "Arcadia", "logs"), Logs);

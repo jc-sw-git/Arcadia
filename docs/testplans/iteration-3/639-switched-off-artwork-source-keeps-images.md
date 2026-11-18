@@ -1,5 +1,7 @@
 # #639 Switching an artwork source off deletes images no other source has
 
+**Status:** Automated: T639-1 · QE: none · Open for the owner: none
+
 - [x] **T639-1** E2E: no (Core test) A source switched off keeps its image on disk and in the cache record (`OffCover`) also when no other source has one; the game shows its placeholder; switching the source on shows the image again at once, without a download.
 
 No manual test needed: the case is covered by `ArtworkSearchTriggerTests` (Core), checking file and record for both steps.

@@ -603,6 +603,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             // count differently); what it still wants acknowledged, hello says (review, bug 4).
             _tornDownGeneration = 0;
             _teardownPending = false;
+            _teardownToAcknowledge = 0;
         }
 
         _ = Task.Run(() => ReadGuardedAsync(link), CancellationToken.None);
@@ -704,6 +705,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             {
                 _tornDownGeneration = message.Generation;
                 _teardownPending = false;
+                _teardownToAcknowledge = 0;
                 if (_currentGeneration == message.Generation)
                 {
                     _emulating = false;
@@ -819,6 +821,7 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
             _pending?.TrySetException(new IOException(reason ?? "Verbindung geschlossen"));
             _pending = null;
             _teardownPending = false;
+            _teardownToAcknowledge = 0;
             _unavailable = reason ?? ControllerSupportTexts.PanNotConnected;
             puckRestarting = _puckRestart is not null;
             _puckRestart = null;
@@ -946,7 +949,11 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                     }
 
                     // Pan is tearing this generation down: the pad is lost once, and no new one until the notice.
-                    _teardownPending |= reply.Reason == PanReason.TeardownNotAcknowledged;
+                    if (reply.Reason == PanReason.TeardownNotAcknowledged)
+                    {
+                        _teardownPending = true;
+                        _teardownToAcknowledge = generation;
+                    }
                 }
             }
         }

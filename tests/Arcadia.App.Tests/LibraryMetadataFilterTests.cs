@@ -444,6 +444,31 @@ public sealed class LibraryMetadataFilterTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T681-1")]
+    public async Task Von_and_bis_stack_so_up_and_down_alone_reach_both_and_left_right_only_step_the_year()
+    {
+        var (spec, _, _) = SteamWith(Library());
+        using var arcadia = await StartAsync(spec);
+        var year = OpenAt(arcadia, "Erscheinungsjahr").YearPane!;
+        Assert.True(year.IsFromFocused);
+
+        arcadia.Press(UiAction.Down);
+        Assert.True(year.IsToFocused);
+        arcadia.Press(UiAction.Left);
+        Assert.True(year.IsToFocused);
+        Assert.Equal("2025", year.ToText);
+
+        arcadia.Press(UiAction.Up);
+        Assert.True(year.IsFromFocused);
+        arcadia.Press(UiAction.Right);
+        Assert.True(year.IsFromFocused);
+        Assert.Equal("1999", year.FromText);
+
+        arcadia.Press(UiAction.Up);
+        Assert.False(year.IsFromFocused || year.IsToFocused);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T466-12")]
     public async Task Quick_picks_cover_the_last_three_years_and_the_decades_and_one_without_hits_is_greyed()
     {
@@ -565,6 +590,28 @@ public sealed class LibraryMetadataFilterTests
         using var other = await StartAsync(unrated);
         other.Press(UiAction.KeyboardLayout);
         Assert.DoesNotContain(Modal(other).Categories, row => row.Label == "Altersfreigabe");
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T682-2")]
+    public async Task Steams_own_rating_is_its_own_system_steam_de_in_the_age_rating_filter_never_usk()
+    {
+        var (spec, _, _) = SteamWith(
+            new Entry("Asche", Meta([Genre.Shooter], ratings: [new AgeRating(AgeRatingBoard.SteamGermany, "16"), new AgeRating(AgeRatingBoard.Pegi, "12")])),
+            new Entry("Brandung", Meta([Genre.Shooter], ratings: new AgeRating(AgeRatingBoard.SteamGermany, "18"))));
+        using var arcadia = await StartAsync(spec);
+        var modal = OpenAt(arcadia, "Altersfreigabe");
+        var rating = modal.RatingPane!;
+        Assert.Equal(["PEGI", "Steam DE"], rating.Systems.Select(chip => chip.Label));
+        Assert.Equal(AgeRatingBoard.Pegi, rating.Board);
+
+        // "Steam DE" → 16: only "Asche"; its summary names Steam, not the USK.
+        arcadia.Press(UiAction.Up).Press(UiAction.Right).Press(UiAction.Accept);
+        Assert.Equal(AgeRatingBoard.SteamGermany, rating.Board);
+        Assert.Equal(["Alle", "0", "6", "12", "16", "18"], rating.Ratings.Select(tile => tile.Value));
+        arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 4).Press(UiAction.Accept);
+        Assert.Equal("1", modal.HitsText);
+        Assert.Equal("Steam DE 16", Category(modal, "Altersfreigabe").Summary);
     }
 
     [AvaloniaFact]

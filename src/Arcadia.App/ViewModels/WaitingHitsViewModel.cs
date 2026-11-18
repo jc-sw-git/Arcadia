@@ -4,6 +4,7 @@ using Arcadia.App.Keyboard;
 using Arcadia.App.Services;
 using Arcadia.App.Settings;
 using Arcadia.Core.Artwork;
+using Arcadia.Core.Net;
 using Arcadia.Core.Navigation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -163,6 +164,25 @@ public abstract partial class WaitingHitsViewModel : ViewModelBase, IDisposable
 
     /// <summary>The tiles' images load as tiles come; set once the focus rests on the entry.</summary>
     protected bool TilesLoad { get; set; }
+
+    /// <summary>Shows a warning toast (#683).</summary>
+    public Action<string> Warn { get; init; } = _ => { };
+
+    /// <summary>
+    /// An own term is searched only with a connection to <paramref name="host"/> (#683): without one the toast says so and
+    /// the grid shows <paramref name="unreachable"/>, at once, not after the source's timeout.
+    /// </summary>
+    protected async Task<bool> IsOnlineAsync(IConnectionCheck check, Uri host, string unreachable, CancellationToken cancel)
+    {
+        if (await check.ReachesAnyAsync(() => [host], cancel))
+        {
+            return true;
+        }
+
+        Warn(AppTexts.NoInternetConnection);
+        Done(unreachable);
+        return false;
+    }
 
     /// <summary>The token of what runs for the hits shown now.</summary>
     protected CancellationToken WorkToken => _work.Token;

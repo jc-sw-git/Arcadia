@@ -144,15 +144,28 @@ public sealed class RatingChoice : IEquatable<RatingChoice>
     public override int GetHashCode() => HashCode.Combine(Board, Ratings.Count, WithUnknown);
 }
 
-/// <summary>The ratings of each board in their order (#43): USK 0 … 18, PEGI 3 … 18, ESRB E … AO.</summary>
+/// <summary>
+/// The ratings of each board in their order (#43): USK 0 … 18, PEGI 3 … 18, ESRB E … AO; Steam's own rating for Germany
+/// uses the USK's (#682).
+/// </summary>
 public static class AgeRatingScale
 {
     public static IReadOnlyList<string> Of(AgeRatingBoard board) => board switch
     {
-        AgeRatingBoard.Usk => ["0", "6", "12", "16", "18"],
+        AgeRatingBoard.Usk or AgeRatingBoard.SteamGermany => ["0", "6", "12", "16", "18"],
         AgeRatingBoard.Pegi => ["3", "7", "12", "16", "18"],
         AgeRatingBoard.Esrb => ["E", "E10+", "T", "M", "AO"],
         _ => [],
+    };
+
+    /// <summary>
+    /// The board's own name, as it stands on a badge and in the filter: "USK", "PEGI", "ESRB", and "Steam DE" for Steam's
+    /// own rating for Germany, so it is never taken for the USK's (#682). Names, not UI texts.
+    /// </summary>
+    public static string NameOf(AgeRatingBoard board) => board switch
+    {
+        AgeRatingBoard.SteamGermany => "Steam DE",
+        _ => board.ToString().ToUpperInvariant(),
     };
 }
 

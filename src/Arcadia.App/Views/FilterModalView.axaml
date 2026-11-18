@@ -293,7 +293,8 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                    <!-- Stacked, not side by side (#681): up/down is how the pad moves between them, left/right steps the year. -->
+                    <StackPanel Spacing="14">
                       <Border Classes="filterStepper" Classes.focused="{Binding IsFromFocused}">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
                           <TextBlock Classes="filterStepperLabel" Text="{x:Static app:AppTexts.FilterYearFrom}" />
@@ -302,7 +303,7 @@
                           <Button Grid.Column="3" Classes="plain filterStep" Content="▶" Command="{Binding FromLaterCommand}" />
                         </Grid>
                       </Border>
-                      <Border Grid.Column="1" Classes="filterStepper" Classes.focused="{Binding IsToFocused}">
+                      <Border Classes="filterStepper" Classes.focused="{Binding IsToFocused}">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
                           <TextBlock Classes="filterStepperLabel" Text="{x:Static app:AppTexts.FilterYearTo}" />
                           <Button Grid.Column="1" Classes="plain filterStep" Content="◀" Command="{Binding ToEarlierCommand}" />
@@ -310,7 +311,7 @@
                           <Button Grid.Column="3" Classes="plain filterStep" Content="▶" Command="{Binding ToLaterCommand}" />
                         </Grid>
                       </Border>
-                    </Grid>
+                    </StackPanel>
 
                     <Button Classes="plain filterSwitchRow" Classes.focused="{Binding IsWithUnknownFocused}"
                             IsVisible="{Binding ShowsWithUnknown}" Command="{Binding ToggleWithUnknownCommand}">

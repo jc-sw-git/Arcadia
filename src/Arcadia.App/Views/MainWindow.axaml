@@ -8,7 +8,6 @@
         xmlns:settings="using:Arcadia.App.Settings"
         xmlns:status="using:Arcadia.App.Status"
         xmlns:filter="using:Arcadia.App.Filter"
-        xmlns:setup="using:Arcadia.App.Setup"
         x:Class="Arcadia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Arcadia"
@@ -1881,7 +1880,7 @@
               <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
               <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->
-              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding Selected.FinishText, TargetNullValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>
@@ -2270,7 +2269,11 @@
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
-        <TextBlock Text="{Binding Toast.Text}" FontSize="18" FontWeight="SemiBold" />
+        <!-- The level's symbol as in "Letzte Meldungen" (#683); symbol and colour from the statusIcon styles. -->
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Path Classes="statusIcon" Classes.info="{Binding Toast.IsInfo}" Classes.error="{Binding Toast.IsError}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Toast.Text}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
       </Border>
     </Grid>
   </Viewbox>

@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.App.Services;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Settings;
@@ -28,8 +29,10 @@ public sealed class ArtworkSourcesTab : IDataSourcesTab
         _key = key;
         _keyRows = new SteamGridDbKeyRows(
             key, artwork, host, showEditor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
-        _sourceRows = new ArtworkSourceRows(artwork, key, changes, orderChanged);
-        _reloadRows = new ArtworkReloadRows(artwork, changes, ask);
+        // One check for both rows: while one checks, the other waits, as it waits for the other's run (#683).
+        var connection = new ConnectionFirst(artwork.IsOnlineAsync, host.Toast);
+        _sourceRows = new ArtworkSourceRows(artwork, key, changes, orderChanged, connection);
+        _reloadRows = new ArtworkReloadRows(artwork, changes, ask, connection);
         _severalHits = new SeveralHitsRows(WaitingKind.Artwork, artwork, changes, host.Toast, host.OpenWaitingList);
     }
 

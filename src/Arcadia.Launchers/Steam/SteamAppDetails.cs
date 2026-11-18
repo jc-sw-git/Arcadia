@@ -8,7 +8,8 @@ namespace Arcadia.Launchers.Steam;
 /// Steam's store page of a game (#493): <c>store.steampowered.com/api/appdetails?l=&lt;language&gt;&amp;appids=&lt;AppID&gt;</c>,
 /// no key, no cookie, asked in the UI language (#557). Gives the description (in that language where the game has one, else
 /// English), the short description, genres,
-/// developers, publishers and the age ratings <c>usk</c>, <c>pegi</c>, <c>esrb</c> and Steam's own <c>steam_germany</c>.
+/// developers, publishers and the age ratings <c>usk</c>, <c>pegi</c>, <c>esrb</c> and Steam's own <c>steam_germany</c>, which is
+/// not the USK's (#682).
 /// Steam takes about 200 requests per 5 minutes; Arcadia stays below.
 /// </summary>
 internal sealed class SteamAppDetails : IMetadataStore
@@ -111,18 +112,18 @@ internal sealed class SteamAppDetails : IMetadataStore
             return ratings;
         }
 
-        void Add(string name, AgeRatingBoard board, bool byStore = false)
+        void Add(string name, AgeRatingBoard board)
         {
             if (all.TryGetProperty(name, out var rating) && rating.ValueKind == JsonValueKind.Object && String(rating, "rating") is { } value)
             {
-                ratings.Add(new AgeRating(board, value, byStore));
+                ratings.Add(new AgeRating(board, value));
             }
         }
 
         Add("usk", AgeRatingBoard.Usk);
-        Add("steam_germany", AgeRatingBoard.Usk, byStore: true);
         Add("pegi", AgeRatingBoard.Pegi);
         Add("esrb", AgeRatingBoard.Esrb);
+        Add("steam_germany", AgeRatingBoard.SteamGermany);
         return ratings;
     }
 

@@ -71,6 +71,9 @@ public abstract partial class SettingsCategoryViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     public partial string? TurnText { get; protected set; }
 
+    /// <summary>What ≡ does in the footer on the first start's step ("Überspringen", "Fertig"); null on every other category.</summary>
+    public virtual string? FinishText => null;
+
     /// <summary>Above the rows, e.g. a launcher's logo and name on its page (#137); null shows nothing.</summary>
     [ObservableProperty]
     public partial object? Head { get; protected set; }

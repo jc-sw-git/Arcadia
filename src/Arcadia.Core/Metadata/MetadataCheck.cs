@@ -1,4 +1,5 @@
 using System.Text;
+using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
 
 namespace Arcadia.Core.Metadata;
@@ -20,13 +21,6 @@ public static class MetadataCheck
     private static readonly DateOnly Earliest = new(1950, 1, 1);
     private static readonly DateOnly Latest = new(2100, 12, 31);
 
-    private static readonly Dictionary<AgeRatingBoard, string[]> Ratings = new()
-    {
-        [AgeRatingBoard.Usk] = ["0", "6", "12", "16", "18"],
-        [AgeRatingBoard.Pegi] = ["3", "7", "12", "16", "18"],
-        [AgeRatingBoard.Esrb] = ["E", "E10+", "T", "M", "AO"],
-    };
-
     /// <summary><paramref name="metadata"/> with every value checked; never throws.</summary>
     public static GameMetadata Checked(GameMetadata? metadata) => metadata is null ? GameMetadata.Empty : new GameMetadata
     {
@@ -43,10 +37,18 @@ public static class MetadataCheck
     /// <summary>A provider's title of a game (#494) in one line, without markup; null if it is empty or too long.</summary>
     public static string? CheckedTitle(string? title) => PlainName(title, MaxTitle);
 
-    /// <summary>The rating with its board's spelling (<c>m</c> → <c>M</c>, <c>e10</c> → <c>E10+</c>); null for a value the board doesn't have.</summary>
+    /// <summary>
+    /// The rating with its board's spelling (<c>m</c> → <c>M</c>, <c>e10</c> → <c>E10+</c>); null for a value the board
+    /// doesn't have. Steam's own rating for Germany an older cache holds as a USK "by store" becomes Steam's again (#682).
+    /// </summary>
     public static AgeRating? CheckedRating(AgeRating? rating)
     {
-        if (rating is null || !Ratings.TryGetValue(rating.Board, out var values) || rating.Rating is null)
+        if (rating is { ByStore: true, Board: AgeRatingBoard.Usk })
+        {
+            rating = new AgeRating(AgeRatingBoard.SteamGermany, rating.Rating);
+        }
+
+        if (rating is null || rating.ByStore || rating.Rating is null || AgeRatingScale.Of(rating.Board) is not { Count: > 0 } values)
         {
             return null;
         }

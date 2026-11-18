@@ -1,6 +1,6 @@
 # #637 Start to a usable library takes 3.2 s with 905 games
 
-**Status:** Automated: T637-1, T637-2, T637-3, T637-4 · Implementation and QE: T637-5 · Open for the owner: T637-6, T637-7
+**Status:** Automated: T637-1, T637-2, T637-3, T637-4 · Implementation and QE: T637-5 · Open for the owner: T637-6 (once more on rc.3)
 
 - [x] **T637-1** Reading the libraries never waits for the thread that started it (at start the UI thread builds the window for a second or more) · E2E: no (Core, threading)
 - [x] **T637-2** The reading started before the window is built is the one the library shows: one scan, the games are there, a later load reads again; a launcher switched off while that reading runs stays off, one switched on is read right after it · E2E: no (session logic, no page flow)
@@ -8,7 +8,7 @@
 - [x] **T637-4** The log line `Start: …` lists the steps of the start in the order they happened, in ms since the process started, `erstes Bild` too when the library comes in the first frame · E2E: no (log format)
 - [x] **T637-5** Library (hints, badges), game menu, "Titel ändern" with its keyboard sliding in, search keyboard: as before; the keyboards are built right after the first frame (`Tastatur … vorbereitet` after `Start: …`) · E2E: no (window)
 - [ ] **T637-6** **Owner:** real PC, the installed release candidate (ReadyToRun), the real library (~900 games, Steam signed in), cold start: `arcadia.log` line `Start: …` shows `Bibliothek im Bild` under 2,000 ms; do it twice · E2E: no (real library, Windows) · RC
-- [ ] **T637-7** **Owner:** same PC and build, page size 128: 20 page turns forward and back, a few tab switches (LB/RB) and focus moves; the `Bild:` lines stay under 50 ms in 19 of 20 (p95) · E2E: no (real library, frame times on the owner's PC) · RC
+- [x] **T637-7** **Owner:** same PC and build, page size 128: 20 page turns forward and back, a few tab switches (LB/RB) and focus moves; the `Bild:` lines stay under 50 ms in 19 of 20 (p95) · E2E: no (real library, frame times on the owner's PC) · RC
 
 Automated tests:
 
@@ -35,3 +35,5 @@ History:
 | Start, `--demo --demo-games 1000`, 3 runs each | 2026-11-18 | QE | linux-x64 self-contained ReadyToRun, Xvfb | PR `Bibliothek im Bild` 1,772–1,883 ms | – |
 | QE review findings | 2026-11-18 | QE | PR 52248c3 | ❌ CI ubuntu: T500-13 after a restart without the detail page (the start's rescan after the folder check landed in a hold); `erstes Bild` missing from `Start: …` when the library came in the first frame; a launcher switched on during the reading wasn't read | the test driver waits for that rescan; the line waits for the first frame; the session reads such a launcher after the load (tests red without the fix) |
 | T637-1 … T637-4, `run-tests.sh 4` | 2026-11-18 | implementation | PR branch after the QE fixes, Release, Linux | ✅ 5 of 6 full runs; 1 run ❌ `FirstRunDataSourcesTests.Ending_the_step_waits_for_no_request…` (SteamGridDB asked twice), not reproduced in 6 runs of its class and 5 full runs | named to QE |
+| T637-6 | 2026-11-18 | owner, evaluated by Claude | v0.3.0-rc.2 (ReadyToRun), installed, Windows 11, owner's PC, real library (905 games) | `Bibliothek im Bild` 1,976 ms (cold) and 2,384 ms (after a Windows restart, Pan running); the library is read in 0.3 s, the window opens at 1.97 s | not ticked: one start over 2 s |
+| T637-7 | 2026-11-18 | owner, evaluated by Claude | v0.3.0-rc.2, same PC, page size 128 | ✅ 125 page turns median 14.9 ms, p95 34.2 ms, max 61 ms; 115 focus moves median 1.7 ms, p95 7.3 ms | – |

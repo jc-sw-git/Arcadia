@@ -170,6 +170,27 @@ public sealed class DetailMetadataTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T682-2")]
+    public async Task Steams_own_rating_shows_as_steam_de_after_the_real_pegi_and_never_as_usk()
+    {
+        var game = GameOf(KnownLaunchers.Steam, "4711");
+        var source = new FakeMetadataSource { Store = null };
+        source.Local[game.Id] = LocalOf() with
+        {
+            AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16"), new AgeRating(AgeRatingBoard.Pegi, "12")],
+        };
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Steam, game) with { Metadata = source }]);
+        await RunToIdleAsync(arcadia);
+        var page = OpenDetail(arcadia);
+
+        Assert.Equal("PEGI 12", page.GameInfo.Badge);
+        Assert.Equal(
+            [("PEGI 12", AgeRatingTone.Orange), ("Steam DE 16", AgeRatingTone.Blue)],
+            page.GameInfo.Facts.Where(fact => fact.IsBadge).Select(fact => (fact.Value, fact.Tone)));
+        Assert.Equal("Action · 2021 · PEGI 12", page.Area(DetailAreaViewModel.InfosKey).ValueLine);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T493-14")]
     [Trait("TestCase", "T493-28")]
     [Trait("TestCase", "T541-1")]
@@ -180,7 +201,7 @@ public sealed class DetailMetadataTests
         source.Local[game.Id] = LocalOf() with
         {
             Description = Description,
-            AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16", ByStore: true), new AgeRating(AgeRatingBoard.Pegi, "16")],
+            AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16"), new AgeRating(AgeRatingBoard.Pegi, "16")],
         };
         using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Steam, game) with { Metadata = source }]);
         await RunToIdleAsync(arcadia);

@@ -244,8 +244,7 @@ public sealed partial class FilterRatingPane : FilterPane
     private List<FilterRatingTile> Tiles(AgeRatingBoard board) =>
         [new FilterRatingTile(null, AppTexts.FilterAll, AppTexts.FilterAll.ToUpperInvariant(), PickRating), .. AgeRatingScale.Of(board).Select(rating => new FilterRatingTile(rating, rating, NameOf(board), PickRating))];
 
-    /// <summary>USK, PEGI, ESRB: the boards' own names, not UI texts.</summary>
-    private static string NameOf(AgeRatingBoard board) => board.ToString().ToUpperInvariant();
+    private static string NameOf(AgeRatingBoard board) => AgeRatingScale.NameOf(board);
 }
 
 /// <summary>A rating's tile: the system above, the rating large, its hits below; "Alle" clears the ratings.</summary>

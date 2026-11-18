@@ -50,6 +50,9 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     private bool _busy;
     private CachedImage? _current;
 
+    // Without internet the modal offers what is on this PC; the warning comes once.
+    private bool _offlineWarned;
+
     public ChangeArtworkViewModel(GameTileViewModel tile, ArtworkService artwork, IChangeArtworkHost host, TimeProvider? time = null)
     {
         Tile = tile;
@@ -250,6 +253,13 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
         {
             var choices = await ChoicesOffUiThreadAsync(kind);
             _choices[kind] = choices;
+            if (choices.Offline && !_offlineWarned)
+            {
+                // Once per modal: the other tab shows the same, the player knows it (#683).
+                _offlineWarned = true;
+                _host.Warn(AppTexts.NoInternetConnection);
+            }
+
             if (Kind == kind)
             {
                 Show(choices, focusInUse: true);

@@ -47,6 +47,12 @@ public enum AgeRatingBoard
     Usk,
     Pegi,
     Esrb,
+
+    /// <summary>
+    /// Steam's own rating for Germany (#682), on the USK's scale: Valve works it out from the developer's questionnaire, so
+    /// it is not the USK's and can differ from it. Shown as "Steam DE".
+    /// </summary>
+    SteamGermany,
 }
 
 /// <summary>
@@ -55,8 +61,8 @@ public enum AgeRatingBoard
 /// </summary>
 /// <param name="Rating">The board's own value: <c>0</c>, <c>6</c>, <c>12</c>, <c>16</c>, <c>18</c> (USK), <c>3</c> … <c>18</c> (PEGI), <c>E</c>, <c>E10+</c>, <c>T</c>, <c>M</c>, <c>AO</c> (ESRB).</param>
 /// <param name="ByStore">
-/// Not the board's rating but the store's own one for that country (Steam's <c>steam_germany</c>); it counts only when no
-/// provider has the board's real rating.
+/// Only in a cache an older Arcadia wrote: it stored Steam's own rating for Germany as a USK marked this way. Arcadia reads
+/// such a rating as <see cref="AgeRatingBoard.SteamGermany"/> (#682) and never sets the flag itself.
 /// </param>
 public sealed record AgeRating(AgeRatingBoard Board, string Rating, bool ByStore = false);
 

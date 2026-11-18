@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.ControllerSupport;
 using Arcadia.Core.Metadata;
 
 namespace Arcadia.App.Settings;
@@ -6,7 +7,8 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// The group "METADATEN" of the tab "Metadaten" (#493): "Fehlende Metadaten" with the run's progress and its time left,
 /// and "Jetzt suchen", which asks for what is missing without a scan (#538); "Alle Metadaten neu laden", which asks first
-/// and starts no second run. While a run goes, the row it belongs to stops it ("Suche abbrechen", "Neu laden abbrechen"). What each launcher delivers is in the info box of "Launcher-Daten" (<see cref="MetadataSourceRows"/>).
+/// and starts no second run. Both check the connection first (#683, <see cref="ConnectionFirst"/>). While a run goes, the
+/// row it belongs to stops it ("Suche abbrechen", "Neu laden abbrechen"). What each launcher delivers is in the info box of "Launcher-Daten" (<see cref="MetadataSourceRows"/>).
 /// </summary>
 public sealed class MetadataRows
 {
@@ -18,14 +20,18 @@ public sealed class MetadataRows
     private readonly Action<SettingsQuestionViewModel?> _ask;
     private readonly ActionRowViewModel _missing;
     private readonly ActionRowViewModel _reload;
+    private readonly ConnectionFirst _connection;
 
     // "Jetzt suchen" was pressed and the run's progress hasn't changed since: the row says it works at once.
     private MetadataProgress? _progressAtAsk;
 
     /// <param name="ask">Shows the question over the page (the category's dialog), or null to close it.</param>
-    public MetadataRows(MetadataService metadata, Action<SettingsQuestionViewModel?> ask)
+    /// <param name="toast">Shows the warning when a search or reload finds no connection.</param>
+    public MetadataRows(MetadataService metadata, Action<SettingsQuestionViewModel?> ask, Action<HealthSeverity, string> toast)
     {
         _metadata = metadata;
+        _connection = new ConnectionFirst(metadata.IsOnlineAsync, toast);
+        _connection.Changed += (_, _) => Refresh();
         _ask = ask;
         _missing = new ActionRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing, SearchOrCancel)
         {
@@ -55,8 +61,8 @@ public sealed class MetadataRows
         }
 
         // A search (after a scan or "Jetzt suchen") is stopped from this row, a reload from its own, so this one waits.
-        var reloading = progress.Reload;
-        var searching = !reloading && (progress.Running || _progressAtAsk is not null);
+        var reloading = progress.Reload || _connection.Checking == ReloadKey;
+        var searching = !reloading && (progress.Running || _progressAtAsk is not null || _connection.Checking == MissingKey);
         _missing.Subtitle = MissingText(progress);
         // Greyed when nothing is missing ("Alle Metadaten geladen") and while a reload goes.
         _missing.IsEnabled = !reloading && (searching || progress.Missing > 0);
@@ -90,7 +96,7 @@ public sealed class MetadataRows
     private void SearchOrCancel()
     {
         var progress = _metadata.Progress;
-        if (progress.Reload)
+        if (progress.Reload || _connection.Checking == ReloadKey || _connection.Cancel(MissingKey))
         {
             return;
         }
@@ -103,13 +109,14 @@ public sealed class MetadataRows
             return;
         }
 
-        if (!_metadata.FetchMissing())
+        _connection.Start(MissingKey, () =>
         {
-            return;
-        }
-
-        _progressAtAsk = progress;
-        Refresh();
+            var before = _metadata.Progress;
+            if (_metadata.FetchMissing(byPlayer: true))
+            {
+                _progressAtAsk = before;
+            }
+        });
     }
 
     /// <summary>
@@ -118,6 +125,11 @@ public sealed class MetadataRows
     /// </summary>
     private void AskOrCancel()
     {
+        if (_connection.Cancel(ReloadKey) || _connection.Checking is not null)
+        {
+            return;
+        }
+
         if (_metadata.Progress.Reload)
         {
             _metadata.CancelRun();
@@ -132,8 +144,7 @@ public sealed class MetadataRows
             () =>
             {
                 _ask(null);
-                _metadata.ReloadAll();
-                Refresh();
+                _connection.Start(ReloadKey, () => _metadata.ReloadAll());
             },
             () => _ask(null)));
     }

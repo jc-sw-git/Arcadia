@@ -1215,6 +1215,7 @@
   <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Von selbst sucht Arcadia nur für Spiele, die neu in die Bibliothek kommen, und einmal für alle, sobald ein gültiger Schlüssel da ist. Beim erneuten Einlesen, nach einem Spiel oder einer Installation sucht Arcadia nicht.</value></data>
   <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>„Jetzt suchen“ sucht für alle Spiele, denen ein Bild fehlt oder deren Bild nur zugeschnitten aushilft. „Suche abbrechen“ hält die Suche an; was gefunden ist, bleibt.</value></data>
   <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB ist ausgeschaltet, deshalb gibt es nichts zu suchen. Unter „Reihenfolge für Artwork“ schaltest du es wieder an.</value></data>
+  <data name="NoInternetConnection" xml:space="preserve"><value>Keine Internetverbindung. Prüfe die Verbindung und versuche es dann noch einmal.</value></data>
   <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Keine Verbindung zu SteamGridDB. Arcadia versucht es bei der nächsten Suche wieder.</value></data>
   <data name="DataSourcesReload" xml:space="preserve"><value>Alle Artworks neu laden</value></data>
   <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Neu laden abbrechen</value></data>
@@ -1354,6 +1355,7 @@
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>Das Bild konnte nicht geladen werden. Das bisherige bleibt.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Artwork ändern</value></data>
   <data name="ErrorContextWaitingList" xml:space="preserve"><value>Warten auf deine Auswahl</value></data>
+  <data name="ErrorContextConnectionCheck" xml:space="preserve"><value>Verbindungsprüfung</value></data>
   <data name="ErrorContextMetadata" xml:space="preserve"><value>Metadaten</value></data>
   <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>METADATEN</value></data>
   <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Fehlende Metadaten</value></data>

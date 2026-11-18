@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Arcadia.Core.Artwork.SteamGridDb;
+using Arcadia.Core.Net;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 
@@ -24,7 +25,9 @@ namespace Arcadia.Core.Artwork;
 /// waits for the game the run is at, never for the whole run: each game is written under one lock. <see cref="Of"/> may be called from any thread; <see cref="Changed"/> and
 /// <see cref="Failed"/> are raised on the run's thread. Failures of single images are logged and leave the placeholder; no
 /// download outlives <see cref="DownloadTimeout"/>, and after a timeout or no connection the run downloads nothing more from that host, while other hosts (another launcher's images, SteamGridDB's) still load;
-/// a key SteamGridDB turns down, or no connection to it, ends its part of the run. <see cref="SearchChanged"/> is raised on
+/// a key SteamGridDB turns down, or no connection to it, ends its part of the run. A host failing makes the run check the
+/// connection once (<see cref="Connection"/>, #683): without one it goes online for no game any more, copies only what is
+/// on this PC and, started by the player, ends with <see cref="ConnectionLost"/>. <see cref="SearchChanged"/> is raised on
 /// the run's thread too.
 /// </remarks>
 public sealed partial class ArtworkService : IDisposable
@@ -93,6 +96,15 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>SteamGridDB with the player's key (#489); null: launcher images only.</summary>
     public SteamGridDbKey? SteamGridDb { get; init; }
 
+    /// <summary>Whether the hosts can be reached (#683); the App gives the real check, the tests theirs.</summary>
+    public IConnectionCheck Connection { get; init; } = ConnectionCheck.Assumed;
+
+    /// <summary>
+    /// A run the player started ("Jetzt suchen", "Alle Artworks neu laden") lost the connection and asked nothing more
+    /// online (#683); raised on the run's thread before its end's <see cref="SearchChanged"/>.
+    /// </summary>
+    public event EventHandler? ConnectionLost;
+
     /// <summary>What "Fehlende Cover und Hintergründe" shows (#489): the counts, the run going on, the last search's result.</summary>
     public ArtworkSearch Search
     {
@@ -119,6 +131,57 @@ public sealed partial class ArtworkService : IDisposable
                 return _lastLibraries?.Where(l => l.Source is not null || (withSteamGridDb && !l.MadeUp)).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).Count() ?? 0;
             }
         }
+    }
+
+    /// <summary>
+    /// Whether the hosts a search would ask now can be reached (#683): SteamGridDB with a usable key and switched on, and one
+    /// download address per launcher library. Checked before the player's search starts; at most
+    /// <see cref="ConnectionCheck.Timeout"/>, off the UI thread.
+    /// </summary>
+    public Task<bool> IsOnlineAsync(CancellationToken cancel = default) => Connection.ReachesAnyAsync(SearchedAddresses, cancel);
+
+    /// <summary>The games of a library looked at for a download address; the first with one names the launcher's host.</summary>
+    private const int AddressGames = 50;
+
+    private IReadOnlyCollection<Uri> SearchedAddresses()
+    {
+        var settings = Settings().WithValidValues();
+        var addresses = new List<Uri>();
+        if (SteamGridDb is { IsUsable: true } && settings.IsOn(ArtworkSourceKind.SteamGridDb))
+        {
+            addresses.Add(SteamGridDbClient.Api);
+        }
+
+        IReadOnlyList<LibraryArtwork>? libraries;
+        lock (_gate)
+        {
+            libraries = _lastLibraries;
+        }
+
+        if (!settings.IsOn(ArtworkSourceKind.Launcher))
+        {
+            return addresses;
+        }
+
+        foreach (var (library, source, madeUp) in libraries ?? [])
+        {
+            if (source is null || madeUp)
+            {
+                continue;
+            }
+
+            var lookup = source.Look();
+            var download = library.Games.Take(AddressGames)
+                .SelectMany(game => Kinds.SelectMany(kind => lookup.For(game, kind)))
+                .Select(candidate => candidate.Download)
+                .FirstOrDefault(address => address is not null);
+            if (download is not null)
+            {
+                addresses.Add(download);
+            }
+        }
+
+        return addresses;
     }
 
     /// <summary>The game's id at a store SteamGridDB knows, from its launcher's images (#489); null if it has none.</summary>
@@ -537,8 +600,9 @@ public sealed partial class ArtworkService : IDisposable
         {
             Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
                 + (run.SteamGridDbAsked > 0 ? $"; SteamGridDB {run.SteamGridDbAsked} gefragt" : string.Empty)
-                + (run.OfflineHosts.Count > 0 ? $"; keine Verbindung zu {string.Join(", ", run.OfflineHosts.Order(StringComparer.Ordinal))}, der Rest folgt bei der nächsten Suche" : string.Empty)
-                + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty));
+                + (run.OfflineHosts.Count > 0 ? $"; keine Verbindung zu {string.Join(", ", run.OfflineHosts.Keys.Order(StringComparer.Ordinal))}, der Rest folgt bei der nächsten Suche" : string.Empty)
+                + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty)
+                + (run.Offline ? "; keine Internetverbindung" : string.Empty));
         }
 
         EndSearch(libraries, run, byPlayer && !cancelled, cancelled);
@@ -619,6 +683,11 @@ public sealed partial class ArtworkService : IDisposable
     /// </summary>
     private void EndSearch(IReadOnlyList<LibraryArtwork> libraries, RunState run, bool byPlayer, bool cancelled)
     {
+        if (run.Offline && !cancelled && (byPlayer || run.Reload))
+        {
+            ConnectionLost?.Invoke(this, EventArgs.Empty);
+        }
+
         var games = libraries.Where(l => !l.MadeUp).SelectMany(l => l.Library.Games).Select(g => g.Key).Distinct(StringComparer.Ordinal).ToList();
         var missingCovers = games.Count(key => Of(key)?.Cover is null);
         var missingHeroes = games.Count(key => Of(key)?.Hero is null);
@@ -628,7 +697,7 @@ public sealed partial class ArtworkService : IDisposable
                 missingCovers,
                 missingHeroes,
                 null,
-                byPlayer ? new ArtworkSearchResult(run.FoundCovers, run.FoundHeroes, run.WithSteamGridDb, run.SteamGridDbStop) : cancelled ? null : _search.Result);
+                byPlayer ? new ArtworkSearchResult(run.FoundCovers, run.FoundHeroes, run.WithSteamGridDb, run.SteamGridDbStop, run.Offline) : cancelled ? null : _search.Result);
         }
 
         SearchChanged?.Invoke(this, EventArgs.Empty);
@@ -949,7 +1018,7 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         // A scan goes online only for new games (#506, Q7): the launchers' images to download wait for a search too.
-        if (run.OfflineHosts.Contains(url.IdnHost) || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
+        if (run.OfflineHosts.ContainsKey(url.IdnHost) || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
         {
             return null;
         }
@@ -999,7 +1068,7 @@ public sealed partial class ArtworkService : IDisposable
         {
             var byId = await steamGridDb.ImagesAsync(storeId, kind, cancel);
             run.SteamGridDbAsked++;
-            if (StopsSteamGridDb(byId.Outcome, run))
+            if (await StopsSteamGridDbAsync(byId.Outcome, run, cancel))
             {
                 return null;
             }
@@ -1020,11 +1089,14 @@ public sealed partial class ArtworkService : IDisposable
 
         var byName = await ImagesOfMatchAsync(gameId, kind, cancel);
         run.SteamGridDbAsked++;
-        return StopsSteamGridDb(byName.Outcome, run) ? null : byName;
+        return await StopsSteamGridDbAsync(byName.Outcome, run, cancel) ? null : byName;
     }
 
-    /// <summary>A key turned down or no connection: not one request per game, the rest of the run does without SteamGridDB.</summary>
-    private static bool StopsSteamGridDb(SteamGridDbOutcome outcome, RunState run)
+    /// <summary>
+    /// A key turned down or no connection: not one request per game, the rest of the run does without SteamGridDB. No
+    /// connection to it checks whether the internet is gone (#683).
+    /// </summary>
+    private async Task<bool> StopsSteamGridDbAsync(SteamGridDbOutcome outcome, RunState run, CancellationToken cancel)
     {
         if (outcome is not (SteamGridDbOutcome.KeyRejected or SteamGridDbOutcome.NoConnection))
         {
@@ -1033,6 +1105,12 @@ public sealed partial class ArtworkService : IDisposable
 
         run.SteamGridDbUsable = false;
         run.SteamGridDbStop = outcome;
+        if (outcome == SteamGridDbOutcome.NoConnection)
+        {
+            run.Hosts.TryAdd(SteamGridDbClient.Api.IdnHost, SteamGridDbClient.Api);
+            await CheckConnectionAsync(run, cancel);
+        }
+
         return true;
     }
 
@@ -1087,6 +1165,7 @@ public sealed partial class ArtworkService : IDisposable
             return null;
         }
 
+        run.Hosts.TryAdd(url.IdnHost, url);
         using var timeout = new CancellationTokenSource(DownloadTimeout, _time);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancel, timeout.Token);
         try
@@ -1139,6 +1218,7 @@ public sealed partial class ArtworkService : IDisposable
             if (GoOffline(run, url))
             {
                 Log($"Artwork: {Name(kind)} von {game.Key}: {url.Host} antwortet nicht in {DownloadTimeout.TotalSeconds:0} s");
+                await CheckConnectionAsync(run, cancel);
             }
 
             return null;
@@ -1148,6 +1228,7 @@ public sealed partial class ArtworkService : IDisposable
             if (GoOffline(run, url))
             {
                 Log($"Artwork: {Name(kind)} von {game.Key}: keine Verbindung zu {url.Host} ({e.HttpRequestError})");
+                await CheckConnectionAsync(run, cancel);
             }
 
             return null;
@@ -1158,6 +1239,7 @@ public sealed partial class ArtworkService : IDisposable
             if (GoOffline(run, url))
             {
                 Log($"Artwork: {Name(kind)} von {game.Key}: Verbindung zu {url.Host} abgebrochen ({e.GetType().Name})");
+                await CheckConnectionAsync(run, cancel);
             }
 
             return null;
@@ -1167,7 +1249,7 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>One line per game and run, however many of its images or addresses failed: the first failure says why.</summary>
     private void LogOnce(Game game, RunState run, string line)
     {
-        if (run.Logged.Add(game.Key))
+        if (run.Logged.TryAdd(game.Key, true))
         {
             Log(line);
         }
@@ -1178,7 +1260,26 @@ public sealed partial class ArtworkService : IDisposable
     /// hangs costs one timeout, not one per game, and keeps no other host's images away. True the first time per host: its
     /// line is written whatever the game logged before (e.g. its other image missing), so the log names the host that failed.
     /// </summary>
-    private static bool GoOffline(RunState run, Uri url) => run.OfflineHosts.Add(url.IdnHost);
+    private static bool GoOffline(RunState run, Uri url) => run.OfflineHosts.TryAdd(url.IdnHost, true);
+
+    /// <summary>
+    /// A host failed (#683): one check of every host the run asked. None answering means no internet: the run goes online
+    /// for no game any more, so the other hosts cost no timeout each; one answering, only the failed host is left out.
+    /// </summary>
+    private async Task CheckConnectionAsync(RunState run, CancellationToken cancel)
+    {
+        if (run.Offline)
+        {
+            return;
+        }
+
+        var asked = run.Hosts.Values.ToList();
+        if (!await Connection.ReachesAnyAsync(() => asked, cancel))
+        {
+            run.Offline = true;
+            Log("Artwork: keine Internetverbindung, nichts mehr online gefragt; der Rest folgt bei der nächsten Suche");
+        }
+    }
 
     /// <summary>The cached image's size if it is a whole image; checked once per session, unless the view found it broken.</summary>
     private ImageSize? CheckedSize(string key, ArtworkKind kind, CachedImage image)
@@ -1306,8 +1407,17 @@ public sealed partial class ArtworkService : IDisposable
 
         public bool AsksSteamGridDbFor(string gameKey) => AsksSteamGridDb && GoesOnlineFor(gameKey) && !MadeUp.Contains(gameKey);
 
-        /// <summary>Any request to the network for the game, a launcher's image to download included (#506).</summary>
-        public bool GoesOnlineFor(string gameKey) => Asks is null || Asks.Contains(gameKey);
+        /// <summary>Any request to the network for the game, a launcher's image to download included (#506); none once offline (#683).</summary>
+        public bool GoesOnlineFor(string gameKey) => !Offline && (Asks is null || Asks.Contains(gameKey));
+
+        /// <summary>No host answered the check after one failed (#683): nothing more is asked online in this run.</summary>
+        public bool Offline { get; set; }
+
+        /// <summary>
+        /// One address per host the run asked, for the check when one fails (#683). Concurrent like the other sets a
+        /// download writes: "Artwork ändern" downloads its offers in parallel.
+        /// </summary>
+        public ConcurrentDictionary<string, Uri> Hosts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The automatic images of <paramref name="source"/> may be in use; an own file always.</summary>
         public bool IsOn(ArtworkSource source) => source switch
@@ -1343,14 +1453,14 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>Games done of those that missed an image at the start.</summary>
         public int Searched { get; set; }
 
-        public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, bool> Logged { get; } = new(StringComparer.Ordinal);
 
         // An address that gave no image is not asked again in this run, but by the next: a rescan may find what the server
         // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
         public HashSet<Uri> Failed { get; } = [];
 
         /// <summary>Hosts a download couldn't reach in this run: asked again at the next search (#506).</summary>
-        public HashSet<string> OfflineHosts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, bool> OfflineHosts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public int Copied { get; set; }
 

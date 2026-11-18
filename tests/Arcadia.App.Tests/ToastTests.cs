@@ -39,4 +39,19 @@ public sealed class ToastTests
 
         Assert.Equal("bleibt", toast.Text);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T683-10")]
+    public void A_message_shows_the_symbol_of_its_level_as_its_entry_in_Letzte_Meldungen()
+    {
+        var time = new FakeTimeProvider();
+        var toast = new ToastViewModel(time, new Messages.RecentMessages(time, _ => { }));
+
+        toast.Show(HealthSeverity.Info, "info");
+        Assert.Equal((true, false), (toast.IsInfo, toast.IsError));
+        toast.Show(HealthSeverity.Warning, "warnung");
+        Assert.Equal((HealthSeverity.Warning, false, false), (toast.Level, toast.IsInfo, toast.IsError));
+        toast.Show(HealthSeverity.Error, "fehler");
+        Assert.Equal((false, true), (toast.IsInfo, toast.IsError));
+    }
 }

@@ -1151,6 +1151,7 @@
   <data name="DataSourcesMissingInfo" xml:space="preserve"><value>Por sí misma, Arcadia solo busca para los juegos nuevos en la biblioteca, y una vez para todos los juegos en cuanto hay una clave válida. Arcadia no busca al volver a escanear, tras un juego ni tras una instalación.</value></data>
   <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>«Buscar ahora» busca para todos los juegos a los que les falta una imagen o cuya imagen solo encaja recortada. «Cancelar la búsqueda» detiene la búsqueda; lo encontrado se queda.</value></data>
   <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB está desactivado, así que no hay nada que buscar. Lo vuelves a activar en «Orden de las imágenes».</value></data>
+  <data name="NoInternetConnection" xml:space="preserve"><value>Sin conexión a internet. Revisa la conexión y vuelve a intentarlo.</value></data>
   <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Sin conexión con SteamGridDB. Arcadia lo vuelve a intentar en la próxima búsqueda.</value></data>
   <data name="DataSourcesReload" xml:space="preserve"><value>Volver a cargar todas las imágenes</value></data>
   <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Cancelar la recarga</value></data>
@@ -1290,6 +1291,7 @@
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>No se pudo cargar la imagen. Se queda la anterior.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Cambio de imágenes</value></data>
   <data name="ErrorContextWaitingList" xml:space="preserve"><value>Esperando tu elección</value></data>
+  <data name="ErrorContextConnectionCheck" xml:space="preserve"><value>Comprobación de la conexión</value></data>
   <data name="ErrorContextMetadata" xml:space="preserve"><value>Metadatos</value></data>
   <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>METADATOS</value></data>
   <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Metadatos que faltan</value></data>

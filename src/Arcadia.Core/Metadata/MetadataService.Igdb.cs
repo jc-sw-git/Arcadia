@@ -54,11 +54,10 @@ public sealed partial class MetadataService
     }
 
     /// <summary>Asks IGDB for every game still missing its answer, in library order; stops for a newer scan.</summary>
-    /// <param name="storesReached">Whether a store answered in this run (null: none was asked), for the reload's warning.</param>
-    private async Task FetchIgdbAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, bool? storesReached, CancellationToken cancel)
+    /// <returns>Whether IGDB answered (null: it wasn't asked), and whether it stopped at a failed connection.</returns>
+    private async Task<(bool? Reached, bool Offline)> FetchIgdbAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, CancellationToken cancel)
     {
         var queue = IgdbGames(libraries).Where(g => IsIgdbMissing(g.Game.Key)).ToList();
-        bool? igdbReached = null;
         if (queue.Count > 0 && Igdb is { } igdb)
         {
             var run = new FetchRun(queue.Count, queue.Count, _time.GetUtcNow(), reload || _igdbReloadLeft.Count > 0);
@@ -81,14 +80,11 @@ public sealed partial class MetadataService
                 }
             }
 
-            igdbReached = run.Answered > 0 || !run.Offline;
             summary.Log(Log, run.Answered, run.Offline);
+            return (run.Answered > 0 || !run.Offline, run.Offline);
         }
 
-        if (reload && storesReached != true && igdbReached != true && (storesReached is not null || igdbReached is not null))
-        {
-            ReloadFailed?.Invoke(this, EventArgs.Empty);
-        }
+        return (null, false);
     }
 
     private async Task<Outcome> FetchIgdbGameAsync(IgdbAccess igdb, Game game, ArtworkStoreId? storeId, string source, IgdbSummary summary, CancellationToken cancel)

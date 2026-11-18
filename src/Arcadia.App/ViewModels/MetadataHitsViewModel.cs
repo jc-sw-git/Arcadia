@@ -64,6 +64,11 @@ public sealed class MetadataHitsViewModel : WaitingHitsViewModel
         IsChecking = true;
         Message = null;
         TilesLoad = true;
+        if (!await IsOnlineAsync(_metadata.Connection, IgdbClient.Api, AppTexts.WaitingIgdbUnreachable, cancel))
+        {
+            return;
+        }
+
         var search = await Task.Run(() => _metadata.SearchByTermAsync(term, cancel), cancel);
         cancel.ThrowIfCancellationRequested();
         switch (search.Outcome)

@@ -4,7 +4,7 @@
 
 - [x] **T642-1** Own titles and tags are flushed to the disk before the rename replaces the old file (`WriteDurably`).
   The artwork and metadata caches are not: they can be fetched again, and a flush per file slowed the Windows test
-  runs. A power cut can't be tested by hand. · E2E: no (a power cut can't be triggered)
+  runs. Residual risk: a hand-chosen cover lives in the artwork cache and is not flushed; after a power cut it can be chosen again from its source. A power cut can't be tested by hand. · E2E: no (a power cut can't be triggered)
 
 Automated tests:
 

@@ -1,6 +1,6 @@
 # #680 Arcadia restarted during an emulation waits for Pan's cleanup forever; its spinner keeps the window drawing
 
-**Status:** Automated: T680-1, T680-3 · Open for the owner: T680-2, T680-4
+**Status:** Automated: T680-1, T680-3 · QE: – · Open for the owner: T680-2, T680-4
 
 - [x] **T680-1** A new Arcadia connects while Pan tears down its predecessor's emulation (`ClientGone`, no notice): once the teardown ends, Arcadia acknowledges it by itself and starts its own emulation · E2E: no (Pan's protocol, client against the real guardian)
 - [ ] **T680-2** **Owner:** real PC, Pan on, a Steam Controller connected and "Läuft" in the controller settings; Settings → Lokalisierung → change the language → "Sprache anwenden". After the restart the header shows no "Controller wird eingerichtet …" after a few seconds, the controller settings show Pan running, and `arcadia.log` of the old instance ends with `Arcadia beendet.` (`pan.log`: "exits on purpose", no `ClientGone`) · E2E: no (real Pan, drivers, restart) · RC

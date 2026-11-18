@@ -256,7 +256,7 @@ public sealed class UserDataStore
         {
             Directory.CreateDirectory(_folder);
             var tags = latestTags.Select(tag => new TagEntry(tag.Name, [.. tag.Games.Order(StringComparer.Ordinal)])).ToList();
-            CacheFiles.WriteThroughTemporary(FilePath, JsonSerializer.SerializeToUtf8Bytes(new UserDataFile(FileVersion, latest, tags), Json));
+            CacheFiles.WriteDurably(FilePath, JsonSerializer.SerializeToUtf8Bytes(new UserDataFile(FileVersion, latest, tags), Json));
             lock (_gate)
             {
                 _stored = latest;

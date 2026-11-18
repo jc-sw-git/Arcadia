@@ -15,9 +15,6 @@ public sealed class GamepadRouting
     /// <summary>How long View or Menu must be held alone before they act, so a hold (≡ on a search hit) still works.</summary>
     public static readonly TimeSpan SoloButtonDelay = TimeSpan.FromMilliseconds(200);
 
-    /// <summary>What the press-to-frame line says instead of the button's action while a text is being written.</summary>
-    private const string TypingLabel = "Texteingabe";
-
     private readonly MainViewModel _viewModel;
     private readonly Func<bool> _isArcadiaActive;
     private readonly Func<bool> _isMouseModeOn;
@@ -147,15 +144,17 @@ public sealed class GamepadRouting
                 if (_isArcadiaActive())
                 {
                     // While a text is being written the presses are the typed keys (the on-screen keyboard starts on a
-                    // fixed key), so neither this line nor the press-to-frame line may name them: a key typed in
-                    // the settings would be readable from the log players attach to bug reports.
-                    var typing = _viewModel.OpenTextEditor is not null;
-                    if (!typing)
+                    // fixed key), so no line may name them: neither "Gamepad:" nor the press-to-frame line, whose count,
+                    // rhythm and handling time would show how long the key is and where its characters sit. Safety
+                    // beats measurability here.
+                    if (_viewModel.OpenTextEditor is not null)
                     {
-                        AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+                        _viewModel.HandleGamepad(action, repeat);
+                        return;
                     }
 
-                    _latency.Measure(typing ? TypingLabel : action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
+                    AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
                 }
             });
         }

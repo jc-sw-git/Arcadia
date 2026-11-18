@@ -56,11 +56,7 @@ public sealed class KeyTypedByGamepadStaysOutOfLogTests
         Assert.Equal(FakeIgdb.Secret, editor.Text);
         var typed = ArcadiaDriver.Log[typingStart..];
         Assert.DoesNotContain("Gamepad:", typed, StringComparison.Ordinal);
-        Assert.DoesNotContain("Bild: Accept", typed, StringComparison.Ordinal);
-        Assert.DoesNotContain("Bild: Up", typed, StringComparison.Ordinal);
-        Assert.DoesNotContain("Bild: Down", typed, StringComparison.Ordinal);
-        Assert.DoesNotContain("Bild: Left", typed, StringComparison.Ordinal);
-        Assert.DoesNotContain("Bild: Right", typed, StringComparison.Ordinal);
+        Assert.DoesNotContain("Bild:", typed, StringComparison.Ordinal);
     }
 
     private static void Tap(ArcadiaDriver arcadia, UiAction action)

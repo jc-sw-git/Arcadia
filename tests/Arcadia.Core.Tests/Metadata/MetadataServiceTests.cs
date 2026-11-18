@@ -34,7 +34,27 @@ public sealed class MetadataServiceTests : IDisposable
     public void Dispose()
     {
         _service.Dispose();
-        Directory.Delete(_root, recursive: true);
+        DeleteRootWhenWritesEnd();
+    }
+
+    /// <summary>
+    /// A test that ends mid-run (a cancelled reload) can leave a cache write in flight; on Windows the folder can't go
+    /// while its temporary file is open. The write ends within moments, so the delete waits for it.
+    /// </summary>
+    private void DeleteRootWhenWritesEnd()
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Delete(_root, recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < 50)
+            {
+                Thread.Sleep(50);
+            }
+        }
     }
 
     private string CacheFolder => Path.Combine(_root, "metadata");

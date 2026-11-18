@@ -8,36 +8,34 @@ public sealed class CacheFilesTests : IDisposable
 
     public CacheFilesTests() => Directory.CreateDirectory(_folder);
 
-    public void Dispose() => Directory.Delete(_folder, recursive: true);
+    public void Dispose()
+    {
+        CacheFiles.OpenTemporary = null;
+        Directory.Delete(_folder, recursive: true);
+    }
 
     [Fact]
-    public void Writing_has_the_content_flushed_before_it_replaces_the_old_file()
+    public void A_write_flushes_the_new_file_to_the_disk_and_not_only_to_the_cache()
     {
         var path = Path.Combine(_folder, "user-data.json");
         File.WriteAllText(path, "old");
-        string? atFlush = null;
-        string? oldAtFlush = null;
+        var flushes = new List<bool>();
+        CacheFiles.OpenTemporary = temporary => new RecordingStream(temporary, flushes);
 
-        CacheFiles.WriteThroughTemporary(path, "new"u8, file =>
-        {
-            file.Flush();
-            atFlush = Directory.EnumerateFiles(_folder, "*" + CacheFiles.TemporarySuffix).Single();
-            oldAtFlush = File.ReadAllText(path);
-        });
+        CacheFiles.WriteThroughTemporary(path, "new"u8);
 
-        Assert.NotNull(atFlush);
-        Assert.Equal("old", oldAtFlush);
+        Assert.Contains(true, flushes);
+        Assert.DoesNotContain(false, flushes);
         Assert.Equal("new", File.ReadAllText(path));
         Assert.Empty(Directory.EnumerateFiles(_folder, "*" + CacheFiles.TemporarySuffix));
     }
 
-    [Fact]
-    public void The_default_write_flushes_to_the_disk_and_keeps_the_content()
+    private sealed class RecordingStream(string path, List<bool> flushes) : FileStream(path, FileMode.CreateNew, FileAccess.Write)
     {
-        var path = Path.Combine(_folder, "data.json");
-
-        CacheFiles.WriteThroughTemporary(path, "content"u8);
-
-        Assert.Equal("content", File.ReadAllText(path));
+        public override void Flush(bool flushToDisk)
+        {
+            flushes.Add(flushToDisk);
+            base.Flush(flushToDisk);
+        }
     }
 }

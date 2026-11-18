@@ -36,21 +36,21 @@ public static class CacheFiles
         return name.Length <= MaxName ? name.ToString() : "~" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(gameKey)))[..32];
     }
 
-    /// <summary>Writes <paramref name="path"/> through a temporary file and a rename: the old file stays until the new one is complete, and the new one is on the disk before it replaces the old.</summary>
-    public static void WriteThroughTemporary(string path, ReadOnlySpan<byte> content) =>
-        WriteThroughTemporary(path, content, file => file.Flush(flushToDisk: true));
-
     /// <summary>
-    /// The same, with the flush as a seam: a power cut can't be tested, so a test checks that the flush runs before the rename.
-    /// Without a flush to disk the rename can reach the disk first and leave an empty file after a power cut.
+    /// A test's way to watch how the temporary file is flushed (a power cut can't be tested): opens the stream in its place,
+    /// on this thread only.
     /// </summary>
-    public static void WriteThroughTemporary(string path, ReadOnlySpan<byte> content, Action<FileStream> flush)
+    [ThreadStatic]
+    internal static Func<string, FileStream>? OpenTemporary;
+
+    /// <summary>Writes <paramref name="path"/> through a temporary file and a rename: the old file stays until the new one is complete, and the new one is on the disk before it replaces the old (a flush to the file system's cache alone can leave an empty file after a power cut).</summary>
+    public static void WriteThroughTemporary(string path, ReadOnlySpan<byte> content)
     {
         var temporary = path + "." + Guid.NewGuid().ToString("N")[..8] + TemporarySuffix;
-        using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
+        using (var file = OpenTemporary?.Invoke(temporary) ?? new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
         {
             file.Write(content);
-            flush(file);
+            file.Flush(flushToDisk: true);
         }
 
         File.Move(temporary, path, overwrite: true);

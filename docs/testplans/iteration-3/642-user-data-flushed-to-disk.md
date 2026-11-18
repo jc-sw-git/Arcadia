@@ -10,10 +10,11 @@ Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| T642-1 | `CacheFilesTests.Writing_has_the_content_flushed_before_it_replaces_the_old_file` |
+| T642-1 | `CacheFilesTests.A_write_flushes_the_new_file_to_the_disk_and_not_only_to_the_cache` |
 
 History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T642-1 | 2026-11-18 | Claude | PR branch, Linux, `dotnet test` filtered | ✅ (78 tests of the cache and user data classes) | – |
+| T642-1 | 2026-11-18 | Claude | PR branch, Linux, `dotnet test` filtered | ✅ (77 tests of the cache and user data classes) | – |
+| T642-1 | 2026-11-18 | Claude | as above, with `Flush()` put back in the helper | ❌ red as intended (the test sees no flush to disk) | – |

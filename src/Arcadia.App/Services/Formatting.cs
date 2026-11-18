@@ -81,10 +81,10 @@ public static class Formatting
 
     /// <summary>"09.10.2026" in local time, or "–".</summary>
     public static string Date(DateTimeOffset? value) =>
-        value is { } v ? v.ToLocalTime().ToString("d", Region) : "–";
+        value is { } v ? Safe("Kurzdatum", region => v.ToLocalTime().ToString("d", region)) : "–";
 
     /// <summary>A day without a time, e.g. a release date: "09.10.2026".</summary>
-    public static string Date(DateOnly value) => value.ToString("d", Region);
+    public static string Date(DateOnly value) => Safe("Kurzdatum", region => value.ToString("d", region));
 
     /// <summary>"9. Oktober 2026" in local time: the region's long date without the weekday.</summary>
     public static string LongDate(DateTimeOffset value) => value.ToLocalTime().ToString(Dates.LongDate, Region);
@@ -108,9 +108,9 @@ public static class Formatting
     /// <summary>"21:58" or "9:58 PM" as "Uhrzeit" says, for a time already in local time (<see cref="ClockFormat"/>).</summary>
     public static string Clock(DateTimeOffset local) => ClockFormat switch
     {
-        ClockFormat.TwentyFourHours => local.ToString("HH:mm", Region),
-        ClockFormat.TwelveHours => local.ToString("h:mm tt", TwelveHourFormat()),
-        _ => local.ToString("t", Region),
+        ClockFormat.TwentyFourHours => Safe("Uhrzeit", region => local.ToString("HH:mm", region)),
+        ClockFormat.TwelveHours => Safe("Uhrzeit", region => local.ToString("h:mm tt", TwelveHourFormat(region))),
+        _ => Safe("Uhrzeit", region => local.ToString("t", region)),
     };
 
     /// <summary>
@@ -164,9 +164,9 @@ public static class Formatting
     }
 
     // Some regions name no AM and PM (German on Windows): the 12-hour clock then shows them in English, as its value says.
-    private static DateTimeFormatInfo TwelveHourFormat()
+    private static DateTimeFormatInfo TwelveHourFormat(CultureInfo culture)
     {
-        var region = Region.DateTimeFormat;
+        var region = culture.DateTimeFormat;
         if (region.AMDesignator.Length > 0 && region.PMDesignator.Length > 0)
         {
             return region;
@@ -176,6 +176,37 @@ public static class Formatting
         format.AMDesignator = CultureInfo.InvariantCulture.DateTimeFormat.AMDesignator;
         format.PMDesignator = CultureInfo.InvariantCulture.DateTimeFormat.PMDesignator;
         return format;
+    }
+
+    /// <summary>
+    /// Formats with the region; a pattern .NET can't read (one the player made in Windows) gives the invariant format
+    /// instead, so a time or date never ends Arcadia (#641, like #592 for the cut dates). The first failure per use
+    /// goes to the log; the pattern is the region's, not the player's data.
+    /// </summary>
+    private static string Safe(string use, Func<CultureInfo, string> format)
+    {
+        try
+        {
+            return format(Region);
+        }
+        catch (FormatException ex)
+        {
+            LogUnreadable(use, ex);
+            return format(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private static readonly HashSet<string> LoggedUses = [];
+
+    private static void LogUnreadable(string use, FormatException ex)
+    {
+        lock (LoggedUses)
+        {
+            if (LoggedUses.Add(use))
+            {
+                AppLog.Write($"Format der Region {Region.Name} für {use} nicht lesbar, Arcadia nimmt das Standardformat: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>Placeholder cover colors derived from the title until real artwork is loaded.</summary>

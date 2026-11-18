@@ -35,7 +35,7 @@ public sealed class SteamAppDetailsTests
     [Fact]
     [Trait("TestCase", "T493-5")]
     [Trait("TestCase", "T682-1")]
-    public void Reads_description_short_description_genres_companies_and_ratings_but_not_steams_own_rating()
+    public void Reads_description_short_description_genres_companies_and_ratings_with_steams_own_one_apart_from_the_usk()
     {
         var found = MetadataCheck.Checked(Parse("4000001", Answer));
 
@@ -45,7 +45,7 @@ public sealed class SteamAppDetailsTests
         Assert.Equal(["Made-up Studio"], found.Developers);
         Assert.Equal(["Made-up Publishing"], found.Publishers);
         Assert.Equal(
-            [new AgeRating(AgeRatingBoard.Usk, "16"), new AgeRating(AgeRatingBoard.Pegi, "12"), new AgeRating(AgeRatingBoard.Esrb, "T")],
+            [new AgeRating(AgeRatingBoard.Usk, "16"), new AgeRating(AgeRatingBoard.Pegi, "12"), new AgeRating(AgeRatingBoard.Esrb, "T"), new AgeRating(AgeRatingBoard.SteamGermany, "18")],
             found.AgeRatings);
     }
 

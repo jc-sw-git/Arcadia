@@ -64,31 +64,37 @@ public sealed class MetadataRulesTests
 
     [Fact]
     [Trait("TestCase", "T682-2")]
-    public void Steams_own_rating_is_never_the_usk_so_the_real_usk_of_a_later_provider_shows()
+    public void Steams_own_rating_is_never_the_usk_so_the_real_usk_of_a_later_provider_shows_beside_it()
     {
-        // Steam's own value says 16, the USK gave 12: only the USK's 12 may be labelled USK.
+        // Steam's own value says 16, the USK gave 12: only the USK's 12 is the USK; Steam's 16 keeps its own board.
         var merged = GermanPc.Merged([
-            Provider("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16", ByStore: true)] }),
+            Provider("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16")] }),
             Provider("IGDB", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12")] }),
         ]);
 
-        Assert.Equal([new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "IGDB")], merged.AgeRatings);
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "IGDB"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.SteamGermany, "16"), "Steam"),
+            ],
+            merged.AgeRatings);
     }
 
     [Fact]
     [Trait("TestCase", "T493-8")]
     [Trait("TestCase", "T682-2")]
-    public void Without_a_real_usk_there_is_no_usk_and_pegi_and_esrb_come_as_delivered()
+    public void Without_a_real_usk_there_is_no_usk_and_steams_own_rating_comes_after_the_official_boards()
     {
         var merged = GermanPc.Merged([Provider("Steam", new GameMetadata
         {
-            AgeRatings = [new AgeRating(AgeRatingBoard.Esrb, "m"), new AgeRating(AgeRatingBoard.Pegi, "16"), new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true)],
+            AgeRatings = [new AgeRating(AgeRatingBoard.Esrb, "m"), new AgeRating(AgeRatingBoard.SteamGermany, "12"), new AgeRating(AgeRatingBoard.Pegi, "16")],
         })]);
 
         Assert.Equal(
             [
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "16"), "Steam"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "M"), "Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.SteamGermany, "12"), "Steam"),
             ],
             merged.AgeRatings);
     }

@@ -1,4 +1,5 @@
 using Arcadia.App.Services;
+using Arcadia.Core.Library;
 using Arcadia.Core.Metadata;
 using Arcadia.Launchers.Abstractions;
 
@@ -143,7 +144,7 @@ public sealed class DetailMetadata
     public bool HasFacts => Facts.Count > 0;
 
     public static string BadgeOf(AgeRating rating) =>
-        AppTexts.DetailAgeRating(board: rating.Board.ToString().ToUpperInvariant(), rating: rating.Rating);
+        AppTexts.DetailAgeRating(board: AgeRatingScale.NameOf(rating.Board), rating: rating.Rating);
 
     private static void Add<T>(List<DetailFact> facts, string caption, Sourced<T>? field, Func<T, string> text)
     {

@@ -5,7 +5,8 @@ namespace Arcadia.Core.Metadata;
 
 /// <summary>
 /// Which age rating comes first (#557): the board of the system's region, USK in Germany and Austria, ESRB in the USA
-/// and Canada, PEGI everywhere else. The others follow in the order USK, PEGI, ESRB.
+/// and Canada, PEGI everywhere else. The others follow in the order USK, PEGI, ESRB, then Steam's own rating for Germany
+/// (#682): an official board's rating comes before a store's.
 /// </summary>
 public static class AgeRatingRegion
 {
@@ -20,7 +21,7 @@ public static class AgeRatingRegion
         _ => AgeRatingBoard.Pegi,
     };
 
-    /// <summary>The boards in the order they show: <paramref name="first"/>, then the others in the order USK, PEGI, ESRB.</summary>
+    /// <summary>The boards in the order they show: <paramref name="first"/>, then the others in the order USK, PEGI, ESRB, Steam DE.</summary>
     public static IReadOnlyList<AgeRatingBoard> Order(AgeRatingBoard first) =>
         [first, .. Enum.GetValues<AgeRatingBoard>().Where(board => board != first)];
 
@@ -28,7 +29,7 @@ public static class AgeRatingRegion
     public static IReadOnlyList<T> Ordered<T>(IEnumerable<T> ratings, Func<T, AgeRatingBoard> boardOf, AgeRatingBoard first) =>
         [.. ratings.OrderBy(rating => RankOf(boardOf(rating), first))];
 
-    // The enum's own order is USK, PEGI, ESRB; the region's board goes before all of them.
+    // The enum's own order is USK, PEGI, ESRB, Steam DE; the region's board goes before all of them.
     private static int RankOf(AgeRatingBoard board, AgeRatingBoard first) => board == first ? -1 : (int)board;
 
     private static string? SystemRegion()

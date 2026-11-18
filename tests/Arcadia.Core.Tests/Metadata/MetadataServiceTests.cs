@@ -227,7 +227,7 @@ public sealed class MetadataServiceTests : IDisposable
 
     [Fact]
     [Trait("TestCase", "T682-3")]
-    public async Task Steams_own_rating_an_older_version_cached_as_usk_is_gone_after_a_restart_without_asking_steam_again()
+    public async Task Steams_own_rating_an_older_version_cached_as_usk_is_steams_own_after_a_restart_without_asking_steam_again()
     {
         ServeAll("1");
         Scan("1");
@@ -247,7 +247,12 @@ public sealed class MetadataServiceTests : IDisposable
         await RunToIdleAsync();
 
         Assert.Equal(requests, _server.RequestCount);
-        Assert.Equal([new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "Made-up Launcher")], _service.Of(Key("1")).AgeRatings);
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "Made-up Launcher"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.SteamGermany, "16"), "Made-up Launcher"),
+            ],
+            _service.Of(Key("1")).AgeRatings);
     }
 
     private void SwitchLauncherDataOff() => _settings = new MetadataSettings { Off = [MetadataSourceKind.Launcher] };

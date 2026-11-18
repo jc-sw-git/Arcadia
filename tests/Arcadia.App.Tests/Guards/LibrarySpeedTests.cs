@@ -1,4 +1,4 @@
-using Arcadia.App.Input;
+﻿using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Input;
 using Arcadia.Launchers;
@@ -41,7 +41,10 @@ public sealed class LibrarySpeedTests
         window.AssertRingAround(first, "erstes Cover nach dem Tabwechsel", ring: "FocusRingLifted");
     }
 
-    /// <summary>T24-5: the largest page, 128 covers, turns as the small ones do: the same covers, bound to the next games.</summary>
+    /// <summary>
+    /// T24-5: the largest page, 128 covers, turns as the small ones do: the covers built (those in and near sight,
+    /// #685) are the same, bound to the next games.
+    /// </summary>
     [AvaloniaFact]
     [Trait("TestCase", "T24-5")]
     public async Task A_page_of_128_turns_with_the_same_covers()
@@ -51,7 +54,7 @@ public sealed class LibrarySpeedTests
         using var window = await ArcadiaWindow.ShowAsync(launchers, ArcadiaWindow.WithPageSize(128, launchers));
         var arcadia = window.Arcadia;
         var covers = Covers(window);
-        Assert.Equal(128, covers.Count);
+        Assert.InRange(covers.Count, 8, 64);
 
         window.Press(UiAction.NextPage).Press(UiAction.NextPage);
         Assert.Equal(300 - 256, arcadia.PageGames.Count);
@@ -61,7 +64,7 @@ public sealed class LibrarySpeedTests
         window.Press(UiAction.PreviousPage);
         Assert.Equal(128, arcadia.PageGames.Count);
         Assert.Equal(covers, Covers(window));
-        Assert.Equal(arcadia.PageGames.Select(tile => tile.Title), covers.Select(cover => ToolTip.GetTip(cover)));
+        Assert.Equal(arcadia.PageGames.Take(covers.Count).Select(tile => tile.Title), covers.Select(cover => ToolTip.GetTip(cover)));
     }
 
     [AvaloniaFact]

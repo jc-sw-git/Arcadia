@@ -339,69 +339,100 @@
                   <!-- 2 : 3, the height following the column's width (#24). What a tile's game is (title, kind, colours, installed)
                        never changes for that tile, so those bindings are OneTime: a page turn rebinds every tile of the page,
                        and a binding that listens costs a subscription there (#637). -->
-                  <ctl:CoverFrame Margin="10">
-                    <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand, Mode=OneTime}"
-                            Background="{Binding CoverBrush, Mode=OneTime}" ToolTip.Tip="{Binding Title, Mode=OneTime}">
-                      <Panel>
-                        <!-- The cover (#487); the monogram and the title show until it is there. -->
-                        <ctl:ArtworkImage Name="CoverArt" File="{Binding Cover}" CornerRadius="8" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                        <Border Classes="shade" IsVisible="{Binding !IsInstalled, Mode=OneTime}" />
-                        <Grid RowDefinitions="*,Auto" Margin="12">
-                          <TextBlock Text="{Binding Monogram, Mode=OneTime}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush, Mode=OneTime}" Classes.dim="{Binding !IsInstalled, Mode=OneTime}"
-                                     IsVisible="{Binding !#CoverArt.IsShowing}" />
-                          <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
-                          <StackPanel Grid.Row="1" Spacing="8">
-                            <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon, Mode=OneTime}" ToolTip.Tip="{Binding TypeName, Mode=OneTime}">
-                              <ctl:LineIcon Icon="{Binding TypeIconKey, Mode=OneTime}" />
+                  <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand, Mode=OneTime}"
+                          Background="{Binding CoverBrush, Mode=OneTime}" ToolTip.Tip="{Binding Title, Mode=OneTime}">
+                    <Panel>
+                      <!-- The cover (#487); the monogram and the title show until it is there. -->
+                      <ctl:ArtworkImage Name="CoverArt" File="{Binding Cover}" CornerRadius="8" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                      <Border Classes="shade" IsVisible="{Binding !IsInstalled, Mode=OneTime}" />
+                      <Grid RowDefinitions="*,Auto" Margin="12">
+                        <TextBlock Text="{Binding Monogram, Mode=OneTime}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush, Mode=OneTime}" Classes.dim="{Binding !IsInstalled, Mode=OneTime}"
+                                   IsVisible="{Binding !#CoverArt.IsShowing}" />
+                        <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
+                        <StackPanel Grid.Row="1" Spacing="8">
+                          <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon, Mode=OneTime}" ToolTip.Tip="{Binding TypeName, Mode=OneTime}">
+                            <ctl:LineIcon Icon="{Binding TypeIconKey, Mode=OneTime}" />
+                          </Border>
+                          <TextBlock Text="{Binding Title, Mode=OneTime}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                                     TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" IsVisible="{Binding !#CoverArt.IsShowing}" />
+                        </StackPanel>
+                      </Grid>
+                      <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
+                              HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.NotInstalledATip}">
+                        <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
+                      </Border>
+                      <ctl:BuiltWhenShown IsVisible="{Binding UpdateAvailable}">
+                        <ctl:BuiltWhenShown.Template>
+                          <DataTemplate x:DataType="vm:GameTileViewModel">
+                            <Border Classes="installBadge" Width="30" Height="30" CornerRadius="15"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.UpdateAvailableLabel}">
+                              <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
                             </Border>
-                            <TextBlock Text="{Binding Title, Mode=OneTime}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
-                                       TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" IsVisible="{Binding !#CoverArt.IsShowing}" />
-                          </StackPanel>
-                        </Grid>
-                        <Border Classes="installBadge" IsVisible="{Binding ShowInstallBadge}" Width="30" Height="30" CornerRadius="15"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.NotInstalledATip}">
-                          <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
-                        </Border>
-                        <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.UpdateAvailableLabel}">
-                          <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
-                        </Border>
-                        <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game.
-                         Only one badge fits a cover (#167): an update the launcher runs first shows its progress instead. -->
-                        <Border Classes="installBadge" IsVisible="{Binding ShowRunningBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
-                          <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
-                          </StackPanel>
-                        </Border>
-                        <Border Classes="installBadge" IsVisible="{Binding ShowStartingBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
-                          <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                          </StackPanel>
-                        </Border>
-                        <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
-                          <StackPanel Orientation="Horizontal" Spacing="6">
-                            <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                            <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                            <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                          </StackPanel>
-                        </Border>
-                        <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
-                                     Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}"
-                                     VerticalAlignment="Bottom" Margin="0" />
-                      </Panel>
-                    </Button>
-                  </ctl:CoverFrame>
+                          </DataTemplate>
+                        </ctl:BuiltWhenShown.Template>
+                      </ctl:BuiltWhenShown>
+                      <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game.
+                       Only one badge fits a cover (#167): an update the launcher runs first shows its progress instead. -->
+                      <ctl:BuiltWhenShown IsVisible="{Binding ShowRunningBadge}">
+                        <ctl:BuiltWhenShown.Template>
+                          <DataTemplate x:DataType="vm:GameTileViewModel">
+                            <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ctl:BuiltWhenShown.Template>
+                      </ctl:BuiltWhenShown>
+                      <ctl:BuiltWhenShown IsVisible="{Binding ShowStartingBadge}">
+                        <ctl:BuiltWhenShown.Template>
+                          <DataTemplate x:DataType="vm:GameTileViewModel">
+                            <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ctl:BuiltWhenShown.Template>
+                      </ctl:BuiltWhenShown>
+                      <ctl:BuiltWhenShown IsVisible="{Binding IsInstallActive}">
+                        <ctl:BuiltWhenShown.Template>
+                          <DataTemplate x:DataType="vm:GameTileViewModel">
+                            <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="8,0,11,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                                <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                                <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ctl:BuiltWhenShown.Template>
+                      </ctl:BuiltWhenShown>
+                      <ctl:BuiltWhenShown IsVisible="{Binding IsInstallActive}">
+                        <ctl:BuiltWhenShown.Template>
+                          <DataTemplate x:DataType="vm:GameTileViewModel">
+                            <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}"
+                                         Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}"
+                                         VerticalAlignment="Bottom" Margin="0" />
+                          </DataTemplate>
+                        </ctl:BuiltWhenShown.Template>
+                      </ctl:BuiltWhenShown>
+                    </Panel>
+                  </Button>
                 </DataTemplate>
               </ItemsControl.Resources>
               <ItemsControl.ItemTemplate>
+                <!-- A page of 64 or 128 covers is taller than the screen: a cover is built only in and near sight (#685). -->
                 <DataTemplate x:DataType="vm:TileSlotViewModel">
-                  <ContentControl Content="{Binding Tile}" ContentTemplate="{StaticResource LibraryCover}" ClipToBounds="False" />
+                  <ctl:CoverFrame Margin="10">
+                    <ctl:BuiltInSight DataContext="{Binding Tile}" Template="{StaticResource LibraryCover}" />
+                  </ctl:CoverFrame>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -573,36 +604,66 @@
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.NotInstalled}">
                     <Path Data="M7 17a4 4 0 0 1-.6-7.95A6 6 0 0 1 17.8 8.5 4 4 0 0 1 17 16.9M12 11v9M9 17l3 3 3-3" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="16" Height="16" Stretch="Uniform" />
                   </Border>
-                  <Border Classes="installBadge" IsVisible="{Binding UpdateAvailable}" Width="30" Height="30" CornerRadius="15"
-                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.UpdateAvailableLabel}">
-                    <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
-                  </Border>
+                  <ctl:BuiltWhenShown IsVisible="{Binding UpdateAvailable}">
+                    <ctl:BuiltWhenShown.Template>
+                      <DataTemplate x:DataType="vm:GameTileViewModel">
+                        <Border Classes="installBadge" Width="30" Height="30" CornerRadius="15"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{x:Static app:AppTexts.UpdateAvailableLabel}">
+                          <Path Data="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7l3-2.7M21 21v-5h-5" Stroke="{StaticResource Accent}" StrokeThickness="2.2" StrokeLineCap="Round" StrokeJoin="Round" Width="15" Height="15" Stretch="Uniform" />
+                        </Border>
+                      </DataTemplate>
+                    </ctl:BuiltWhenShown.Template>
+                  </ctl:BuiltWhenShown>
                   <!-- A running game (#95), like the update symbol; while it starts, without animation, since Arcadia is then behind the game. -->
-                  <Border Classes="installBadge" IsVisible="{Binding ShowRunningBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
-                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                      <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Border>
-                  <Border Classes="installBadge" IsVisible="{Binding ShowStartingBadge}" Height="30" CornerRadius="15" Padding="9,0,11,0"
-                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                      <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Border>
-                  <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
-                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                      <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                      <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                      <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Border>
-                  <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}" IsVisible="{Binding IsInstallActive}"
-                               Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" VerticalAlignment="Bottom" />
+                  <ctl:BuiltWhenShown IsVisible="{Binding ShowRunningBadge}">
+                    <ctl:BuiltWhenShown.Template>
+                      <DataTemplate x:DataType="vm:GameTileViewModel">
+                        <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Path Data="M7 4.5v15l13-7.5z" Fill="{StaticResource Running}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource Running}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ctl:BuiltWhenShown.Template>
+                  </ctl:BuiltWhenShown>
+                  <ctl:BuiltWhenShown IsVisible="{Binding ShowStartingBadge}">
+                    <ctl:BuiltWhenShown.Template>
+                      <DataTemplate x:DataType="vm:GameTileViewModel">
+                        <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="9,0,11,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding RunStateText}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Path Data="M7 4.5v15l13-7.5z" Stroke="{StaticResource TextSoft}" StrokeThickness="2.2" StrokeJoin="Round" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding RunStateShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ctl:BuiltWhenShown.Template>
+                  </ctl:BuiltWhenShown>
+                  <ctl:BuiltWhenShown IsVisible="{Binding IsInstallActive}">
+                    <ctl:BuiltWhenShown.Template>
+                      <DataTemplate x:DataType="vm:GameTileViewModel">
+                        <Border Classes="installBadge" Height="30" CornerRadius="15" Padding="8,0,11,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                            <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                            <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ctl:BuiltWhenShown.Template>
+                  </ctl:BuiltWhenShown>
+                  <ctl:BuiltWhenShown IsVisible="{Binding IsInstallActive}">
+                    <ctl:BuiltWhenShown.Template>
+                      <DataTemplate x:DataType="vm:GameTileViewModel">
+                        <ProgressBar Classes="install" Classes.paused="{Binding IsInstallPaused}"
+                                     Value="{Binding InstallPercent}" IsIndeterminate="{Binding IsInstallIndeterminate}" VerticalAlignment="Bottom" />
+                      </DataTemplate>
+                    </ctl:BuiltWhenShown.Template>
+                  </ctl:BuiltWhenShown>
                   <!-- Fills while ≡ (or Enter) is held; full opens the detail page. -->
                   <ctl:HoldRing />
                 </Panel>

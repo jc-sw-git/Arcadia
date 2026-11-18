@@ -13,9 +13,9 @@ Automated: `ControllerSupportRemovalTests` (the notice and how long it stays ope
 blocking rows, the greyed-out button, a row's install during a firmware update, the question with and without a puck),
 `ControllerHidingTests` (PlayStation Accessories' process name).
 
-**Status:** Automated: T407-2 to T407-4 · QE: – · Open for the owner: T407-1, T407-5
+**Status:** Automated: T407-2 to T407-4 · QE: – · Open for the owner: –
 
-- [ ] **T407-1** **Owner:** Uninstall Arcadia, answer "Treiber für die Controller-Emulation auch entfernen?" with Ja and accept
+- [x] **T407-1** Uninstall Arcadia, answer "Treiber für die Controller-Emulation auch entfernen?" with Ja and accept
       the Windows prompt: a last message says Windows removes the drivers only at the next restart and to restart
       before installing Arcadia again; it closes by itself. · E2E: no (real uninstall and UAC)
 - [x] **T407-2** Without restarting, install Arcadia again, Einstellungen → Controller: "Treiber installieren" is
@@ -27,7 +27,7 @@ blocking rows, the greyed-out button, a row's install during a firmware update, 
 - [x] **T407-4** [A] on "Treiber installieren": "Treiber installieren?" names usbip-win2, HidHide, VIIPER and Pan, the
       Windows prompt and the recommended restart; the sentence about the puck's restart shows only with a Steam
       Controller or puck plugged in; B closes it and nothing is installed. · E2E: yes
-- [ ] **T407-5** **Owner:** With Arcadia set up and Pan on, a DualSense connected, open PlayStation Accessories: the DualSense row
+- [x] **T407-5** With Arcadia set up and Pan on, a DualSense connected, open PlayStation Accessories: the DualSense row
       says "PlayStation Accessories ist geöffnet" and Arcadia takes it over only after the app is closed. · E2E: no
       (real app and controller)
 
@@ -37,3 +37,4 @@ History:
 |---|---|---|---|---|---|
 | T407-1, T407-2 (owner, before the fix) | 2026-11-02 | owner | 0.2.0-rc.2 (from #406), Windows, own PC, no restart after the uninstall | ❌ no hint to restart at the uninstall; "Treiber installieren" left HidHide out silently (`pan.log`), then "Windows entfernt HidHide beim nächsten Neustart" read as the new HidHide going | #407 |
 | T407-2 to T407-4 (automated), T407-1 (notice text and time) | 2026-11-02 | Claude | PR branch, Debug, Linux cloud container, faked parts; T407-2 to T407-4 each seen red once (blocking rows, puck sentence and the row's install guard removed) | ✅ | – |
+| T407-1, T407-5 | 2026-11-03 | owner | 0.2.0 release candidate, Windows, own PC | ✅ (owner's word, no separate record) | – |

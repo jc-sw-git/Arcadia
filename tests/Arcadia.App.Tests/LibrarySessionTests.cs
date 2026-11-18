@@ -179,6 +179,42 @@ public sealed class LibrarySessionTests
         Assert.Equal(["gog"], session.Libraries.Select(l => l.Launcher.Id));
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task A_launcher_switched_on_while_the_libraries_are_read_is_read_after_them()
+    {
+        var gog = new SlowLauncher(KnownLaunchers.Gog, Installed(KnownLaunchers.Gog, "Alpha", ArcadiaDriver.Now));
+        var epic = new SlowLauncher(KnownLaunchers.Epic, Installed(KnownLaunchers.Epic, "Beta", ArcadiaDriver.Now));
+        IReadOnlyList<string> active = ["gog"];
+        var registry = new LauncherRegistry([gog, epic], () => active);
+        var time = new FakeTimeProvider(ArcadiaDriver.Now);
+        var launchedGames = new LaunchedGames();
+        using var session = new LibrarySession(
+            new LibraryService(registry, time),
+            new InstallTracker(registry, time),
+            new RunningGamesTracker(registry, new ProcessGames(new NoProcesses(), launchedGames), time),
+            launchedGames,
+            time);
+
+        // The start's reading still runs when Epic is switched on.
+        gog.Gate = new TaskCompletionSource();
+        var load = session.LoadAsync();
+        await gog.AtGate.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        active = ["gog", "epic"];
+        session.ShowChosenLaunchers();
+        gog.Gate.SetResult();
+        await load;
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (session.Libraries.Count < 2 && watch.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(["gog", "epic"], session.Libraries.Select(l => l.Launcher.Id));
+    }
+
     /// <summary>A session over one launcher whose games and install reports the test sets, on a fake clock.</summary>
     private sealed class SessionSetup : IDisposable
     {
@@ -244,6 +280,9 @@ public sealed class LibrarySessionTests
     {
         public TaskCompletionSource? Gate { get; set; }
 
+        /// <summary>Done once a scan waits at the <see cref="Gate"/>: the launchers to read were chosen.</summary>
+        public TaskCompletionSource AtGate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public LauncherInfo Launcher => launcher;
 
         public ILauncherScanner Scanner => this;
@@ -264,6 +303,7 @@ public sealed class LibrarySessionTests
         {
             if (Gate is { } gate)
             {
+                AtGate.TrySetResult();
                 await gate.Task;
             }
 

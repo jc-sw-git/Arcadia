@@ -67,6 +67,42 @@ public sealed class HintsBuiltWhenShownTests
             StartTimeline.Format([("Bibliothek im Bild", 950), ("Avalonia", 300), ("Fenster offen", 900)]));
     }
 
+    [Fact]
+    [Trait("TestCase", "T637-4")]
+    public void A_library_shown_before_the_first_frame_still_leaves_the_first_frame_in_the_line()
+    {
+        long now = 0;
+        var lines = new List<string>();
+        var timeline = new StartTimeline.Timeline(() => now, lines.Add);
+
+        now = 900;
+        timeline.Mark("Fenster offen");
+        now = 950;
+        timeline.Finish("Bibliothek im Bild", after: "erstes Bild");
+        Assert.Empty(lines);
+
+        now = 960;
+        timeline.Mark("erstes Bild");
+        timeline.Mark("Tastaturen");
+        Assert.Equal(["Fenster offen 900 ms · Bibliothek im Bild 950 ms · erstes Bild 960 ms"], lines);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T637-4")]
+    public void The_line_is_written_once_when_the_library_comes_after_the_first_frame()
+    {
+        long now = 0;
+        var lines = new List<string>();
+        var timeline = new StartTimeline.Timeline(() => now, lines.Add);
+
+        now = 1000;
+        timeline.Mark("erstes Bild");
+        now = 1700;
+        timeline.Finish("Bibliothek im Bild", after: "erstes Bild");
+        timeline.Finish("Bibliothek im Bild", after: "erstes Bild");
+        Assert.Equal(["erstes Bild 1000 ms · Bibliothek im Bild 1700 ms"], lines);
+    }
+
     /// <summary>
     /// Runs <paramref name="test"/> with the input in use set as given; the input is shared by every hint of the process, so
     /// it is set back afterwards.

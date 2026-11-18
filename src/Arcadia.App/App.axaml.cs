@@ -383,7 +383,7 @@ public partial class App : Application
         void OnFirstLibrary(object? sender, EventArgs e)
         {
             viewModel.Session.LibrariesChanged -= OnFirstLibrary;
-            window.RequestAnimationFrame(_ => StartTimeline.Finish("Bibliothek im Bild")); // not a UI text (log)
+            window.RequestAnimationFrame(_ => StartTimeline.Finish("Bibliothek im Bild", after: "erstes Bild")); // not a UI text (log)
         }
 
         viewModel.Session.LibrariesChanged += OnFirstLibrary;

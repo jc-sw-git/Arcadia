@@ -159,6 +159,54 @@ public sealed class MetadataServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T638-4")]
+    public async Task Switching_launcher_data_off_while_waiting_for_the_stores_gap_sends_no_request()
+    {
+        ServeAll("1", "2");
+        Scan("1", "2");
+        await WaitForRequestsAsync(1);
+        await Task.Delay(200);
+        SwitchLauncherDataOff();
+        await RunToIdleAsync();
+        Assert.Equal(["1"], _server.AskedIds);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-5")]
+    public async Task Switching_launcher_data_off_while_waiting_after_http_429_sends_no_request()
+    {
+        ServeAll("1");
+        _server.ThrottleOnce("1", TimeSpan.FromSeconds(30));
+        Scan("1");
+        await WaitForRequestsAsync(1);
+        await Task.Delay(200);
+        SwitchLauncherDataOff();
+        await RunToIdleAsync();
+        Assert.Equal(["1"], _server.AskedIds);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-6")]
+    public async Task A_reload_stopped_by_switching_launcher_data_off_asks_only_missing_games_after_switching_on()
+    {
+        ServeAll("1", "2", "3");
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+        var before = _server.RequestCount;
+        _server.Hang("1");
+        _service.ReloadAll();
+        await WaitForHangAsync();
+        SwitchLauncherDataOff();
+        _time.Advance(MetadataService.RequestTimeout);
+        await RunToIdleAsync();
+        _settings = new MetadataSettings();
+        ServeAll("1", "2", "3");
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+        Assert.Equal(before + 1, _server.RequestCount);
+    }
+
+    [Fact]
     [Trait("TestCase", "T493-18")]
     public async Task After_a_scan_only_games_without_store_data_are_asked_and_a_cached_game_is_never_asked_again()
     {

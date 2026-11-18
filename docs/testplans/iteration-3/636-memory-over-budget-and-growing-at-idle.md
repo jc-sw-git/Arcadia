@@ -7,7 +7,7 @@
 - [x] **T636-3** A loading spinner turns while it is seen, stops while a panel around it is hidden or it left the window, and turns again when shown · E2E: no (control, no page flow)
 - [x] **T636-4** After 64 MB of work and 10 s without a press, one full collection gives the memory back; a press puts it off; idle alone never triggers it; the next counts from the last · E2E: no (timer logic)
 - [x] **T636-7** No trim while a game runs or Arcadia isn't in front (the pause would stall the pads' forwarding); a trim put off follows once Arcadia is back in front · E2E: no (timer logic)
-- [ ] **T636-5** Every page, dialog and settings category looks as before (pixel comparison against `main`, the clock aside): library, detail page and its sections, game menu, view, filter, search, settings categories and tabs, change artwork, tags, change title with the keyboard · E2E: no (window)
+- [x] **T636-5** Every page, dialog and settings category looks as before (pixel comparison against `main`, the clock aside): library, detail page and its sections, game menu, view, filter, search, settings categories and tabs, change artwork, tags, change title with the keyboard · E2E: no (window)
 - [ ] **T636-6** **Owner:** real PC, Release, the real library: private working set right after the artwork and metadata run, and after 5 minutes without input; it must be under 400 MB and flat (`Speicher: aufgeräumt …` lines in `arcadia.log` show each trim) · E2E: no (real library, Windows memory) · RC
 
 Automated tests:
@@ -29,3 +29,6 @@ History:
 | T636-5 (≈35 states) | 2026-11-18 | implementation | PR branch vs `main`, Release, demo data, Xvfb | ✅ pixel-identical apart from the header clock (a minute's width shifts the header) | – |
 | Memory after the QE fix (trim gated), 75 s idle | 2026-11-18 | implementation | PR branch + `main` merged, Release, Linux cloud container (Xvfb, window focused by `xdotool`) | anonymous RSS 262 MB; trim at 30 s (281 ms, managed 264 → 135 MB). Without focus no trim, as gated | – |
 | T636-4, T636-7, T636-1 … T636-3 | 2026-11-18 | implementation | PR branch + `main` merged, Debug, Linux | ✅ | – |
+| T636-5 (27 states) | 2026-11-18 | QE | PR branch 241f5d1 vs `main` 673cc26, Debug, demo data, Xvfb | ✅ pixel-identical apart from the header clock and timing (differences gone on a rerun); all 366 view-scoped selectors match only inside their own view (static check) | – |
+| Memory, 5,000 demo games, 30 s → 5 min idle | 2026-11-18 | QE | `main` 673cc26 vs PR branch 241f5d1, Release, Linux cloud container (Xvfb) | anonymous RSS main 1,056 → 1,065 MB, PR 420 → 239 MB, flat; one trim (237 ms) without any input | trim gated to Arcadia in front and no game (T636-7) |
+| T636-1 … T636-4, T636-7, ring guards | 2026-11-18 | QE | PR branch db9811c + `main` merged, Debug, Linux | ✅ | – |

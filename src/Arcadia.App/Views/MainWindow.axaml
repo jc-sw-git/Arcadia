@@ -86,7 +86,7 @@
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Status.IsControllerStarting}" VerticalAlignment="Center"
                       ToolTip.Tip="{x:Static app:AppTexts.PanSettingUpTip}">
-            <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+            <ctl:LoadingSpinner Classes="spinner" VerticalAlignment="Center" />
             <TextBlock Text="{x:Static app:AppTexts.ControllerSettingUp}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
           </StackPanel>
           <!-- The status messages as one chip like search and settings (#166, design T166Library): Y (V) and the symbols;
@@ -257,7 +257,7 @@
                   </StackPanel>
                   <StackPanel Spacing="10" IsVisible="{Binding IsInstallActive}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                      <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                       <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                       <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding InstallStatusText}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
@@ -383,7 +383,7 @@
                         <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
                           <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                            <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                             <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                             <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
@@ -593,7 +593,7 @@
                   <Border Classes="installBadge" IsVisible="{Binding IsInstallActive}" Height="30" CornerRadius="15" Padding="8,0,11,0"
                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" ToolTip.Tip="{Binding InstallStatusText}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <Path Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInstallSpinning}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                       <Path IsVisible="{Binding IsInstallQueued}" Data="M6 3h12M6 21h12M8 3v3.5l4 5.5-4 5.5v3.5M16 3v3.5l-4 5.5 4 5.5v3.5" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                       <Path IsVisible="{Binding IsInstallPaused}" Data="M9 6v12M15 6v12" Stroke="{StaticResource Warning}" StrokeThickness="2.8" StrokeLineCap="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding InstallShortText}" FontSize="13" FontWeight="ExtraBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
@@ -1482,7 +1482,7 @@
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                                      <ctl:LoadingSpinner Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
@@ -1563,7 +1563,7 @@
                 <DataTemplate x:DataType="settings:InfoStatus">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                     <Panel Width="24" Height="24" VerticalAlignment="Top">
-                      <Path Classes="spinner" IsVisible="{Binding IsInTransition}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                      <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsInTransition}" />
                       <!-- No local Fill: it would override the "active" style. -->
                       <Ellipse Classes="statusDot" Classes.active="{Binding IsHealthy}" Width="12" Height="12" IsVisible="{Binding ShowsDot}" />
                     </Panel>
@@ -1902,7 +1902,7 @@
                     <StackPanel Spacing="18" IsVisible="{Binding IsRemovingSisrPrompt}">
                       <TextBlock Classes="promptBody" Text="{Binding RemovingSisrText}" />
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Path Classes="spinner" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                        <ctl:LoadingSpinner Classes="spinner" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding RemovingSisrStep}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
                       </StackPanel>
                     </StackPanel>
@@ -2030,7 +2030,7 @@
           <StackPanel Spacing="22" DataContext="{Binding PanDialogs.PanUpdate}" x:DataType="vm:PanUpdatePageViewModel">
             <StackPanel Orientation="Horizontal" Spacing="18">
               <Border Classes="promptIcon" IsVisible="{Binding IsBusy}">
-                <Path Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                <ctl:LoadingSpinner Classes="spinner" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <Border Classes="promptIcon" IsVisible="{Binding IsNotice}">
                 <TextBlock Text="i" />
@@ -2042,7 +2042,7 @@
             </StackPanel>
             <TextBlock Classes="promptBody" Text="{Binding Text}" Foreground="{StaticResource Text}" />
             <Panel Width="200" Height="200" HorizontalAlignment="Center" IsVisible="{Binding IsCountingDown}">
-              <Path Classes="spinner large"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+              <ctl:LoadingSpinner Classes="spinner large" />
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
                 <TextBlock Text="{x:Static vm:PanUpdatePageViewModel.CountdownCaption}" FontSize="15" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding SecondsLeft}" FontSize="52" FontWeight="ExtraBold" HorizontalAlignment="Center" />

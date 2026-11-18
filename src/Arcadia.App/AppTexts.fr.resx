@@ -13,6 +13,7 @@
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Vérification des installations</value></data>
   <data name="ErrorContextUpdateCheck" xml:space="preserve"><value>Recherche de mises à jour</value></data>
   <data name="ErrorContextRunningGames" xml:space="preserve"><value>Jeux en cours</value></data>
+  <data name="ErrorContextMemoryTrim" xml:space="preserve"><value>Libération de la mémoire</value></data>
   <data name="ErrorContextReturnAfterGame" xml:space="preserve"><value>Retour à Arcadia après le jeu</value></data>
   <data name="ErrorContextReturnAfterRefusedStart" xml:space="preserve"><value>Retour à Arcadia après un démarrage annulé</value></data>
   <data name="ErrorContextLoadLibrary" xml:space="preserve"><value>Chargement de la bibliothèque</value></data>

@@ -5,9 +5,12 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
 - A locally set property (e.g. `Fill="…"`, `Stroke="…"`) beats any style — state colours must
   come entirely from styles (`Classes.x="{Binding …}"` + `Style Selector="….x"`).
 - `RenderTransform` can't be animated with key frames → give the element its own
-  `<RotateTransform/>` and animate `RotateTransform.Angle` (see `Path.spinner`).
+  `<RotateTransform/>` and animate `RotateTransform.Angle` (`ctl:LoadingSpinner` brings it).
+- A style animation inside a hidden panel can keep running (`PlaybackBehavior` doesn't stop it), and its clock redraws the
+  window every frame: CPU and garbage at idle. An endless one goes on a class set only while the element
+  `IsEffectivelyVisible` (`ctl:LoadingSpinner` and `Path.spinner.turning`).
 - `SystemDecorations` is now `WindowDecorations`. Box shadows of `Button.plain` go on the
-  template part: `Button.x /template/ Border#Chrome`.
+  template part: `Button.x /template/ ctl|ButtonChrome#Chrome`.
 - Fluent's `Button` and `ItemsControl` clip to their bounds, so an outer focus ring (BoxShadow) is cut off;
   `Theme.axaml` sets `ClipToBounds=False` on both. A `UserControl` clips too; set it on the one whose edge a ring reaches. A focus ring also needs room in clipping parents
   (`ScrollViewer` padding). With several BoxShadows, the later one paints on top.
@@ -25,3 +28,9 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   set `VerticalAlignment` when it must fill a cell.
 - A `ScrollBar` sets its own `IsVisible` whenever it has something to scroll, overriding a binding: show or hide it
   through a panel around it.
+- Memory (#636): Avalonia keeps a record (about 400 bytes) for every style whose selector might match an element: a
+  `TextBlock.x` style costs one on every `TextBlock`, whether it has class `x` or not. A style of one view goes into that
+  view's group in `Theme.axaml` (`<Style Selector="views|GameDetailView">` with `^ TextBlock.x` inside); it then costs
+  only inside that view. Elements built many times over (the keyboards' keys, every button's chrome) are types of their
+  own (`ctl:KeyLabel`, `ctl:ButtonChrome`), so the window's `TextBlock`/`Border` styles skip them. `StyleCostTests`
+  (window guard) bounds the records per element.

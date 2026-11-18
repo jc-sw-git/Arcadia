@@ -21,6 +21,7 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     private readonly Func<ImageShowScene> _scene;
     private readonly Func<ArtworkFile, Task<bool>> _canShow;
     private readonly Action<Action> _post;
+    private readonly TimeProvider _time;
     private readonly ImageShowOrder _order;
     private readonly ITimer _timer;
     private readonly ITimer _clear;
@@ -36,6 +37,8 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     public ImageShowViewModel(TimeProvider time, Action<Action> post, Func<bool> mayRun, Func<ImageShowScene> scene, Func<ArtworkFile, Task<bool>> canShow, Random random)
     {
         _post = post;
+        _time = time;
+        LastInput = time.GetUtcNow();
         _mayRun = mayRun;
         _scene = scene;
         _canShow = canShow;
@@ -78,12 +81,16 @@ public sealed partial class ImageShowViewModel : ViewModelBase, IDisposable
     /// <summary>The image in front, whose title shows bottom left.</summary>
     public ShownImage? Shown => ShowsFirst ? FirstImage : SecondImage;
 
+    /// <summary>When the player last did something; the memory trim (#636) waits for a quiet moment with it.</summary>
+    public DateTimeOffset LastInput { get; private set; }
+
     /// <summary>
     /// The player did something (a button, a key, the mouse): a running show ends, fading back to the page, and true
     /// says the window must swallow the input; otherwise the wait starts anew.
     /// </summary>
     public bool TakeInput()
     {
+        LastInput = _time.GetUtcNow();
         var wasShowing = IsShowing;
         if (wasShowing)
         {

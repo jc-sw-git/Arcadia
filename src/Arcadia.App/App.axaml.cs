@@ -206,6 +206,10 @@ public partial class App : Application
             installProgress.Start();
             var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, AppTexts.ErrorContextCheckInstalls));
             installs.Start();
+            // Hands back what a scan, the artwork run or a sync left behind, once the player is quiet (#636).
+            var memoryTrim = MemoryTrim.ForProcess(time, () => viewModel.ImageShow.LastInput);
+            var trimCheck = new DispatcherTimer(MemoryTrim.CheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(memoryTrim.TrimIfDue), AppTexts.ErrorContextMemoryTrim));
+            trimCheck.Start();
             var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, AppTexts.ErrorContextUpdateCheck));
             updateCheck.Start();
 

@@ -15,6 +15,9 @@ public sealed class GamepadRouting
     /// <summary>How long View or Menu must be held alone before they act, so a hold (≡ on a search hit) still works.</summary>
     public static readonly TimeSpan SoloButtonDelay = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>What the press-to-frame line says instead of the button's action while a text is being written.</summary>
+    private const string TypingLabel = "Texteingabe";
+
     private readonly MainViewModel _viewModel;
     private readonly Func<bool> _isArcadiaActive;
     private readonly Func<bool> _isMouseModeOn;
@@ -139,12 +142,20 @@ public sealed class GamepadRouting
 
         if (UiActionMap.FromGamepad(button) is { } action)
         {
-            AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             Dispatcher.UIThread.Post(() =>
             {
                 if (_isArcadiaActive())
                 {
-                    _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
+                    // While a text is being written the presses are the typed keys (the on-screen keyboard starts on a
+                    // fixed key), so neither this line nor the press-to-frame line may name them: a key typed in
+                    // the settings would be readable from the log players attach to bug reports.
+                    var typing = _viewModel.OpenTextEditor is not null;
+                    if (!typing)
+                    {
+                        AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+                    }
+
+                    _latency.Measure(typing ? TypingLabel : action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
                 }
             });
         }

@@ -85,4 +85,22 @@ public sealed class MemoryTrimTests
         Assert.True(trim.TrimIfDue(mayPause: true));
         Assert.Equal(1, _collections);
     }
+
+    [Fact]
+    [Trait("TestCase", "T685-6")]
+    public void Covers_let_go_at_idle_are_worth_a_trim_of_their_own()
+    {
+        var trim = Trim();
+        _time.Advance(MemoryTrim.QuietTime);
+        _allocated = MemoryTrim.WorthTrimming / 4;
+
+        Assert.False(trim.TrimIfDue(mayPause: true));
+        Assert.False(trim.TrimIfDue(mayPause: false, viewsLetGo: true));
+        Assert.True(trim.TrimIfDue(mayPause: true, viewsLetGo: true));
+        Assert.Equal(1, _collections);
+
+        _lastInput = _time.GetUtcNow();
+        Assert.False(trim.IsQuiet);
+        Assert.False(trim.TrimIfDue(mayPause: true, viewsLetGo: true));
+    }
 }

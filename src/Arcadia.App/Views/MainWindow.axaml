@@ -430,7 +430,7 @@
                 <!-- A page of 64 or 128 covers is taller than the screen: a cover is built only in and near sight (#685). -->
                 <DataTemplate x:DataType="vm:TileSlotViewModel">
                   <ctl:CoverFrame Margin="10">
-                    <ctl:BuiltInSight DataContext="{Binding Tile}" Template="{StaticResource LibraryCover}" />
+                    <ctl:BuiltInSight DataContext="{Binding Tile}" Template="{StaticResource LibraryCover}" KeptPlaces="40" />
                   </ctl:CoverFrame>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

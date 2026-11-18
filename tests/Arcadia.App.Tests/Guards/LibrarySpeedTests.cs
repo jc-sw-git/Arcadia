@@ -1,4 +1,4 @@
-﻿using Arcadia.App.Input;
+using Arcadia.App.Input;
 using Arcadia.App.Services;
 using Arcadia.Input;
 using Arcadia.Launchers;

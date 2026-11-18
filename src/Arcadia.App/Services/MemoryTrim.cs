@@ -26,13 +26,18 @@ public sealed class MemoryTrim(TimeProvider time, Func<DateTimeOffset> lastInput
     public static MemoryTrim ForProcess(TimeProvider time, Func<DateTimeOffset> lastInput) =>
         new(time, lastInput, () => GC.GetTotalAllocatedBytes(), () => GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true));
 
+    /// <summary>The player has pressed nothing for <see cref="QuietTime"/>: views may let go of what is out of sight (#685).</summary>
+    public bool IsQuiet => time.GetUtcNow() - lastInput() >= QuietTime;
+
     /// <summary>
     /// Trims if it is worth it and the player is quiet; true if it trimmed. <paramref name="mayPause"/>: Arcadia is in
-    /// front and no game runs, so a pause stalls nothing the player plays with.
+    /// front and no game runs, so a pause stalls nothing the player plays with. <paramref name="viewsLetGo"/>: views
+    /// just let go of controls out of sight (#685); they were long-lived, so only a full collection gives them back,
+    /// however little was allocated.
     /// </summary>
-    public bool TrimIfDue(bool mayPause)
+    public bool TrimIfDue(bool mayPause, bool viewsLetGo = false)
     {
-        if (!mayPause || time.GetUtcNow() - lastInput() < QuietTime || allocatedBytes() - _allocatedAtLastTrim < WorthTrimming)
+        if (!mayPause || !IsQuiet || (!viewsLetGo && allocatedBytes() - _allocatedAtLastTrim < WorthTrimming))
         {
             return false;
         }

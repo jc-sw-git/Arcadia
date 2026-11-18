@@ -16,6 +16,20 @@ and the crop rule: #13. Order of the categories: Launcher, Controller, Datenquel
   for a choice, they count neither as missing nor in a search; their launcher's own images and data still show, and
   IGDB data cached for them earlier doesn't.
 
+## Without internet (#683)
+
+- A search or load the player starts checks the connection first, at most 3 s, the row showing that it works (A again
+  stops the check): "Jetzt suchen" and "Alle Artworks neu laden" (tab "Artwork"), "Jetzt suchen" and "Alle Metadaten
+  neu laden" (tab "Metadaten"), an own term in "Warten auf deine Auswahl", and opening "Artwork ändern". The check asks
+  only the hosts the work would ask (SteamGridDB, IGDB, one image address and one store page per launcher).
+- Without a connection a warning toast "Keine Internetverbindung. Prüfe die Verbindung und versuche es dann noch
+  einmal." (no status message) and nothing starts; "Artwork ändern" then offers what is on this PC, the waiting list
+  shows "… nicht erreichbar".
+- A run that loses the connection checks once at the first failed host and then asks nothing more online, so no
+  timeout follows another; what is on this PC is still copied. Started by the player it ends with the same toast,
+  instead of the source's own warning; a background run only logs it. A single source down while the internet is
+  there keeps its own warning (SteamGridDB, the store).
+
 | Topic | File |
 |---|---|
 | SteamGridDB key: entry, paste, test, delete, the warning (#489) | [steamgriddb-key.md](steamgriddb-key.md) |

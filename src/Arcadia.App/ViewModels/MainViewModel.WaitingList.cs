@@ -26,7 +26,8 @@ public partial class MainViewModel
                 new WaitingKeyboard(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack),
                 CloseWaitingList,
                 _metadata,
-                () => _settings.Current.Artwork.WithValidValues().IsOn(Arcadia.Core.Settings.ArtworkSourceKind.SteamGridDb));
+                () => _settings.Current.Artwork.WithValidValues().IsOn(Arcadia.Core.Settings.ArtworkSourceKind.SteamGridDb),
+                text => Toast.Show(Arcadia.ControllerSupport.HealthSeverity.Warning, text));
         }
     }
 

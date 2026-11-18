@@ -40,10 +40,12 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     /// <param name="titleOf">The title a game shows, its own one included (#496).</param>
     /// <param name="metadata">The metadata entries (#494); needed for <see cref="WaitingKind.Metadata"/>.</param>
     /// <param name="artworkShown">The artwork entries are on the list: SteamGridDB is switched on.</param>
+    /// <param name="warn">Shows a warning toast, e.g. an own term searched without internet (#683).</param>
     public WaitingListViewModel(
         WaitingKind kind, ArtworkService artwork, Func<Game, string> titleOf, WaitingKeyboard keyboard, Action<WaitingListViewModel> close, MetadataService? metadata = null,
-        Func<bool>? artworkShown = null)
+        Func<bool>? artworkShown = null, Action<string>? warn = null)
     {
+        _warn = warn ?? (_ => { });
         _kind = kind;
         _artwork = artwork;
         _metadata = metadata;
@@ -57,6 +59,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     }
 
     private readonly Func<bool> _artworkShown;
+    private readonly Action<string> _warn;
 
     public void Dispose()
     {
@@ -358,8 +361,8 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
         Hits = game switch
         {
-            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, metadata, game.Title, _keyboard, Take, Mark),
-            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take, Mark),
+            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, metadata, game.Title, _keyboard, Take, Mark) { Warn = _warn },
+            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take, Mark) { Warn = _warn },
             _ => null,
         };
         Hits?.PropertyChanged += OnHitsChanged;

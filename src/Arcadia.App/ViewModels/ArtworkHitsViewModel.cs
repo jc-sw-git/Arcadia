@@ -286,6 +286,11 @@ public sealed partial class ArtworkHitsViewModel : WaitingHitsViewModel
         IsChecking = true;
         Message = null;
         TilesLoad = true;
+        if (!await IsOnlineAsync(_artwork.Connection, SteamGridDbClient.Api, AppTexts.WaitingUnreachable, cancel))
+        {
+            return;
+        }
+
         var search = await Task.Run(() => _artwork.SearchByTermAsync(term, cancel), cancel);
         cancel.ThrowIfCancellationRequested();
         switch (search.Outcome)

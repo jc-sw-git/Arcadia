@@ -19,6 +19,7 @@ public sealed record ArtworkOffer(ArtworkFile File, ArtworkSource Source, string
 /// <param name="OwnName">The own file's name as it was chosen.</param>
 /// <param name="Offers">The launcher's image, then the source's, best first; none of a source switched off.</param>
 /// <param name="Off">The sources switched off in "Reihenfolge für Artwork" (#506): the notice says so.</param>
+/// <param name="Offline">No internet when it was asked (#683): only what is on this PC is offered.</param>
 public sealed record ArtworkChoices(
     ArtworkFile? Current,
     CachedImage? CurrentImage,
@@ -26,7 +27,8 @@ public sealed record ArtworkChoices(
     string? OwnName,
     IReadOnlyList<ArtworkOffer> Offers,
     SuggestionKeyState KeyState,
-    IReadOnlyList<Settings.ArtworkSourceKind>? Off = null)
+    IReadOnlyList<Settings.ArtworkSourceKind>? Off = null,
+    bool Offline = false)
 {
     public bool OwnInUse => CurrentImage?.Source == ArtworkSource.File;
 }
@@ -104,6 +106,11 @@ public sealed partial class ArtworkService
         }
 
         var run = NewRunState();
+        var keyState = Suggestions?.KeyState ?? SuggestionKeyState.Missing;
+        var asksSteamGridDb = keyState == SuggestionKeyState.Valid && run.IsOn(ArtworkSource.SteamGridDb);
+
+        // Without internet the choices are what is on this PC, at once, and the player is told (#683).
+        run.Offline = !await Connection.ReachesAnyAsync(() => AddressesOf(game, kind, run, asksSteamGridDb), cancel);
         var offers = new List<ArtworkOffer>();
         if (run.IsOn(ArtworkSource.Launcher) && await LauncherOfferAsync(game, kind, current, currentFile, currentSize, run, cancel) is { } launcher)
         {
@@ -111,13 +118,29 @@ public sealed partial class ArtworkService
         }
 
         // A source switched off offers nothing and is asked nothing (#506).
-        var keyState = Suggestions?.KeyState ?? SuggestionKeyState.Missing;
-        if (keyState == SuggestionKeyState.Valid && run.IsOn(ArtworkSource.SteamGridDb))
+        if (asksSteamGridDb && !run.Offline)
         {
             offers.AddRange(await SuggestedOffersAsync(game, kind, run, cancel));
         }
 
-        return new ArtworkChoices(currentFile, current, own, ownName, offers, keyState, Settings().WithValidValues().Off);
+        return new ArtworkChoices(currentFile, current, own, ownName, offers, keyState, Settings().WithValidValues().Off, run.Offline);
+    }
+
+    /// <summary>What "Artwork ändern" would ask online for the game: its launcher's download addresses, SteamGridDB.</summary>
+    private IReadOnlyCollection<Uri> AddressesOf(Game game, ArtworkKind kind, RunState run, bool asksSteamGridDb)
+    {
+        var addresses = new List<Uri>();
+        if (asksSteamGridDb)
+        {
+            addresses.Add(SteamGridDbClient.Api);
+        }
+
+        if (run.IsOn(ArtworkSource.Launcher) && _sources.TryGetValue(game.LauncherId, out var source))
+        {
+            addresses.AddRange(source.Look().For(game, kind).Select(c => c.Download).OfType<Uri>());
+        }
+
+        return addresses;
     }
 
     /// <summary>Where the image in use came from and whether it was set by hand; null while the placeholder shows.</summary>

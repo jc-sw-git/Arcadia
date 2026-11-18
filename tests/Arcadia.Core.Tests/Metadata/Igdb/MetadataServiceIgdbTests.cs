@@ -33,6 +33,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     private SeveralHits _severalHits = SeveralHits.Ask;
     private IgdbAccess _access;
     private MetadataService _service;
+    private readonly Net.FakeConnectionCheck _connection = new();
 
     public MetadataServiceIgdbTests()
     {
@@ -66,6 +67,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
         Igdb = _access,
         Settings = () => _settings,
         SeveralHits = () => _severalHits,
+        Connection = _connection,
     };
 
     private async Task GrantAccessAsync()
@@ -124,6 +126,59 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     }
 
     private static string Summary(string text) => $"\"summary\":\"{text}\"";
+
+    [Fact]
+    [Trait("TestCase", "T683-5")]
+    public async Task Without_internet_igdb_is_not_asked_after_the_store_failed_and_only_the_players_run_says_so()
+    {
+        await GrantAccessAsync();
+        var lost = 0;
+        var reloadFailed = 0;
+        _service.ConnectionLost += (_, _) => Interlocked.Increment(ref lost);
+        _service.ReloadFailed += (_, _) => Interlocked.Increment(ref reloadFailed);
+        _store.Offline = true;
+        _connection.Online = false;
+        var steam = Enumerable.Range(1, 3).Select(i => GameOf(Steamish, (100 + i).ToString(System.Globalization.CultureInfo.InvariantCulture), "Made-up Game " + i)).ToList();
+
+        // A background run: one store request, no IGDB, nothing said.
+        Scan(steam: steam);
+        await RunToIdleAsync();
+        Assert.Single(_store.Requests);
+        Assert.Equal(0, _igdb.ApiRequests);
+        Assert.Equal(0, lost);
+
+        // "Jetzt suchen" and "Alle Metadaten neu laden": the same, and each says so once.
+        Assert.True(_service.FetchMissing(byPlayer: true));
+        await RunToIdleAsync();
+        Assert.True(_service.ReloadAll());
+        await RunToIdleAsync();
+        Assert.Equal(3, _store.Requests.Count);
+        Assert.Equal(0, _igdb.ApiRequests);
+        Assert.Equal((2, 0), (lost, reloadFailed));
+
+        // The store alone down while the internet is there: IGDB still answers and nothing is lost.
+        _connection.Online = true;
+        Assert.True(_service.FetchMissing(byPlayer: true));
+        await RunToIdleAsync();
+        Assert.True(_igdb.ApiRequests > 0);
+        Assert.Equal(2, lost);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T683-2")]
+    public async Task The_check_before_a_search_names_one_store_page_per_launcher_and_igdb()
+    {
+        await GrantAccessAsync();
+        Scan(steam: [GameOf(Steamish, "101", "Made-up Game"), GameOf(Steamish, "102", "Other Game")]);
+        await RunToIdleAsync();
+        var before = _connection.Checks.Count;
+
+        Assert.True(await _service.IsOnlineAsync());
+
+        var addresses = _connection.Checks.Skip(before).Single();
+        Assert.Contains(IgdbClient.Api, addresses);
+        Assert.Single(addresses, a => a != IgdbClient.Api);
+    }
 
     [Fact]
     [Trait("TestCase", "T494-10")]

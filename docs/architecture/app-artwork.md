@@ -14,7 +14,8 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
   `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); `MetadataSourcesTab` holds
   `IgdbAccessRows` (#494: client id, secret, paste, Twitch's console, test, delete), `MetadataSourceRows` (the metadata
   order, a box per launcher in "Launcher-Daten"'s info; `SourceOrder<T>` lifts and moves for both orders), `MetadataRows`
-  (#493: "Fehlende Metadaten" with "Jetzt suchen", "Alle Metadaten neu laden") and "Eigene Tags". Each tab has its own
+  (#493: "Fehlende Metadaten" with "Jetzt suchen", "Alle Metadaten neu laden") and "Eigene Tags". Their searches and
+  reloads start through `Services/ConnectionFirst` (#683: the service's connection check, the warning toast offline). Each tab has its own
   `SeveralHitsRows` (by `WaitingKind`). It reaches the
   window through `IDataSourcesHost` (`MainViewModel.DataSources.cs`: toasts, keyboard, `IClipboardText` and
   `IWebBrowser` from `Services/ExternalApps`); the window drags a source as a launcher, through `IDraggableRows`. `StatusBarViewModel.WatchSteamGridDb`/`WatchIgdb` show a rejected key or access in the chip.

@@ -1,4 +1,5 @@
 using Arcadia.App.Input;
+using Arcadia.App.Services;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Settings;
@@ -18,7 +19,8 @@ public sealed class ArtworkSourceRowViewModel(string key, string title, ArtworkS
 /// The groups "REIHENFOLGE FÜR ARTWORK" and "ARTWORK" of "Datenquellen" (#489, #506): the sources in their order, each
 /// switched on or off, L3 or the mouse lift one, ▲ ▼ or dragging move it, L3 or letting go put it down, B puts it back, as
 /// in the launcher list; "Fehlende Cover und Hintergründe" with its progress, "Jetzt suchen" and "Suche abbrechen". A
-/// changed order or switch applies at once to the images on disk and starts no search.
+/// changed order or switch applies at once to the images on disk and starts no search. "Jetzt suchen" checks the connection
+/// first (#683, <see cref="ConnectionFirst"/>).
 /// </summary>
 public sealed class ArtworkSourceRows
 {
@@ -34,6 +36,7 @@ public sealed class ArtworkSourceRows
     private readonly Action _orderChanged;
     private readonly Dictionary<ArtworkSourceKind, ArtworkSourceRowViewModel> _sources = [];
     private readonly ActionRowViewModel _missing;
+    private readonly ConnectionFirst _connection;
 
     // "Jetzt suchen" was pressed and its run hasn't shown yet: the row says "Läuft …" at once.
     private bool _searchAsked;
@@ -42,9 +45,12 @@ public sealed class ArtworkSourceRows
     private readonly SourceOrder<ArtworkSourceKind> _order;
 
     /// <param name="orderChanged">The sources' order or a lift changed: the category puts the rows anew.</param>
-    public ArtworkSourceRows(ArtworkService artwork, SteamGridDbKey key, SettingsChanges changes, Action orderChanged)
+    /// <param name="connection">The tab's connection check, shared with "Alle Artworks neu laden".</param>
+    public ArtworkSourceRows(ArtworkService artwork, SteamGridDbKey key, SettingsChanges changes, Action orderChanged, ConnectionFirst connection)
     {
         _artwork = artwork;
+        _connection = connection;
+        _connection.Changed += (_, _) => RefreshMissing();
         _key = key;
         _changes = changes;
         _orderChanged = orderChanged;
@@ -121,8 +127,8 @@ public sealed class ArtworkSourceRows
         }
 
         // A search going on is cancelled from here; a reload from its own row, so this one waits.
-        var searching = search.Running is { Reload: false } || _searchAsked;
-        var reloading = search.Running is { Reload: true };
+        var searching = search.Running is { Reload: false } || _searchAsked || _connection.Checking == MissingKey;
+        var reloading = search.Running is { Reload: true } || _connection.Checking == ArtworkReloadRows.ReloadKey;
         _missing.IsEnabled = !reloading && (searching || SteamGridDbOn);
         _missing.IsDimmed = !_missing.IsEnabled;
         _missing.IsWorking = searching || reloading;
@@ -132,7 +138,7 @@ public sealed class ArtworkSourceRows
         {
             { Running: { Reload: true } reload } => AppTexts.DataSourcesReloadRunning(done: reload.Done, total: reload.Total),
             { Running: { } run } => AppTexts.DataSourcesSearchRunning(done: run.Done, total: run.Total),
-            _ when _searchAsked => AppTexts.DataSourcesSearchBusy,
+            _ when _searchAsked || _connection.Checking == MissingKey => AppTexts.DataSourcesSearchBusy,
             { Result: { WithSteamGridDb: false } } => AppTexts.DataSourcesSearchLauncherOnly,
             { Result: { } result } => AppTexts.DataSourcesSearchFound(covers: result.Covers, heroes: result.Heroes),
             { MissingCovers: 0, MissingHeroes: 0 } when search == ArtworkSearch.NotYet => AppTexts.DataSourcesMissingNotYet,
@@ -161,6 +167,11 @@ public sealed class ArtworkSourceRows
 
     private void SearchOrCancel()
     {
+        if (_connection.Cancel(MissingKey))
+        {
+            return;
+        }
+
         if (_artwork.Search.Running is { Reload: false } || _searchAsked)
         {
             _artwork.CancelSearch();
@@ -169,14 +180,16 @@ public sealed class ArtworkSourceRows
             return;
         }
 
-        if (_artwork.Search.Running is not null || !SteamGridDbOn)
+        if (_artwork.Search.Running is not null || _connection.Checking is not null || !SteamGridDbOn)
         {
             return;
         }
 
-        _resultAtAsk = _artwork.Search.Result;
-        _searchAsked = _artwork.SearchAgain(byPlayer: true);
-        Refresh();
+        _connection.Start(MissingKey, () =>
+        {
+            _resultAtAsk = _artwork.Search.Result;
+            _searchAsked = _artwork.SearchAgain(byPlayer: true);
+        });
     }
 
     private void Switch(ArtworkSourceKind source, bool on)

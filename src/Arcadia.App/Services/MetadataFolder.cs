@@ -1,3 +1,4 @@
+using Arcadia.Core.Net;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using Arcadia.Core.Metadata;
@@ -33,6 +34,8 @@ public static class MetadataFolder
             Settings = () => settings.Current.Metadata,
             SeveralHits = () => settings.Current.Metadata.SeveralHitsOr(settings.Current.Artwork.WithValidValues().SeveralHits),
             Igdb = new IgdbAccess(store, new IgdbClient(http, time) { Log = AppLog.Write }, time),
+            // Through the same client, so the check sees what the requests would (#683); a HEAD without the access.
+            Connection = new ConnectionCheck(http, time) { Log = AppLog.Write },
         };
     }
 

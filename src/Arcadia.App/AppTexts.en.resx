@@ -1155,6 +1155,7 @@
   <data name="DataSourcesMissingInfo" xml:space="preserve"><value>By itself, Arcadia only searches for games new to the library, and once for all games as soon as there is a valid key. Arcadia doesn’t search when rescanning, after a game or after an installation.</value></data>
   <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>“Search now” searches for all games that lack an image or whose image only fills in cropped. “Cancel search” stops the search; what was found stays.</value></data>
   <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB is turned off, so there is nothing to search. You turn it back on under “Order for artwork”.</value></data>
+  <data name="NoInternetConnection" xml:space="preserve"><value>No internet connection. Check the connection and try again.</value></data>
   <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>No connection to SteamGridDB. Arcadia tries again on the next search.</value></data>
   <data name="DataSourcesReload" xml:space="preserve"><value>Reload all artworks</value></data>
   <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Cancel reloading</value></data>
@@ -1294,6 +1295,7 @@
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>The image couldn’t be loaded. The previous one stays.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Changing artwork</value></data>
   <data name="ErrorContextWaitingList" xml:space="preserve"><value>Waiting for your choice</value></data>
+  <data name="ErrorContextConnectionCheck" xml:space="preserve"><value>Connection check</value></data>
   <data name="ErrorContextMetadata" xml:space="preserve"><value>Metadata</value></data>
   <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>METADATA</value></data>
   <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Missing metadata</value></data>

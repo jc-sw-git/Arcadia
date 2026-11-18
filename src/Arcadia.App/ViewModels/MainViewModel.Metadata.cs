@@ -15,7 +15,8 @@ public partial class MainViewModel
 
     /// <summary>
     /// Follows the run from the start: an unexpected error is logged and toasted, "Alle Metadaten neu laden" failing as a
-    /// whole gets one warning (#43); a background run that reaches no store says nothing. Reads the cache at once.
+    /// whole gets one warning (#43), a search or reload the player started that lost the internet another (#683); a
+    /// background run that reaches no store says nothing. Reads the cache at once.
     /// </summary>
     private void WatchMetadata(MetadataService metadata)
     {
@@ -32,6 +33,7 @@ public partial class MainViewModel
         metadata.ProgressChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => FilterModal?.ShowMetadataLoading(metadata.IsBusy));
         metadata.Failed += (_, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => AppErrors.Report(e, AppTexts.ErrorContextMetadata));
         metadata.ReloadFailed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.DataSourcesMetadataReloadNoConnection));
+        metadata.ConnectionLost += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.NoInternetConnection));
         if (metadata.Igdb is { } igdb)
         {
             // A rejected IGDB access is a warning in the header, whose entry opens its row (#494).

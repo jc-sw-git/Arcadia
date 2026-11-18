@@ -14,7 +14,7 @@ namespace Arcadia.App.Tests;
 /// #506 C through the view models: the waiting list's two levels, the hit grid and the field "Eigener Suchbegriff", hits
 /// checked when shown, an own search with "Zurücksetzen", and nothing asked or loaded for games the focus passes.
 /// </summary>
-public sealed class WaitingListLevelsTests
+public sealed partial class WaitingListLevelsTests
 {
     private static async Task<(ArcadiaDriver Arcadia, WaitingListViewModel List)> OpenAsync(ArcadiaDriver? started = null)
     {

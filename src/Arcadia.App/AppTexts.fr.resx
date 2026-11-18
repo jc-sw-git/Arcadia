@@ -1155,6 +1155,7 @@
   <data name="DataSourcesMissingInfo" xml:space="preserve"><value>De lui-même, Arcadia ne cherche que pour les jeux nouveaux dans la bibliothèque, et une fois pour tous les jeux dès qu’il y a une clé valide. Arcadia ne cherche pas lors d’une nouvelle analyse, après un jeu ou après une installation.</value></data>
   <data name="DataSourcesMissingInfoNow" xml:space="preserve"><value>« Rechercher maintenant » cherche pour tous les jeux auxquels il manque une image ou dont l’image ne remplit le cadre que recadrée. « Annuler la recherche » arrête la recherche ; ce qui a été trouvé reste.</value></data>
   <data name="DataSourcesMissingInfoSteamGridDbOff" xml:space="preserve"><value>SteamGridDB est désactivé, il n’y a donc rien à chercher. Vous le réactivez sous « Ordre des illustrations ».</value></data>
+  <data name="NoInternetConnection" xml:space="preserve"><value>Pas de connexion Internet. Vérifiez la connexion, puis réessayez.</value></data>
   <data name="DataSourcesSearchNoConnection" xml:space="preserve"><value>Pas de connexion à SteamGridDB. Arcadia réessaie lors de la prochaine recherche.</value></data>
   <data name="DataSourcesReload" xml:space="preserve"><value>Recharger toutes les illustrations</value></data>
   <data name="DataSourcesReloadCancel" xml:space="preserve"><value>Annuler le rechargement</value></data>
@@ -1294,6 +1295,7 @@
   <data name="ArtworkOfferFailed" xml:space="preserve"><value>L’image n’a pas pu être chargée. La précédente reste.</value></data>
   <data name="ErrorContextChangeArtwork" xml:space="preserve"><value>Modification des illustrations</value></data>
   <data name="ErrorContextWaitingList" xml:space="preserve"><value>En attente de votre choix</value></data>
+  <data name="ErrorContextConnectionCheck" xml:space="preserve"><value>Vérification de la connexion</value></data>
   <data name="ErrorContextMetadata" xml:space="preserve"><value>Métadonnées</value></data>
   <data name="DataSourcesMetadataGroup" xml:space="preserve"><value>MÉTADONNÉES</value></data>
   <data name="DataSourcesMetadataMissing" xml:space="preserve"><value>Métadonnées manquantes</value></data>

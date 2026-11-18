@@ -67,7 +67,8 @@ Every toast has a level like a status message (#433): **Info** for progress and 
 installed, rescans, every "Demo-Spiel: …"), **Warning** when the action didn't happen and the player can retry or act
 (another start running, no window found, not installable here, a launcher refused, a scan failed), **Error** for
 failures ("… konnte nicht gestartet werden …", unexpected errors, a failed save or install, a file that won't open,
-controllers not recognised). Pan's notices take the level of their source. The UI never says "Toast": a toast is a
+controllers not recognised). Pan's notices take the level of their source. Every toast shows its level's symbol in
+front of its text, the same as its entry in "Letzte Meldungen" (#683). The UI never says "Toast": a toast is a
 "Meldung", a status message a "Status".
 
 ## Category "Lokalisierung"

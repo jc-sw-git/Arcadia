@@ -2208,7 +2208,11 @@
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
       <Border Grid.Row="2" Grid.RowSpan="2" IsVisible="{Binding Toast.IsVisible}" Background="{StaticResource SurfaceRaised}" CornerRadius="14"
               Padding="24,14" Margin="0,0,0,96" HorizontalAlignment="Center" VerticalAlignment="Bottom" BoxShadow="{StaticResource ToastShadow}">
-        <TextBlock Text="{Binding Toast.Text}" FontSize="18" FontWeight="SemiBold" />
+        <!-- The level's symbol as in "Letzte Meldungen" (#683); symbol and colour from the statusIcon styles. -->
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Path Classes="statusIcon" Classes.info="{Binding Toast.IsInfo}" Classes.error="{Binding Toast.IsError}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Toast.Text}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
       </Border>
     </Grid>
   </Viewbox>

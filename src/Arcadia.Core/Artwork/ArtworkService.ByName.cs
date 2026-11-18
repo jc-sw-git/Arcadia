@@ -362,7 +362,7 @@ public sealed partial class ArtworkService
 
         var search = await SteamGridDb!.SearchAsync(term, cancel);
         run.SteamGridDbAsked++;
-        if (StopsSteamGridDb(search.Outcome, run))
+        if (await StopsSteamGridDbAsync(search.Outcome, run, cancel))
         {
             return null;
         }
@@ -405,7 +405,7 @@ public sealed partial class ArtworkService
         {
             var answer = await HitImagesAsync(hit, kind, cancel);
             run.SteamGridDbAsked++;
-            if (StopsSteamGridDb(answer.Outcome, run))
+            if (await StopsSteamGridDbAsync(answer.Outcome, run, cancel))
             {
                 return null;
             }

@@ -1,3 +1,4 @@
+using Arcadia.Core.Net;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using Arcadia.Core.Artwork;
@@ -26,6 +27,8 @@ public static class ArtworkFolder
             Log = AppLog.Write,
             Settings = () => settings.Current.Artwork,
             SteamGridDb = new SteamGridDbKey(store, new SteamGridDbClient(http, time) { Log = AppLog.Write }, time),
+            // Through the same client, so the check sees what the downloads would (#683); a HEAD without the key.
+            Connection = new ConnectionCheck(http, time) { Log = AppLog.Write },
         };
     }
 

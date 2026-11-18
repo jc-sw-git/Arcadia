@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Metadata.Igdb;
+using Arcadia.Core.Net;
 using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 
@@ -106,8 +107,17 @@ public sealed partial class MetadataService : IDisposable
     /// <summary><see cref="Progress"/> changed (any thread).</summary>
     public event EventHandler? ProgressChanged;
 
-    /// <summary>"Alle Metadaten neu laden" reached the store for no game at all: no network (any thread).</summary>
+    /// <summary>"Alle Metadaten neu laden" reached the store for no game at all, while the internet is there (any thread).</summary>
     public event EventHandler? ReloadFailed;
+
+    /// <summary>
+    /// A run the player started ("Jetzt suchen", "Alle Metadaten neu laden") lost the internet and asked nothing more
+    /// (#683); a background run only logs it (any thread).
+    /// </summary>
+    public event EventHandler? ConnectionLost;
+
+    /// <summary>Whether the hosts can be reached (#683); the App gives the real check, the tests theirs.</summary>
+    public IConnectionCheck Connection { get; init; } = ConnectionCheck.Assumed;
 
     /// <summary>An unexpected error ended a run; the next scan starts a new one (any thread).</summary>
     public event EventHandler<Exception>? Failed;
@@ -200,6 +210,39 @@ public sealed partial class MetadataService : IDisposable
         }
     });
 
+    /// <summary>
+    /// Whether the hosts a search would ask now can be reached (#683): one store page per launcher with a store, and IGDB
+    /// with a usable access. Checked before the player's search starts; at most <see cref="ConnectionCheck.Timeout"/>.
+    /// </summary>
+    public Task<bool> IsOnlineAsync(CancellationToken cancel = default) => Connection.ReachesAnyAsync(SearchedAddresses, cancel);
+
+    private IReadOnlyCollection<Uri> SearchedAddresses()
+    {
+        IReadOnlyList<LibraryMetadata>? libraries;
+        lock (_gate)
+        {
+            libraries = _lastLibraries;
+        }
+
+        return AddressesOf(libraries ?? []);
+    }
+
+    /// <summary>One store page per launcher, and IGDB while it is asked.</summary>
+    private List<Uri> AddressesOf(IReadOnlyList<LibraryMetadata> libraries)
+    {
+        var addresses = StoreGames(libraries)
+            .DistinctBy(g => g.Store)
+            .Select(g => CheckedAddress(SafeAddressOf(g.Store, g.Game, Language)))
+            .OfType<Uri>()
+            .ToList();
+        if (IgdbIsAsked)
+        {
+            addresses.Add(IgdbClient.Api);
+        }
+
+        return addresses;
+    }
+
     /// <summary>Reads the cache in the background; nothing is fetched before the first scan.</summary>
     public void Open() => Start(null);
 
@@ -207,11 +250,11 @@ public sealed partial class MetadataService : IDisposable
     public void Update(IReadOnlyList<LibraryMetadata> libraries) => Start(new Pending(libraries, Reload: false));
 
     /// <summary>
-    /// The first usable IGDB access (#494) or "Jetzt suchen" (#538): what is missing is asked for at once, from the last
-    /// libraries, as after a scan.
+    /// The first usable IGDB access (#494) or "Jetzt suchen" (#538, <paramref name="byPlayer"/>: it reports a lost
+    /// connection): what is missing is asked for at once, from the last libraries, as after a scan.
     /// </summary>
     /// <returns>False before the first scan: nothing starts.</returns>
-    public bool FetchMissing()
+    public bool FetchMissing(bool byPlayer = false)
     {
         IReadOnlyList<LibraryMetadata>? libraries;
         lock (_gate)
@@ -224,7 +267,7 @@ public sealed partial class MetadataService : IDisposable
             return false;
         }
 
-        Update(libraries);
+        Start(new Pending(libraries, Reload: false, ByPlayer: byPlayer));
         return true;
     }
 
@@ -309,7 +352,7 @@ public sealed partial class MetadataService : IDisposable
         {
             if (run is not null)
             {
-                _pending = _pending is { } queued ? run with { Reload = run.Reload || queued.Reload } : run;
+                _pending = _pending is { } queued ? run with { Reload = run.Reload || queued.Reload, ByPlayer = run.ByPlayer || queued.ByPlayer } : run;
                 _lastLibraries = run.Libraries;
                 var madeUp = run.Libraries.Where(l => l.MadeUp).SelectMany(l => l.Library.Games).Select(g => g.Key).ToHashSet(StringComparer.Ordinal);
                 _madeUpFlipped.UnionWith(madeUp.Except(_madeUp).Concat(_madeUp.Except(madeUp)));
@@ -385,10 +428,27 @@ public sealed partial class MetadataService : IDisposable
 
         ReadLocal(pending.Libraries);
         WaitingChanged?.Invoke(this, EventArgs.Empty);
-        var storesReached = await FetchAsync(pending.Libraries, pending.Reload, cancel);
-        if (!HasPending())
+        var stores = await FetchAsync(pending.Libraries, pending.Reload, cancel);
+        var offline = stores.Offline && !await Connection.ReachesAnyAsync(() => AddressesOf(pending.Libraries), cancel);
+        var igdb = (Reached: (bool?)null, Offline: false);
+        if (!HasPending() && !offline)
         {
-            await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, cancel);
+            igdb = await FetchIgdbAsync(pending.Libraries, pending.Reload, cancel);
+            offline = igdb.Offline && !await Connection.ReachesAnyAsync(() => AddressesOf(pending.Libraries), cancel);
+        }
+
+        if (offline)
+        {
+            // Without internet IGDB isn't asked after a store failed, so the run costs one timeout, not one per source.
+            Log("Metadaten: keine Internetverbindung, der Rest folgt beim nächsten Einlesen");
+            if (pending.Reload || pending.ByPlayer)
+            {
+                ConnectionLost?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        else if (pending.Reload && stores.Reached != true && igdb.Reached != true && (stores.Reached is not null || igdb.Reached is not null))
+        {
+            ReloadFailed?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -560,8 +620,11 @@ public sealed partial class MetadataService : IDisposable
     /// Asks the stores for every game still missing an answer, in library order. Stops for a newer scan (which then asks
     /// for the rest, none twice) and at the first failed connection (no network: the next scan tries again).
     /// </summary>
-    /// <returns>Whether a store answered; null when none was asked. For "Alle Metadaten neu laden"'s warning.</returns>
-    private async Task<bool?> FetchAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, CancellationToken cancel)
+    /// <returns>
+    /// Whether a store answered (null when none was asked), for "Alle Metadaten neu laden"'s warning; and whether it stopped
+    /// at a failed connection, for the connection check (#683).
+    /// </returns>
+    private async Task<(bool? Reached, bool Offline)> FetchAsync(IReadOnlyList<LibraryMetadata> libraries, bool reload, CancellationToken cancel)
     {
         var all = StoreGames(libraries).ToList();
         var queue = all.Where(g => IsMissing(g.Game)).ToList();
@@ -569,7 +632,7 @@ public sealed partial class MetadataService : IDisposable
         Report(libraries, run, null);
         if (queue.Count == 0)
         {
-            return null;
+            return (null, false);
         }
 
         foreach (var (game, store, source) in queue)
@@ -607,7 +670,7 @@ public sealed partial class MetadataService : IDisposable
         }
 
         run.LogSummary(Log);
-        return run.Answered > 0 || !run.Offline;
+        return (run.Answered > 0 || !run.Offline, run.Offline);
     }
 
     /// <summary>A reload ends with the switch: the games it didn't reach keep their data and count as loaded.</summary>
@@ -893,7 +956,8 @@ public sealed partial class MetadataService : IDisposable
         ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private sealed record Pending(IReadOnlyList<LibraryMetadata> Libraries, bool Reload);
+    /// <param name="ByPlayer">"Jetzt suchen": a lost connection is reported (#683), as for a reload.</param>
+    private sealed record Pending(IReadOnlyList<LibraryMetadata> Libraries, bool Reload, bool ByPlayer = false);
 
     private enum Outcome
     {

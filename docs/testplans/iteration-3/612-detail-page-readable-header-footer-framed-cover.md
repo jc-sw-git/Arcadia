@@ -1,6 +1,6 @@
 # #612 Detail page: readable header and footer, background to the window's edges, framed cover
 
-**Status:** Automated: T612-3 (window area), T612-8 · QE: T612-1 to T612-6, T612-9 · Open for the owner: T612-7
+**Status:** Automated: T612-3 (window area), T612-8 · QE: T612-1 to T612-6, T612-9 · Owner: T612-7 passed
 
 - [x] **T612-1** Detail page open over a bright artwork: header (logo, tabs, clock) sits on a dark band, 45 %
   see-through, the artwork visibly shows through, all text reads clearly; the other launchers' tabs are chips as under
@@ -18,7 +18,7 @@
   detail page; B goes back to where it was. No button or key reaches the chip. · E2E: yes
 - [x] **T612-9** "Bild ansehen" (10 s without input on the detail page) in a window wider than 16 : 9: the image show
   covers the whole window, the page's background doesn't show at the sides. · E2E: no (window)
-- [ ] **T612-7** **Owner:** On your monitor with your own games, open the detail page of a game with a bright and one with
+- [x] **T612-7** **Owner:** On your monitor with your own games, open the detail page of a game with a bright and one with
   a dark artwork: header and footer read well, the artwork shows through their bands, nothing looks cut off at the
   window's edges, the cover stands out. · E2E: no (real artwork on a real monitor)
 
@@ -39,3 +39,4 @@ History:
 | T612-6 | 2026-11-14 | Claude | as above, library at 2547 × 1360 | ✅ | – |
 | T612-1, T612-5 | 2026-11-14 | Claude | as above, after QE findings 1 and 2 (date and other tabs lighter, dark outer line on the frame) | ✅ | – |
 | T612-1, T612-9 | 2026-11-14 | Claude | as above, after the owner's test (band 45 %, tab chips, clock chip, image show to the window's edges) at 2547 × 1360 | ✅ | – |
+| T612-7 | 2026-11-18 | Owner | Release build on the owner's PC, own games | ✅ | – |

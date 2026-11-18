@@ -33,5 +33,5 @@ History:
 
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
-| T407-1, T407-2 (owner, before the fix) | 2026-11-02 | Juri | 0.2.0-rc.2 (from #406), Windows, own PC, no restart after the uninstall | ❌ no hint to restart at the uninstall; "Treiber installieren" left HidHide out silently (`pan.log`), then "Windows entfernt HidHide beim nächsten Neustart" read as the new HidHide going | #407 |
+| T407-1, T407-2 (owner, before the fix) | 2026-11-02 | owner | 0.2.0-rc.2 (from #406), Windows, own PC, no restart after the uninstall | ❌ no hint to restart at the uninstall; "Treiber installieren" left HidHide out silently (`pan.log`), then "Windows entfernt HidHide beim nächsten Neustart" read as the new HidHide going | #407 |
 | T407-2 to T407-4 (automated), T407-1 (notice text and time) | 2026-11-02 | Claude | PR branch, Debug, Linux cloud container, faked parts; T407-2 to T407-4 each seen red once (blocking rows, puck sentence and the row's install guard removed) | ✅ | – |

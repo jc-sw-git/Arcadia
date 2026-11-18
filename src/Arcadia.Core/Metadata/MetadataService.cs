@@ -542,8 +542,13 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
+    /// <summary>The launchers' stores are asked at all: "Launcher-Daten" is switched on (#638).</summary>
+    private bool StoresAreAsked => (Settings() ?? new MetadataSettings()).WithValidValues().IsOn(MetadataSourceKind.Launcher);
+
     private IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
-        libraries
+        !StoresAreAsked
+            ? []
+            : libraries
             .Where(l => l.Source?.Store is not null)
             .SelectMany(l => l.Library.Games.Select(g => (g, l.Source!.Store!, l.Library.Launcher.DisplayName)))
             .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g, Language)) is not null)
@@ -569,7 +574,8 @@ public sealed partial class MetadataService : IDisposable
 
         foreach (var (game, store, source) in queue)
         {
-            if (HasPending())
+            // Also stops a run that is going when "Launcher-Daten" is switched off.
+            if (HasPending() || !StoresAreAsked)
             {
                 break;
             }

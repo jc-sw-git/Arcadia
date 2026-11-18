@@ -8,7 +8,7 @@
 - [x] **T568-3** Without old caches the start does nothing and creates no folder. · E2E: yes
 - [x] **T568-3b** A cache that cannot be moved (e.g. a file where the folder should go) stays, does not throw and does not stop the other one. · E2E: yes
 - [ ] **T568-4** **Owner:** Windows, with a hand-picked cover: run the setup over the installed Arcadia ("overwrite"/repair);
-  the cover is still there, `%LOCALAPPDATA%\Arcadia` holds no `artwork` or `metadata`. · E2E: no (real setup)
+  the cover is still there, `%LOCALAPPDATA%\Arcadia` holds no `artwork` or `metadata`. · E2E: no (real setup) · RC
 
 Automated tests:
 

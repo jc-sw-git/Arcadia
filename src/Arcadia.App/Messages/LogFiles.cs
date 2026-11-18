@@ -44,15 +44,19 @@ public interface ILogFiles
 /// <summary>The real logs: arcadia.log and viiper.log in <see cref="LogLocation.Directory"/>, pan.log in Pan's data folder.</summary>
 public sealed class LogFiles : ILogFiles
 {
+    private static readonly string UserProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
     private static readonly string AppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
     public string ShownPathOf(LogKind kind)
     {
         var path = PathOf(kind);
         // %APPDATA% names the user's profile; the info panel never shows the user's name.
-        return AppData.Length > 0 && path.StartsWith(AppData, StringComparison.OrdinalIgnoreCase)
+        var shown = AppData.Length > 0 && path.StartsWith(AppData, StringComparison.OrdinalIgnoreCase)
             ? "%APPDATA%" + path[AppData.Length..]
             : path;
+        // A data folder of its own (--data-folder) may lie anywhere in the profile, e.g. in %TEMP%.
+        return LogPrivacy.WithoutUserProfile(shown, UserProfile);
     }
 
     public LogFileState StateOf(LogKind kind) =>

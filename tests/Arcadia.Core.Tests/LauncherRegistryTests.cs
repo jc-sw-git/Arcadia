@@ -157,6 +157,7 @@ public sealed class LauncherRegistryTests
     }
 
     [Fact]
+    [Trait("TestCase", "T634-3")]
     public void Built_in_launchers_follow_the_known_order_and_add_demo_data_only_on_request()
     {
         var real = BuiltInLaunchers.Create(_time, demo: false);
@@ -165,8 +166,8 @@ public sealed class LauncherRegistryTests
         var demo = new LauncherRegistry(BuiltInLaunchers.Create(_time, demo: true), () => null);
         Assert.Equal(KnownLaunchers.All.Select(l => l.Id), demo.All.Select(i => i.Launcher.Id));
         Assert.Empty(demo.Rejected);
-        Assert.NotNull(demo.Find("epic")?.InstallMonitor);
-        Assert.IsType<SteamIntegration>(demo.Find("steam"));
+        // A pure demo loads nothing of this PC: Steam and Epic are demo libraries too.
+        Assert.All(demo.All, integration => Assert.IsType<DemoIntegration>(integration));
 
         // Every launcher with a signal of its own reports its running games; the demo shows one per tab.
         Assert.All(demo.All, integration => Assert.NotNull(integration.RunningGames));
@@ -186,6 +187,7 @@ public sealed class LauncherRegistryTests
     }
 
     [Fact]
+    [Trait("TestCase", "T634-3")]
     public async Task A_large_demo_library_has_as_many_games_as_asked_with_unique_titles()
     {
         var demo = BuiltInLaunchers.Create(_time, demo: true, demoGames: 5000).OfType<DemoIntegration>().ToList();

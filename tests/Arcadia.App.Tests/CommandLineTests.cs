@@ -4,6 +4,26 @@ namespace Arcadia.App.Tests;
 public sealed class CommandLineTests
 {
     [Theory]
+    [Trait("TestCase", "T634-2")]
+    [InlineData(new[] { "--demo", "--data-folder", "/tmp/measure", "--demo-games", "5000" }, "/tmp/measure")]
+    [InlineData(new[] { "--demo" }, null)]
+    [InlineData(new[] { "--demo", "--data-folder" }, null)]
+    [InlineData(new[] { "--data-folder", " " }, null)]
+    public void The_data_folder_is_the_argument_after_the_option(string[] args, string? expected)
+    {
+        Assert.Equal(expected, CommandLine.DataFolder(args));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T634-2")]
+    public void A_restart_keeps_the_data_folder()
+    {
+        var args = new[] { "--demo", "--data-folder", "/tmp/measure" };
+
+        Assert.Equal(args, CommandLine.Restart(args, inFront: true, []));
+    }
+
+    [Theory]
     [Trait("TestCase", "T554-7")]
     [InlineData(true, new[] { "--demo", "--fullscreen", "--show-language-setting" })]
     [InlineData(false, new[] { "--demo", "--show-language-setting" })]

@@ -19,7 +19,8 @@ mode fully controllable by gamepad (incl. Steam Controller), desktop mode by mou
 ```bash
 dotnet build Arcadia.slnx
 dotnet test Arcadia.slnx
-dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all launchers
+dotnet run --project src/Arcadia.App -- --demo        # demo libraries for all launchers, none read from the PC
+dotnet run --project src/Arcadia.App -- --demo --demo-games 5000 --data-folder <temp>   # measuring: own data folder
 tools/ci/run-tests.sh 4                               # after a Release build: all tests as a PR's CI runs them
 WINDOW_GUARDS=1 tools/ci/run-tests.sh 4               # … plus the window guards, as main's CI runs them
 ```

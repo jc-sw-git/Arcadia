@@ -315,7 +315,7 @@ public sealed class SettingsStore(string path)
     public string Path { get; } = path;
 
     public static SettingsStore CreateDefault() => new(System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Arcadia", "settings.json"));
+        Diagnostics.LogLocation.DataFolder, "settings.json"));
 
     /// <summary>
     /// Missing or unreadable files yield the defaults rather than an error. A file that can't be

@@ -79,5 +79,7 @@ What a launcher is made of, with no dependency on the rest; the future plugin in
   the ends and across page edges.
 
 **Diagnostics**
-- `LogLocation`: `arcadia.log` in `%APPDATA%\Arcadia\logs`, beside the settings. `LogPrivacy`: the Windows account's
+- `LogLocation`: `arcadia.log` in `%APPDATA%\Arcadia\logs`, beside the settings. `--data-folder <path>` (`UseDataFolder`, set first in
+  `Program.Main`) moves the whole data folder (settings, logs, logos, caches, sign-ins) below `<path>`; paths come from
+  `LogLocation.DataFolder`, never from `GetFolderPath(ApplicationData)` (`APPDATA` is ignored by Windows). `LogPrivacy`: the Windows account's
   name taken out of paths in log lines and stack traces.

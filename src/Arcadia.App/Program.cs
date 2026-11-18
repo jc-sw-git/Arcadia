@@ -31,8 +31,25 @@ sealed partial class Program
         }
 
         velopack.Run();
-        OldCacheLocation.Move(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
-        LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+        if (CommandLine.DataFolder(args) is { } ownFolder)
+        {
+            // Before anything reads the data folder; the moves of older versions' files are the user's own folders' business.
+            try
+            {
+                LogLocation.UseDataFolder(ownFolder);
+            }
+            catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                // Before the first log line: nothing to write to yet, and starting on the user's own data would defeat the option.
+                Console.Error.WriteLine($"{CommandLine.DataFolderArgument}: not a usable folder path ({e.Message})");
+                return;
+            }
+        }
+        else
+        {
+            OldCacheLocation.Move(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+            LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+        }
 
         // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>

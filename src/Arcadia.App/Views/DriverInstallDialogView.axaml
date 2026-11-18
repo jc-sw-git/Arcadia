@@ -53,7 +53,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
                   <Panel Width="24" Height="24" VerticalAlignment="Center">
                     <Path Classes="stepDone" IsVisible="{Binding IsDone}" Data="M5 12.5l4.5 4.5L19 7.5" />
-                    <Path Classes="spinner" IsVisible="{Binding IsRunning}"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
+                    <ctl:LoadingSpinner Classes="spinner" IsVisible="{Binding IsRunning}" />
                     <Ellipse Classes="stepPending" IsVisible="{Binding IsPending}" />
                     <Path Classes="stepFailed" IsVisible="{Binding IsFailed}" Data="M6.5 6.5l11 11M17.5 6.5l-11 11" />
                   </Panel>

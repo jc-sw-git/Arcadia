@@ -279,6 +279,17 @@ public partial class App : Application
         updateCheck.Start();
         timers.Add(updateCheck);
 
+        // Hands back what a scan, the artwork run or a sync left behind (#636): only while Arcadia is in front and no game
+        // runs, as the collection pauses every thread, the pads' forwarding with them.
+        var memoryTrim = MemoryTrim.ForProcess(time, () => viewModel.ImageShow.LastInput);
+        var trimCheck = new DispatcherTimer(MemoryTrim.CheckInterval, DispatcherPriority.Background, async (_, _) =>
+        {
+            var mayPause = mouseMode.IsArcadiaActive && !runningGames.ActiveGames.Any(game => runningGames.RealStateOf(game) is not null);
+            await AppErrors.Guard(() => Task.Run(() => memoryTrim.TrimIfDue(mayPause)), AppTexts.ErrorContextMemoryTrim);
+        });
+        trimCheck.Start();
+        timers.Add(trimCheck);
+
         // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
         // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
         var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>

@@ -13,6 +13,7 @@
   <data name="ErrorContextCheckInstalls" xml:space="preserve"><value>Checking installations</value></data>
   <data name="ErrorContextUpdateCheck" xml:space="preserve"><value>Update check</value></data>
   <data name="ErrorContextRunningGames" xml:space="preserve"><value>Running games</value></data>
+  <data name="ErrorContextMemoryTrim" xml:space="preserve"><value>Freeing memory</value></data>
   <data name="ErrorContextReturnAfterGame" xml:space="preserve"><value>Back to Arcadia after the game</value></data>
   <data name="ErrorContextReturnAfterRefusedStart" xml:space="preserve"><value>Back to Arcadia after a canceled start</value></data>
   <data name="ErrorContextLoadLibrary" xml:space="preserve"><value>Loading the library</value></data>

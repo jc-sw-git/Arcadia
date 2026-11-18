@@ -107,6 +107,9 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
   `Input/RepeatGate`: a repeat acts only on the page, dialog and layout (`IPage.Layout`) its press acted on.
 - `Services/InputLatency`: each key or button press timed to the frame that shows it, one `Bild:` line in arcadia.log
   (#229); none for a gamepad press while a text is being written, nor its `Gamepad:` line (#640).
+- `Services/MemoryTrim` (#636): once 64 MB were allocated since the last trim and nothing was pressed for 10 s, one full,
+  compacting collection (`Speicher: aufgeräumt …` in arcadia.log); the GC doesn't run at idle on its own. Only while
+  Arcadia is in front and no game runs: the pause would stall the pads' forwarding. No other code collects.
 
 ## Artwork
 

@@ -3,6 +3,7 @@
         xmlns:app="using:Arcadia.App"
              xmlns:kb="using:Arcadia.App.Keyboard"
              xmlns:ctl="using:Arcadia.App.Controls"
+             xmlns:views="using:Arcadia.App.Views"
              x:Class="Arcadia.App.Views.OnScreenKeyboardView"
              x:DataType="kb:OnScreenKeyboardViewModel"
              Width="1598" Height="292" ClipToBounds="False">
@@ -28,67 +29,82 @@
         <DataTemplate x:DataType="kb:BoardKeyViewModel">
           <Button Classes="plain boardKey" IsVisible="{Binding !IsHidden}" Classes.tallEnter="{Binding IsTallEnter}" Classes.blank="{Binding IsBlank}" Classes.on="{Binding IsOn}"
                   Classes.unavailable="{Binding IsUnavailable}" Classes.focused="{Binding IsFocused}"
-                  Width="{Binding Width}" Height="{Binding Height}" Command="{Binding PressCommand}">
-            <Panel>
-              <!-- A character key as printed on a real one: the shift character small above, the AltGr one small at the
-                   bottom right; both only on the normal level (#129). -->
-              <Panel IsVisible="{Binding IsCharacter}">
-                <TextBlock Classes="keyHint" Text="{Binding ShiftHint}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0" />
-                <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0" />
-                <TextBlock Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6" />
-              </Panel>
-
-              <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol or icon at the left edge, the name in
-                   the middle, the button at the right edge (owner, 2026-10-22). -->
-              <ctl:CentredDockPanel IsVisible="{Binding IsLabelled}" Spacing="8" Margin="12,0,10,3">
-                <ctl:PadGlyph DockPanel.Dock="Right" Classes="small" Button="{Binding Glyph}" VerticalAlignment="Center">
-                  <ctl:PadGlyph.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                      <Binding Path="HasGlyph" />
-                      <Binding Path="$parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController" TargetNullValue="False" />
-                    </MultiBinding>
-                  </ctl:PadGlyph.IsVisible>
-                </ctl:PadGlyph>
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                  <Path Classes="keyIcon" IsVisible="{Binding IsLayoutKey}" Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.8" VerticalAlignment="Center"
-                        Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9" />
-                  <!-- A monitor with the keyboard's bar where it goes and an arrow that way. -->
-                  <Panel IsVisible="{Binding IsDockKey}" Width="34" Height="26" VerticalAlignment="Center">
-                    <Panel IsVisible="{Binding PointsUp}">
-                      <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
-                            Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 17V4 M25.5 7.5L29 4l3.5 3.5" />
-                      <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,13,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                  Width="{Binding Width}" Height="{Binding Height}" Command="{Binding PressCommand}" Content="{Binding}">
+            <!-- Only the face of the key's own kind is built (#636). -->
+            <Button.ContentTemplate>
+              <views:BoardKeyFaces>
+                <!-- A character key as printed on a real one: the shift character small above, the AltGr one small at the
+                     bottom right; both only on the normal level (#129). -->
+                <views:BoardKeyFaces.Character>
+                  <DataTemplate x:DataType="kb:BoardKeyViewModel">
+                    <Panel>
+                      <ctl:KeyLabel Classes="keyHint" Text="{Binding ShiftHint}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0" />
+                      <ctl:KeyLabel Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0" />
+                      <ctl:KeyLabel Classes="keyHint" Text="{Binding AltGrHint}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6" />
                     </Panel>
-                    <Panel IsVisible="{Binding !PointsUp}">
-                      <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
-                            Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 4v13 M25.5 13.5L29 17l3.5 -3.5" />
-                      <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,4,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                    </Panel>
-                  </Panel>
-                  <!-- A keyboard going down. -->
-                  <Path Classes="keyIcon" IsVisible="{Binding IsHideKey}" Width="34" Height="26" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"
-                        Data="M3.5 1.5h20a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-20a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z M6 6h2 M11 6h2 M16 6h2 M21 6h0.5 M6 11h16 M9.5 19.5L13.5 23.5l4 -4" />
-                  <Path Classes="keyIcon tab" IsVisible="{Binding IsTabKey}" Data="{StaticResource KeyIconTab}" />
-                  <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolBesideName}" Text="{Binding Symbol}" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
-                <TextBlock Classes="keySymbol" IsVisible="{Binding HasSymbolAlone}" Text="{Binding Symbol}" VerticalAlignment="Center" />
-              </ctl:CentredDockPanel>
+                  </DataTemplate>
+                </views:BoardKeyFaces.Character>
 
-              <!-- The tall ISO Enter: an upside-down L over two rows, its name in the upper part, ≡ in the lower one. Only the
-                   shape takes clicks (the key's background is none), so the corner beside it still reaches the key there. -->
-              <Panel IsVisible="{Binding IsTallEnter}">
-                <Path Classes="enterFace" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
-                <Border Classes="enterEdge" Margin="22,0,0,0" />
-                <Path Classes="enterRing" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
-                <ctl:CentredDockPanel Spacing="8" Height="52" Margin="12,0,10,0" VerticalAlignment="Top">
-                  <TextBlock DockPanel.Dock="Left" Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
-                  <TextBlock Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
-                </ctl:CentredDockPanel>
-                <ctl:PadGlyph Classes="small" Button="{Binding Glyph}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
-                        IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
-              </Panel>
-            </Panel>
+                <!-- Backspace, tab, shift, space, AltGr, the right block and the arrows: symbol or icon at the left edge, the
+                     name in the middle, the button at the right edge (owner, 2026-10-22). -->
+                <views:BoardKeyFaces.Labelled>
+                  <DataTemplate x:DataType="kb:BoardKeyViewModel">
+                    <ctl:CentredDockPanel Spacing="8" Margin="12,0,10,3">
+                      <ctl:PadGlyph DockPanel.Dock="Right" Classes="small" Button="{Binding Glyph}" VerticalAlignment="Center">
+                        <ctl:PadGlyph.IsVisible>
+                          <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="HasGlyph" />
+                            <Binding Path="$parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController" TargetNullValue="False" />
+                          </MultiBinding>
+                        </ctl:PadGlyph.IsVisible>
+                      </ctl:PadGlyph>
+                      <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Classes="keyIcon" IsVisible="{Binding IsLayoutKey}" Width="22" Height="22" Stretch="Uniform" StrokeThickness="1.8" VerticalAlignment="Center"
+                              Data="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3 12h18 M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9 M12 3C9.5 5.7 8.4 8.7 8.4 12s1.1 6.3 3.6 9" />
+                        <!-- A monitor with the keyboard's bar where it goes and an arrow that way. -->
+                        <Panel IsVisible="{Binding IsDockKey}" Width="34" Height="26" VerticalAlignment="Center">
+                          <Panel IsVisible="{Binding PointsUp}">
+                            <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
+                                  Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 17V4 M25.5 7.5L29 4l3.5 3.5" />
+                            <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,13,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                          </Panel>
+                          <Panel IsVisible="{Binding !PointsUp}">
+                            <Path Classes="keyIcon" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"
+                                  Data="M3.5 1.5h18a2 2 0 0 1 2 2v13a2 2 0 0 1 -2 2h-18a2 2 0 0 1 -2 -2v-13a2 2 0 0 1 2 -2z M8 24h9 M29 4v13 M25.5 13.5L29 17l3.5 -3.5" />
+                            <Rectangle Classes="keyIconBar" Width="14" Height="3" Margin="5.5,4,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                          </Panel>
+                        </Panel>
+                        <!-- A keyboard going down. -->
+                        <Path Classes="keyIcon" IsVisible="{Binding IsHideKey}" Width="34" Height="26" StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"
+                              Data="M3.5 1.5h20a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-20a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z M6 6h2 M11 6h2 M16 6h2 M21 6h0.5 M6 11h16 M9.5 19.5L13.5 23.5l4 -4" />
+                        <Path Classes="keyIcon tab" IsVisible="{Binding IsTabKey}" Data="{StaticResource KeyIconTab}" />
+                        <ctl:KeyLabel Classes="keySymbol" IsVisible="{Binding HasSymbolBesideName}" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <ctl:KeyLabel Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                      <ctl:KeyLabel Classes="keySymbol" IsVisible="{Binding HasSymbolAlone}" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                    </ctl:CentredDockPanel>
+                  </DataTemplate>
+                </views:BoardKeyFaces.Labelled>
+
+                <!-- The tall ISO Enter: an upside-down L over two rows, its name in the upper part, ≡ in the lower one. Only
+                     the shape takes clicks (the key's background is none), so the corner beside it still reaches the key there. -->
+                <views:BoardKeyFaces.TallEnter>
+                  <DataTemplate x:DataType="kb:BoardKeyViewModel">
+                    <Panel>
+                      <Path Classes="enterFace" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
+                      <Border Classes="enterEdge" Margin="22,0,0,0" />
+                      <Path Classes="enterRing" Data="M8,0 H116 A8,8 0 0 1 124,8 V104 A8,8 0 0 1 116,112 H30 A8,8 0 0 1 22,104 V60 A8,8 0 0 0 14,52 H8 A8,8 0 0 1 0,44 V8 A8,8 0 0 1 8,0 Z" />
+                      <ctl:CentredDockPanel Spacing="8" Height="52" Margin="12,0,10,0" VerticalAlignment="Top">
+                        <ctl:KeyLabel DockPanel.Dock="Left" Classes="keySymbol" Text="{Binding Symbol}" VerticalAlignment="Center" />
+                        <ctl:KeyLabel Classes="keyText" Text="{Binding Text}" VerticalAlignment="Center" />
+                      </ctl:CentredDockPanel>
+                      <ctl:PadGlyph Classes="small" Button="{Binding Glyph}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,13"
+                              IsVisible="{Binding $parent[UserControl].((kb:OnScreenKeyboardViewModel)DataContext)?.UsesController, TargetNullValue=False}" />
+                    </Panel>
+                  </DataTemplate>
+                </views:BoardKeyFaces.TallEnter>
+              </views:BoardKeyFaces>
+            </Button.ContentTemplate>
           </Button>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

@@ -31,8 +31,16 @@ sealed partial class Program
         }
 
         velopack.Run();
-        OldCacheLocation.Move(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
-        LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+        if (CommandLine.DataFolder(args) is { } ownFolder)
+        {
+            // Before anything reads the data folder; the moves of older versions' files are the user's own folders' business.
+            LogLocation.UseDataFolder(ownFolder);
+        }
+        else
+        {
+            OldCacheLocation.Move(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+            LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
+        }
 
         // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>

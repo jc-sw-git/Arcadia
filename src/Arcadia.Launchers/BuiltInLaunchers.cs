@@ -12,6 +12,8 @@ public static class BuiltInLaunchers
     // Deliberately different sizes, so paging and the page size rule can be tried out.
     private static readonly Dictionary<string, int> DemoGameCounts = new(StringComparer.Ordinal)
     {
+        [KnownLaunchers.Steam.Id] = 120,
+        [KnownLaunchers.Epic.Id] = 45,
         [KnownLaunchers.Gog.Id] = 31,
         [KnownLaunchers.Ubisoft.Id] = 9,
         [KnownLaunchers.Ea.Id] = 14,
@@ -20,7 +22,10 @@ public static class BuiltInLaunchers
         [KnownLaunchers.Amazon.Id] = 6,
     };
 
-    /// <param name="demo">Adds a demo library for every known launcher that has no integration yet (<c>--demo</c>).</param>
+    /// <param name="demo">
+    /// Adds a demo library for every known launcher that has no integration yet (<c>--demo</c>); Steam and Epic too, unless
+    /// <paramref name="folders"/> name their files: then those are read, as the acceptance tests do.
+    /// </param>
     /// <param name="demoGames">
     /// How many demo games in all, shared in the same proportions (<c>--demo-games 5000</c>), to measure Arcadia with a
     /// large library against the budgets in <c>CLAUDE.md</c>, with made-up covers and backgrounds; null for the usual sizes.
@@ -40,7 +45,11 @@ public static class BuiltInLaunchers
         var demoArtwork = demoGames is null ? null : new DemoArtwork(Path.Combine(Path.GetTempPath(), "arcadia-demo-artwork"));
         int DemoCount(int usual) => demoGames is { } wanted ? Math.Max(1, (int)Math.Round((double)usual * wanted / total)) : usual;
 
-        ILauncherIntegration[] integrations =
+        // A pure demo loads nothing from this PC: no Steam files, no Epic files, no sign-in.
+        var allDemo = demo && folders is null;
+        ILauncherIntegration[] integrations = allDemo
+            ? []
+            :
         [
             new SteamIntegration(time, folders?.Steam, steamAccount ?? (http is null || web is null || dataFolder is null ? null : SteamOnlineAccount.Create(http, web, time, dataFolder))),
             new EpicIntegration(time, folders?.Epic),
@@ -55,7 +64,8 @@ public static class BuiltInLaunchers
             }
             else if (demo && DemoGameCounts.TryGetValue(launcher.Id, out var count))
             {
-                ordered.Add(new DemoIntegration(launcher, DemoCount(count), time.GetLocalNow(), withOtherTypes: true, artwork: demoArtwork));
+                ordered.Add(new DemoIntegration(
+                    launcher, DemoCount(count), time.GetLocalNow(), withOtherTypes: true, canUninstall: launcher.Id != KnownLaunchers.Epic.Id, artwork: demoArtwork));
             }
         }
 

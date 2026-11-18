@@ -9,9 +9,20 @@ namespace Arcadia.Core.Diagnostics;
 public static class LogLocation
 {
     /// <summary>Arcadia's own files: settings, chosen logos, Epic play times and the logs.</summary>
-    public static string DataFolder { get; } = DataFolderIn(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+    public static string DataFolder => _own ?? _default;
 
-    public static string Directory { get; } = For(DataFolder);
+    public static string Directory => For(DataFolder);
+
+    private static readonly string _default = DataFolderIn(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+
+    private static string? _own;
+
+    /// <summary>
+    /// Puts everything Arcadia writes (settings, logs, caches, sign-ins) below <paramref name="folder"/> instead of
+    /// <c>%APPDATA%\Arcadia</c> (<c>--data-folder</c>, to measure with demo data without the user's files). Must run before
+    /// anything reads <see cref="DataFolder"/> (null: back to the usual folder, for tests); <c>APPDATA</c> can't do this, Windows answers it from the system.
+    /// </summary>
+    public static void UseDataFolder(string? folder) => _own = folder is null ? null : Path.GetFullPath(folder);
 
     public static string DataFolderIn(string appData) => Path.Combine(appData, "Arcadia");
 

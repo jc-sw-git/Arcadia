@@ -58,6 +58,11 @@ rows in "Datenquellen": `app-artwork.md`; the product rules: `docs/product/setti
   digits and a few marks), `IgdbAnswer` (genres by name onto the list, age ratings by organization and the category's text, `IgdbAnswer.Reading` marking cached answers to ask again,
   themes and keywords as tags, companies, first release date; `IgdbImages` the cover's image id),
   `IgdbMatching` (main games only, name equality with `?` as one character, several hits).
+- `Net/ConnectionCheck` (#683, `IConnectionCheck`): no adapter up is offline at once, else a `HEAD` to the root of
+  at most 4 hosts in parallel, 3 s, through the service's own client; any answer is online. `ArtworkService` and
+  `MetadataService` take it as `Connection` (default `ConnectionCheck.Assumed`, always online; the App gives the real
+  one, the tests `FakeConnectionCheck`): `IsOnlineAsync` before the player's search, and once at a run's first failed
+  host, after which the run goes online for nothing more and raises `ConnectionLost` if the player started it.
 - `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.
 - `SecretFile` (`Settings/`): a player's secret (SteamGridDB key, IGDB access) encrypted through injected
   protect/unprotect, else memory only.

@@ -53,11 +53,12 @@ public partial class MainViewModel : IDataSourcesHost
         }
 
         artwork.SearchChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnArtworkSearchChanged(artwork.Search));
+        artwork.ConnectionLost += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => Toast.Show(HealthSeverity.Warning, AppTexts.NoInternetConnection));
     }
 
     /// <summary>
     /// A run the player started that SteamGridDB failed as a whole: one warning (#13); a background run says nothing. A
-    /// turned-down key also shows as a status message.
+    /// turned-down key also shows as a status message. A run that lost the internet has its own warning (#683), not this one.
     /// </summary>
     private void OnArtworkSearchChanged(ArtworkSearch search)
     {
@@ -73,6 +74,11 @@ public partial class MainViewModel : IDataSourcesHost
         }
 
         _playerSearchRunning = false;
+        if (search.Result is { Offline: true })
+        {
+            return;
+        }
+
         switch (search.Result?.SteamGridDbFailure)
         {
             case SteamGridDbOutcome.NoConnection:

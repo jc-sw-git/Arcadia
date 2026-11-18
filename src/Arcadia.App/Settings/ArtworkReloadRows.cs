@@ -1,3 +1,5 @@
+using Arcadia.App.Services;
+using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 
 namespace Arcadia.App.Settings;
@@ -6,7 +8,7 @@ namespace Arcadia.App.Settings;
 /// "Alle Artworks neu laden" and "Von Hand gesetzte Artworks überschreiben" in the group "ARTWORK" of "Datenquellen" (#13,
 /// #490): the reload asks first, since images set by hand go too while the switch is on; it is greyed out while a search
 /// runs, and while it runs itself it reads "Neu laden abbrechen" (#506). Its progress shows in "Fehlende Cover und
-/// Hintergründe" (<see cref="ArtworkSourceRows"/>).
+/// Hintergründe" (<see cref="ArtworkSourceRows"/>). Confirmed, it checks the connection first (#683, <see cref="ConnectionFirst"/>).
 /// </summary>
 public sealed class ArtworkReloadRows
 {
@@ -19,14 +21,17 @@ public sealed class ArtworkReloadRows
     private readonly Action<SettingsQuestionViewModel?> _ask;
     private readonly ActionRowViewModel _reload;
     private readonly SwitchRowViewModel _overwrite;
+    private readonly ConnectionFirst _connection;
 
     // "Neu laden" was confirmed and its run hasn't shown yet: the button stays greyed out meanwhile.
     private bool _reloadAsked;
 
     /// <param name="ask">Shows the question over the page (the category's dialog), or null to close it.</param>
-    public ArtworkReloadRows(ArtworkService artwork, SettingsChanges changes, Action<SettingsQuestionViewModel?> ask)
+    /// <param name="toast">Shows the warning when the reload finds no connection.</param>
+    public ArtworkReloadRows(ArtworkService artwork, SettingsChanges changes, Action<SettingsQuestionViewModel?> ask, Action<HealthSeverity, string> toast)
     {
         _artwork = artwork;
+        _connection = new ConnectionFirst(artwork.IsOnlineAsync, toast, Refresh);
         _changes = changes;
         _ask = ask;
         _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesReload, AskOrCancel)
@@ -67,7 +72,7 @@ public sealed class ArtworkReloadRows
             _reloadAsked = false;
         }
 
-        var reloading = _artwork.Search.Running is { Reload: true } || _reloadAsked;
+        var reloading = _artwork.Search.Running is { Reload: true } || _reloadAsked || _connection.IsChecking;
         var searching = _artwork.Search.Running is { Reload: false };
         _reload.IsEnabled = !searching;
         _reload.IsDimmed = searching;
@@ -80,6 +85,11 @@ public sealed class ArtworkReloadRows
     /// <summary>A on "Alle Artworks neu laden": the question first, its text following the switch; while it runs, it stops.</summary>
     private void AskOrCancel()
     {
+        if (_connection.Cancel())
+        {
+            return;
+        }
+
         if (_artwork.Search.Running is { Reload: true } || _reloadAsked)
         {
             _artwork.CancelSearch();
@@ -102,8 +112,7 @@ public sealed class ArtworkReloadRows
             () =>
             {
                 _ask(null);
-                _reloadAsked = _artwork.ReloadAll(_changes.Current.OverwritesArtworkSetByHand);
-                Refresh();
+                _connection.Start(() => _reloadAsked = _artwork.ReloadAll(_changes.Current.OverwritesArtworkSetByHand));
             },
             () => _ask(null)));
     }

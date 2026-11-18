@@ -20,6 +20,7 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     private readonly FakeTimeProvider _time = new();
     private readonly List<string> _log = [];
     private readonly Source _source = new();
+    private readonly Net.FakeConnectionCheck _connection = new();
     private ArtworkSettings _settings = new();
     private SteamGridDbKey _key;
     private ArtworkService _service;
@@ -46,6 +47,7 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
         Log = Log,
         Settings = () => _settings,
         SteamGridDb = _key,
+        Connection = _connection,
     };
 
     private void Log(string line)
@@ -166,6 +168,81 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     }
 
     private IEnumerable<string> AskedFor(string id) => _sgdb.Asked().Where(path => path.EndsWith("/" + id, StringComparison.Ordinal));
+
+    /// <summary>The launcher offers the game's cover on two hosts, as Steam's CDN does.</summary>
+    private void LauncherCoverOnTwoHosts(string id) => _source.Covers[id] =
+    [
+        new ArtworkCandidate("steam-cdn", Download: new Uri($"https://cdn-a.example/{id}.png")),
+        new ArtworkCandidate("steam-cdn", Download: new Uri($"https://cdn-b.example/{id}.png")),
+    ];
+
+    [Fact]
+    [Trait("TestCase", "T683-3")]
+    [Trait("TestCase", "T683-4")]
+    public async Task Without_internet_a_run_asks_no_host_after_the_first_failed_and_only_the_players_search_says_so()
+    {
+        await WithKeyAsync();
+        var ids = Ids(3);
+        foreach (var id in ids)
+        {
+            LauncherCoverOnTwoHosts(id);
+            SteamGridDbHas(id);
+        }
+
+        var lost = 0;
+        _service.ConnectionLost += (_, _) => Interlocked.Increment(ref lost);
+        _images.Offline = true;
+        _sgdb.Offline = true;
+        _connection.Online = false;
+
+        // A scan of new games: one failed request, one check, nothing more online; a background run says nothing.
+        await ScanAsync(ids);
+        Assert.Equal(1, ImageRequests + _sgdb.Asked().Count());
+        Assert.Single(_connection.Checks);
+        Assert.Equal(0, lost);
+        Assert.Contains(LogLines(), line => line.Contains("keine Internetverbindung", StringComparison.Ordinal));
+
+        // "Jetzt suchen" and "Alle Artworks neu laden": the same, and each says so once.
+        ClearRequests();
+        await SearchAsync();
+        Assert.True(_service.Search.Result!.Offline);
+        Assert.True(_service.ReloadAll(overwriteSetByHand: false));
+        await _service.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(2, ImageRequests + _sgdb.Asked().Count());
+        Assert.Equal(2, lost);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T683-3")]
+    public async Task With_internet_a_host_that_fails_leaves_the_other_hosts_asked()
+    {
+        var ids = Ids(2);
+        foreach (var id in ids)
+        {
+            LauncherCoverOnTwoHosts(id);
+            _images.Unreachable($"https://cdn-a.example/{id}.png");
+            _images.Serve($"https://cdn-b.example/{id}.png", TestImages.Png(600, 900));
+        }
+
+        await ScanAsync(ids);
+
+        Assert.Single(_connection.Checks);
+        Assert.All(ids, id => Assert.Equal($"https://cdn-b.example/{id}.png", Cached(id)!.Cover!.Stamp));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T683-2")]
+    public async Task The_check_before_a_search_names_steamgriddb_and_one_download_of_the_launcher()
+    {
+        await WithKeyAsync();
+        LauncherCoverOnTwoHosts(Ids(1)[0]);
+        await ScanAsync(Ids(1));
+        var before = _connection.Checks.Count;
+
+        Assert.True(await _service.IsOnlineAsync());
+
+        Assert.Equal([SteamGridDbClient.Api, new Uri($"https://cdn-a.example/{Ids(1)[0]}.png")], _connection.Checks.Skip(before).Single());
+    }
 
     [Fact]
     [Trait("TestCase", "T506-40")]

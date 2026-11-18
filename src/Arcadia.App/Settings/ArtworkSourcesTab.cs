@@ -28,8 +28,8 @@ public sealed class ArtworkSourcesTab : IDataSourcesTab
         _key = key;
         _keyRows = new SteamGridDbKeyRows(
             key, artwork, host, showEditor, time, keyPersists, () => changes.Current.Artwork.WithValidValues().IsOn(ArtworkSourceKind.SteamGridDb));
-        _sourceRows = new ArtworkSourceRows(artwork, key, changes, orderChanged);
-        _reloadRows = new ArtworkReloadRows(artwork, changes, ask);
+        _sourceRows = new ArtworkSourceRows(artwork, key, changes, orderChanged, host.Toast);
+        _reloadRows = new ArtworkReloadRows(artwork, changes, ask, host.Toast);
         _severalHits = new SeveralHitsRows(WaitingKind.Artwork, artwork, changes, host.Toast, host.OpenWaitingList);
     }
 

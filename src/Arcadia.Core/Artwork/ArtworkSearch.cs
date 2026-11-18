@@ -24,4 +24,5 @@ public sealed record ArtworkRun(int Done, int Total, bool ByPlayer, bool Reload 
 /// <summary>What a run found: images taken into the cache, and whether SteamGridDB took part.</summary>
 /// <param name="WithSteamGridDb">A usable SteamGridDB key at the start: SteamGridDB was asked where it was needed.</param>
 /// <param name="SteamGridDbFailure">Why SteamGridDB was left out after a while (key turned down, no connection); null if it wasn't.</param>
-public sealed record ArtworkSearchResult(int Covers, int Heroes, bool WithSteamGridDb, SteamGridDbOutcome? SteamGridDbFailure);
+/// <param name="Offline">The internet went away during the run (#683): nothing more was asked online.</param>
+public sealed record ArtworkSearchResult(int Covers, int Heroes, bool WithSteamGridDb, SteamGridDbOutcome? SteamGridDbFailure, bool Offline = false);

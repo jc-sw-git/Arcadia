@@ -36,7 +36,7 @@ public sealed class MetadataSourcesTab : IDataSourcesTab
         _metadata = metadata;
         _igdbRows = metadata.Igdb is { } igdb ? new IgdbAccessRows(igdb, metadata, host, showEditor, time) : null;
         _sourceRows = new MetadataSourceRows(metadata, changes, orderChanged, host.BadgeOf);
-        _metadataRows = new MetadataRows(metadata, ask);
+        _metadataRows = new MetadataRows(metadata, ask, host.Toast);
         _severalHits = new SeveralHitsRows(WaitingKind.Metadata, artwork, changes, host.Toast, host.OpenWaitingList, metadata);
         _userDataRow = userDataUnreadable ? UserDataRow() : null;
         _ownTags = ownTags;

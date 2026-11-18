@@ -264,4 +264,53 @@ public sealed class MetadataSettingsTests
 
         Assert.Equal(AppTexts.DataSourcesMetadataReloadNoConnection, arcadia.Main.Toast.Text);
     }
+
+    private static int NoInternetToasts(ArcadiaDriver arcadia) =>
+        arcadia.Main.Toast.History.Entries.Count(e => e.Text == AppTexts.NoInternetConnection && e.Level == Arcadia.ControllerSupport.HealthSeverity.Warning);
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T683-8")]
+    public async Task Without_internet_Jetzt_suchen_and_Alle_Metadaten_neu_laden_warn_at_once_and_ask_no_store()
+    {
+        using var arcadia = await StartAsync(["4000001", "4000002"]);
+        await RunToIdleAsync(arcadia);
+        var asked = arcadia.MetadataStore.RequestCount;
+        arcadia.Connection.Online = false;
+        OpenDataSources(arcadia);
+
+        var missing = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.MissingKey));
+        arcadia.Press(UiAction.Accept);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, NoInternetToasts(arcadia));
+        Assert.Equal((AppTexts.DataSourcesSearchNow, false), (missing.ActionText, missing.IsWorking));
+
+        var reload = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(MetadataRows.ReloadKey));
+        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, NoInternetToasts(arcadia));
+        Assert.Equal((AppTexts.DataSourcesMetadataReloadAction, false), (reload.ActionText, reload.IsWorking));
+        Assert.False(arcadia.Metadata.Progress.Reload);
+        Assert.Equal(asked, arcadia.MetadataStore.RequestCount);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T683-9")]
+    public async Task A_connection_lost_during_a_reload_ends_it_with_the_same_warning_instead_of_the_store_one()
+    {
+        using var arcadia = await StartAsync(["4000001"]);
+        await RunToIdleAsync(arcadia);
+        arcadia.MetadataStore.Offline = true;
+        arcadia.Connection.Next.Enqueue(true);
+        arcadia.Connection.Online = false;
+        OpenDataSources(arcadia);
+
+        arcadia.FocusRow(MetadataRows.ReloadKey);
+        arcadia.Press(UiAction.Accept);
+        arcadia.Press(UiAction.Accept);
+        await RunToIdleAsync(arcadia);
+
+        Assert.Equal(1, NoInternetToasts(arcadia));
+        Assert.DoesNotContain(arcadia.Main.Toast.History.Entries, e => e.Text == AppTexts.DataSourcesMetadataReloadNoConnection);
+    }
 }

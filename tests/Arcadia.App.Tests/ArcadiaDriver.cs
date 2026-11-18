@@ -132,6 +132,7 @@ internal sealed class ArcadiaDriver : IDisposable
                 new SteamGridDbKeyStore(Path.Combine(folder, "data"), data => data, data => data),
                 new SteamGridDbClient(new HttpClient(SteamGridDb, disposeHandler: false), time) { Log = AppLog.Write },
                 time),
+            Connection = Connection,
         };
         // The metadata cache in the test's folder; every store page is the test's fake store, which answers nothing unless
         // the test serves a game (#493). Kept across a restart.
@@ -150,6 +151,7 @@ internal sealed class ArcadiaDriver : IDisposable
                 new IgdbAccessStore(Path.Combine(folder, "data"), data => data, data => data),
                 new IgdbClient(new HttpClient(Igdb, disposeHandler: false), time) { Log = AppLog.Write },
                 time),
+            Connection = Connection,
         };
         // Own titles (#496) in the test's folder, kept across a restart.
         UserData = new UserDataStore(Path.Combine(folder, "user"));
@@ -230,6 +232,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>SteamGridDB's API (#489); it records every request.</summary>
     public FakeSteamGridDb SteamGridDb { get; }
+
+    /// <summary>Whether the artwork's and the metadata's hosts can be reached (#683); online unless the test says not.</summary>
+    public Core.Tests.Net.FakeConnectionCheck Connection { get; } = new();
 
     /// <summary>The browser and the clipboard (#489).</summary>
     public ExternalAppsFake External { get; }

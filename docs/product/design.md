@@ -55,7 +55,8 @@ Laid out at 1920 × 1080 for a TV seen from the sofa:
 ## Feedback
 
 - **Long work shows progress.** Anything that may take longer than about a second shows that it runs (a spinner,
-  "Wird … …", a progress bar, a loading state like "Artwork ändern"'s) and never blocks the UI.
+  "Wird … …", a progress bar, a loading state like "Artwork ändern"'s) and never blocks the UI. While Arcadia isn't
+  in front, spinners stand still; the state they show stays.
 - **A failure says what to do.** A failed action names what happened and the next step ("Erneut versuchen", a fix
   in the settings, where to look); the levels and where it shows: `settings.md` → Status messages, Toast levels.
 

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Path = Avalonia.Controls.Shapes.Path;
@@ -6,11 +7,13 @@ using Path = Avalonia.Controls.Shapes.Path;
 namespace Arcadia.App.Controls;
 
 /// <summary>
-/// The loading spinner (<c>Path.spinner</c> in the theme): turns only while it can be seen (#636). A style animation of a
-/// spinner inside a hidden panel kept turning in Avalonia, and its clock kept the window drawing every frame: CPU and
-/// garbage at idle. The class <c>turning</c>, which starts the animation, follows <see cref="Visual.IsEffectivelyVisible"/>;
-/// Avalonia raises no public event for it, so any change of a visual's <see cref="Visual.IsVisible"/> checks the spinners
-/// in the window, once per dispatcher round.
+/// The loading spinner (<c>Path.spinner</c> in the theme): turns only while it can be seen and its window is in front
+/// (#636, #680). A turning spinner keeps the window drawing every frame: about a fifth of a core and 1.5 MB of garbage a
+/// second on the owner's PC, and in the background no trim gives that memory back (<c>MemoryTrim</c>), so there it
+/// stands still, as everything else of Arcadia does. The class <c>turning</c>, which starts the animation, follows
+/// <see cref="Visual.IsEffectivelyVisible"/> and <see cref="WindowBase.IsActive"/>; Avalonia raises no public event for
+/// the first, so any change of a visual's <see cref="Visual.IsVisible"/> or a window's activation checks the spinners,
+/// once per dispatcher round.
 /// </summary>
 public sealed class LoadingSpinner : Path
 {
@@ -20,6 +23,7 @@ public sealed class LoadingSpinner : Path
     static LoadingSpinner()
     {
         IsVisibleProperty.Changed.AddClassHandler<Visual>((_, _) => PostCheck());
+        WindowBase.IsActiveProperty.Changed.AddClassHandler<WindowBase>((_, _) => PostCheck());
     }
 
     public LoadingSpinner()
@@ -57,7 +61,7 @@ public sealed class LoadingSpinner : Path
             _checkPosted = false;
             foreach (var spinner in Attached)
             {
-                spinner.Classes.Set("turning", spinner.IsEffectivelyVisible);
+                spinner.Classes.Set("turning", spinner.IsEffectivelyVisible && TopLevel.GetTopLevel(spinner) is WindowBase { IsActive: true });
             }
         }, DispatcherPriority.Background);
     }

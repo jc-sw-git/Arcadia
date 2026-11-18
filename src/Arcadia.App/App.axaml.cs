@@ -374,7 +374,11 @@ public partial class App : Application
             AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
         }).Forget(AppTexts.ErrorContextControllerWatch);
 
+        // ShutdownRequested comes only when Windows or the window asks; Arcadia's own Shutdown() (quit, restart, update)
+        // skips it and raises only Exit. Without the teardown there, Pan had to undo a running emulation behind a restart,
+        // and the new Arcadia waited for that teardown forever (#680).
         desktop.ShutdownRequested += (_, _) => Teardown();
+        desktop.Exit += (_, _) => Teardown();
 
         // Version and Windows build first: a bug report with only the log must say what it is about.
         AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "

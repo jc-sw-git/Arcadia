@@ -30,4 +30,29 @@ public sealed class LoadingSpinnerTests
         window.Close();
         Assert.False(spinner.Classes.Contains("turning"), "Ein geschlossener Kreisel dreht sich weiter.");
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T680-3")]
+    public void A_spinner_stands_still_while_its_window_is_not_in_front()
+    {
+        var spinner = new LoadingSpinner();
+        var window = new Window { Content = spinner };
+        window.Show();
+        window.Activate();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(spinner.Classes.Contains("turning"), "Ein sichtbarer Kreisel im vorderen Fenster dreht sich nicht.");
+
+        // Another program comes to the front; the headless platform has no other windows of its own to lose against.
+        // Avalonia keeps the platform's activation callbacks internal: reached by reflection, as Windows would call them.
+        var deactivated = (Action)window.PlatformImpl!.GetType().GetProperty("Deactivated")!.GetValue(window.PlatformImpl)!;
+        deactivated();
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(window.IsActive, "Arcadias Fenster blieb vorn.");
+        Assert.False(spinner.Classes.Contains("turning"), "Ein Kreisel dreht sich weiter, obwohl sein Fenster nicht vorn ist.");
+
+        window.Activate();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(spinner.Classes.Contains("turning"), "Der Kreisel dreht sich nicht wieder, als sein Fenster nach vorn kam.");
+        window.Close();
+    }
 }

@@ -8,7 +8,8 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   `<RotateTransform/>` and animate `RotateTransform.Angle` (`ctl:LoadingSpinner` brings it).
 - A style animation inside a hidden panel can keep running (`PlaybackBehavior` doesn't stop it), and its clock redraws the
   window every frame: CPU and garbage at idle. An endless one goes on a class set only while the element
-  `IsEffectivelyVisible` (`ctl:LoadingSpinner` and `Path.spinner.turning`).
+  `IsEffectivelyVisible` and its window is active (`ctl:LoadingSpinner` and `Path.spinner.turning`): a turning spinner
+  costs about a fifth of a core, and in the background no trim gives its garbage back (#680).
 - `SystemDecorations` is now `WindowDecorations`. Box shadows of `Button.plain` go on the
   template part: `Button.x /template/ ctl|ButtonChrome#Chrome`.
 - Fluent's `Button` and `ItemsControl` clip to their bounds, so an outer focus ring (BoxShadow) is cut off;

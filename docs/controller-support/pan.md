@@ -49,7 +49,9 @@ Once nothing emulates, it removes the stale device entries Arcadia's emulated de
 - Client gone (pipe broke or process ended: Pan holds the client's process handle) → teardown `ClientGone`. Service
   stop or pre-shutdown while emulating → teardown `ServiceStopping`, run while the pipe is still open; its `TornDown`
   notice gets 2 s to go out. While a teardown runs, heartbeats and a new `EmulationStarted` get
-  `TeardownNotAcknowledged`, reported as "Pan räumt noch auf" (one loss, not one per tick).
+  `TeardownNotAcknowledged`, reported as "Pan räumt noch auf" (one loss, not one per tick). A teardown that still
+  runs when the client acknowledges it (a new Arcadia connected during its predecessor's `ClientGone` teardown, which
+  sends no notice) is acknowledged again at every heartbeat until Pan takes it.
 - `EmulationStarted` comes after Arcadia's VIIPER started and before any device goes on it; Pan takes every child of
   the client named `viiper.exe` (parent PID + start time) and holds its handle, so a PID can't be reused under it. It
   takes the start only if one of them alone listens on the usbip port named, only on 127.0.0.1 (IPv4 and IPv6,

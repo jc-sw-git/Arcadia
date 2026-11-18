@@ -46,6 +46,9 @@ public partial class App : Application
 
     private IGamepadSource? _gamepad;
 
+    /// <summary>Set once the pad polling and Pan run: ends them when a later step of the start fails (#641).</summary>
+    private Action? _teardownAfterFailedStart;
+
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
 
     private static string PanJournalText => AppTexts.PanJournalUnreadable;
@@ -66,256 +69,296 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            Trace.Listeners.Add(new AppLogTraceListener());
-            var args = desktop.Args ?? [];
-            var time = TimeProvider.System;
-            var http = new HttpClient();
-            var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
-
-            var settingsStore = SettingsStore.CreateDefault();
-            var settings = new SettingsService(settingsStore, AppLog.Write);
-
-            // Before the first text is read: a change of "Sprache" applies after a restart (#554).
-            UiLanguage.Use(settings.Current.Localization.Language);
-            var demo = args.Contains(CommandLine.DemoArgument, StringComparer.OrdinalIgnoreCase);
-            var firstRun = new FirstRunSetup(
-                settings, demo, forced: args.Contains(CommandLine.FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
-
-            // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
-            // A run with a data folder of its own (--data-folder, to measure) stays away from the PC's system-wide parts:
-            // no connection to Pan (it serves one Arcadia at a time and writes pan.log in ProgramData), no VIIPER.
-            var isolated = CommandLine.DataFolder(args) is not null;
-            var ownViiper = ViiperRelease.IsPinned && !isolated ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
-            var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
-            // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
-            // instead of the library (#297).
-            var integrations = BuiltInLaunchers.Create(time, demo, CommandLine.DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder);
-            // Steam the program holds the Steam Controller: the launcher that owns Steam Input, active or not.
-            var steamInput = LauncherRegistry.SteamInputOwnerOf(integrations);
-            var app = ArcadiaComposition.Build(new ArcadiaParts(
-                settings, http, time, firstRun,
-                integrations,
-                ControllerPlatform: null,
-                ownViiper,
-                OperatingSystem.IsWindows()
-                    ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), steamInput?.Program, new WindowsSisrSystem())
-                    : null,
-                new SystemProcessTable(),
-                updates,
-                LauncherLogos.DefaultFolder,
-                new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)),
-                webPages)
+            try
             {
-                Artwork = ArtworkFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
-                Metadata = MetadataFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
-                UserData = new Core.UserData.UserDataStore(Core.Diagnostics.LogLocation.DataFolder),
-            });
-            var launchers = app.Launchers;
-            var controllerSupport = app.ControllerSupport;
-            var launchedGames = app.LaunchedGames;
-            var runningGames = app.RunningGames;
-            var viewModel = app.Main;
-            for (var i = 0; i < args.Length - 1; i++)
-            {
-                if (args[i] == CommandLine.StartedGameArgument)
-                {
-                    runningGames.ResumeStartedFromArcadia(args[i + 1]);
-                }
+                StartDesktop(desktop);
             }
-
-            var window = new MainWindow { DataContext = viewModel };
-            viewModel.Clipboard = new WindowClipboard(window);
-            viewModel.ForegroundRequested += (_, _) => window.BringToFront();
-            if (args.Contains(CommandLine.FullscreenArgument, StringComparer.OrdinalIgnoreCase))
+            catch (Exception ex)
             {
-                window.WindowState = Avalonia.Controls.WindowState.FullScreen;
-            }
-
-            if (args.Contains(CommandLine.BackgroundArgument))
-            {
-                // Come back behind whatever is in front (a game), as Arcadia was before the update.
-                window.ShowActivated = false;
-                window.Opened += (_, _) => ForegroundGuard.SendToBack(window);
-            }
-
-            desktop.MainWindow = window;
-            viewModel.RestartForLanguage = () => RestartSelf(
-                "Sprache anwenden", // not a UI text (logged)
-                CommandLine.LanguageRestart(CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), window.WindowState == Avalonia.Controls.WindowState.FullScreen),
-                desktop,
-                message => viewModel.Toast.Show(HealthSeverity.Error, message));
-            if (args.Contains(CommandLine.ShowLanguageArgument))
-            {
-                viewModel.ShowLanguageSetting();
-            }
-
-            // The mouse mode's overlay is a window too; Arcadia ends with the main window, not the last one.
-            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-
-            // The downloaded update installs once Arcadia has exited.
-            updates.RestartArguments = () => CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia);
-            updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
-
-
-            var ownPads = new OwnPadModels();
-            _gamepad = ControllerInput.Create(viewModel, ownPads, time);
-            var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
-            viewModel.Dialogs = new SystemDialogs(window, () => viewModel.Input.UsesController, () => mouseMode);
-
-            // VIIPER is only Arcadia's own build of its fork (#242 part B), started and
-            // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
-            var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
-                OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
-            // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
-            var pan = new PanClient(OperatingSystem.IsWindows() && !isolated ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
-            {
-                WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
-                Unexpected = AppErrors.ReportRepeating,
-            };
-            var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
-            pan.JournalProblem += () => panNotices.Show(HealthSeverity.Error, PanJournalText);
-            // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
-            ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
-                ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
-                : new NoSteamControllerCopy();
-            string? RunningSteamGame() => steamInput?.Program?.RunningGame() is { } game ? Game.KeyOf(steamInput.Launcher.Id, game.Id) : null;
-            var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames, launchers.SteamInputOwner?.ProgramNames ?? []);
-            var (_, forGames) = app.ConnectControllers(new ControllerWiring(
-                _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, RunningSteamGame,
-                () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)
-            {
-                OwnPads = ownPads,
-            });
-            pan.Start();
-            var xboxPad = forGames.Pad;
-            // "Arcadia neu starten" and the restart after a HidHide install (#396): HidHide lets only a new process see
-            // what Pan hides. The new Arcadia waits until this one has exited.
-            controllerSupport.RestartArcadia = reason => Dispatcher.UIThread.Post(() =>
-                RestartSelf(reason, CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(HealthSeverity.Error, message)));
-            viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
-            // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
-            // to read why it fails. Not while a game is in front: a toast says it there (PanDialogsViewModel.ShowFirmwareAttempt).
-            viewModel.PanDialogs.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
-            _gamepad.Start();
-
-            var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), AppTexts.ErrorContextControllerWatch));
-            monitoring.Start();
-
-            var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), AppTexts.ErrorContextXboxPadForGames));
-
-            // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
-            // watch, rescan until the games it handed over are installed.
-            var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, AppTexts.ErrorContextFollowInstalls));
-            installProgress.Start();
-            var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, AppTexts.ErrorContextCheckInstalls));
-            installs.Start();
-            var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, AppTexts.ErrorContextUpdateCheck));
-            updateCheck.Start();
-
-            // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
-            // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
-            var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
-                await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, AppTexts.ErrorContextRunningGames));
-            running.Start();
-            window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
-            viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget(AppTexts.ErrorContextReturnAfterGame); // not a UI text (log)
-
-            // The launcher's own window (Steam's error dialog) stays open behind Arcadia: Arcadia doesn't close other programs' windows (#277).
-            viewModel.Session.StartRefused += (_, gameKey) => ReturnAfterGameAsync(gameKey, "nicht gestartet").Forget(AppTexts.ErrorContextReturnAfterRefusedStart); // not a UI text (log)
-
-            async Task ReturnAfterGameAsync(string gameKey, string what)
-            {
-                await Task.Delay(ReturnAfterGameDelay, time);
-                if (mouseMode.IsArcadiaActive)
-                {
-                    return;
-                }
-
-                // The user switched to another program meanwhile: it keeps the front (owner, 2026-10-20).
-                var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
-                if (ForegroundGame.InFrontAfter(gameKey, viewModel.Session.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
-                {
-                    AppLog.Write($"{gameKey} {what}, vorne: {front} – Arcadia kommt nach vorne");
-                    ForegroundGuard.BringBack(window);
-                }
-                else
-                {
-                    AppLog.Write($"{gameKey} {what}, ein anderes Programm ist vorne – Arcadia bleibt hinten");
-                }
-            }
-
-            Task.Run(async () =>
-            {
-                SteamControllerRoute route;
+                // Arcadia would otherwise vanish without a word (#641).
+                StartupFailure.Show(desktop, ex);
                 try
                 {
-                    // An SISR an older Arcadia started would take the Steam Controller beside Pan (#214 decision 6).
-                    await controllerSupport.Sisr.StopStartedByOldArcadiaAsync();
-                    await controllerSupport.TickAsync();
-                    await forGames.Emulation.TickAsync();
-                    route = forGames.Routing.Update();
-                    if (controllerSupport.IsPanUpdateDue)
-                    {
-                        // Pan's hello says whether its teardown of an earlier Arcadia still runs; the update waits for it (#297).
-                        try
-                        {
-                            await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
-                        }
-                        catch (TimeoutException)
-                        {
-                            AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
-                        }
-
-                        await forGames.Emulation.TickAsync();
-                    }
+                    _teardownAfterFailedStart?.Invoke();
                 }
-                finally
+                catch (Exception cleanup)
                 {
-                    // Also when a step above failed: the update page waits for this and must never wait for good (#297).
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        xboxPadTick.Start();
-                        viewModel.PanDialogs.PanAnsweredAtStart();
-                    });
+                    AppLog.Write($"Aufräumen nach dem Startfehler fehlgeschlagen: {cleanup}");
                 }
-
-                await xboxPad.TickAsync();
-                AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
-            }).Forget(AppTexts.ErrorContextControllerWatch);
-
-            desktop.ShutdownRequested += (_, _) =>
-            {
-                monitoring.Stop();
-                xboxPadTick.Stop();
-                installs.Stop();
-                installProgress.Stop();
-                updateCheck.Stop();
-                running.Stop();
-                _gamepad.Dispose();
-
-                // After the polling stopped: closes the open pages and stops the library's delayed rescans.
-                viewModel.Dispose();
-
-                // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
-                mouseMode.Dispose();
-
-                // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
-                // Pan hears the planned exit with it, so it has nothing to undo.
-                Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
-                Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
-                controllerSupport.Shutdown();
-                AppLog.Write("Arcadia beendet.");
-            };
-
-            // Version and Windows build first: a bug report with only the log must say what it is about.
-            AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
-                + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}, Sprache {UiLanguage.Culture.Name}, System {UiLanguage.System.Name}): {string.Join(' ', args)}");
-            viewModel.Session.LoadAsync().Forget(AppTexts.ErrorContextLoadLibrary);
-            viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
-            updates.CheckIfDueAsync().Forget(AppTexts.ErrorContextUpdateCheck);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Builds the services, the view model and the window, and wires them; an error here ends in <see cref="StartupFailure"/>.</summary>
+    private void StartDesktop(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        Trace.Listeners.Add(new AppLogTraceListener());
+        var args = desktop.Args ?? [];
+        var time = TimeProvider.System;
+        var http = new HttpClient();
+        var webPages = new WebPages(time, action => Dispatcher.UIThread.Post(action));
+
+        var settingsStore = SettingsStore.CreateDefault();
+        var settings = new SettingsService(settingsStore, AppLog.Write);
+
+        // Before the first text is read: a change of "Sprache" applies after a restart (#554).
+        UiLanguage.Use(settings.Current.Localization.Language);
+        var demo = args.Contains(CommandLine.DemoArgument, StringComparer.OrdinalIgnoreCase);
+        var firstRun = new FirstRunSetup(
+            settings, demo, forced: args.Contains(CommandLine.FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
+
+        // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
+        // A run with a data folder of its own (--data-folder, to measure) stays away from the PC's system-wide parts:
+        // no connection to Pan (it serves one Arcadia at a time and writes pan.log in ProgramData), no VIIPER.
+        var isolated = CommandLine.DataFolder(args) is not null;
+        var ownViiper = ViiperRelease.IsPinned && !isolated ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
+        var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
+        // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
+        // instead of the library (#297).
+        var integrations = BuiltInLaunchers.Create(time, demo, CommandLine.DemoGames(args), http: http, web: webPages, dataFolder: Core.Diagnostics.LogLocation.DataFolder);
+        // Steam the program holds the Steam Controller: the launcher that owns Steam Input, active or not.
+        var steamInput = LauncherRegistry.SteamInputOwnerOf(integrations);
+        var app = ArcadiaComposition.Build(new ArcadiaParts(
+            settings, http, time, firstRun,
+            integrations,
+            ControllerPlatform: null,
+            ownViiper,
+            OperatingSystem.IsWindows()
+                ? new SisrInstallation(SisrInstallation.DefaultPaths(ownViiper?.Executable), steamInput?.Program, new WindowsSisrSystem())
+                : null,
+            new SystemProcessTable(),
+            updates,
+            LauncherLogos.DefaultFolder,
+            new InstallFolderCheck(Directory.Exists, action => Dispatcher.UIThread.Post(action)),
+            webPages)
+        {
+            Artwork = ArtworkFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
+            Metadata = MetadataFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
+            UserData = new Core.UserData.UserDataStore(Core.Diagnostics.LogLocation.DataFolder),
+        });
+        var launchers = app.Launchers;
+        var controllerSupport = app.ControllerSupport;
+        var launchedGames = app.LaunchedGames;
+        var runningGames = app.RunningGames;
+        var viewModel = app.Main;
+        for (var i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == CommandLine.StartedGameArgument)
+            {
+                runningGames.ResumeStartedFromArcadia(args[i + 1]);
+            }
+        }
+
+        var window = new MainWindow { DataContext = viewModel };
+        viewModel.Clipboard = new WindowClipboard(window);
+        viewModel.ForegroundRequested += (_, _) => window.BringToFront();
+        if (args.Contains(CommandLine.FullscreenArgument, StringComparer.OrdinalIgnoreCase))
+        {
+            window.WindowState = Avalonia.Controls.WindowState.FullScreen;
+        }
+
+        if (args.Contains(CommandLine.BackgroundArgument))
+        {
+            // Come back behind whatever is in front (a game), as Arcadia was before the update.
+            window.ShowActivated = false;
+            window.Opened += (_, _) => ForegroundGuard.SendToBack(window);
+        }
+
+        desktop.MainWindow = window;
+        viewModel.RestartForLanguage = () => RestartSelf(
+            "Sprache anwenden", // not a UI text (logged)
+            CommandLine.LanguageRestart(CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), window.WindowState == Avalonia.Controls.WindowState.FullScreen),
+            desktop,
+            message => viewModel.Toast.Show(HealthSeverity.Error, message));
+        if (args.Contains(CommandLine.ShowLanguageArgument))
+        {
+            viewModel.ShowLanguageSetting();
+        }
+
+        // The mouse mode's overlay is a window too; Arcadia ends with the main window, not the last one.
+        desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+        // The downloaded update installs once Arcadia has exited.
+        updates.RestartArguments = () => CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia);
+        updates.RestartRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
+
+
+        var ownPads = new OwnPadModels();
+        _gamepad = ControllerInput.Create(viewModel, ownPads, time);
+        var mouseMode = new MouseModeHost(_gamepad, settings, window, viewModel, time);
+        viewModel.Dialogs = new SystemDialogs(window, () => viewModel.Input.UsesController, () => mouseMode);
+
+        // VIIPER is only Arcadia's own build of its fork (#242 part B), started and
+        // checked by Arcadia (#304); a build without a pinned one has no VIIPER at all, so no pad and no copy.
+        var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
+            OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
+        // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
+        var pan = new PanClient(OperatingSystem.IsWindows() && !isolated ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
+        {
+            WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
+            Unexpected = AppErrors.ReportRepeating,
+        };
+        var panNotices = new PanNotices(viewModel.Toast, () => mouseMode.IsArcadiaActive, mouseMode.ShowNotice);
+        pan.JournalProblem += () => panNotices.Show(HealthSeverity.Error, PanJournalText);
+        // The copy of the Steam Controller for Steam needs the VIIPER fork (#242 parts B and C); without it Pan hides nothing.
+        ISteamControllerHold Copy(SteamControllerCopyWiring wiring) => OperatingSystem.IsWindows() && viiper is not null && ownViiper is not null
+            ? new ViiperSteamControllerCopy(viiper, ownViiper, wiring, AppLog.Write)
+            : new NoSteamControllerCopy();
+        string? RunningSteamGame() => steamInput?.Program?.RunningGame() is { } game ? Game.KeyOf(steamInput.Launcher.Id, game.Id) : null;
+        var foreground = new ForegroundOwner(() => viewModel.Session.GameFolders, launchedGames, launchers.SteamInputOwner?.ProgramNames ?? []);
+        var (_, forGames) = app.ConnectControllers(new ControllerWiring(
+            _gamepad, OperatingSystem.IsWindows(), (IVirtualXboxPadServer?)viiper ?? new NoVirtualXboxPads(), pan, pan, pan.LetGoAsync, Copy, RunningSteamGame,
+            () => mouseMode.IsArcadiaActive, () => mouseMode.IsOn, foreground.IsSteam, foreground.GameKey, panNotices, window.Latency)
+        {
+            OwnPads = ownPads,
+        });
+        pan.Start();
+        var xboxPad = forGames.Pad;
+        // "Arcadia neu starten" and the restart after a HidHide install (#396): HidHide lets only a new process see
+        // what Pan hides. The new Arcadia waits until this one has exited.
+        controllerSupport.RestartArcadia = reason => Dispatcher.UIThread.Post(() =>
+            RestartSelf(reason, CommandLine.Restart(args, window.IsActive, runningGames.StartedFromArcadia), desktop, message => viewModel.Toast.Show(HealthSeverity.Error, message)));
+        viewModel.QuitRequested += (_, _) => Dispatcher.UIThread.Post(() => desktop.Shutdown());
+        // A firmware update Steam tries through the copy (#295): Arcadia is behind Steam's window, and the player is
+        // to read why it fails. Not while a game is in front: a toast says it there (PanDialogsViewModel.ShowFirmwareAttempt).
+        viewModel.PanDialogs.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
+        _gamepad.Start();
+
+        // Also when Arcadia fails to start after this point (#641): the pad polling, Pan and the timers must not run on behind the error window.
+        var timers = new List<DispatcherTimer>();
+        var tornDown = false;
+        void Teardown()
+        {
+            if (tornDown)
+            {
+                return;
+            }
+
+            tornDown = true;
+            foreach (var timer in timers)
+            {
+                timer.Stop();
+            }
+
+            _gamepad.Dispose();
+
+            // After the polling stopped: closes the open pages and stops the library's delayed rescans.
+            viewModel.Dispose();
+
+            // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
+            mouseMode.Dispose();
+
+            // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+            // Pan hears the planned exit with it, so it has nothing to undo.
+            Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
+            Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
+            controllerSupport.Shutdown();
+            AppLog.Write("Arcadia beendet.");
+        }
+
+        _teardownAfterFailedStart = Teardown;
+
+        var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), AppTexts.ErrorContextControllerWatch));
+        monitoring.Start();
+        timers.Add(monitoring);
+
+        var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), AppTexts.ErrorContextXboxPadForGames));
+        timers.Add(xboxPadTick);
+
+        // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
+        // watch, rescan until the games it handed over are installed.
+        var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, AppTexts.ErrorContextFollowInstalls));
+        installProgress.Start();
+        timers.Add(installProgress);
+        var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, AppTexts.ErrorContextCheckInstalls));
+        installs.Start();
+        timers.Add(installs);
+        var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, AppTexts.ErrorContextUpdateCheck));
+        updateCheck.Start();
+        timers.Add(updateCheck);
+
+        // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
+        // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
+        var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
+            await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, AppTexts.ErrorContextRunningGames));
+        running.Start();
+        timers.Add(running);
+        window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
+        viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget(AppTexts.ErrorContextReturnAfterGame); // not a UI text (log)
+
+        // The launcher's own window (Steam's error dialog) stays open behind Arcadia: Arcadia doesn't close other programs' windows (#277).
+        viewModel.Session.StartRefused += (_, gameKey) => ReturnAfterGameAsync(gameKey, "nicht gestartet").Forget(AppTexts.ErrorContextReturnAfterRefusedStart); // not a UI text (log)
+
+        async Task ReturnAfterGameAsync(string gameKey, string what)
+        {
+            await Task.Delay(ReturnAfterGameDelay, time);
+            if (mouseMode.IsArcadiaActive)
+            {
+                return;
+            }
+
+            // The user switched to another program meanwhile: it keeps the front (owner, 2026-10-20).
+            var launcherPrograms = launchers.Find(Game.LauncherIdOf(gameKey))?.ProgramNames ?? [];
+            if (ForegroundGame.InFrontAfter(gameKey, viewModel.Session.GameFolders, launchedGames, launcherPrograms) is var front and not ForegroundAfterGame.Other)
+            {
+                AppLog.Write($"{gameKey} {what}, vorne: {front} – Arcadia kommt nach vorne");
+                ForegroundGuard.BringBack(window);
+            }
+            else
+            {
+                AppLog.Write($"{gameKey} {what}, ein anderes Programm ist vorne – Arcadia bleibt hinten");
+            }
+        }
+
+        Task.Run(async () =>
+        {
+            SteamControllerRoute route;
+            try
+            {
+                // An SISR an older Arcadia started would take the Steam Controller beside Pan (#214 decision 6).
+                await controllerSupport.Sisr.StopStartedByOldArcadiaAsync();
+                await controllerSupport.TickAsync();
+                await forGames.Emulation.TickAsync();
+                route = forGames.Routing.Update();
+                if (controllerSupport.IsPanUpdateDue)
+                {
+                    // Pan's hello says whether its teardown of an earlier Arcadia still runs; the update waits for it (#297).
+                    try
+                    {
+                        await pan.FirstAttempt.WaitAsync(PanFirstAnswerWait, time);
+                    }
+                    catch (TimeoutException)
+                    {
+                        AppLog.Write("Pan hat beim Start nicht rechtzeitig geantwortet – die Aktualisierung beginnt trotzdem");
+                    }
+
+                    await forGames.Emulation.TickAsync();
+                }
+            }
+            finally
+            {
+                // Also when a step above failed: the update page waits for this and must never wait for good (#297).
+                Dispatcher.UIThread.Post(() =>
+                {
+                    xboxPadTick.Start();
+                    viewModel.PanDialogs.PanAnsweredAtStart();
+                });
+            }
+
+            await xboxPad.TickAsync();
+            AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
+        }).Forget(AppTexts.ErrorContextControllerWatch);
+
+        desktop.ShutdownRequested += (_, _) => Teardown();
+
+        // Version and Windows build first: a bug report with only the log must say what it is about.
+        AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
+            + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}, Sprache {UiLanguage.Culture.Name}, System {UiLanguage.System.Name}): {string.Join(' ', args)}");
+        viewModel.Session.LoadAsync().Forget(AppTexts.ErrorContextLoadLibrary);
+        viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
+        updates.CheckIfDueAsync().Forget(AppTexts.ErrorContextUpdateCheck);
     }
 
     /// <summary>

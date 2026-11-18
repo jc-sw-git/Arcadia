@@ -6,7 +6,7 @@ namespace Arcadia.App.Settings;
 /// <summary>
 /// The group "METADATEN" of the tab "Metadaten" (#493): "Fehlende Metadaten" with the run's progress and its time left,
 /// and "Jetzt suchen", which asks for what is missing without a scan (#538); "Alle Metadaten neu laden", which asks first
-/// and starts no second run. What each launcher delivers is in the info box of "Launcher-Daten" (<see cref="MetadataSourceRows"/>).
+/// and starts no second run. While a run goes, the row it belongs to stops it ("Suche abbrechen", "Neu laden abbrechen"). What each launcher delivers is in the info box of "Launcher-Daten" (<see cref="MetadataSourceRows"/>).
 /// </summary>
 public sealed class MetadataRows
 {
@@ -27,13 +27,13 @@ public sealed class MetadataRows
     {
         _metadata = metadata;
         _ask = ask;
-        _missing = new ActionRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing, SearchNow)
+        _missing = new ActionRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing, SearchOrCancel)
         {
             Group = AppTexts.DataSourcesMetadataGroup,
             ActionText = AppTexts.DataSourcesSearchNow,
             Info = [new InfoText(AppTexts.DataSourcesMetadataMissingInfo), new InfoText(AppTexts.DataSourcesMetadataMissingInfoNow)],
         };
-        _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesMetadataReload, Ask)
+        _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesMetadataReload, AskOrCancel)
         {
             Group = AppTexts.DataSourcesMetadataGroup,
             ActionText = AppTexts.DataSourcesMetadataReloadAction,
@@ -54,18 +54,21 @@ public sealed class MetadataRows
             _progressAtAsk = null;
         }
 
-        var searching = progress.Running || _progressAtAsk is not null;
+        // A search (after a scan or "Jetzt suchen") is stopped from this row, a reload from its own, so this one waits.
+        var reloading = progress.Reload;
+        var searching = !reloading && (progress.Running || _progressAtAsk is not null);
         _missing.Subtitle = MissingText(progress);
-        // Greyed when nothing is missing ("Alle Metadaten geladen"); while a run goes, the row works instead.
-        _missing.IsEnabled = !searching && progress.Missing > 0;
-        _missing.IsDimmed = !searching && progress.Missing == 0;
-        _missing.IsWorking = searching;
+        // Greyed when nothing is missing ("Alle Metadaten geladen") and while a reload goes.
+        _missing.IsEnabled = !reloading && (searching || progress.Missing > 0);
+        _missing.IsDimmed = !_missing.IsEnabled;
+        _missing.IsWorking = searching || reloading;
+        _missing.ActionText = searching ? AppTexts.DataSourcesSearchCancel : AppTexts.DataSourcesSearchNow;
         _missing.Progress = progress is { Running: true, Total: > 0 } ? 100.0 * (progress.Total - progress.Missing) / progress.Total : null;
 
-        var reloading = progress.Reload;
-        _reload.IsEnabled = !reloading && _metadata.GameCount > 0;
+        _reload.IsEnabled = reloading || _metadata.GameCount > 0;
         _reload.IsDimmed = !_reload.IsEnabled;
         _reload.IsWorking = reloading;
+        _reload.ActionText = reloading ? AppTexts.DataSourcesReloadCancel : AppTexts.DataSourcesMetadataReloadAction;
         _reload.Subtitle = reloading ? AppTexts.DataSourcesMetadataReloadRunning : AppTexts.DataSourcesMetadataReloadSubtitle;
     }
 
@@ -82,12 +85,25 @@ public sealed class MetadataRows
 
     /// <summary>
     /// A on "Fehlende Metadaten": the stores and IGDB are asked for what is missing now, as after a scan; a game that failed
-    /// for want of a network is asked again. Nothing starts before the first scan or while a run goes.
+    /// for want of a network is asked again. Nothing starts before the first scan. While a search goes, A stops it.
     /// </summary>
-    private void SearchNow()
+    private void SearchOrCancel()
     {
         var progress = _metadata.Progress;
-        if (progress.Running || _progressAtAsk is not null || !_metadata.FetchMissing())
+        if (progress.Reload)
+        {
+            return;
+        }
+
+        if (progress.Running || _progressAtAsk is not null)
+        {
+            _metadata.CancelRun();
+            _progressAtAsk = null;
+            Refresh();
+            return;
+        }
+
+        if (!_metadata.FetchMissing())
         {
             return;
         }
@@ -96,11 +112,16 @@ public sealed class MetadataRows
         Refresh();
     }
 
-    /// <summary>A on "Alle Metadaten neu laden": the question first; [A] starts the run, [B] or "Abbrechen" sends nothing.</summary>
-    private void Ask()
+    /// <summary>
+    /// A on "Alle Metadaten neu laden": the question first; [A] starts the run, [B] or "Abbrechen" sends nothing. While the
+    /// reload goes, A stops it; the games it didn't reach keep their data.
+    /// </summary>
+    private void AskOrCancel()
     {
         if (_metadata.Progress.Reload)
         {
+            _metadata.CancelRun();
+            Refresh();
             return;
         }
 

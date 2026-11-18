@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Arcadia.Core.Metadata;
 using Arcadia.Launchers.Abstractions;
@@ -5,10 +6,12 @@ using Arcadia.Launchers.Steam;
 
 namespace Arcadia.Core.Tests.Metadata;
 
-/// <summary>#493: Steam's store page, its address and its answer (T493-5, T493-15).</summary>
+/// <summary>#493: Steam's store page, its address and its answer (T493-5, T493-15), asked in the UI language (T557-1).</summary>
 public sealed class SteamAppDetailsTests
 {
     private static readonly IMetadataStore Store = new SteamMetadata(() => null).Store!;
+
+    private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
 
     private static Game SteamGame(string id) => new()
     {
@@ -88,7 +91,7 @@ public sealed class SteamAppDetailsTests
     [Trait("TestCase", "T493-15")]
     public void The_address_is_https_to_the_store_host_with_only_the_appid_and_the_language()
     {
-        var address = Store.AddressOf(SteamGame("4000001"))!;
+        var address = Store.AddressOf(SteamGame("4000001"), German)!;
 
         Assert.Equal("https", address.Scheme);
         Assert.Equal("store.steampowered.com", address.Host);
@@ -108,7 +111,7 @@ public sealed class SteamAppDetailsTests
     [InlineData("")]
     public void An_id_that_is_no_plain_appid_never_gets_an_address(string id)
     {
-        Assert.Null(Store.AddressOf(SteamGame(id)));
+        Assert.Null(Store.AddressOf(SteamGame(id), German));
         Assert.Null(Store.Parse(SteamGame(id), Encoding.UTF8.GetBytes(Answer)));
     }
 
@@ -116,6 +119,22 @@ public sealed class SteamAppDetailsTests
     [Trait("TestCase", "T493-15")]
     public void A_game_of_another_launcher_never_gets_an_address()
     {
-        Assert.Null(Store.AddressOf(SteamGame("4000001") with { LauncherId = "epic" }));
+        Assert.Null(Store.AddressOf(SteamGame("4000001") with { LauncherId = "epic" }, German));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T557-1")]
+    [InlineData("de-DE", "german")]
+    [InlineData("de-AT", "german")]
+    [InlineData("en-US", "english")]
+    [InlineData("en-GB", "english")]
+    [InlineData("fr-FR", "french")]
+    [InlineData("es-ES", "spanish")]
+    [InlineData("it-IT", "english")]
+    public void The_store_is_asked_in_the_ui_language_and_in_english_for_any_other(string uiLanguage, string steamLanguage)
+    {
+        var address = Store.AddressOf(SteamGame("4000001"), CultureInfo.GetCultureInfo(uiLanguage))!;
+
+        Assert.Equal($"?l={steamLanguage}&appids=4000001", address.Query);
     }
 }

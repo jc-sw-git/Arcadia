@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
@@ -54,9 +55,19 @@ internal static class RingGeometry
                 }
 
                 looked++;
+                var focusedByGuard = added.Contains(button);
                 foreach (var clip in clips)
                 {
-                    if (CutSides(clip.Area(window), ring) is { Length: > 0 } sides)
+                    var area = clip.Area(window);
+                    if (focusedByGuard && OnlyAlongScroll(clip.Visual, area, ring))
+                    {
+                        // Lying at the edge of a list that scrolls, its ring would be cut only while it isn't focused:
+                        // the real focus scrolls it clear of the edge first (EdgeFade.ScrollIntoView), and the walk
+                        // checks it in that state.
+                        continue;
+                    }
+
+                    if (CutSides(area, ring) is { Length: > 0 } sides)
                     {
                         cutOff.Add($"{Describe(button)}: {sides} abgeschnitten von {clip.Visual.GetType().Name}{NameOf(clip.Visual)}");
                         break;
@@ -122,6 +133,25 @@ internal static class RingGeometry
         visual.TransformToVisual(window) is { } transform ? local.TransformToAABB(transform) : throw new InvalidOperationException($"{visual} steht nicht im Fenster.");
 
     private static bool Contains(Rect outer, Rect inner) => CutSides(outer, inner).Length == 0;
+
+    /// <summary>
+    /// The clip is a scroller or its view and cuts the ring only at the ends it scrolls towards: top or bottom of a list with
+    /// more rows than fit, left or right of one with more columns.
+    /// </summary>
+    private static bool OnlyAlongScroll(Visual clip, Rect area, Rect ring)
+    {
+        var scroller = clip as ScrollViewer ?? (clip as ScrollContentPresenter)?.TemplatedParent as ScrollViewer;
+        if (scroller is null)
+        {
+            return false;
+        }
+
+        var scrollsDown = scroller.Extent.Height > scroller.Viewport.Height + Tolerance;
+        var scrollsAcross = scroller.Extent.Width > scroller.Viewport.Width + Tolerance;
+        var cutAcross = area.Left - ring.Left > Tolerance || ring.Right - area.Right > Tolerance;
+        var cutDown = area.Top - ring.Top > Tolerance || ring.Bottom - area.Bottom > Tolerance;
+        return (cutDown || cutAcross) && (!cutDown || scrollsDown) && (!cutAcross || scrollsAcross);
+    }
 
     private static string CutSides(Rect clip, Rect ring)
     {

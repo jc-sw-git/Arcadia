@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Steam's store tags by id, in German (#493): the names appinfo.vdf's tag ids need, without a request. -->
-    <EmbeddedResource Include="Steam\steam-tags-german.json" LogicalName="Arcadia.Launchers.Steam.steam-tags-german.json" />
+    <!-- Steam's store tags by id, one list per UI language (#493, #557): the names appinfo.vdf's tag ids need, without a request. -->
+    <EmbeddedResource Include="Steam\steam-tags-*.json" LogicalName="Arcadia.Launchers.Steam.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

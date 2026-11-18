@@ -39,11 +39,11 @@
 
         <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsTabStripShown}">
           <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
-                  Command="{Binding LauncherTabs.PreviousCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousLauncherTip}">
+                  Command="{Binding LauncherTabs.PreviousCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousLauncherTip}">
             <ctl:KeyText Pad="LB" Keys="⇧ Q" />
           </Button>
           <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
-                  Command="{Binding LauncherTabs.NextCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextLauncherTip}">
+                  Command="{Binding LauncherTabs.NextCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextLauncherTip}">
             <ctl:KeyText Pad="RB" Keys="⇧ E" />
           </Button>
           <Panel>
@@ -87,7 +87,7 @@
           </StackPanel>
           <!-- The status messages as one chip like search and settings (#166, design T166Library): Y (V) and the symbols;
                a click anywhere on it opens the status modal. "Controller wird eingerichtet …" alone shows no chip. -->
-          <Button Name="StatusChip" Classes="plain headerChip statusChip" Command="{Binding OpenStatusModalCommand}" ToolTip.Tip="{x:Static app:AppTexts.StatusTip}"
+          <Button Name="StatusChip" Classes="plain headerChip statusChip" Command="{Binding OpenStatusModalCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.StatusTip}"
                   IsVisible="{Binding Status.HasEntries}">
             <StackPanel Orientation="Horizontal" Spacing="4">
               <ctl:KeyHint Pad="Y" Keys="V" Margin="0,0,6,0" />
@@ -113,7 +113,7 @@
           </Button>
           <Border Classes="divider" Margin="6,0" IsVisible="{Binding Status.HasAnyStatus}" />
           <!-- Search and settings as chips: the key that opens them beside their symbol (owner, 2026-10-21). -->
-          <Button Classes="plain headerChip" Command="{Binding OpenSearchCommand}" ToolTip.Tip="{x:Static app:AppTexts.SearchTip}" IsVisible="{Binding !IsSearchShown}">
+          <Button Classes="plain headerChip" Command="{Binding OpenSearchCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.SearchTip}" IsVisible="{Binding !IsSearchShown}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="X" Keys="F" />
               <Path Data="M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0 M20 20l-4-4" Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
@@ -121,7 +121,7 @@
           </Button>
           <Button Classes="plain headerChip" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="{x:Static app:AppTexts.SettingsTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <ctl:KeyHint Pad="≡" Keys="Enter" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" />
               <Path Data="M4 7h10 M18 7h2 M4 17h4 M12 17h8 M14 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M8 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"
                     Stroke="{StaticResource TextSoft}" StrokeThickness="2" StrokeLineCap="Round" Width="24" Height="24" Stretch="None" />
             </StackPanel>
@@ -152,7 +152,7 @@
           <Border Classes="divider" />
           <!-- The tab's filter (#44): neutral, or filled with "19 von 412"; without a category to filter by only the funnel. -->
           <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
-                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="{x:Static app:AppTexts.FilterTip}">
+                  Command="{Binding Library.OpenFilterCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.FilterTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
               <Path Classes="filterFunnel" />
@@ -176,7 +176,7 @@
           <Panel>
             <Grid RowDefinitions="180,*" DataContext="{Binding Library.FocusedGame}" x:DataType="vm:GameTileViewModel">
               <Panel Background="{Binding CoverBrush}">
-                <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="0.55"
+                <TextBlock Text="{Binding Monogram}" FontSize="140" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Opacity="{StaticResource MonogramOpacity}"
                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,20,0" IsVisible="{Binding !#PreviewArt.IsShowing}" />
                 <!-- The background, as on the detail page the preview leads to (#487). -->
                 <ctl:ArtworkImage Name="PreviewArt" File="{Binding Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
@@ -195,13 +195,13 @@
                   <Button Classes="plain primary" Classes.blocked="{Binding IsInstallBlocked}" HorizontalAlignment="Stretch" Command="{Binding ActivateCommand}" IsEnabled="{Binding CanActivate}">
                     <Viewbox StretchDirection="DownOnly">
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
+                        <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsDark="True" />
                         <TextBlock Text="{Binding PrimaryActionText}" VerticalAlignment="Center" />
                       </StackPanel>
                     </Viewbox>
                   </Button>
                   <Button Name="PreviewOptionsButton" Classes="plain secondary" HorizontalAlignment="Stretch" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.Library.OpenMenuCommand}"
-                          ToolTip.Tip="{x:Static app:AppTexts.MoreActionsTip}">
+                          ctl:KeyTip.Text="{x:Static app:AppTexts.MoreActionsTip}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <ctl:KeyHint Pad="⧉" Keys="R" />
                       <TextBlock Text="{x:Static app:AppTexts.Options}" VerticalAlignment="Center" />
@@ -287,7 +287,7 @@
                     <Button Classes="plain modeValue" Classes.broken="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.ControllerModeBroken, TargetNullValue=False}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.CycleControllerSupportCommand}"
                             IsEnabled="{Binding !IsRunningOrStarting}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue='Klicken wechselt zwischen „Standard“, „Arcadia“ und „Steam-Eingabe“'}">
+                            ToolTip.Tip="{Binding NextStartOnlyReason, TargetNullValue={x:Static app:AppTexts.ControllerModeClickTip}}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Classes="value" Text="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ControllerMode.FocusedControllerSupportText}" />
                         <Path Classes="statusIcon small" VerticalAlignment="Center"
@@ -402,7 +402,7 @@
 
           <Panel Grid.Row="1" Margin="0,0,80,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.PreviousPageCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousPageTip}">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.PreviousPageCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousPageTip}">
                 <ctl:KeyText Pad="LT" Keys="Q" />
               </Button>
               <ItemsControl ItemsSource="{Binding Library.PageButtons}" Margin="10,0">
@@ -422,7 +422,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.NextPageCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextPageTip}">
+              <Button Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Command="{Binding Library.NextPageCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextPageTip}">
                 <ctl:KeyText Pad="RT" Keys="E" />
               </Button>
             </StackPanel>
@@ -487,7 +487,7 @@
           <!-- The tab's filter, the same chip as over the library (#530): the carousel turns through its hits. -->
           <Button Classes="plain filterChip" Classes.active="{Binding Library.IsFiltered}" IsEnabled="{Binding Library.CanFilter}"
                   IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}"
-                  Command="{Binding Library.OpenFilterCommand}" ToolTip.Tip="{x:Static app:AppTexts.FilterTip}">
+                  Command="{Binding Library.OpenFilterCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.FilterTip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <ctl:KeyHint Pad="R3" Keys="G" IsVisible="{Binding Library.CanFilter}" />
               <Path Classes="filterFunnel" />
@@ -496,21 +496,21 @@
           </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsDetailOpen}">
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding Detail?.Current.AcceptHint, TargetNullValue=''}"
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Detail?.Current.AcceptHint, TargetNullValue=''}"
                        IsVisible="{Binding Detail?.Current.AcceptHint, Converter={x:Static ObjectConverters.IsNotNull}, TargetNullValue=False}" />
           <ctl:KeyHint Pad="▼" Keys="S" Text="{x:Static app:AppTexts.DetailAreas}" IsVisible="{Binding Detail?.Current.ShowsAreasHint, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding Detail?.InfoOverflows, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding Detail?.Current.ShowsChangeHint, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{x:Static app:AppTexts.InfoTextScroll}" IsVisible="{Binding Detail?.InfoOverflows, TargetNullValue=False}" />
           <ctl:KeyHint Pad="⧉" Keys="R" Text="{x:Static app:AppTexts.DetailOriginalTitleHint}" IsVisible="{Binding Detail?.Current.HasOriginalTitle, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Mausrad" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
+          <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{x:Static app:AppTexts.GameTypeGame}" IsVisible="{Binding Detail?.HasNeighbours, TargetNullValue=False}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Detail?.IsFromLibrary, TargetNullValue=False}" />
           <Button Classes="plain" Command="{Binding Detail?.BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackTip}">
-            <ctl:KeyHint Pad="B" Keys="Esc" Alt="Klick" Text="{Binding Detail?.Current.BackHint, TargetNullValue=''}" />
+            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Detail?.Current.BackHint, TargetNullValue=''}" />
           </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsEmptyTabShown}">
           <ctl:KeyHint Pad="◀▶" Keys="A|D" Text="{x:Static app:AppTexts.Switch}" IsVisible="{Binding Library.EmptyTab?.CanRescan, TargetNullValue=False}" />
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{x:Static app:AppTexts.Select}" />
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Select}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" IsVisible="{Binding Library.EmptyTab?.HasTab, TargetNullValue=False}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsNoHitsShown}">
@@ -518,9 +518,9 @@
           <ctl:KeyHint Pad="L3" Keys="C" Text="{x:Static app:AppTexts.ViewOptionsTitle}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding AreGamesShown}">
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Doppelklick" Text="{Binding Library.FocusedGame?.PrimaryActionText, TargetNullValue='Spielen'}" />
-          <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{x:Static app:AppTexts.HoldForDetails}" />
-          <ctl:KeyHint Pad="⧉" Keys="R" Alt="Rechtsklick" Text="{x:Static app:AppTexts.Options}" />
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Alt="{x:Static app:AppTexts.DoubleClick}" Text="{Binding Library.FocusedGame?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
+          <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.HoldForDetails}" />
+          <ctl:KeyHint Pad="⧉" Keys="R" Alt="{x:Static app:AppTexts.RightClick}" Text="{x:Static app:AppTexts.Options}" />
           <ctl:KeyHint Pad="L3" Keys="C" Text="{x:Static app:AppTexts.ViewOptionsTitle}" />
           <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="1 … 0" Text="{x:Static app:AppTexts.Launcher}" />
           <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Text="{x:Static app:AppTexts.Page}" />
@@ -611,7 +611,7 @@
             <Button Grid.Column="1" Name="SearchCloseButton" Classes="plain" Command="{Binding CloseCommand}" ToolTip.Tip="{x:Static app:AppTexts.CloseSearchTip}">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <!-- B closes the search only with the keyboard in; with it out, B puts the keyboard away first. -->
-                <ctl:KeyHint Pad="B" Keys="Esc" IsVisible="{Binding !IsKeyboardOut}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" IsVisible="{Binding !IsKeyboardOut}" />
                 <TextBlock Text="{x:Static app:AppTexts.Close}" FontSize="16" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -710,7 +710,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <ctl:PadGlyph Button="≡" />
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <ctl:PadGlyph Button="≡" />
@@ -728,7 +728,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <ctl:PadGlyph Button="A" />
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <ctl:PadGlyph Button="A" />
@@ -765,7 +765,7 @@
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.DoubleClick}" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.Click}" /></Border>
@@ -776,7 +776,7 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Options}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEscape}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.KeyboardRetract}" />
                   </StackPanel>
                 </StackPanel>
@@ -792,13 +792,13 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.MoreHits}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.DoubleClick}" /></Border>
-                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue='Spielen'}" />
+                    <TextBlock Classes="hint" Text="{Binding FocusedResult?.PrimaryActionText, TargetNullValue={x:Static app:AppTexts.GameTypePlay}}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Enter" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEnter}" /></Border>
                     <TextBlock Classes="hint" Text="/" />
                     <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.Click}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.HoldForDetails}" />
@@ -810,7 +810,7 @@
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Options}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Classes="glyph"><TextBlock Text="Esc" /></Border>
+                    <Border Classes="glyph"><TextBlock Text="{x:Static app:AppTexts.KeyEscape}" /></Border>
                     <TextBlock Classes="hint" Text="{x:Static app:AppTexts.Close}" />
                   </StackPanel>
                 </StackPanel>
@@ -999,7 +999,7 @@
 
             <!-- The search's launchers: any number at once, "Alle Launcher" switches them all on. -->
             <StackPanel Spacing="14" IsVisible="{Binding HasLaunchers}">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.LauncherCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.LauncherCaption}" />
               <ItemsControl ItemsSource="{Binding LauncherRows}" Margin="-6">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="x:Object">
@@ -1022,7 +1022,7 @@
             </StackPanel>
 
             <StackPanel Spacing="14">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.SortByCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.SortByCaption}" />
               <ItemsControl ItemsSource="{Binding SortRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:SortRowViewModel">
@@ -1050,7 +1050,7 @@
             </StackPanel>
 
             <StackPanel Spacing="14" IsVisible="{Binding HasPageSizes}">
-              <TextBlock Classes="label" Text="{x:Static app:AppTexts.PageSizeCaption}" FontSize="14" />
+              <TextBlock Classes="label heading" Text="{x:Static app:AppTexts.PageSizeCaption}" />
               <ItemsControl ItemsSource="{Binding PageSizeOptions}" Margin="-6">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -1070,8 +1070,8 @@
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,24,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
-                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1086,7 +1086,7 @@
         <Border Name="GameMenuPanel" Width="420" Background="{StaticResource Surface}" CornerRadius="16" Padding="12"
                 HorizontalAlignment="Left" VerticalAlignment="Top" BoxShadow="{StaticResource DialogShadow}">
           <StackPanel Spacing="2" DataContext="{Binding GameMenu}" x:DataType="vm:GameMenuViewModel">
-            <TextBlock Classes="label" Text="{Binding Title}" FontSize="14" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="label heading" Text="{Binding Title}" Margin="16,10,16,12" TextTrimming="CharacterEllipsis" />
             <ItemsControl ItemsSource="{Binding Actions}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:GameActionViewModel">
@@ -1109,8 +1109,8 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Right" Margin="8,10,8,2">
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1136,8 +1136,8 @@
             <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                 <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
-                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+                <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -1164,11 +1164,11 @@
             <Border Name="CategoryDividerLeft" Grid.Column="1" Classes="divider tabDivider" Margin="20,0" />
             <DockPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
               <Button DockPanel.Dock="Left" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="0,0,12,0"
-                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.PreviousCategoryCommand}" ToolTip.Tip="{x:Static app:AppTexts.PreviousCategoryTip}">
+                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.PreviousCategoryCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.PreviousCategoryTip}">
                 <ctl:KeyText Pad="LB" Keys="⇧ Q" />
               </Button>
               <Button DockPanel.Dock="Right" Classes="plain glyphButton keycap" Classes.kbd="{Binding !Input.UsesController}" Margin="12,0,0,0"
-                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.NextCategoryCommand}" ToolTip.Tip="{x:Static app:AppTexts.NextCategoryTip}">
+                      IsVisible="{Binding Settings?.HasSeveralCategories, TargetNullValue=False}" Command="{Binding Settings?.NextCategoryCommand}" ctl:KeyTip.Text="{x:Static app:AppTexts.NextCategoryTip}">
                 <ctl:KeyText Pad="RB" Keys="⇧ E" />
               </Button>
               <Panel DataContext="{Binding Settings}" x:DataType="settings:SettingsPageViewModel">
@@ -1266,8 +1266,8 @@
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Classes="plain neighbour breadcrumb" Margin="-6,0,0,0" Command="{Binding BackCommand}" ToolTip.Tip="{x:Static app:AppTexts.BackToListTip}">
                           <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ctl:KeyHint Pad="B" Keys="Esc" VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Static app:AppTexts.Launcher}" VerticalAlignment="Center" />
+                            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static app:AppTexts.LaunchersCategory}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
                         <TextBlock Text="/" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
@@ -1314,7 +1314,7 @@
                       <Border Classes="groupBox" Classes.first="{Binding StartsGroup}" Classes.last="{Binding EndsGroup}">
                         <Button Classes="plain settingRow pageRow" Classes.indent="{Binding IsIndented}" Classes.indentTwice="{Binding IsIndentedTwice}" Classes.focused="{Binding IsFocused}" Classes.unavailable="{Binding IsDimmed}" Classes.lifted="{Binding IsLifted}"
                                 Command="{Binding ClickCommand}">
-                          <ContentControl Content="{Binding}">
+                          <ContentControl Classes="unclipped" Content="{Binding}">
                             <ContentControl.DataTemplates>
                               <!-- A launcher (#136): its tab key, logo, name and state, and the switch "Aktiv". -->
                               <DataTemplate x:DataType="settings:LauncherRowViewModel">
@@ -1387,7 +1387,7 @@
                               <ProgressBar Classes="rowProgress" Minimum="0" Maximum="100" Value="{Binding Progress, TargetNullValue=0}" IsVisible="{Binding HasProgress}" />
                               <TextBlock Classes="rowProblem" Text="{Binding Problem}" IsVisible="{Binding HasProblem}" />
                             </StackPanel>
-                            <ContentControl Grid.Column="2" Content="{Binding}" VerticalAlignment="Center">
+                            <ContentControl Grid.Column="2" Classes="unclipped" Content="{Binding}" VerticalAlignment="Center">
                               <ContentControl.DataTemplates>
                                 <!-- A text (#137): its value with a pencil; while it is written, the text with its caret. -->
                                 <DataTemplate x:DataType="settings:TextRowViewModel">
@@ -1471,7 +1471,6 @@
                                       <ctl:KeyHint Pad="{Binding ShortcutPad}" Keys="{Binding ShortcutKeys}" IsDark="{Binding IsFocused}" VerticalAlignment="Center"
                                                    IsVisible="{Binding HasShortcut}" />
                                       <TextBlock Grid.Column="1" Text="{Binding ActionText}" />
-                                      <Path Grid.Column="2" Classes="chevronRight" IsVisible="{Binding !IsWorking}" />
                                       <Path Grid.Column="2" Classes="spinner" IsVisible="{Binding IsWorking}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"><Path.RenderTransform><RotateTransform /></Path.RenderTransform></Path>
                                     </Grid>
                                   </Border>
@@ -1501,7 +1500,7 @@
             <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="20">
               <Grid.DataTemplates>
                 <DataTemplate x:DataType="settings:InfoText">
-                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.Text="{Binding Text}" />
+                  <TextBlock Classes="infoText" ctl:ButtonTextBlock.Symbols="{Binding Symbols}" ctl:ButtonTextBlock.KeepsButtons="{Binding KeepsButtons}" ctl:ButtonTextBlock.Text="{Binding Text}" />
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoAvatar">
                   <StackPanel Orientation="Horizontal" Spacing="16">
@@ -1697,7 +1696,7 @@
                   </StackPanel>
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoFootnote">
-                  <TextBlock Text="{Binding Text}" FontSize="13" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap" />
+                  <TextBlock Classes="infoFootnote" Text="{Binding Text}" />
                 </DataTemplate>
                 <DataTemplate x:DataType="settings:InfoRelease">
                   <StackPanel Spacing="10">
@@ -1728,7 +1727,7 @@
               <Border Classes="infoPanel" IsVisible="{Binding FocusedRow?.HasPreview, TargetNullValue=False}">
                 <StackPanel Spacing="20" Margin="32,30">
                   <StackPanel Spacing="6">
-                    <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
+                    <TextBlock Classes="label heading" Text="{Binding FocusedRow?.PreviewTitle, TargetNullValue=''}" />
                     <TextBlock Text="{Binding FocusedRow?.PreviewSubtitle, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.HasPreviewSubtitle, TargetNullValue=False}" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
                   </StackPanel>
                   <ItemsControl ItemsSource="{Binding FocusedRow?.Preview}" />
@@ -1745,7 +1744,7 @@
                           <TextBlock Grid.Column="1" Classes="noteText" ctl:ButtonTextBlock.Text="{Binding FocusedRow?.DimmedNote, TargetNullValue=''}" />
                         </Grid>
                       </Border>
-                      <TextBlock Classes="label" FontSize="14" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
+                      <TextBlock Classes="label heading" Text="{Binding FocusedRow?.InfoTitle, TargetNullValue=''}" TextWrapping="Wrap" />
                       <views:ValueBoxesView Boxes="{Binding FocusedRow?.ValueBoxes}" Classes.dimmed="{Binding FocusedRow?.IsDimmed, TargetNullValue=False}"
                                             IsVisible="{Binding FocusedRow?.HasValueBoxes, TargetNullValue=False}" />
                       <ItemsControl ItemsSource="{Binding FocusedRow?.Info}">
@@ -1783,32 +1782,32 @@
             <!-- A launcher lifted to be moved (#136): only what moves it, puts it down or cancels. -->
             <!-- A text being written (#137): the on-screen keyboard's buttons. -->
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsEditing}">
-              <ctl:KeyHint Pad="A" Alt="Klick" Text="{x:Static app:AppTexts.Enter}" />
+              <ctl:KeyHint Pad="A" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Enter}" />
               <ctl:KeyHint Pad="X" Keys="⌫" Text="{x:Static app:AppTexts.KeyDelete}" />
               <ctl:KeyHint Pad="Y" Text="{x:Static app:AppTexts.Space}" />
               <ctl:KeyHint Pad="LB|RB" Text="⇧ / AltGr" />
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{x:Static app:AppTexts.Apply}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Discard}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{x:Static app:AppTexts.Apply}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Discard}" />
             </StackPanel>
             <!-- A dialog with its own hints (a running driver install, #413 D2) hides the page's, so no "B Zurück" shows. -->
             <Panel IsVisible="{Binding Selected.ShowsPageHints}">
             <Panel IsVisible="{Binding !Selected.IsEditing}">
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding Selected.IsReordering}">
-              <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="Ziehen" Text="{x:Static app:AppTexts.Move}" />
-              <ctl:KeyHint Pad="L3" Keys="C" Alt="Loslassen" Text="{x:Static app:AppTexts.Drop}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+              <ctl:KeyHint Pad="▲▼" Keys="W|S" Alt="{x:Static app:AppTexts.KeyHintDrag}" Text="{x:Static app:AppTexts.Move}" />
+              <ctl:KeyHint Pad="L3" Keys="C" Alt="{x:Static app:AppTexts.KeyHintRelease}" Text="{x:Static app:AppTexts.Drop}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding !Selected.IsReordering}">
-              <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="Klick" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding FocusedRow?.CanChange, TargetNullValue=False}" />
-              <ctl:KeyHint Pad="A" Keys="Leertaste" Alt="Klick" Text="{Binding FocusedRow?.ActivateText, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.ShowsActivateHint, TargetNullValue=False}" />
-              <ctl:KeyHint Pad="L3" Keys="C" Alt="Ziehen" Text="{Binding Selected.L3ActionText}" IsVisible="{Binding Selected.L3ActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="◀▶" Keys="A|D" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Change}" IsVisible="{Binding FocusedRow?.CanChange, TargetNullValue=False}" />
+              <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Alt="{x:Static app:AppTexts.Click}" Text="{Binding FocusedRow?.ActivateText, TargetNullValue=''}" IsVisible="{Binding FocusedRow?.ShowsActivateHint, TargetNullValue=False}" />
+              <ctl:KeyHint Pad="L3" Keys="C" Alt="{x:Static app:AppTexts.KeyHintDrag}" Text="{Binding Selected.L3ActionText}" IsVisible="{Binding Selected.L3ActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
               <ctl:KeyHint Pad="X" Keys="F" Text="{Binding Selected.XActionText}" IsVisible="{Binding Selected.XActionText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-              <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="Mausrad" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
-              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="Klick" Text="{Binding Selected.TurnText, FallbackValue=''}" IsVisible="{Binding Selected.TurnText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-              <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="Klick" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Back}" />
+              <ctl:KeyHint Pad="RS" Keys="⇧ W|⇧ S" Alt="{x:Static app:AppTexts.MouseWheel}" Text="{Binding FocusedRow?.ScrollText, TargetNullValue=''}" IsVisible="{Binding InfoOverflows}" />
+              <ctl:KeyHint Pad="LT|RT" Keys="Q|E" Alt="{x:Static app:AppTexts.Click}" Text="{Binding Selected.TurnText, FallbackValue=''}" IsVisible="{Binding Selected.TurnText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Alt="{x:Static app:AppTexts.Click}" Text="{x:Static app:AppTexts.Category}" IsVisible="{Binding HasSeveralCategories}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Back}" />
               <!-- The first start's step (#497): ≡ ends it like its last row. -->
-              <ctl:KeyHint Pad="≡" Keys="Enter" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
+              <ctl:KeyHint Pad="≡" Keys="{x:Static app:AppTexts.KeyEnter}" Text="{Binding ((setup:FirstRunDataSourcesViewModel)Selected).FinishText, FallbackValue=''}" IsVisible="{Binding IsFirstRun}" />
             </StackPanel>
             </Panel>
             </Panel>
@@ -1840,8 +1839,8 @@
                     <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                         <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
-                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Select}" />
-                        <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+                        <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Select}" />
+                        <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -1918,8 +1917,8 @@
 
                     <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding !IsRemovingSisrPrompt}">
                       <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                        <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding PromptSelectText}" />
-                        <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding PromptBackText}" />
+                        <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding PromptSelectText}" />
+                        <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding PromptBackText}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -1956,13 +1955,13 @@
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Classes="plain action primaryAction" Command="{Binding ConfirmCommand}">
                           <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ctl:KeyHint Pad="A" Keys="Leertaste" IsDark="True" />
+                            <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" IsDark="True" />
                             <TextBlock Text="{Binding ConfirmText}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
                         <Button Classes="plain action" Command="{Binding CancelCommand}">
                           <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ctl:KeyHint Pad="B" Keys="Esc" />
+                            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" />
                             <TextBlock Text="{x:Static app:AppTexts.Cancel}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Button>
@@ -2064,8 +2063,8 @@
             </StackPanel>
             <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0" IsVisible="{Binding HasButtons}">
               <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding ConfirmText}" />
-                <ctl:KeyHint Pad="B" Keys="Esc" Text="{Binding CancelText}" />
+                <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding ConfirmText}" />
+                <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{Binding CancelText}" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -2124,8 +2123,8 @@
               <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
                   <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.Switch}" />
-                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{Binding Legend}" />
-                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                  <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{Binding Legend}" />
+                  <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -2133,7 +2132,7 @@
             <StackPanel Spacing="22" IsVisible="{Binding IsReleased}">
               <StackPanel Orientation="Horizontal" Spacing="18">
                 <Border Classes="promptIcon">
-                  <Path Data="M5 12.5l4.5 4.5L19 7.5" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="28" Stretch="Uniform" />
+                  <Path Data="{StaticResource CheckMarkIcon}" Stroke="{StaticResource AccentSoft}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeJoin="Round" Width="28" Height="20" Stretch="Uniform" />
                 </Border>
                 <TextBlock Text="{Binding ReleasedTitle}" FontSize="30" FontWeight="ExtraBold" VerticalAlignment="Center" />
               </StackPanel>
@@ -2147,8 +2146,8 @@
               <Button Classes="plain action focused" Content="OK" Command="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.PanDialogs.CloseFirmwareNoteCommand}" />
               <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right">
-                  <ctl:KeyHint Pad="A" Keys="Leertaste" Text="OK" />
-                  <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+                  <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="OK" />
+                  <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -2176,9 +2175,21 @@
           <!-- Where the web page goes; the page itself lies over the window, outside the scaled layout (WebPageView). -->
           <Border Name="WebPageArea" Grid.Row="1" Margin="80,0" />
           <StackPanel Grid.Row="2" Margin="80,0" Orientation="Horizontal" Spacing="28" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Cancel}" />
+            <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Cancel}" />
           </StackPanel>
         </Grid>
+      </Panel>
+
+      <!-- "Bild ansehen" (#565): after a while without input the page fades out and the background shows whole, then other
+           games' backgrounds blend in; only the shown game's title stays. Under the toast, so an error still shows. -->
+      <Panel Grid.RowSpan="4" Classes="imageShow" IsVisible="{Binding IsPresent}" Classes.shown="{Binding IsShowing}" Classes.atOnce="{Binding EndsAtOnce}"
+             DataContext="{Binding ImageShow}" x:DataType="vm:ImageShowViewModel">
+        <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding ShowsFirst}" Fit="Whole" File="{Binding FirstImage?.File}"
+                          Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+        <ctl:ArtworkImage Classes="imageShowLayer" Classes.front="{Binding !ShowsFirst}" Fit="Whole" File="{Binding SecondImage?.File}"
+                          Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+        <Border Height="120" VerticalAlignment="Bottom" ZIndex="2" Background="{StaticResource ImageShowTitleScrim}" />
+        <TextBlock Name="ImageShowTitle" ZIndex="2" Classes="imageShowTitle onArt" Text="{Binding Shown?.Title, FallbackValue=''}" />
       </Panel>
 
       <!-- Toast: last, so it shows over every page, also the settings (e.g. "Alle Launcher sind neu eingelesen", #136). -->
@@ -2196,12 +2207,6 @@
   </Panel>
 
   <Window.Styles>
-    <Style Selector="TextBlock.label">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="LetterSpacing" Value="1" />
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
-    </Style>
     <Style Selector="TextBlock.value">
       <Setter Property="FontSize" Value="18" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -2238,16 +2243,6 @@
       <Setter Property="Data" Value="M5.5 5.5l13 13 M18.5 5.5l-13 13" />
       <Setter Property="StrokeThickness" Value="2.6" />
       <Setter Property="Stroke" Value="{StaticResource Danger}" />
-    </Style>
-    <Style Selector="TextBlock.bullet">
-      <Setter Property="FontSize" Value="15" />
-      <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
-      <Setter Property="TextWrapping" Value="Wrap" />
-    </Style>
-    <Style Selector="TextBlock.modeDefault">
-      <Setter Property="FontSize" Value="13" />
-      <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-      <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="TextBlock.crumb">
       <Setter Property="FontSize" Value="18" />

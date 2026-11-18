@@ -6,10 +6,10 @@ using Arcadia.Core.Settings;
 
 namespace Arcadia.App.Services;
 
-/// <summary>Where the App keeps the artwork cache (#13): <c>%LOCALAPPDATA%\Arcadia\artwork</c>, which may be thrown away.</summary>
+/// <summary>Where the App keeps the artwork cache (#13): <c>%APPDATA%\Arcadia\artwork</c>, in the data folder: it holds images the player chose by hand.</summary>
 public static class ArtworkFolder
 {
-    public static string Default { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Arcadia", "artwork");
+    public static string Default { get; } = Path.Combine(Core.Diagnostics.LogLocation.DataFolder, "artwork");
 
     /// <summary>
     /// The cache with a client of its own: it sends no cookies (the shared client holds the Steam sign-in's) and no account

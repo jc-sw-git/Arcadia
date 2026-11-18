@@ -45,4 +45,7 @@ public static class InputHints
     }
 
     public static event EventHandler? Changed;
+
+    /// <summary>Something else every hint shows changed, e.g. the letters of the keyboard layout (<see cref="KeyLabels"/>).</summary>
+    public static void NotifyChanged() => Changed?.Invoke(null, EventArgs.Empty);
 }

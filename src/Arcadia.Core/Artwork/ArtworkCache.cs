@@ -36,7 +36,7 @@ public sealed record CachedImage(string File, ArtworkSource Source, string Origi
 /// <param name="OwnHero">The player's own file for the background, as <paramref name="OwnCover"/>.</param>
 /// <param name="Unreadable">Its metadata couldn't be read: every image in the folder counts as set by hand (#13).</param>
 /// <param name="OffCover">The automatic cover of another source than the one in use (#506): of a source switched off, or one
-/// that gave way to a changed order or tolerance; kept so it is back in use without a copy or download; at most one per
+/// that gave way to a changed order; kept so it is back in use without a copy or download; at most one per
 /// kind, the one shown last.</param>
 /// <param name="OffHero">The same for the background.</param>
 public sealed record CachedArtwork(
@@ -66,7 +66,7 @@ public sealed record CachedArtwork(
 }
 
 /// <summary>
-/// The artwork cache on disk (#13, #487): <c>%LOCALAPPDATA%\Arcadia\artwork\&lt;game&gt;\cover|hero.*</c> plus
+/// The artwork cache on disk (#13, #487): <c>%APPDATA%\Arcadia\artwork\&lt;game&gt;\cover|hero.*</c> plus
 /// <c>artwork.json</c> with source and "set by hand" per image, the player's own files as <c>own-cover|own-hero.*</c>
 /// (#490) and an image of another source kept aside as <c>off-cover|off-hero.*</c> (#506). Every file is written to a temporary file first and then
 /// renamed, so a crash never leaves half an image or half a metadata file; temporary files left by one are removed on the

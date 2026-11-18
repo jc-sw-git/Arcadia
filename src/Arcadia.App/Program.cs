@@ -31,6 +31,7 @@ sealed partial class Program
         }
 
         velopack.Run();
+        OldCacheLocation.Move(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
         LogLocation.MoveOldLogs(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LogLocation.DataFolder);
 
         // Crashes used to show only in the Windows event log; now every one lands in arcadia.log.

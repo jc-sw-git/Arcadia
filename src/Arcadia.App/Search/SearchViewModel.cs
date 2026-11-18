@@ -611,6 +611,10 @@ public sealed partial class SearchViewModel : ViewModelBase, IPage, IKeyboardTar
             Keyboard.Closed();
             KeyboardClosed?.Invoke();
         }
+        else
+        {
+            _sharedKeyboard.Reopen(this);
+        }
 
         _window = _window.WithLayout(ResultRows, ResultColumns, _focus);
         ShowWindow(previousStart: null);

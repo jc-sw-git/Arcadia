@@ -221,7 +221,7 @@ public sealed class LauncherPageTests
     [Trait("TestCase", "T137-6")]
     public async Task On_a_French_keyboard_shift_stays_for_the_digits_and_offers_only_them()
     {
-        using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"], KeyboardLayout = "fr" });
+        using var arcadia = await ArcadiaDriver.StartAsync(settings: new AppSettings { ActiveLaunchers = ["gog", "xbox", "amazon"], Localization = new() { KeyboardLayout = "fr" } });
         arcadia.OpenLauncherSettings();
         arcadia.Press(UiAction.Accept);
         arcadia.FocusRow("launcher-keyword");

@@ -299,26 +299,45 @@ internal sealed class ArcadiaWindow : IDisposable
     }
 
     /// <summary>
-    /// Fails unless <paramref name="control"/>'s own background, <paramref name="colour"/> (a brush of <c>Theme.axaml</c>),
-    /// is drawn right up to its four sides, e.g. the selected tab's pill: nothing clips or covers its edges.
+    /// Fails unless <paramref name="control"/>'s own background, <paramref name="colour"/> (a solid or top-to-bottom
+    /// gradient brush of <c>Theme.axaml</c>), is drawn right up to its four sides, e.g. the selected tab's pill: nothing
+    /// clips or covers its edges.
     /// </summary>
     public void AssertDrawnWhole(Control control, string where, string colour)
     {
-        var fill = ThemeResource<ISolidColorBrush>(colour).Color;
+        var brush = ThemeResource<IBrush>(colour);
         using var frame = Capture();
         var bounds = Bounds(control);
-        // Two pixels inside each side, in its middle: the pill's round ends reach their sides only there.
+        // Four pixels inside each side, in its middle: the pill's round ends reach their sides only there, and a raised
+        // button's light and dark edges (#540) lie in the outer pixels.
         var probes = new[]
         {
-            ("oben", new Point(bounds.Center.X, bounds.Top + 2)),
-            ("unten", new Point(bounds.Center.X, bounds.Bottom - 2)),
-            ("links", new Point(bounds.Left + 2, bounds.Center.Y)),
-            ("rechts", new Point(bounds.Right - 2, bounds.Center.Y)),
+            ("oben", new Point(bounds.Center.X, bounds.Top + 4)),
+            ("unten", new Point(bounds.Center.X, bounds.Bottom - 4)),
+            ("links", new Point(bounds.Left + 4, bounds.Center.Y)),
+            ("rechts", new Point(bounds.Right - 4, bounds.Center.Y)),
         };
         foreach (var (side, point) in probes)
         {
+            var fill = FillAt(brush, (point.Y - bounds.Top) / bounds.Height);
             Assert.True(Distance(frame.At(point), fill) <= 40, $"{where}: Rand {side} bei {point} ist {frame.At(point)} statt {fill}, abgeschnitten oder verdeckt.");
         }
+    }
+
+    /// <summary>The colour a solid brush, or a gradient from top to bottom, has at <paramref name="height"/> (0 top, 1 bottom).</summary>
+    private static Color FillAt(IBrush brush, double height)
+    {
+        if (brush is ISolidColorBrush solid)
+        {
+            return solid.Color;
+        }
+
+        var stops = ((IGradientBrush)brush).GradientStops.OrderBy(stop => stop.Offset).ToList();
+        var below = stops.LastOrDefault(stop => stop.Offset <= height) ?? stops[0];
+        var above = stops.FirstOrDefault(stop => stop.Offset >= height) ?? stops[^1];
+        var share = above.Offset > below.Offset ? (height - below.Offset) / (above.Offset - below.Offset) : 0;
+        byte Mix(byte from, byte to) => (byte)Math.Round(from + ((to - from) * share));
+        return Color.FromArgb(Mix(below.Color.A, above.Color.A), Mix(below.Color.R, above.Color.R), Mix(below.Color.G, above.Color.G), Mix(below.Color.B, above.Color.B));
     }
 
     /// <summary>

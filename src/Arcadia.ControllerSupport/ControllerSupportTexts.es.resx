@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="UsbipMissingTitle" xml:space="preserve"><value>Falta el controlador usbip</value></data>
+  <data name="UsbipMissingText" xml:space="preserve"><value>Arcadia crea el mando virtual mediante este controlador. La instalación pide una vez permisos de administrador.</value></data>
+  <data name="Install" xml:space="preserve"><value>Instalar</value></data>
+  <data name="UsbipOutdatedTitle" xml:space="preserve"><value>El controlador usbip está desactualizado</value></data>
+  <data name="UsbipOutdatedText" xml:space="preserve"><value>Está instalado {installed}; se necesita al menos {minimumVersion}.</value></data>
+  <data name="Update" xml:space="preserve"><value>Actualizar</value></data>
+  <data name="UsbipInactiveTitle" xml:space="preserve"><value>El controlador usbip no está activo</value></data>
+  <data name="UsbipInactiveText" xml:space="preserve"><value>El controlador está instalado, pero no cargado. Suele bastar con reiniciar el PC; si no, con reinstalarlo.</value></data>
+  <data name="PanMissingTitle" xml:space="preserve"><value>Falta el guardián de mandos (Pan)</value></data>
+  <data name="PanMissingText" xml:space="preserve"><value>Pan devuelve los mandos reales si Arcadia se bloquea o se cierra de forma inesperada. Sin Pan, Arcadia no puede llevar el Steam Controller a los juegos como mando de Xbox. La instalación pide una vez permisos de administrador.</value></data>
+  <data name="HidHideUnsupportedTitle" xml:space="preserve"><value>Esta versión de HidHide no es compatible</value></data>
+  <data name="HidHideTooOldText" xml:space="preserve"><value>Hay instalada una versión antigua de HidHide (controlador {installed}); Arcadia necesita HidHide {version} o posterior. «Actualizar» instala HidHide {version}; tus ajustes de HidHide se conservan. La instalación pide una vez permisos de administrador.</value></data>
+  <data name="HidHideTooNewText" xml:space="preserve"><value>Está instalado HidHide {installed}; por ahora Arcadia solo conoce HidHide {supportedMajorVersion}.x. Una actualización de Arcadia traerá compatibilidad con él.</value></data>
+  <data name="HidHideMissingText" xml:space="preserve"><value>Con HidHide, Arcadia oculta el Steam Controller real a Steam y a otros programas mientras transmite el mando por sí misma. La instalación pide una vez permisos de administrador.</value></data>
+  <data name="Reinstall" xml:space="preserve"><value>Reinstalar</value></data>
+  <data name="HidHideMissingTitle" xml:space="preserve"><value>Falta HidHide</value></data>
+  <data name="RemovalUsbip" xml:space="preserve"><value>usbip-win2 (controlador)</value></data>
+  <data name="RemovalHidHide" xml:space="preserve"><value>HidHide (controlador)</value></data>
+  <data name="RemovalSisrAndViiper" xml:space="preserve"><value>SISR y VIIPER</value></data>
+  <data name="RemovalIntro" xml:space="preserve"><value>Se está desinstalando Arcadia.
+
+</value></data>
+  <data name="RemovalAsk" xml:space="preserve"><value>¿Quitar también los controladores de la emulación de mandos?
+
+</value></data>
+  <data name="RemovalOtherPrograms" xml:space="preserve"><value>
+Otros programas que los usan (como DS4Windows con HidHide) dejarán de funcionar. </value></data>
+  <data name="RemovalAdmin" xml:space="preserve"><value>Para ello, Arcadia pide una vez permisos de administrador. </value></data>
+  <data name="RemovalSteamRestarts" xml:space="preserve"><value>Para ello, Steam se cierra un momento y se vuelve a iniciar. </value></data>
+  <data name="RemovalTimeout" xml:space="preserve"><value>Si no hay respuesta en {seconds} segundos, todo queda instalado; Arcadia se desinstala de todos modos.</value></data>
+  <data name="RemovalDone" xml:space="preserve"><value>Arcadia se ha desinstalado.
+
+</value></data>
+  <data name="RemovalRestartNeeded" xml:space="preserve"><value>Los controladores de la emulación de mandos solo se quitan del todo tras el próximo reinicio del PC. </value></data>
+  <data name="RemovalRestartBeforeReinstall" xml:space="preserve"><value>Reinicia el PC antes de volver a instalar Arcadia.</value></data>
+  <data name="HidHideInstalling" xml:space="preserve"><value>Instalando HidHide</value></data>
+  <data name="RestartPendingText" xml:space="preserve"><value>Arcadia se reinicia tras instalar HidHide</value></data>
+  <data name="HidHideReinstallWhileHidden" xml:space="preserve"><value>No se puede reinstalar HidHide mientras Pan oculta el Steam Controller. Desactiva el guardián de mandos (Pan) y vuelve a intentarlo.</value></data>
+  <data name="SteamWontClose" xml:space="preserve"><value>No se pudo cerrar Steam. Cierra Steam tú mismo y vuelve a intentarlo.</value></data>
+  <data name="FirmwareUpdateBlocksInstall" xml:space="preserve"><value>No se pueden instalar controladores mientras se actualiza el firmware de tus mandos. Termina la actualización y vuelve a intentarlo.</value></data>
+  <data name="DriversBusy" xml:space="preserve"><value>Instalando controladores – confirma la solicitud de administrador…</value></data>
+  <data name="DriversInstallDeclined" xml:space="preserve"><value>La instalación se rechazó en la solicitud de administrador – elige «Instalar» de nuevo y confirma la solicitud.</value></data>
+  <data name="WindowsRestartFirst" xml:space="preserve"><value>Un controlador desinstalado espera al reinicio del PC. Reinicia el PC; después se podrán instalar las partes que faltan.</value></data>
+  <data name="HidHideReinstallWrongVersion" xml:space="preserve"><value>«Reinstalar» solo funciona con HidHide {version}; hay instalada otra versión.</value></data>
+  <data name="HidHideReinstallDeclined" xml:space="preserve"><value>La instalación se rechazó en la solicitud de administrador – elige «Reinstalar» de nuevo y confirma la solicitud.</value></data>
+  <data name="ViiperInstalling" xml:space="preserve"><value>Instalando VIIPER…</value></data>
+  <data name="SteamStopping" xml:space="preserve"><value>Cerrando Steam…</value></data>
+  <data name="PleaseWait" xml:space="preserve"><value>Espera, por favor…</value></data>
+  <data name="SteamStarting" xml:space="preserve"><value>Iniciando Steam…</value></data>
+  <data name="DriverInstallBlockerSteamGame" xml:space="preserve"><value>Se ha detectado un juego de Steam en marcha ({game}). Ciérralo primero, porque Steam tiene que cerrarse un momento para la instalación.</value></data>
+  <data name="PanUpdatingReason" xml:space="preserve"><value>Pan se está actualizando – Arcadia no se vuelve a conectar hasta que termine</value></data>
+  <data name="RestoringReason" xml:space="preserve"><value>Se están restaurando los mandos – Arcadia no se vuelve a conectar hasta que termine</value></data>
+  <data name="OldPanOffReason" xml:space="preserve"><value>Pan no está actualizado y está desactivado – Arcadia no se comunica con él</value></data>
+  <data name="TimeoutWhatPanUpdate" xml:space="preserve"><value>La actualización de Pan</value></data>
+  <data name="RestoringBusy" xml:space="preserve"><value>Restaurando los mandos – confirma la solicitud de administrador…</value></data>
+  <data name="RestoreDeclined" xml:space="preserve"><value>La restauración se rechazó en la solicitud de administrador.</value></data>
+  <data name="RestartRefusedTitle" xml:space="preserve"><value>El PC no puede reiniciarse ahora</value></data>
+  <data name="RestartRefusedText" xml:space="preserve"><value>Otro programa o un ajuste del sistema impide el reinicio. Vuelve a intentarlo dentro de un momento o reinicia el PC desde el menú Inicio.</value></data>
+  <data name="TimeoutNoAnswer" xml:space="preserve"><value>{what} no respondió en {seconds:0} segundos.</value></data>
+  <data name="TimeoutWhatSteamStop" xml:space="preserve"><value>El cierre de Steam</value></data>
+  <data name="DriversInstallNoAnswer" xml:space="preserve"><value>La instalación de los controladores no respondió en {seconds:0} segundos.</value></data>
+  <data name="InstallTookTooLong" xml:space="preserve"><value>{what} tardó más de {minutes:0} minutos – se canceló la instalación.</value></data>
+  <data name="TimeoutWhatUsbipDownload" xml:space="preserve"><value>La descarga de usbip-win2</value></data>
+  <data name="TimeoutWhatHidHideDownload" xml:space="preserve"><value>La descarga de HidHide</value></data>
+  <data name="TimeoutWhatViiperDownload" xml:space="preserve"><value>La descarga de VIIPER</value></data>
+  <data name="DriversRunningTitle" xml:space="preserve"><value>Instalando controladores</value></data>
+  <data name="DriversPromptRunning" xml:space="preserve"><value>Confirma la solicitud de administrador</value></data>
+  <data name="DriversUsbipRunningDetail" xml:space="preserve"><value>puede tardar unos minutos</value></data>
+  <data name="DownloadProgress" xml:space="preserve"><value>{received} de {total} MB</value></data>
+  <data name="StepConfirmPrompt" xml:space="preserve"><value>Confirmar la solicitud de administrador</value></data>
+  <data name="StepViiper" xml:space="preserve"><value>Descargar y configurar VIIPER</value></data>
+  <data name="StepSteamStop" xml:space="preserve"><value>Cerrar Steam</value></data>
+  <data name="StepSteamStart" xml:space="preserve"><value>Iniciar Steam</value></data>
+  <data name="StepArcadiaRestart" xml:space="preserve"><value>Reiniciar Arcadia</value></data>
+  <data name="InstallFailedTitle" xml:space="preserve"><value>La instalación ha fallado</value></data>
+  <data name="StepHidHideDownload" xml:space="preserve"><value>Descargar HidHide</value></data>
+  <data name="StepHidHideInstall" xml:space="preserve"><value>Instalar HidHide</value></data>
+  <data name="StepPanSetUp" xml:space="preserve"><value>Configurar Pan</value></data>
+  <data name="PartUsbip" xml:space="preserve"><value>Controlador usbip</value></data>
+  <data name="PartPan" xml:space="preserve"><value>Guardián de mandos (Pan)</value></data>
+  <data name="ViiperMissingText" xml:space="preserve"><value>VIIPER transmite las señales de los mandos virtuales a juegos y programas. «Instalar» descarga la versión verificada, sin permisos de administrador.</value></data>
+  <data name="ViiperSubtitle" xml:space="preserve"><value>Transmite las señales de los mandos a juegos y programas</value></data>
+  <data name="PanFailingTitle" xml:space="preserve"><value>El guardián de mandos (Pan) no se inicia</value></data>
+  <data name="PanFailingText" xml:space="preserve"><value>Pan se cierra justo después de iniciarse. «Volver a configurar» reinstala Pan y crea de nuevo su carpeta; el motivo del cierre está en {logPath}. La instalación pide una vez permisos de administrador.</value></data>
+  <data name="PanFailingSubtitle" xml:space="preserve"><value>«Volver a configurar» suele solucionarlo.</value></data>
+  <data name="HidHideRemovalPending" xml:space="preserve"><value>HidHide se ha desinstalado y se quita del todo tras el próximo reinicio del PC.</value></data>
+  <data name="RestartWindows" xml:space="preserve"><value>Reiniciar el PC</value></data>
+  <data name="PausedSummary" xml:space="preserve"><value>Reinicia el PC; después podrás instalar las partes que faltan.</value></data>
+  <data name="PausedText" xml:space="preserve"><value>Se ha desinstalado un controlador. Solo se quita del todo tras el próximo reinicio del PC.</value></data>
+  <data name="PausedMore" xml:space="preserve"><value>Hasta entonces, Pan está en pausa: Arcadia no virtualiza ni oculta ningún mando, y los juegos y Steam ven tus mandos directamente. El interruptor sigue activado; tras el reinicio, Pan continúa por sí solo.</value></data>
+  <data name="PausedBoxText" xml:space="preserve"><value>Si entonces aún falta algo, aparece aquí con «Instalar». Una sola pulsación configura todo lo que falta de una vez, con una sola solicitud de administrador.</value></data>
+  <data name="RecommendedSummary" xml:space="preserve"><value>Reinicia el PC para que el nuevo controlador esté totalmente activo.</value></data>
+  <data name="RecommendedText" xml:space="preserve"><value>Se ha reinstalado un controlador. Pan ya está en marcha, pero el controlador solo estará totalmente activo tras reiniciar el PC.</value></data>
+  <data name="RecommendedMore" xml:space="preserve"><value>Hasta entonces, un mando virtual puede desconectarse un momento; Arcadia lo vuelve a conectar por sí misma.</value></data>
+  <data name="RecommendedBoxText" xml:space="preserve"><value>El reinicio puede esperar a cuando te venga bien. La fila se queda hasta que el PC se haya reiniciado.</value></data>
+  <data name="FirmwareUpdateRunsTitle" xml:space="preserve"><value>Actualización del mando en curso</value></data>
+  <data name="FirmwareUpdateRunsText" xml:space="preserve"><value>Para proteger tus mandos, no se pueden instalar los controladores mientras se actualiza su firmware. Termina la actualización antes de instalar los controladores.</value></data>
+  <data name="FirmwareUpdateRunsSubtitle" xml:space="preserve"><value>No se pueden instalar controladores durante una actualización de firmware</value></data>
+  <data name="SisrRunningTitle" xml:space="preserve"><value>SISR está en marcha</value></data>
+  <data name="SisrRunningText" xml:space="preserve"><value>SISR está en marcha mientras Pan está activado. Ambos acceden al Steam Controller, así que los juegos reciben las entradas dos veces o ninguna. Cierra SISR o desactiva Pan mientras necesites SISR.</value></data>
+  <data name="SisrRunningSubtitle" xml:space="preserve"><value>Cierra SISR para que las entradas no lleguen dos veces</value></data>
+  <data name="HidHideInactiveTitle" xml:space="preserve"><value>HidHide no está activo</value></data>
+  <data name="HidHideInactiveText" xml:space="preserve"><value>HidHide está instalado, pero su controlador aún no se está ejecutando. Suele bastar con reiniciar el PC.</value></data>
+  <data name="HidHideUnknownRequestText" xml:space="preserve"><value>El controlador de HidHide no conoce una solicitud que Pan necesita. «Reinstalar» instala HidHide {version}; sus ajustes se conservan. Arcadia pide una vez permisos de administrador.</value></data>
+  <data name="HidHideReinstallHelps" xml:space="preserve"><value>Reinstalar HidHide {version} lo soluciona</value></data>
+  <data name="HidHideInverseTitle" xml:space="preserve"><value>HidHide: la lista está invertida</value></data>
+  <data name="HidHideInverseText" xml:space="preserve"><value>En HidHide está activado «Inverse application cloak». Así, Arcadia no puede ocultar el Steam Controller. Desactívalo en la configuración de HidHide.</value></data>
+  <data name="HidHideHidingOffTitle" xml:space="preserve"><value>HidHide: la ocultación está desactivada</value></data>
+  <data name="HidHideHidingOffText" xml:space="preserve"><value>Hay dispositivos en la lista de HidHide, pero «Enable device hiding» está desactivado. Arcadia tendría que activarlo y entonces ocultaría también esos dispositivos, así que no lo hace. Actívalo en la configuración de HidHide o quita allí los dispositivos.</value></data>
+  <data name="HidHideConfigOpenTitle" xml:space="preserve"><value>La configuración de HidHide está abierta</value></data>
+  <data name="HidHideConfigOpenText" xml:space="preserve"><value>Mientras la configuración de HidHide está abierta, Arcadia no puede usar HidHide. Ciérrala, por favor.</value></data>
+  <data name="ViiperMissingTitle" xml:space="preserve"><value>Falta VIIPER</value></data>
+  <data name="SetUpAgain" xml:space="preserve"><value>Volver a configurar</value></data>
+  <data name="HidHideRestartPending" xml:space="preserve"><value>HidHide: reinicio pendiente</value></data>
+  <data name="WindowsRestartPendingTitle" xml:space="preserve"><value>Reinicio del PC pendiente</value></data>
+  <data name="PausedBoxTitle" xml:space="preserve"><value>TRAS EL REINICIO</value></data>
+  <data name="RecommendedBoxTitle" xml:space="preserve"><value>SIN PRISA</value></data>
+  <data name="HidHideUnexpectedAnswer" xml:space="preserve"><value>HidHide da una respuesta inesperada</value></data>
+  <data name="DownloadNoChecksum" xml:space="preserve"><value>No hay ninguna suma de verificación publicada para {asset} – descarga cancelada.</value></data>
+  <data name="DownloadChecksumWrong" xml:space="preserve"><value>La suma de verificación de {asset} no coincide – descarga descartada.</value></data>
+  <data name="LayoutNotApplied" xml:space="preserve"><value>No aplicar</value></data>
+  <data name="PanNotConnectedYet" xml:space="preserve"><value>Pan aún no está conectado</value></data>
+  <data name="PanCleaningUp" xml:space="preserve"><value>Pan aún está limpiando</value></data>
+  <data name="PanRefusesEmulation" xml:space="preserve"><value>Pan rechaza la emulación: {reply}</value></data>
+  <data name="PanNotAnswering" xml:space="preserve"><value>Pan no responde</value></data>
+  <data name="PanNotConnected" xml:space="preserve"><value>Pan no está conectado</value></data>
+  <data name="PanNoAnswerWithin" xml:space="preserve"><value>Pan no responde en {seconds:0} s</value></data>
+  <data name="PanConnectionLost" xml:space="preserve"><value>Se perdió la conexión con Pan: {message}</value></data>
+  <data name="ErrorContextKeepPanConnected" xml:space="preserve"><value>Mantener la conexión con Pan</value></data>
+  <data name="PanUnreachable" xml:space="preserve"><value>No se puede conectar con Pan: {message}</value></data>
+  <data name="PanOtherProtocol" xml:space="preserve"><value>Pan usa otro protocolo (Arcadia: {protocolVersion}); Pan necesita una actualización</value></data>
+  <data name="PanClosedAfterError" xml:space="preserve"><value>La conexión con Pan se cerró tras un error</value></data>
+  <data name="PanClosedConnection" xml:space="preserve"><value>Pan cerró la conexión</value></data>
+  <data name="PanRequestCancelled" xml:space="preserve"><value>Solicitud a Pan cancelada</value></data>
+  <data name="PanRejectsArcadia" xml:space="preserve"><value>Pan rechaza a Arcadia ({reason})</value></data>
+  <data name="ErrorContextPanHeartbeat" xml:space="preserve"><value>Señal de vida a Pan</value></data>
+  <data name="PanPaused" xml:space="preserve"><value>Pan: guardián de mandos en pausa. Los mandos reales ya no están ocultos.</value></data>
+  <data name="PanRunningAgain" xml:space="preserve"><value>Pan: el guardián de mandos vuelve a estar en marcha</value></data>
+  <data name="PanEmulationStopped" xml:space="preserve"><value>Pan: emulación detenida – ha fallado varias veces seguidas. «Reintentar» en los ajustes de mandos la reinicia.</value></data>
+  <data name="PanRetryFailed" xml:space="preserve"><value>Pan: el reintento no ha funcionado. Lo que falta se muestra en los ajustes de mandos.</value></data>
+  <data name="PanRetryNoController" xml:space="preserve"><value>Pan: no hay ningún mando conectado, no hay nada que virtualizar.</value></data>
+  <data name="PanRetryExcluded" xml:space="preserve"><value>Pan: el Steam Controller y el puck siguen excluidos.</value></data>
+  <data name="FirmwareUpdateReason" xml:space="preserve"><value>Steam está instalando una actualización de firmware</value></data>
+  <data name="PanNotVisible" xml:space="preserve"><value>Pan: Arcadia ya no ve los mandos ocultos y los ha liberado. Reinicia Arcadia; los ajustes de mandos ofrecen hacerlo.</value></data>
+  <data name="PausedUntilWindowsRestart" xml:space="preserve"><value>En pausa hasta que se reinicie el PC</value></data>
+  <data name="PanEmulationNotRunning" xml:space="preserve"><value>La emulación de Pan no está en marcha</value></data>
+  <data name="PanTooManyFailures" xml:space="preserve"><value>demasiados fallos en 5 minutos</value></data>
+  <data name="PanCannotHideSteamController" xml:space="preserve"><value>Pan no puede ocultar el Steam Controller – actualiza Pan</value></data>
+  <data name="PanNotHidden" xml:space="preserve"><value>sin ocultar: {hidden}</value></data>
+  <data name="PanReleasedForFirmware" xml:space="preserve"><value>Steam Controller y puck liberados para una actualización de firmware</value></data>
+  <data name="PanCopyNotRemovable" xml:space="preserve"><value>La copia no se puede quitar limpiamente</value></data>
+  <data name="PanHidingAfterSwitch" xml:space="preserve"><value>Ocultación tras el cambio: {hidden}</value></data>
+  <data name="PanViiperLost" xml:space="preserve"><value>Se perdió la emulación de mandos</value></data>
+  <data name="PanHidingLost" xml:space="preserve"><value>Se perdió la ocultación: {holds}</value></data>
+  <data name="PanHandOverEnded" xml:space="preserve"><value>Pan terminó la instalación antes de que Arcadia pudiera entregarle los instaladores. No se ha cambiado nada – elige «Instalar» de nuevo.</value></data>
+  <data name="PanRestoreHandOverEnded" xml:space="preserve"><value>Pan terminó la restauración antes de que Arcadia pudiera liberarla. No se ha cambiado nada – elige «Restaurar mandos» de nuevo.</value></data>
+  <data name="PanDataFolderNotSaved" xml:space="preserve"><value>Pan no pudo hacer una copia de seguridad de su carpeta de datos {dataDirectory} – revisa o quita la carpeta y vuelve a intentarlo.</value></data>
+  <data name="PanCleanupIncomplete" xml:space="preserve"><value>Pan no pudo limpiarlo todo – el diario se conserva; los detalles están en {logPath}. Al reiniciar Pan o con «Pan.exe --restore» se vuelve a intentar.</value></data>
+  <data name="PanHidHideNotInstalled" xml:space="preserve"><value>Pan está configurado, pero HidHide no – los detalles están en {logPath}. También puedes instalar HidHide tú mismo: {url}</value></data>
+  <data name="PanRemovedDriverLeft" xml:space="preserve"><value>Pan se ha quitado, pero no todos los controladores – los detalles están en {logPath}; el resto se puede quitar en Configuración de Windows → Aplicaciones.</value></data>
+  <data name="PanCommandFailed" xml:space="preserve"><value>Pan {command} informó del error {exitCode} – los detalles están en {logPath}.</value></data>
+  <data name="PanUnreachableAborted" xml:space="preserve"><value>No se pudo conectar con Pan en {seconds:0} segundos – se canceló {what}, no ha cambiado nada.</value></data>
+  <data name="PanWhatInstallation" xml:space="preserve"><value>la instalación</value></data>
+  <data name="PanWhatRestore" xml:space="preserve"><value>la restauración</value></data>
+  <data name="PanCommandNoAnswer" xml:space="preserve"><value>Pan {command} no respondió en {minutes:0} minutos.</value></data>
+  <data name="PanNotStarted" xml:space="preserve"><value>No se pudo iniciar Pan.</value></data>
+  <data name="PanMissingInBundle" xml:space="preserve"><value>Falta Pan en la carpeta de programa de Arcadia ({path}) – reinstalar Arcadia lo soluciona.</value></data>
+  <data name="PanNotInstalled" xml:space="preserve"><value>Pan no está configurado</value></data>
+  <data name="PanEndsAtOnce" xml:space="preserve"><value>Pan se cierra justo después de iniciarse</value></data>
+  <data name="PanDoesNotStart" xml:space="preserve"><value>Pan no se inicia ({status})</value></data>
+  <data name="PanCannotStart" xml:space="preserve"><value>No se puede iniciar Pan: {message}</value></data>
+  <data name="ErrorContextControllersForGames" xml:space="preserve"><value>Mandos para juegos</value></data>
+  <data name="ControllersForGamesViiperGaveUp" xml:space="preserve"><value>Mandos para juegos: la emulación de mandos falló {count} veces en {minutes:0} minutos; Arcadia solo vuelve a intentarlo tras un reinicio o con «Restaurar mandos»</value></data>
+  <data name="SisrStopFailed" xml:space="preserve"><value>No se puede cerrar SISR.exe, así que sus archivos se quedan. Reinicia el PC y vuelve a intentarlo.</value></data>
+  <data name="SisrSteamRunning" xml:space="preserve"><value>Steam estaba en marcha, así que la entrada «SISR Marker» se queda. Vuelve a intentarlo.</value></data>
+  <data name="SisrNotRemovable" xml:space="preserve"><value>No se pudo quitar {what}: {message}</value></data>
+  <data name="SisrShortcuts" xml:space="preserve"><value>Accesos directos de SISR</value></data>
+  <data name="SisrSteamEntry" xml:space="preserve"><value>Entrada de Steam «SISR Marker»</value></data>
+  <data name="SisrViiperKeys" xml:space="preserve"><value>Claves de VIIPER</value></data>
+  <data name="SisrCefDebugging" xml:space="preserve"><value>Depuración CEF de Steam</value></data>
+  <data name="SisrRemoving" xml:space="preserve"><value>Quitando SISR…</value></data>
+  <data name="SisrRemovalBlocker" xml:space="preserve"><value>«{game}» se está ejecutando ahora mediante Steam. Cierra primero el juego; después Arcadia podrá quitar SISR.</value></data>
+  <data name="SteamControllerForGamesViiperGaveUp" xml:space="preserve"><value>Steam Controller para juegos: la emulación de mandos falló {count} veces en {minutes:0} minutos; Arcadia solo vuelve a intentarlo tras un reinicio o con «Restaurar mandos»</value></data>
+  <data name="OnlyOnWindows" xml:space="preserve"><value>Solo en Windows</value></data>
+  <data name="PanNotVisibleStatus" xml:space="preserve"><value>Arcadia ya no ve {controllers}</value></data>
+  <data name="StepUsbipInstall" xml:space="preserve"><value>Instalar usbip-win2</value></data>
+  <data name="NoCheckedViiperVersion" xml:space="preserve"><value>Esta versión de Arcadia no tiene ninguna versión verificada de VIIPER.</value></data>
+  <data name="ViiperMissingFile" xml:space="preserve"><value>Falta {file}</value></data>
+  <data name="UsbipNotLoaded" xml:space="preserve"><value>Controlador usbip no cargado</value></data>
+  <data name="SisrFolder" xml:space="preserve"><value>Carpeta de SISR</value></data>
+  <data name="SisrData" xml:space="preserve"><value>Datos de SISR ({folder})</value></data>
+  <data name="SisrUninstallEntry" xml:space="preserve"><value>Entrada de desinstalación de SISR</value></data>
+  <data name="StepUsbipDownload" xml:space="preserve"><value>Descargar usbip-win2</value></data>
+  <data name="PanHandOverNotOurs" xml:space="preserve"><value>La entrega a Pan no pertenece al Pan que se inició (proceso {server} en lugar de {started}) – se canceló {what}.</value></data>
+  <data name="UsbipVersionUnknown" xml:space="preserve"><value>No se pudo determinar la versión actual de usbip-win2.</value></data>
+  <data name="UsbipNoInstaller" xml:space="preserve"><value>No se encontró ningún instalador de usbip-win2 para {arch}.</value></data>
+  <data name="PanOnlyOnWindows" xml:space="preserve"><value>Pan solo está disponible en Windows</value></data>
+  <data name="CopyNotAttached" xml:space="preserve"><value>Copia para Steam no conectada tras {seconds:0} s</value></data>
+  <data name="CopyNotSupported" xml:space="preserve"><value>Esta versión de Arcadia aún no puede copiar el Steam Controller para Steam</value></data>
+  <data name="PuckCableMissing" xml:space="preserve"><value>El Steam Controller por cable no está (o Arcadia no está en la lista de HidHide)</value></data>
+  <data name="PuckMissing" xml:space="preserve"><value>El puck del Steam Controller no está (o Arcadia no está en la lista de HidHide)</value></data>
+  <data name="PuckSerialInvalid" xml:space="preserve"><value>El puck indica un número de serie no válido</value></data>
+  <data name="PuckCapabilitiesUnreadable" xml:space="preserve"><value>Puck: no se pueden leer sus capacidades</value></data>
+  <data name="ViiperNotRunning" xml:space="preserve"><value>VIIPER no está en marcha</value></data>
+  <data name="ViiperCannotBind" xml:space="preserve"><value>No se pudo vincular viiper.exe a Arcadia para que se cierre con ella (error {error})</value></data>
+  <data name="ViiperNotListening" xml:space="preserve"><value>VIIPER no escucha como se esperaba</value></data>
+  <data name="ViiperExitedAtOnce" xml:space="preserve"><value>viiper.exe se cerró enseguida</value></data>
+  <data name="ViiperPortsTimeout" xml:space="preserve"><value>viiper.exe no escucha en ambos puertos tras {seconds:0} s</value></data>
+  <data name="ViiperDoesNotStart" xml:space="preserve"><value>viiper.exe no se inicia</value></data>
+  <data name="SteamControllerDescriptionMissing" xml:space="preserve"><value>Falta en Arcadia la descripción del Steam Controller ({file})</value></data>
+  <data name="PuckSerialUnreadable" xml:space="preserve"><value>No se puede leer el número de serie del puck</value></data>
+  <data name="PuckCannotOpen" xml:space="preserve"><value>No se puede abrir el puck</value></data>
+  <data name="PuckNotClosed" xml:space="preserve"><value>No se pudo cerrar el puck; la copia no ha terminado de forma segura</value></data>
+  <data name="PuckCallHangs" xml:space="preserve"><value>Una llamada al puck no termina; la copia no ha terminado de forma segura</value></data>
+</root>

@@ -33,7 +33,7 @@ public partial class ChangeArtworkView : UserControl
     {
         if (TileList.ContainerFromIndex(index) is { } container)
         {
-            container.BringIntoView();
+            TileFade.ScrollIntoView(container);
         }
     }, DispatcherPriority.Loaded);
 }

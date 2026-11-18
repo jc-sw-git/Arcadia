@@ -340,4 +340,14 @@ public sealed class EpicInstallMonitorTests : IDisposable
     }
 
     private void AppendLog(params string[] lines) => File.AppendAllLines(_log, lines);
+
+    [Fact]
+    public void Only_a_full_local_folder_from_a_manifest_is_walked_for_the_progress()
+    {
+        Assert.True(EpicInstallMonitor.IsLocalFolder(Path.Combine(Path.GetTempPath(), "Epic Games", "Example")));
+        Assert.False(EpicInstallMonitor.IsLocalFolder(Path.Combine("Epic Games", "Example")));
+        Assert.False(EpicInstallMonitor.IsLocalFolder(@"\\server\share\Example"));
+        Assert.False(EpicInstallMonitor.IsLocalFolder("//server/share/Example"));
+        Assert.False(EpicInstallMonitor.IsLocalFolder(string.Empty));
+    }
 }

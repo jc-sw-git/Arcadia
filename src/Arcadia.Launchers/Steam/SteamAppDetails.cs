@@ -5,21 +5,24 @@ using Arcadia.Launchers.Abstractions;
 namespace Arcadia.Launchers.Steam;
 
 /// <summary>
-/// Steam's store page of a game (#493): <c>store.steampowered.com/api/appdetails?appids=&lt;AppID&gt;&amp;l=german</c>, no key,
-/// no cookie. Gives the description (German where the game has one, else English), the short description, genres,
+/// Steam's store page of a game (#493): <c>store.steampowered.com/api/appdetails?l=&lt;language&gt;&amp;appids=&lt;AppID&gt;</c>,
+/// no key, no cookie, asked in the UI language (#557). Gives the description (in that language where the game has one, else
+/// English), the short description, genres,
 /// developers, publishers and the age ratings <c>usk</c>, <c>pegi</c>, <c>esrb</c> and Steam's own <c>steam_germany</c>.
 /// Steam takes about 200 requests per 5 minutes; Arcadia stays below.
 /// </summary>
 internal sealed class SteamAppDetails : IMetadataStore
 {
-    private const string Address = "https://store.steampowered.com/api/appdetails?l=german&appids=";
+    private const string Address = "https://store.steampowered.com/api/appdetails";
 
     private const int MaxNames = 10;
 
     // Steam's own limit is about 200 per 5 minutes; a little below it leaves room for the store pages the player opens.
     public RequestLimit Limit { get; } = new(180, TimeSpan.FromMinutes(5));
 
-    public Uri? AddressOf(Game game) => AppIdOf(game) is { } appId ? new Uri(Address + appId.ToString(CultureInfo.InvariantCulture)) : null;
+    public Uri? AddressOf(Game game, CultureInfo language) => AppIdOf(game) is { } appId
+        ? new Uri($"{Address}?l={SteamLanguage.NameOf(language)}&appids={appId.ToString(CultureInfo.InvariantCulture)}")
+        : null;
 
     /// <summary>A Steam game's AppID: its id when that is a plain number as Steam writes it, else null (never a request).</summary>
     internal static uint? AppIdOf(Game game) =>

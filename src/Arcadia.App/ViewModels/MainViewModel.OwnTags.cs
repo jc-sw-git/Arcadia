@@ -104,6 +104,8 @@ public partial class MainViewModel : IOwnTagsHost
     void IOwnTagsHost.ShowGame(TagListViewModel list, IReadOnlyList<Game> games, int index)
     {
         _tagListBehindDetail = list;
+        // The page under the settings is covered, not closed: B brings it back once the settings close (#586).
+        DetailBehindSettings ??= Detail;
         TagList = null;
         Settings = null;
         Detail = new GameDetailViewModel(null, games, index, null, CreateDetailTile, _actions, this, LauncherTabs, createViewOptions: null, _time, focus: null, DetailInfoOf);
@@ -119,7 +121,7 @@ public partial class MainViewModel : IOwnTagsHost
 
         var shown = Detail?.Current.Tile.Game.Key;
         Detail = null;
-        ShowSettings(typeof(DataSourcesSettingsViewModel));
+        ShowSettings(typeof(DataSourcesSettingsViewModel), keepsWayBack: true);
         Settings?.Selected?.FocusRow(DataSourcesSettingsViewModel.OwnTagsRowKey);
         TagList = list;
         _tagListBehindDetail = null;
@@ -158,20 +160,33 @@ public partial class MainViewModel : IOwnTagsHost
     /// A tag was made, ticked, renamed, merged, deleted or put back after a failed write: the dialogs, the detail page's
     /// tags and its row "Tags" follow at once, without a scan.
     /// </summary>
-    private void WatchOwnTags() => Tags.Changed += (_, _) =>
+    private void WatchOwnTags()
+    {
+        Tags.Changed += (_, _) => OnUiThread(ShowOwnTags);
+        // A renamed, merged or deleted tag follows into every tab's saved filter (#466 case 17).
+        Tags.Renamed += (_, renamed) => OnUiThread(() =>
+        {
+            SaveView(settings => settings.WithOwnTagRenamed(renamed.Name, renamed.To));
+            Library.FactsChanged();
+        });
+    }
+
+    private static void OnUiThread(Action action)
     {
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
         {
-            ShowOwnTags();
+            action();
         }
         else
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(ShowOwnTags);
+            Avalonia.Threading.Dispatcher.UIThread.Post(action);
         }
-    };
+    }
 
     private void ShowOwnTags()
     {
+        _filterFacts.TagsChanged();
+        Library.FactsChanged();
         TagWindow?.Refresh();
         TagList?.Refresh();
         _tagListBehindDetail?.Refresh();

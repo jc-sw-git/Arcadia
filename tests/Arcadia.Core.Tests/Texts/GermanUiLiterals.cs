@@ -20,6 +20,9 @@ internal static partial class GermanUiLiterals
     // View attributes that show text; any letters there must come from a resource, apart from names and keys.
     private static readonly HashSet<string> TextAttributes = ["Text", "Content", "ToolTip.Tip", "Watermark", "Title", "Header", "PlaceholderText"];
 
+    // KeyHint's keyboard keys and mouse alternatives.
+    private static readonly HashSet<string> KeyAttributes = ["Keys", "Alt"];
+
     private static readonly HashSet<string> NotTranslated = ["Arcadia", "ARCADIA", "Esc", "Enter", "OK", "i", "⇧ / AltGr"];
 
     // Calls whose strings are written to a log; Write counts only on AppLog.
@@ -58,9 +61,19 @@ internal static partial class GermanUiLiterals
         var view = XDocument.Parse(source, LoadOptions.SetLineInfo);
         foreach (var attribute in view.Descendants().Attributes())
         {
-            if (TextAttributes.Contains(attribute.Name.LocalName) && IsShownText(attribute.Value))
+            if (TextAttributes.Contains(attribute.Name.LocalName) && IsShownText(attribute.Value)
+                || KeyAttributes.Contains(attribute.Name.LocalName) && IsShownKeyName(attribute.Value))
             {
                 yield return $"{((System.Xml.IXmlLineInfo)attribute).LineNumber}: {attribute.Value}";
+            }
+
+            // A binding's stand-in ("{Binding Hint, TargetNullValue='Spielen'}") is shown like a Text (#554).
+            foreach (var standIn in BindingStandIn().Matches(attribute.Value).Select(match => match.Groups[1].Value))
+            {
+                if (IsShownText(standIn) && standIn is not ("True" or "False"))
+                {
+                    yield return $"{((System.Xml.IXmlLineInfo)attribute).LineNumber}: {standIn}";
+                }
             }
         }
 
@@ -81,6 +94,10 @@ internal static partial class GermanUiLiterals
             }
         }
     }
+
+    // A key hint's keys ("WASD", "⇧ Q|⇧ E") are key names; a word among them ("Leertaste", "Klick") is a UI text (#554).
+    private static bool IsShownKeyName(string value) =>
+        value.Split('|').Any(name => IsShownText(name) && LowercaseWord().IsMatch(name));
 
     private static bool IsShownText(string value) =>
         !value.TrimStart().StartsWith('{') && value.Any(char.IsLetter) && !NotTranslated.Contains(value.Trim());
@@ -120,4 +137,10 @@ internal static partial class GermanUiLiterals
 
     [GeneratedRegex(@"\b(?:der|das|den|dem|des|ein|eine|einen|einem|einer|und|oder|nicht|kein|keine|ist|sind|wird|werden|wurde|mit|für|auf|bei|von|zum|zur|im|nach|noch|schon|jetzt|alle|alles|neu|bitte|hier|aus|spiel|spiele|starten|gestartet|beenden|beendet|abbrechen|weiter|auswählen|installieren|installiert|deinstallieren|aktualisieren|suchen|suche|einstellungen|bibliothek|fertig|laden|gefunden|fehlt|fehler|hilfe|konto|anmelden|abmelden|ja|nein|ansicht|sortierung|seite|tastatur|treffer|wählen|erneut|versuchen|umschalten|wechseln|eingeben|verwerfen|wiederherstellen|entfernen|einlesen|eingelesen|launchern|gespielt|zuletzt|neueste|älteste|mausmodus|vorgabe|weitere|startet|wartet|pausiert|meldung|meldungen|warnung|warnungen|dringlichkeit|heute|gestern|vor|tagen|wochen|monaten|std|uhr|min|laufwerk|relevanz|typ|wert|werte|kategorie|mehrere|aktiv|ordner|bearbeiten|verschieben|zuordnen|beheben|behoben|erlaubt|deaktiviert|automatisch|individuell|leeren|ausblenden|umschalt|leertaste|stand|bilder|sekunde|sekunden|halten|laut|standard|standardlogo|installationen|installationsdatum|haltedauer|zeigergeschwindigkeit|mauszeiger|pfeiltasten|werkzeug|werkzeuge|abrocken|spielen|anmeldung|herunterladen|abstecken|einzelner|infotext|eingabe|ort|grenzen|betroffen|allgemein|speicherort|reihenfolge|steuerung)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex GermanWord();
+
+    [GeneratedRegex(@"(?:TargetNullValue|FallbackValue)='([^']*)'")]
+    private static partial Regex BindingStandIn();
+
+    [GeneratedRegex(@"\p{Ll}{3}")]
+    private static partial Regex LowercaseWord();
 }

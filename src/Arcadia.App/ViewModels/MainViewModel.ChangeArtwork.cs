@@ -37,6 +37,10 @@ public partial class MainViewModel
     {
         ((IChangeArtworkHost)this).Close(modal);
         OpenDataSources(modal.Notice.RowKey);
+
+        // B in the settings opens the modal again for the same game (#586), now with the key or source just set.
+        var tile = modal.Tile;
+        _dialogBehindSettings = () => ((IGameActionsOwner)this).ChangeArtwork(tile);
     }
 
     Task<string?> IChangeArtworkHost.PickImageAsync(string title) =>

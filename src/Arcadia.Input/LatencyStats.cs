@@ -11,10 +11,12 @@ public sealed class LatencyStats
 {
     private const double BucketMicroseconds = 10;
 
-    // Up to 50 ms; anything slower lands in the last bucket (the maximum is kept exactly).
+    // Up to 50 ms; anything slower lands in the overflow bucket, so a percentile there is only known as "≥ 50 ms"
+    // (mean and maximum stay exact).
     private const int Buckets = 5000;
+    private const int OverflowBucket = Buckets;
 
-    private readonly long[] _counts = new long[Buckets];
+    private readonly long[] _counts = new long[Buckets + 1];
     private readonly Lock _lock = new();
     private readonly long _every;
     private long _count;
@@ -39,7 +41,7 @@ public sealed class LatencyStats
     public void Add(TimeSpan delay)
     {
         var microseconds = Math.Max(0, delay.TotalMicroseconds);
-        var bucket = (int)Math.Min(Buckets - 1, microseconds / BucketMicroseconds);
+        var bucket = (int)Math.Min(OverflowBucket, microseconds / BucketMicroseconds);
         lock (_lock)
         {
             _counts[bucket]++;
@@ -57,7 +59,10 @@ public sealed class LatencyStats
         return now - last >= _every && Interlocked.CompareExchange(ref _lastSummary, now, last) == last;
     }
 
-    /// <summary>"n …, Mittel … µs, p50 … µs, p99 … µs, max … µs", or "keine Werte". A percentile is its bucket's upper edge.</summary>
+    /// <summary>
+    /// "n …, Mittel … µs, p50 … µs, p99 … µs, max … µs", or "keine Werte". A percentile is its bucket's upper edge, or
+    /// "≥ 50000 µs" when it falls into the overflow bucket.
+    /// </summary>
     public string Summary()
     {
         lock (_lock)
@@ -68,7 +73,7 @@ public sealed class LatencyStats
             }
 
             return FormattableString.Invariant(
-                $"n {_count}, Mittel {_sumMicroseconds / _count:0} µs, p50 {Percentile(0.50):0} µs, p99 {Percentile(0.99):0} µs, max {_maxMicroseconds:0} µs");
+                $"n {_count}, Mittel {_sumMicroseconds / _count:0} µs, p50 {Percentile(0.50)} µs, p99 {Percentile(0.99)} µs, max {_maxMicroseconds:0} µs");
         }
     }
 
@@ -86,19 +91,19 @@ public sealed class LatencyStats
     }
 
     /// <summary>Under the lock.</summary>
-    private double Percentile(double p)
+    private string Percentile(double p)
     {
         var rank = (long)Math.Ceiling(_count * p);
         long seen = 0;
-        for (var bucket = 0; bucket < Buckets; bucket++)
+        for (var bucket = 0; bucket < OverflowBucket; bucket++)
         {
             seen += _counts[bucket];
             if (seen >= rank)
             {
-                return Math.Min(_maxMicroseconds, (bucket + 1) * BucketMicroseconds);
+                return FormattableString.Invariant($"{Math.Min(_maxMicroseconds, (bucket + 1) * BucketMicroseconds):0}");
             }
         }
 
-        return _maxMicroseconds;
+        return FormattableString.Invariant($"≥ {OverflowBucket * BucketMicroseconds:0}");
     }
 }

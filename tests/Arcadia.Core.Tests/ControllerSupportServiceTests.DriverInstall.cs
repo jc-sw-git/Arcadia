@@ -25,12 +25,16 @@ public sealed partial class ControllerSupportServiceTests
 
     private static DriverInstallStepState State(ControllerSupportService service, DriverInstallStepKind kind) => service.Installation!.StateOf(kind);
 
+    // Only a net for a run that never gets there: the waits move on fake time. On a busy Windows runner the steps up to the
+    // hand-over alone took 6 s once, and 10 s were not enough for the rest (#589).
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
+
     private static async Task WaitForAsync(Func<bool> condition, string what)
     {
-        var until = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        var until = DateTime.UtcNow + Patience;
         while (!condition())
         {
-            Assert.True(DateTime.UtcNow < until, $"not reached in 10 s: {what}");
+            Assert.True(DateTime.UtcNow < until, $"not reached in {Patience.TotalSeconds:0} s: {what}");
             await Task.Delay(5);
         }
     }

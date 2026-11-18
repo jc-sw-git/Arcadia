@@ -45,7 +45,9 @@ public sealed class ArtworkReloadRows
                 Refresh();
             })
         {
+            // It only matters for the reload, so it sits right under it, indented (#560).
             Group = AppTexts.DataSourcesArtworkGroup,
+            Indent = 1,
             Subtitle = AppTexts.DataSourcesOverwriteSubtitle,
             ValueInfos = [AppTexts.DataSourcesOverwriteOff, AppTexts.DataSourcesOverwriteOn],
             Info = [new InfoText(AppTexts.DataSourcesOverwriteInfo)],

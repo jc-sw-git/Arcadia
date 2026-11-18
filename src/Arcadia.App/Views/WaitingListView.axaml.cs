@@ -1,22 +1,38 @@
 using System.ComponentModel;
 using Arcadia.App.ViewModels;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 
 namespace Arcadia.App.Views;
 
 /// <summary>
-/// "Warten auf deine Auswahl" (#491, #506): keeps the current game and the focused hit in sight and out of the edge
+/// "Warten auf deine Auswahl" (#491, #506): a double click takes a hit (#539); keeps the current game and the focused hit in sight and out of the edge
 /// fades when the list or the grid is taller than its place.
 /// </summary>
 public partial class WaitingListView : UserControl
 {
     private WaitingListViewModel? _viewModel;
+    // As far as RS scrolls the facts per step, as on the detail page.
+    private const double FactsScrollStep = 120;
+
     private WaitingHitsViewModel? _hits;
 
     public WaitingListView()
     {
         InitializeComponent();
+
+        // The tile's Button handles the press; the double tap comes after its two clicks marked the hit (#539).
+        HitGrid.AddHandler(DoubleTappedEvent, OnHitDoubleTapped, handledEventsToo: true);
+    }
+
+    private void OnHitDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if ((e.Source as Control)?.DataContext is WaitingHitViewModel hit)
+        {
+            hit.TakeCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -26,6 +42,7 @@ public partial class WaitingListView : UserControl
         {
             _viewModel.FocusMoved -= OnGameFocusMoved;
             _viewModel.PropertyChanged -= OnListChanged;
+            _viewModel.FactsScrollRequested -= OnFactsScrollRequested;
         }
 
         _viewModel = DataContext as WaitingListViewModel;
@@ -33,6 +50,7 @@ public partial class WaitingListView : UserControl
         {
             _viewModel.FocusMoved += OnGameFocusMoved;
             _viewModel.PropertyChanged += OnListChanged;
+            _viewModel.FactsScrollRequested += OnFactsScrollRequested;
         }
 
         FollowHits();
@@ -49,8 +67,42 @@ public partial class WaitingListView : UserControl
     private void FollowHits()
     {
         _hits?.FocusMoved -= OnHitFocusMoved;
+        _hits?.PropertyChanged -= OnHitsChanged;
         _hits = _viewModel?.Hits;
         _hits?.FocusMoved += OnHitFocusMoved;
+        _hits?.PropertyChanged += OnHitsChanged;
+        FactsScroller.Offset = default;
+        UpdateFactsOverflowLater();
+    }
+
+    // Another hit's facts start at their top.
+    private void OnHitsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WaitingHitsViewModel.MarkedHit))
+        {
+            FactsScroller.Offset = default;
+            UpdateFactsOverflowLater();
+        }
+    }
+
+    // Extent or viewport changed (another hit, the layout): the footer names RS only while the facts overflow.
+    private void OnFactsScrollChanged(object? sender, ScrollChangedEventArgs e) => UpdateFactsOverflow();
+
+    private void UpdateFactsOverflow()
+    {
+        if (_viewModel is not null)
+        {
+            _viewModel.FactsOverflow = _viewModel.Hits is { ShowsFacts: true } && FactsScroller.Extent.Height > FactsScroller.Viewport.Height + 1;
+        }
+    }
+
+    // After the new facts are laid out.
+    private void UpdateFactsOverflowLater() => Dispatcher.UIThread.Post(UpdateFactsOverflow, DispatcherPriority.Loaded);
+
+    private void OnFactsScrollRequested(int direction)
+    {
+        var max = Math.Max(0, FactsScroller.Extent.Height - FactsScroller.Viewport.Height);
+        FactsScroller.Offset = new Vector(0, Math.Clamp(FactsScroller.Offset.Y + (direction * FactsScrollStep), 0, max));
     }
 
     private void OnGameFocusMoved(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() =>

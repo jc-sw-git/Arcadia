@@ -105,7 +105,7 @@ public sealed class ViiperXboxPads(ViiperServer server, Action<string> log) : IV
         }
 
         var device = await AddRawDeviceAsync(VirtualPadReports.DeviceType(kind), [], cancellationToken);
-        return new ViiperReportPad(kind, device);
+        return new ViiperReportPad(kind, device, log);
     }
 
     /// <summary>

@@ -13,26 +13,36 @@ namespace Arcadia.App.Tests;
 
 /// <summary>
 /// #489: the settings category "Datenquellen": the SteamGridDB key by controller, its warning, the order of the sources,
-/// "Zuschneiden erlaubt" and the search for missing artwork, through the view models with a fake SteamGridDB.
+/// and the search for missing artwork, through the view models with a fake SteamGridDB.
 /// </summary>
 public sealed partial class DataSourcesTests
 {
     private const string GameId = "4100001";
     private const string WideHero = "https://images.example/4100001/wide.jpg";
     private const string GridHero = "https://cdn.example/hero/4100001.png";
+    private const string StoreCover = "https://images.example/4100001/cover.jpg";
+    private const string GridCover = "https://cdn.example/grid/4100001.png";
     private const string WrongKey = "ffffffffffffffffffffffffffffffff";
 
     private static readonly LauncherInfo Store = new("store", "Shop", "shop", null);
 
     /// <summary>
-    /// A launcher whose one game has a 16 : 9 background (as Epic's; another height with <paramref name="wideHeroHeight"/>)
-    /// and a store id SteamGridDB knows.
+    /// A launcher whose one game has a wide background that fits neither 16 : 9 nor the flat format (2560 × 1080; another
+    /// height with <paramref name="wideHeroHeight"/>) and a store id SteamGridDB knows; with <paramref name="coverWidth"/> also
+    /// a cover that wide and 900 high, and SteamGridDB a fitting one.
     /// </summary>
-    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartAsync(AppSettings? settings = null, int wideHeroHeight = 1440)
+    private static async Task<(ArcadiaDriver Arcadia, FakeImageServer Images)> StartAsync(
+        AppSettings? settings = null, int wideHeroHeight = 1080, int? coverWidth = null)
     {
         var images = new FakeImageServer();
         images.Serve(WideHero, TestImages.Png(2560, wideHeroHeight));
         images.Serve(GridHero, TestImages.Png(1920, 620));
+        if (coverWidth is { } width)
+        {
+            images.Serve(StoreCover, TestImages.Png(width, 900));
+            images.Serve(GridCover, TestImages.Png(600, 900));
+        }
+
         var game = new Game
         {
             Id = GameId,
@@ -41,10 +51,15 @@ public sealed partial class DataSourcesTests
             Launch = new LaunchTarget.ProtocolUri("shop://run/" + GameId),
         };
         var arcadia = await ArcadiaDriver.StartAsync(
-            [LauncherSpec.With(Store, game) with { Artwork = new StoreArtwork() }],
+            [LauncherSpec.With(Store, game) with { Artwork = new StoreArtwork(WithCover: coverWidth is not null) }],
             settings ?? new AppSettings { PanEnabled = true, ActiveLaunchers = [Store.Id] },
             imageServer: images);
         arcadia.SteamGridDb.Hero(ArtworkStoreId.Steam, GameId, GridHero, 1920, 620);
+        if (coverWidth is not null)
+        {
+            arcadia.SteamGridDb.Cover(ArtworkStoreId.Steam, GameId, GridCover, 600, 900);
+        }
+
         await SettledAsync(arcadia);
         return (arcadia, images);
     }
@@ -87,8 +102,11 @@ public sealed partial class DataSourcesTests
 
     private static string? Hero(ArcadiaDriver arcadia) => new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(Store.Id + ":" + GameId)?.Hero?.Origin;
 
+    private static string? Cover(ArcadiaDriver arcadia) => new ArtworkCache(Path.Combine(arcadia.Folder, "artwork")).Read(Store.Id + ":" + GameId)?.Cover?.Origin;
+
     [AvaloniaFact]
     [Trait("TestCase", "T489-1")]
+    [Trait("TestCase", "T566-1")]
     [Trait("TestCase", "T538-1")]
     public async Task The_category_shows_its_groups_in_two_tabs_and_without_a_key_greys_out_what_needs_one()
     {
@@ -111,8 +129,7 @@ public sealed partial class DataSourcesTests
                 (ArtworkSourceRows.SourceKey(ArtworkSourceKind.SteamGridDb), AppTexts.DataSourcesOrderGroup, 0),
                 (ArtworkSourceRows.MissingKey, AppTexts.DataSourcesArtworkGroup, 0),
                 (ArtworkReloadRows.ReloadKey, AppTexts.DataSourcesArtworkGroup, 0),
-                ("artwork-crop", AppTexts.DataSourcesArtworkGroup, 0),
-                (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 0),
+                (ArtworkReloadRows.OverwriteKey, AppTexts.DataSourcesArtworkGroup, 1),
                 (SeveralHitsRows.SeveralHitsKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 0),
                 (SeveralHitsRows.WaitingKey(WaitingKind.Artwork), AppTexts.DataSourcesArtworkGroup, 1),
             ],
@@ -154,7 +171,6 @@ public sealed partial class DataSourcesTests
         Assert.Equal(("2. SteamGridDB", AppTexts.DataSourcesSteamGridDbSkipped, true), (source.Title, source.Subtitle, source.IsDimmed));
         Assert.Equal("1. Launcher-Bilder", Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher)).Title);
         Assert.Equal(AppTexts.DataSourcesMissingCounts(covers: 1, heroes: 0), Row(arcadia, ArtworkSourceRows.MissingKey).Subtitle);
-        Assert.Equal(AppTexts.DataSourcesCropNormal, Assert.IsType<ChoiceRowViewModel>(Row(arcadia, "artwork-crop")).ValueText);
         Assert.Null(category.Marker);
 
         arcadia.Press(UiAction.Back);
@@ -188,7 +204,7 @@ public sealed partial class DataSourcesTests
         arcadia.FocusRow("steamgriddb-test");
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesTestOkToast, "getestet");
-        Assert.Equal(AppTexts.DataSourcesTestOk(arcadia.Time.GetLocalNow()), Row(arcadia, "steamgriddb-test").Subtitle);
+        Assert.Equal(AppTexts.DataSourcesTestOk(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), Row(arcadia, "steamgriddb-test").Subtitle);
 
         // B from the field drops what was typed, B from the page goes back to the library.
         arcadia.FocusRow(SteamGridDbKeyRows.KeyRowKey);
@@ -307,7 +323,7 @@ public sealed partial class DataSourcesTests
         arcadia.SteamGridDb.ValidKey = WrongKey;
         arcadia.Press(UiAction.Accept);
         await arcadia.WaitUntilAsync(() => arcadia.Main.Toast.Text == AppTexts.DataSourcesKeyRejectedToast, "abgelehnt");
-        Assert.Equal(AppTexts.DataSourcesTestRejected(arcadia.Time.GetLocalNow()), Row(arcadia, "steamgriddb-test").Subtitle);
+        Assert.Equal(AppTexts.DataSourcesTestRejected(Services.Formatting.Clock(arcadia.Time.GetLocalNow())), Row(arcadia, "steamgriddb-test").Subtitle);
     }
 
     [AvaloniaFact]
@@ -438,24 +454,14 @@ public sealed partial class DataSourcesTests
     }
 
     [AvaloniaFact]
-    [Trait("TestCase", "T489-16")]
-    public async Task The_tolerance_steps_round_and_a_sixteen_by_nine_background_gives_way_to_steamgriddbs_hero_with_a_key()
+    [Trait("TestCase", "T566-2")]
+    public async Task A_wide_background_gives_way_to_steamgriddbs_hero_with_a_key()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
-        // Without a key: the launcher's 16 : 9 image, cropped.
+        // Without a key: the launcher's wide image, cropped.
         Assert.Equal("store-wide", Hero(arcadia));
         OpenDataSources(arcadia);
-
-        var crop = Assert.IsType<ChoiceRowViewModel>(arcadia.FocusRow("artwork-crop"));
-        arcadia.Press(UiAction.Right);
-        Assert.Equal((AppTexts.DataSourcesCropMuch, CropAllowance.Much), (crop.ValueText, arcadia.Settings.Current.Artwork.Crop));
-        arcadia.Press(UiAction.Right);
-        Assert.Equal(AppTexts.DataSourcesCropLittle, crop.ValueText);
-        arcadia.Press(UiAction.Left);
-        Assert.Equal(AppTexts.DataSourcesCropMuch, crop.ValueText);
-        arcadia.Press(UiAction.Left);
-        Assert.Equal(CropAllowance.Normal, arcadia.Settings.Current.Artwork.Crop);
 
         // With a key, the search after it finds SteamGridDB's hero; the game's tile shows it without the focus moving.
         var focused = arcadia.Main.Library.FocusedGame;
@@ -494,13 +500,15 @@ public sealed partial class DataSourcesTests
         Assert.False(missing.HasProgress);
     }
 
-    /// <summary>The launcher's images: a 16 : 9 background to download, and the game's store id.</summary>
-    private sealed class StoreArtwork : ILauncherArtwork, IArtworkLookup
+    /// <summary>The launcher's images: a wide background to download, a cover too if asked for, and the game's store id.</summary>
+    private sealed record StoreArtwork(bool WithCover = false) : ILauncherArtwork, IArtworkLookup
     {
         public IArtworkLookup Look() => this;
 
         public IReadOnlyList<ArtworkCandidate> For(Game game, ArtworkKind kind) =>
-            kind == ArtworkKind.Hero ? [new ArtworkCandidate("store-wide", Download: new Uri(WideHero))] : [];
+            kind == ArtworkKind.Hero ? [new ArtworkCandidate("store-wide", Download: new Uri(WideHero))]
+            : WithCover ? [new ArtworkCandidate("store-cover", Download: new Uri(StoreCover))]
+            : [];
 
         public ArtworkStoreId? StoreIdOf(Game game) => new(ArtworkStoreId.Steam, game.Id);
     }

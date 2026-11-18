@@ -255,6 +255,55 @@ public sealed class SteamOwnedGamesScanTests : IDisposable
         Assert.Null(SteamToken.ExpiresAt("a.!!!.c"));
     }
 
+    [Theory]
+    [InlineData(long.MaxValue)]
+    [InlineData(-62_135_596_801)]
+    public void A_token_expiring_outside_any_date_has_no_expiry(long exp)
+    {
+        static string Part(string json) => Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var token = $"{Part("""{"typ":"JWT"}""")}.{Part($$"""{"sub":"{{FakeSteamWeb.SteamId}}","exp":{{exp}}}""")}.c2ln";
+
+        Assert.Null(SteamToken.ExpiresAt(token));
+        Assert.Equal(FakeSteamWeb.SteamId, SteamToken.SteamIdOf(token));
+    }
+
+    [Fact]
+    public async Task An_answer_far_larger_than_any_library_is_refused_without_reading_it_all()
+    {
+        using var http = new HttpClient(new EndlessAnswer());
+        var api = new SteamWebApi(http);
+
+        var result = await api.GetOwnedGamesAsync("token", FakeSteamWeb.SteamId, CancellationToken.None);
+
+        Assert.Contains("zu groß", result.Error?.Message);
+    }
+
+    /// <summary>A 200 whose body never ends and announces no length.</summary>
+    private sealed class EndlessAnswer : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StreamContent(new EndlessStream()) });
+    }
+
+    private sealed class EndlessStream : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            Array.Fill(buffer, (byte)' ', offset, count);
+            return count;
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     public void Dispose()
     {
         _account.Dispose();

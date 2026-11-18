@@ -25,7 +25,7 @@ Search (#12).
   down in the last row to the first row; in the row up/down do nothing.
 - X erases (held: repeats), Y space, LB shift and RB AltGr (each: tap on/off, held only while held; one at a time).
 - L3 "Filter und Sortierung": launchers (any number) and the library's sort orders plus relevance, the default; not
-  saved. The library's filter (#44) doesn't apply to the search. R3 layout menu (all five, the last chosen saved globally).
+  saved. The library's filter (#44) doesn't apply to the search. R3 layout menu (the quick selection, `docs/product/localization.md`).
 - ≡ starts the focused hit, ≡ held 1 s opens its details, ⧉ its menu; with a real keyboard Enter and Enter held do the
   same.
 
@@ -47,6 +47,6 @@ hit like ≡, the arrows move the field's caret (up: to the start, down: to the 
 
 ## Detail page from the search
 
-A detail page opened from the search turns through the hits in their order; LB/RB, L3 and Y do nothing there, X returns to
-the search with its text unchanged, and B, as on every detail page, goes to the library: the tab of the game's
-launcher, its page, the game focused; the search closes.
+A detail page opened from the search turns through the hits in their order; LB/RB, L3 and Y do nothing there. B (and X)
+return to the search as it was left: its text, hits, filter and sort, the keyboard out or put away; the focus on the
+game the page showed last. B there leads on as from any search, to the page it was opened over.

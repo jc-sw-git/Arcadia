@@ -17,7 +17,7 @@
 ## Step "Datenquellen" (#497)
 
 - After the launcher page, skippable: the SteamGridDB key and the IGDB access with the same rows, texts and info as
-  the settings' "Datenquellen", then "Überspringen" ("Fertig" once a key or access is there). It is the settings page
+  the settings' "Datenquellen", then "Überspringen" ("Fertig" once a key or access is there) in its own group "Abschließen". It is the settings page
   with that one category, the header says "Einrichtung", no ✕.
 - While it shows, the library already holds only the launchers chosen, so a key taken there starts its fetch at once,
   in the background, and only for those; ending the step waits for no request and starts nothing again.

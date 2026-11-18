@@ -175,6 +175,7 @@ public sealed class InstallTrackerTests
 
         Assert.Null(tracker.Started(game));
         Assert.True(tracker.HasPending);
+        Assert.Equal(["gog"], tracker.PendingLauncherIds);
         Assert.Null(tracker.StateOf(game.Key));
 
         Assert.Empty(tracker.CompletePending([game, GameOf("gog", "other", installed: true)]));
@@ -183,6 +184,7 @@ public sealed class InstallTrackerTests
         var installed = game with { IsInstalled = true };
         Assert.Equal([installed], tracker.CompletePending([installed]));
         Assert.False(tracker.HasPending);
+        Assert.Empty(tracker.PendingLauncherIds);
     }
 
     [Fact]

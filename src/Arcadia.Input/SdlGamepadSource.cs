@@ -61,7 +61,9 @@ public interface ISdlGamepads
 /// </summary>
 /// <remarks>
 /// Polled every <see cref="PollIntervalMs"/>, like XInput before: the repeat of held directions and the mouse mode's
-/// pointer need a steady clock anyway. While emulated pads are forwarded (<see cref="ReadFast"/>) it reads every
+/// pointer need a steady clock anyway. On Windows this sleep lasts a timer tick (15.6 ms) instead of 8 ms; that adds at
+/// most a tick to a press in Arcadia's own menus, well inside the 50 ms budget, so only the fast mode uses
+/// <see cref="PreciseWait"/> (and its wake-ups). While emulated pads are forwarded (<see cref="ReadFast"/>) it reads every
 /// millisecond in between for <see cref="Sampled"/> (<see cref="ReadPacing"/>, #238 D9). Missing or failing SDL ends
 /// only the controller input: it is reported once through the error callback, and keyboard and mouse keep working.
 /// </remarks>

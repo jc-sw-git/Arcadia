@@ -4,7 +4,7 @@ Findings of the owner's hand test of #43 (detail page after #493/#494/#531), cha
 written by the implementing thread from the issue's changes, as the issue had none; the quality engineer checks them in
 the review.
 
-**Status:** Automated: T541-1, T541-2, T541-3 (the colours chosen) · QE: T541-3, T541-4, T541-5, T541-6 · Open for the owner: T541-7, T541-8
+**Status:** Automated: T541-1, T541-2, T541-3 (the colours chosen) · QE: T541-3, T541-4, T541-5, T541-6 · Open for the owner: none (T541-7, T541-8 passed)
 
 Every case runs on the detail page with the gamepad alone unless it says otherwise; keys follow `docs/product/controls.md`.
 
@@ -25,10 +25,10 @@ Every case runs on the detail page with the gamepad alone unless it says otherwi
 - [x] **T541-6** "Übersicht" with 5 quick selection entries: "Übersicht anpassen" lies in the middle between the fifth
   entry and the panel's lower edge; a greyed entry's note stands right under the fifth entry. With 3 entries (untick two
   in "Übersicht anpassen") both stay where they are with 5. · E2E: no (window: layout)
-- [ ] **T541-7** **Owner:** On your PC with IGDB access, after one scan with this build: "3000th Duel" (Steam has only its
+- [x] **T541-7** **Owner:** On your PC with IGDB access, after one scan with this build: "3000th Duel" (Steam has only its
   own USK 12, igdb.com lists PEGI 12 and ESRB E10+) shows USK 12 from Steam and PEGI 12 and ESRB E10+ from IGDB in "Infos".
   Look at two more games of yours: their PEGI/ESRB match igdb.com. · E2E: no (real IGDB data)
-- [ ] **T541-8** **Owner:** On the TV, two or three of your own games with bright artworks: the notes under "Spielen" read
+- [x] **T541-8** **Owner:** On the TV, two or three of your own games with bright artworks: the notes under "Spielen" read
   at a glance, the cloud behind them looks soft, the rating colours are easy to tell apart. · E2E: no (look and feel)
 
 Automated tests:
@@ -47,3 +47,4 @@ History:
 | T541-7 | 2026-11-13 | owner, Claude | v0.x main build, real PC: the metadata cache of 700 games IGDB knows | ❌ only USK ever read from IGDB (406 games), never PEGI/ESRB: their category ids were guessed | fixed in this PR (read by text or deprecated enum, old answers asked again) |
 | T541-3 to T541-6 | 2026-11-13 | Claude | branch, Release, Linux Xvfb 1920 × 1080, demo data; T541-4 over a bright test image laid over the artwork for the run | ✅ | – |
 | T541-3 to T541-6 | 2026-11-13 | Claude (QE) | d9ed96a, Release, Linux Xvfb 1920 × 1080, demo data: badges USK 6/12/16/18 in the info line, USK 6 + PEGI 16 in "Infos", install and update note under the button, ring of the focused button measured (before 49f9b2d: 110 at its lower edge under the cloud, after: 242 all round), quick selection: greyed note right under the fifth place, "Übersicht anpassen" 102 px below the fifth entry and 100 px above the panel's edge; 3 entries only from the layout (fixed 5-place row) | ✅ after 49f9b2d | – |
+| T541-7, T541-8 | 2026-11-13 | Owner | `main` after #561, Release, his PC, TV, Steam Controller, his libraries | ✅ final test of #43; findings went into #560, fixed by PR #561 | – |

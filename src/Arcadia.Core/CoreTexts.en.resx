@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="NameEmpty" xml:space="preserve"><value>The name can’t be empty.</value></data>
+  <data name="NameTooLong" xml:space="preserve"><value>{maxLength} characters at most.</value></data>
+  <data name="NameControlCharacter" xml:space="preserve"><value>The name contains a control character.</value></data>
+  <data name="KeywordEmpty" xml:space="preserve"><value>The shortcut can’t be empty.</value></data>
+  <data name="KeywordNoSeparator" xml:space="preserve"><value>No “{separator}”: it separates several launchers.</value></data>
+  <data name="KeywordOnlyLowercaseAndDigits" xml:space="preserve"><value>Lowercase letters and digits only.</value></data>
+  <data name="KeywordTooLong" xml:space="preserve"><value>{maxLength} characters at most.</value></data>
+  <data name="KeywordTaken" xml:space="preserve"><value>{launcher} already uses {prefix}{keyword}.</value></data>
+  <data name="LogoFileEmpty" xml:space="preserve"><value>The file is empty.</value></data>
+  <data name="LogoFileTooLarge" xml:space="preserve"><value>The file is larger than {megabytes} MB.</value></data>
+  <data name="LogoNotAnImage" xml:space="preserve"><value>This isn’t a PNG, SVG, ICO or WebP file.</value></data>
+  <data name="LogoSvgStylesheet" xml:space="preserve"><value>The SVG loads a stylesheet; Arcadia only takes plain images.</value></data>
+  <data name="LogoSvgReferences" xml:space="preserve"><value>The SVG loads other files or pages; Arcadia only takes images without outside references.</value></data>
+  <data name="LogoSvgScripts" xml:space="preserve"><value>The SVG contains scripts or web content; Arcadia only takes plain images.</value></data>
+  <data name="LogoSvgEmbedsImages" xml:space="preserve"><value>The SVG embeds other images; Arcadia only takes plain vector graphics.</value></data>
+  <data name="GenreAction" xml:space="preserve"><value>Action</value></data>
+  <data name="GenreAdventure" xml:space="preserve"><value>Adventure</value></data>
+  <data name="GenreRolePlaying" xml:space="preserve"><value>Role-playing</value></data>
+  <data name="GenreStrategy" xml:space="preserve"><value>Strategy</value></data>
+  <data name="GenreSimulation" xml:space="preserve"><value>Simulation</value></data>
+  <data name="GenreRacing" xml:space="preserve"><value>Racing</value></data>
+  <data name="GenreSports" xml:space="preserve"><value>Sports</value></data>
+  <data name="GenreShooter" xml:space="preserve"><value>Shooter</value></data>
+  <data name="GenrePuzzle" xml:space="preserve"><value>Puzzle</value></data>
+  <data name="GenrePlatformer" xml:space="preserve"><value>Platformer</value></data>
+  <data name="GenreFighting" xml:space="preserve"><value>Fighting</value></data>
+  <data name="GenreCasual" xml:space="preserve"><value>Casual</value></data>
+  <data name="GenreIndie" xml:space="preserve"><value>Indie</value></data>
+  <data name="GenreMassivelyMultiplayer" xml:space="preserve"><value>MMO</value></data>
+  <data name="GenreArcade" xml:space="preserve"><value>Arcade</value></data>
+  <data name="GenreMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="GenrePointAndClick" xml:space="preserve"><value>Point &amp; click</value></data>
+  <data name="GenreVisualNovel" xml:space="preserve"><value>Visual novel</value></data>
+  <data name="GenreCardAndBoard" xml:space="preserve"><value>Card &amp; board game</value></data>
+  <data name="GenreTactics" xml:space="preserve"><value>Tactics</value></data>
+  <data name="MetadataSourceIgdb" xml:space="preserve"><value>IGDB</value></data>
+</root>

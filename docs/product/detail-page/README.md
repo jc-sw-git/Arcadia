@@ -5,6 +5,7 @@
 | The page: title, buttons and note, the panel's areas, "Übersicht", "Infos", "Übersicht anpassen", rows and info box | [page.md](page.md) |
 | The carousel through the tab's games, LT/RT, LB/RB, filter, wheel | [carousel.md](carousel.md) |
 | "Artwork ändern", "Titel ändern", "Tags" | [game-actions.md](game-actions.md) |
+| "Bild ansehen": the background alone after 10 s without input | [image-show.md](image-show.md) |
 
 ## Game start
 

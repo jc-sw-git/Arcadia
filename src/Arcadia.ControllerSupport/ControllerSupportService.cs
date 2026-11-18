@@ -971,8 +971,10 @@ public sealed class ControllerSupportService
         {
             Log?.Invoke($"{text} abgebrochen: Arcadia wird beendet");
         }
+        // JSON and URIs come from release feeds and VIIPER's answers: a broken one is a failed action, not a bug.
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException
-                                       or UnauthorizedAccessException or Win32Exception or TimeoutException)
+                                       or UnauthorizedAccessException or Win32Exception or TimeoutException
+                                       or System.Text.Json.JsonException or UriFormatException)
         {
             Log?.Invoke($"{text} fehlgeschlagen: {ex.Message}");
             LastError = ex.Message;

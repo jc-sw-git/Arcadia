@@ -7,8 +7,8 @@ public sealed class IdleStopTests : IDisposable
     private readonly List<string> _log = [];
     private readonly ManualResetEventSlim _stopped = new();
 
-    private IdleStop NewIdleStop(Func<bool>? keepRunning = null) =>
-        new(Timeout, keepRunning ?? (() => false), _stopped.Set, line => { lock (_log) _log.Add(line); });
+    private IdleStop NewIdleStop(Func<bool>? keepRunning = null, Func<bool>? hasClient = null) =>
+        new(Timeout, keepRunning ?? (() => false), hasClient ?? (() => false), _stopped.Set, line => { lock (_log) _log.Add(line); });
 
     public void Dispose() => _stopped.Dispose();
 
@@ -53,5 +53,24 @@ public sealed class IdleStopTests : IDisposable
         Volatile.Write(ref showPending, 0);
         Assert.True(_stopped.Wait(Ample));
         lock (_log) Assert.Single(_log, line => line.Contains("staying"));
+    }
+
+    [Fact]
+    public void A_late_gone_of_an_old_connection_does_not_stop_Pan_under_a_new_client()
+    {
+        // The reconnect registered before the old connection's finally said "gone": the guardian knows the new client.
+        using var asked = new SemaphoreSlim(0);
+        using var idle = NewIdleStop(hasClient: () =>
+        {
+            asked.Release();
+            return true;
+        });
+
+        idle.ClientPresent(true);
+        idle.ClientPresent(false);
+
+        Assert.True(asked.Wait(Ample));
+        Assert.False(_stopped.Wait(Timeout * 3));
+        lock (_log) Assert.Single(_log, line => line.Contains("a client is connected"));
     }
 }

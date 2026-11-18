@@ -1,6 +1,7 @@
 using Arcadia.App.Keyboard;
 using Arcadia.App.Views;
 using Arcadia.Core.Search;
+using Arcadia.Core.Settings;
 using Arcadia.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -33,7 +34,8 @@ internal sealed class MouseModeKeyboard : IDisposable
 
     public static MouseModeKeyboard Show(string layoutCode = "DE")
     {
-        var layout = KeyboardLayout.All.Single(candidate => candidate.Code == layoutCode);
+        var layout = KeyboardLayoutChoice.From(
+            new LocalizationSettings { KeyboardLayout = KeyboardLayout.All.Single(candidate => candidate.Code == layoutCode).Id }, systemLayoutId: null, "de-DE");
         var typed = new TypedText();
         var keyboard = new OnScreenKeyboardViewModel(layout, typed, new FakeTimeProvider(ArcadiaDriver.Now), action => Dispatcher.UIThread.Post(action));
         var window = new MouseModeKeyboardWindow { DataContext = keyboard };

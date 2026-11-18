@@ -14,6 +14,24 @@ public class JournalTests
     };
 
     [Fact]
+    public void A_folder_that_went_missing_is_made_by_the_given_creator_only()
+    {
+        using var temp = new TempJournal();
+        var made = new List<string>();
+        var journal = new JournalFile(temp.File.Path, folder =>
+        {
+            made.Add(folder);
+            Directory.CreateDirectory(folder);
+        });
+
+        journal.Save(Sample());
+        journal.Save(Sample());
+
+        Assert.Equal([temp.Folder], made);
+        Assert.Equal(5u, journal.Load().State.Generation);
+    }
+
+    [Fact]
     public void A_saved_journal_comes_back_the_same_and_keeps_the_previous_version()
     {
         using var journal = new TempJournal();

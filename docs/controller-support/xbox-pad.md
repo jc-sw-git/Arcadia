@@ -7,7 +7,7 @@ is the copy's job ([steam-controller-copy.md](steam-controller-copy.md)); no lay
 
 - `SteamControllerXboxPad` (ControllerSupport) takes every SDL read (`Feed` on `Sampled`), keeps only the Steam
   Controller (`GamepadReading.IsSteamController`) and sends the new state from that thread (`PadForwarder`, a slow
-  VIIPER never holds up Arcadia's input; [every-controller.md](pad-latency.md)). Only changes are sent;
+  VIIPER never holds up Arcadia's input; [pad-latency.md](pad-latency.md)). Only changes are sent;
   VIIPER keeps the last state.
   Every other controller gets a pad of its own: [every-controller.md](every-controller.md) (#238).
 - A game's rumble on the pad (VIIPER's `Xbox360Output`, two motor bytes) goes back to the Steam Controller through SDL

@@ -50,7 +50,7 @@ public sealed class LauncherSettingsTests
 
         // Anything but ▲ ▼, Y and B waits until the launcher is put down.
         arcadia.Press(UiAction.NextTab);
-        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.LaunchersCategory, arcadia.Main.Settings!.Selected.Name);
 
         arcadia.Press(UiAction.Back);
         Assert.True(arcadia.Main.IsSettingsOpen);
@@ -192,7 +192,7 @@ public sealed class LauncherSettingsTests
 
         arcadia.Press(UiAction.Left).Press(UiAction.Accept);
         Assert.True(arcadia.Main.IsSettingsOpen);
-        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings!.Selected.Name);
+        Assert.Equal(AppTexts.LaunchersCategory, arcadia.Main.Settings!.Selected.Name);
         Assert.Equal("xbox", arcadia.Main.Settings.Selected.FocusedRow?.Key);
     }
 
@@ -235,7 +235,7 @@ public sealed class LauncherSettingsTests
         Assert.True(empty.IsSettingsFocused);
 
         arcadia.Press(UiAction.Accept);
-        Assert.Equal(AppTexts.Launcher, arcadia.Main.Settings?.Selected.Name);
+        Assert.Equal(AppTexts.LaunchersCategory, arcadia.Main.Settings?.Selected.Name);
     }
 
     [AvaloniaFact]

@@ -38,7 +38,7 @@ public sealed class SettingsTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         arcadia.Press(UiAction.Settings);
         var settings = arcadia.Main.Settings!;
-        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
+        Assert.Equal(AppTexts.LaunchersCategory, settings.Selected.Name);
         Assert.Equal("gog", settings.FocusedRow?.Key);
 
         // Rows: down to Xbox and switch it off with ◀.
@@ -58,8 +58,8 @@ public sealed class SettingsTests
         arcadia.Press(UiAction.Right);
         Assert.Equal(MouseModeActivation.Automatic, arcadia.Settings.Current.MouseMode.Activation);
 
-        arcadia.Press(UiAction.NextTab, times: 3);
-        Assert.Equal(AppTexts.Launcher, settings.Selected.Name);
+        arcadia.Press(UiAction.NextTab, times: 4);
+        Assert.Equal(AppTexts.LaunchersCategory, settings.Selected.Name);
 
         // B closes; the library shows the launcher switched off as gone.
         arcadia.Press(UiAction.Back);

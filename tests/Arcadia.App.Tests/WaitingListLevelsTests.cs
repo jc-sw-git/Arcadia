@@ -112,7 +112,7 @@ public sealed class WaitingListLevelsTests
 
         arcadia.Press(UiAction.Accept);
         Assert.Equal((true, 0), (list.InHits, FocusedHit(list)));
-        Assert.Equal((AppTexts.WaitingChooseHitHint, AppTexts.WaitingTakeHint, AppTexts.Back), (list.ChooseHint, list.AcceptHint, list.BackHint));
+        Assert.Equal((AppTexts.WaitingChooseHitHint, AppTexts.WaitingTakeCoverHint, AppTexts.Back), (list.ChooseHint, list.AcceptHint, list.BackHint));
         Assert.True(list.Games[0].IsCurrent);
         arcadia.Press(UiAction.Right);
         Assert.Equal(1, FocusedHit(list));
@@ -275,6 +275,8 @@ public sealed class WaitingListLevelsTests
             arcadia.SteamGridDb.Cover("game", Id(id), $"https://cdn.example/grid/{id}.png", 600, 900);
         }
 
+        // One background, for the second step of the choice (#539).
+        arcadia.SteamGridDb.Hero("game", "1002", "https://cdn.example/hero/1002.png", 1920, 620);
         return withCover;
     }
 
@@ -300,7 +302,7 @@ public sealed class WaitingListLevelsTests
         Assert.Equal(withCover.Take(SteamGridDbClient.MaxOwnTermHits), hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
         var lastNeeded = Enumerable.Range(1001, 40).ToList().IndexOf(withCover[SteamGridDbClient.MaxOwnTermHits - 1]);
         Assert.DoesNotContain(arcadia.SteamGridDb.Asked(), a => Enumerable.Range(1001 + lastNeeded + 1, 40 - lastNeeded - 1).Any(id => a == $"grids/game/{id}"));
-        Assert.Equal(AppTexts.WaitingIntroOwnTerm(count: 25, loads: AppTexts.WaitingLoadsBoth), hits.Intro);
+        Assert.Equal(AppTexts.WaitingIntroCoverTabOwnTerm(25), hits.Intro);
 
         // ◀ ▶ reach "Zurücksetzen" now; A on it: the search name and the hits again, without a search.
         var searches = arcadia.SteamGridDb.Asked().Count(a => a.StartsWith("search/", StringComparison.Ordinal));
@@ -345,8 +347,12 @@ public sealed class WaitingListLevelsTests
         editing.Editor.Take();
         await WaitingListTests.ShownAsync(list);
 
-        // The first result took the focus.
+        // The first result took the focus; the term searches the backgrounds on the second step too (#539).
         arcadia.Press(UiAction.Right).Press(UiAction.Accept);
+        await WaitingListTests.ShownAsync(list);
+        Assert.Equal("Echo Saga", list.Hits!.Term);
+        Assert.Equal([1002], list.Hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
+        arcadia.Press(UiAction.Accept);
         await list.Loading;
         await WaitingListTests.SettledAsync(arcadia);
 
@@ -441,9 +447,8 @@ public sealed class WaitingListLevelsTests
         editing.Editor.Take();
         await WaitingListTests.ShownAsync(list);
         Assert.Equal([1601, 1602], list.Hits.Hits.Select(h => ((ArtworkHitViewModel)h).Hit.Id));
-        arcadia.Press(UiAction.Right).Press(UiAction.Accept);
-        await list.Loading;
-        Dispatcher.UIThread.RunJobs();
+        arcadia.Press(UiAction.Right);
+        await WaitingListTests.TakeCoverAndItsBackgroundAsync(arcadia, list);
 
         // Taken: the game left, the focus is back in the games list on the next one.
         Assert.False(list.InHits);

@@ -19,9 +19,19 @@ public enum NameMatchState
 }
 
 /// <summary>One game's match: its SteamGridDB game when chosen, its hits while it waits.</summary>
+/// <param name="GameId">When chosen: the SteamGridDB game its images come from (the cover's, when the background is another's).</param>
 /// <param name="Position">While it waits: its place on the waiting list, later games behind earlier ones.</param>
 public sealed record NameMatch(NameMatchState State, int? GameId, IReadOnlyList<SteamGridDbHit> Hits, int Position = 0)
 {
+    /// <summary>
+    /// When chosen: the SteamGridDB game its background comes from, when the player picked it from another game than the
+    /// cover (#539); null when both come from <see cref="GameId"/>.
+    /// </summary>
+    public int? HeroGameId { get; init; }
+
+    /// <summary>The SteamGridDB game the images of <paramref name="kind"/> come from; null unless chosen.</summary>
+    public int? GameIdFor(ArtworkKind kind) => State != NameMatchState.Chosen ? null : kind == ArtworkKind.Hero ? HeroGameId ?? GameId : GameId;
+
     /// <summary>Both kinds: what a game waiting from before #506 counts as seeking.</summary>
     public static readonly IReadOnlyList<ArtworkKind> BothKinds = [ArtworkKind.Cover, ArtworkKind.Hero];
 
@@ -40,6 +50,10 @@ public sealed record NameMatch(NameMatchState State, int? GameId, IReadOnlyList<
     public static ArtworkKind TileKindOf(IReadOnlyList<ArtworkKind> sought) => sought.Contains(ArtworkKind.Cover) ? ArtworkKind.Cover : ArtworkKind.Hero;
 
     public static NameMatch Chosen(int gameId) => new(NameMatchState.Chosen, gameId, []);
+
+    /// <summary>Cover and background chosen from two SteamGridDB games (#539); the same game twice is a plain choice.</summary>
+    public static NameMatch Chosen(int coverGameId, int heroGameId) =>
+        Chosen(coverGameId) with { HeroGameId = heroGameId == coverGameId ? null : heroGameId };
 
     public static NameMatch Skipped { get; } = new(NameMatchState.Skipped, null, []);
 
@@ -184,7 +198,8 @@ public sealed class NameMatchStore(string path)
         switch (state)
         {
             case NameMatchState.Chosen:
-                return PositiveNumber(stored, "gameId") is { } id ? NameMatch.Chosen(id) : null;
+                // A background game that can't be read falls back to the cover's game: the images stay automatic.
+                return PositiveNumber(stored, "gameId") is { } id ? NameMatch.Chosen(id, PositiveNumber(stored, "heroGameId") ?? id) : null;
             case NameMatchState.Skipped:
                 return NameMatch.Skipped;
         }
@@ -259,6 +274,7 @@ public sealed class NameMatchStore(string path)
             e => new StoredMatch(
                 e.Value.State.ToString(),
                 e.Value.GameId,
+                e.Value.HeroGameId,
                 e.Value.Hits.Count == 0 && e.Value.State != NameMatchState.Waiting ? null : [.. e.Value.Hits.Select(h => new StoredHit(h.Id, h.Name, h.Year, e.Value.Checked.Contains(h.Id) ? true : null))],
                 e.Value.State == NameMatchState.Waiting ? e.Value.Position : null,
                 e.Value.State == NameMatchState.Waiting ? [.. e.Value.Sought.Select(k => k.ToString())] : null),
@@ -269,7 +285,7 @@ public sealed class NameMatchStore(string path)
         File.Move(temporary, path, overwrite: true);
     }
 
-    private sealed record StoredMatch(string State, int? GameId, List<StoredHit>? Hits, int? Position, List<string>? Sought);
+    private sealed record StoredMatch(string State, int? GameId, int? HeroGameId, List<StoredHit>? Hits, int? Position, List<string>? Sought);
 
     private sealed record StoredHit(int Id, string Name, int? Year, bool? Checked);
 }

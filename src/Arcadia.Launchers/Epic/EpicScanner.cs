@@ -252,7 +252,6 @@ public sealed class EpicScanner(
             var catalogNamespace = GetString(root, "CatalogNamespace") ?? string.Empty;
             var catalogItemId = GetString(root, "CatalogItemId") ?? string.Empty;
             var installLocation = GetString(root, "InstallLocation");
-            var launchExecutable = GetString(root, "LaunchExecutable");
             // Epic writes a number; anything else (a string, null) means no size rather than a broken manifest.
             long? installSize = root.TryGetProperty("InstallSize", out var size) && size.ValueKind == JsonValueKind.Number && size.TryGetInt64(out var bytes)
                 ? bytes
@@ -268,9 +267,6 @@ public sealed class EpicScanner(
                 Launch = new LaunchTarget.ProtocolUri(LaunchUri(catalogNamespace, catalogItemId, appName)),
                 OpenInLauncher = new LaunchTarget.ProtocolUri(LibraryUri),
                 InstallDirectory = installLocation,
-                ExecutablePath = installLocation is not null && !string.IsNullOrEmpty(launchExecutable)
-                    ? Path.Combine(installLocation, launchExecutable)
-                    : null,
                 InstallSizeBytes = installSize,
                 InstalledAt = installLocation is null ? null : installDateOf?.Invoke(installLocation),
                 UpdateAvailable = HasUpdate(installedApps, appName, versionString),

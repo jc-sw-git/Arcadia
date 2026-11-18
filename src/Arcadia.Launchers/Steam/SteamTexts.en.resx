@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="SteamOtherAccountNotice" xml:space="preserve"><value>Steam is signed in with a different account</value></data>
+  <data name="SteamUnreachableWithList" xml:space="preserve"><value>Steam can’t be reached. Arcadia shows the last loaded list of your games.</value></data>
+  <data name="SteamUnreachableWithoutList" xml:space="preserve"><value>Steam can’t be reached. Your games that aren’t installed are missing until Arcadia can load their list.</value></data>
+  <data name="SteamSignInExpired" xml:space="preserve"><value>Your sign-in has expired. Sign in again to see all your games.</value></data>
+  <data name="SteamAccountTitle" xml:space="preserve"><value>Steam account</value></data>
+  <data name="SteamAccountPurpose" xml:space="preserve"><value>Sign in to get full access to your game library</value></data>
+  <data name="SteamAccountAbout1" xml:space="preserve"><value>When you add your Steam account to Arcadia, you get full access to your game library in Arcadia too. </value></data>
+  <data name="SteamAccountAbout2" xml:space="preserve"><value>Without signing in, Arcadia can only list the games installed on this PC.</value></data>
+  <data name="SteamSignInMethod" xml:space="preserve"><value>You sign in on Steam’s sign-in page, by QR code with the Steam Mobile App or with name and password. Arcadia never sees your sign-in details.</value></data>
+  <data name="ErrorContextSignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="ErrorContextCheckSteamAccount" xml:space="preserve"><value>Check Steam account</value></data>
+  <data name="ErrorContextLoadGames" xml:space="preserve"><value>Load games</value></data>
+  <data name="SteamSignInTitle" xml:space="preserve"><value>Sign in to Steam</value></data>
+  <data name="SteamRefusedNotOwned" xml:space="preserve"><value>The signed-in Steam account doesn’t own this game.</value></data>
+  <data name="SteamFolderExpected" xml:space="preserve"><value>steam.exe and the steamapps folder</value></data>
+  <data name="SteamToolsSubtitle" xml:space="preserve"><value>Such as SteamVR and SDKs</value></data>
+  <data name="SteamToolsInfo" xml:space="preserve"><value>Under “Tools”, Steam lists programs for games and their development. When this is on, they show up in Arcadia too, with a Steam account also the ones not installed; runtimes and redistributables are always ignored:</value></data>
+  <data name="SteamSoftwareSubtitle" xml:space="preserve"><value>Such as Wallpaper Engine and Blender</value></data>
+  <data name="SteamSoftwareInfo" xml:space="preserve"><value>Steam also sells programs that aren’t games. When this is on, they show up in Arcadia too, with a Steam account also the ones not installed:</value></data>
+  <data name="SteamSoundtracksSubtitle" xml:space="preserve"><value>The soundtracks of your games</value></data>
+  <data name="SteamSoundtracksInfo" xml:space="preserve"><value>Steam installs soundtracks like games. When this is on, they show up in Arcadia too, with a Steam account also the ones not installed; [A] opens a soundtrack in Steam, which plays it.</value></data>
+  <data name="SteamToolsTitle" xml:space="preserve"><value>Include tools</value></data>
+  <data name="SteamDedicatedServers" xml:space="preserve"><value>Dedicated servers</value></data>
+  <data name="SteamSoftwareTitle" xml:space="preserve"><value>Include software</value></data>
+  <data name="SteamSoundtracksTitle" xml:space="preserve"><value>Include soundtracks</value></data>
+  <data name="SteamOtherAccountInstall" xml:space="preserve"><value>A different account is signed in to Steam</value></data>
+  <data name="SteamOtherAccountUninstalledNotice" xml:space="preserve"><value>Steam is currently signed in with a different account than Arcadia. Until that changes, games can’t be installed from Arcadia.</value></data>
+  <data name="SteamOtherAccountInstalledNotice" xml:space="preserve"><value>Steam is currently signed in with a different account than Arcadia. The game might not start or might use the wrong saves.</value></data>
+  <data name="SteamMetadataSummary" xml:space="preserve"><value>Description, genres, developer, release date, tags and age ratings · no key</value></data>
+  <data name="SteamMetadataAbout" xml:space="preserve"><value>Arcadia reads genres, developer, publisher, release date and tags right away from Steam’s own files. It fetches the description and age ratings once per game from Steam’s store page. Without a key, Steam accepts about 200 requests in 5 minutes; Arcadia stays below that. Steam only learns the game’s AppID, no account and no name.</value></data>
+</root>

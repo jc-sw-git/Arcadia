@@ -22,8 +22,8 @@ public sealed partial class LayoutItemViewModel(KeyboardLayout layout, Action<Ke
 }
 
 /// <summary>
-/// The layout menu (R3) of the on-screen keyboard (<see cref="OnScreenKeyboardViewModel"/>): all layouts,
-/// the chosen one ticked. Up and down move through it, A picks; a pick closes it.
+/// The layout menu (R3) of the on-screen keyboard (<see cref="OnScreenKeyboardViewModel"/>): the layouts of the quick
+/// selection (#553) in the order of the settings, the one in use ticked. Up and down move through it, A picks; a pick closes it.
 /// </summary>
 public sealed partial class LayoutMenuViewModel : ViewModelBase
 {
@@ -32,15 +32,26 @@ public sealed partial class LayoutMenuViewModel : ViewModelBase
     private int _focus;
 
     /// <param name="pick">A layout was picked, by the controller or a click; the menu is closed by then.</param>
-    public LayoutMenuViewModel(KeyboardLayout selected, Action<KeyboardLayout> pick)
+    public LayoutMenuViewModel(KeyboardLayout selected, IReadOnlyList<KeyboardLayout> offered, Action<KeyboardLayout> pick)
     {
         _pick = pick;
         _selected = selected;
-        Items = KeyboardLayout.All.Select(l => new LayoutItemViewModel(l, Pick)).ToList();
-        UpdateItems();
+        Offer(offered);
     }
 
-    public IReadOnlyList<LayoutItemViewModel> Items { get; }
+    [ObservableProperty]
+    public partial IReadOnlyList<LayoutItemViewModel> Items { get; private set; } = [];
+
+    /// <summary>The layouts it lists from now on; rebuilt only when they changed, so the menu's controls stay.</summary>
+    public void Offer(IReadOnlyList<KeyboardLayout> offered)
+    {
+        if (!Items.Select(item => item.Layout).SequenceEqual(offered))
+        {
+            Items = [.. offered.Select(l => new LayoutItemViewModel(l, Pick))];
+        }
+
+        UpdateItems();
+    }
 
     [ObservableProperty]
     public partial bool IsOpen { get; private set; }
@@ -65,7 +76,7 @@ public sealed partial class LayoutMenuViewModel : ViewModelBase
             return;
         }
 
-        _focus = KeyboardLayout.All.ToList().IndexOf(_selected);
+        _focus = Math.Max(0, Items.Select(item => item.Layout).ToList().IndexOf(_selected));
         IsOpen = true;
         UpdateItems();
     }

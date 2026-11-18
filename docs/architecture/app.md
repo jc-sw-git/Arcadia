@@ -26,8 +26,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   tab without games or whose launcher is gone, or no launcher active (#136). It lies under every page and asks more
   through `ILibraryHost`; whether the focused game's install folder is gone it asks `Services/InstallFolderCheck` off
   the UI thread (#227). It keeps each tab's sorted and filtered list until a rescan, the sort or the tab's filter
-  changes it. `Filter/` (#44): `FilterModalViewModel` (R3) with its category and value rows, drawn by
-  `Views/FilterModalView`; Main hosts it, the library saves its choice when it closes.
+  changes it. The filter modal (`Filter/`, #44, #466): [app-filter.md](app-filter.md).
 - Detail page (carousel, areas, quick selection, "Übersicht anpassen"): [app-detail-page.md](app-detail-page.md).
 - `GameActions`: what a game does (start, install, back to it, held A), one per window.
 - `LauncherTabsViewModel` the tabs; `StatusBarViewModel` (header), `ToastViewModel`, `GameMenuViewModel` (context menu),
@@ -50,9 +49,7 @@ then the controllers' routing and `SteamControllerForGames`) for both `App.axaml
   in `MainViewModel.FirstRun.cs`.
 - `Search/`: `SearchViewModel` (search page, which takes all its input, #209, and its keyboard's `IKeyboardTarget`;
   hits shown in `TileSlotViewModel` places too).
-- `Keyboard/` (#110): `OnScreenKeyboardViewModel` (view `Views/OnScreenKeyboardView`), `BoardKeyViewModel`,
-  `KeyboardLevels` (shift/AltGr), `LayoutMenuViewModel`, `IKeyboardTarget` (what it types into; its user greys out or
-  leaves out keys, `BoardKeyState`), `WindowInFrontTarget` (the mouse mode's), `SharedKeyboard` (taken in turn, #477).
+- Keyboards, layouts, region formats: [app-keyboard-and-region.md](app-keyboard-and-region.md).
 - `Messages/` (#433): `RecentMessages` (the last 50 toasts and status changes, any thread), `StatusMessageChanges`
   (the header's status messages turned into entries; fed by `StatusBarViewModel`), `ILogFiles`/`LogFiles` (the three
   logs by `LogKind`, never a path). `ToastViewModel.Show` takes a level and records every toast; the group "LOGGING" is

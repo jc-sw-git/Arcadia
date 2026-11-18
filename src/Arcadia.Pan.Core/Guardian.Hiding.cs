@@ -30,7 +30,22 @@ public sealed partial class Guardian
     private HiddenFor? _hiddenFor;
 
     /// <summary>How long Pan waits for the client to let go of the puck before a restart of its own (#308).</summary>
-    public TimeSpan PuckReleaseTimeout { get; init; } = TimeSpan.FromSeconds(2);
+    public TimeSpan PuckReleaseTimeout { get; init; } = DefaultPuckReleaseTimeout;
+
+    public static readonly TimeSpan DefaultPuckReleaseTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// The longest a full teardown takes with the default timeouts when every step runs into its timeout (the PnP lock
+    /// hangs): the two steps of <see cref="TeardownPlan"/>, then show and restart. Windows' wait at start and stop is
+    /// computed from it, so a changed step timeout can't outgrow that wait.
+    /// </summary>
+    public static TimeSpan LongestTeardown =>
+        2 * TeardownPlan.StepTimeout + ShowStepTimeout(DefaultDeviceStepTimeout) + RestartStepTimeout(DefaultDeviceStepTimeout, DefaultPuckReleaseTimeout);
+
+    // The show may first wait for a running hide (its listing and restart are bounded by the device timeout).
+    private static TimeSpan ShowStepTimeout(TimeSpan deviceStep) => TeardownPlan.StepTimeout + 2 * deviceStep;
+
+    private static TimeSpan RestartStepTimeout(TimeSpan deviceStep, TimeSpan puckRelease) => TeardownPlan.StepTimeout + puckRelease + 2 * deviceStep;
 
     /// <summary>The number of the last <see cref="PanReply.ReleasePuck"/>, and its answer while Pan waits for it; under the lock.</summary>
     private uint _releaseRequest;
@@ -821,9 +836,8 @@ public sealed partial class Guardian
         var scope = ShowScope.All;
         return await TeardownRunner.RunAsync(
         [
-            // The show may first wait for a running hide (its listing and restart are bounded by the device timeout).
-            new TeardownStep("show the hidden controllers", token => ShowStepAsync(scope, token, retry), TeardownPlan.StepTimeout + 2 * _deviceStepTimeout),
-            new TeardownStep("restart the shown controllers", token => RestartStepAsync(scope, token, retry), TeardownPlan.StepTimeout + PuckReleaseTimeout + 2 * _deviceStepTimeout),
+            new TeardownStep("show the hidden controllers", token => ShowStepAsync(scope, token, retry), ShowStepTimeout(_deviceStepTimeout)),
+            new TeardownStep("restart the shown controllers", token => RestartStepAsync(scope, token, retry), RestartStepTimeout(_deviceStepTimeout, PuckReleaseTimeout)),
         ], _log);
     }
 

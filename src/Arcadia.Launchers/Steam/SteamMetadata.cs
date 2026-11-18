@@ -84,7 +84,8 @@ internal static class SteamAppMetadata
             Developers = Associated(common, "developer") is { Count: > 0 } developers ? developers : Names(Text(extended?["developer"])),
             Publishers = Associated(common, "publisher") is { Count: > 0 } publishers ? publishers : Names(Text(extended?["publisher"])),
             ReleaseDate = DateOf(common["steam_release_date"]) ?? DateOf(common["original_release_date"]),
-            Tags = SteamTags.NamesOf(Values(common.GetMap("store_tags"))),
+            // In the UI language at every scan: tags come from the local files, not from a cached store answer (#557).
+            Tags = SteamTags.NamesOf(Values(common.GetMap("store_tags")), CultureInfo.CurrentUICulture),
         };
         return metadata;
     }

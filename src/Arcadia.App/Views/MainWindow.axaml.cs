@@ -48,6 +48,12 @@ public partial class MainWindow : Window
     private const double PointerMoveThreshold = 6;
 
     private readonly HashSet<Key> _keysDown = [];
+
+    // Keys whose press ended "Bild ansehen" (#565): their repeats and release do nothing either.
+    private readonly HashSet<Key> _keysSwallowedByImageShow = [];
+
+    // Where the mouse was when it last counted as input for "Bild ansehen".
+    private Point? _imageShowPointer;
     private MainViewModel? _viewModel;
     private Point? _restingPointer;
 
@@ -112,8 +118,13 @@ public partial class MainWindow : Window
         // Typing on a real keyboard while the search is open. Nothing has Avalonia focus, so the text arrives at the window.
         AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
 
+        // Any use of the mouse ends "Bild ansehen" (#565), and a click or turn of the wheel that ends it does nothing else.
+        AddHandler(PointerPressedEvent, OnPointerInputForImageShow, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnPointerInputForImageShow, RoutingStrategies.Tunnel);
+
         // Which input is in use decides whether the search shows its on-screen keyboard.
         AddHandler(PointerPressedEvent, (_, _) => _viewModel?.NotePointer(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerPressedEvent, OnMouseBackPressed, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, OnPointerMovedAnywhere, RoutingStrategies.Tunnel, handledEventsToo: true);
         SettingsRows.AddHandler(PointerMovedEvent, OnSettingsRowPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
 
@@ -133,14 +144,26 @@ public partial class MainWindow : Window
         Deactivated += (_, _) =>
         {
             _keysDown.Clear();
+            _keysSwallowedByImageShow.Clear();
             _viewModel?.CancelHold();
+            _viewModel?.SetInFront(false);
         };
         _tabs = new TabStrip(TabScroller, TabList, TabDividerLeft, TabDividerRight, () => _viewModel?.IsTabStripShown != false);
         _categories = new TabStrip(CategoryScroller, CategoryList, CategoryDividerLeft, CategoryDividerRight, () => true);
         InfoScroller.ScrollChanged += (_, _) => UpdateInfoOverflow();
 
         // Coming back from a launcher: games may have been installed or uninstalled there.
-        Activated += (_, _) => _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
+        Activated += (_, _) =>
+        {
+            _viewModel?.SetInFront(true);
+            _viewModel?.Session.RefreshLibraryAsync().Forget(AppTexts.ErrorContextRefreshLibrary);
+        };
+
+        // The key hints name the letters of the player's real keyboard layout (#588).
+        if (OperatingSystem.IsWindows())
+        {
+            WindowsKeyboardLayout.Follow(this);
+        }
     }
 
     private void UpdateSortDivider()
@@ -244,6 +267,12 @@ public partial class MainWindow : Window
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
         var pressedAt = InputLatency.Now();
+        if (SwallowedByImageShow(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
         _viewModel?.NoteKeyboard();
         if (e.Key == Key.F11)
         {
@@ -265,20 +294,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(e.Key, e.KeyModifiers) is { } tab)
+        // By position, so the cluster around WASD stays in place on AZERTY too (#588).
+        var key = KeyPosition.Of(e);
+        if (_viewModel is { IsSearchShown: false } && UiActionMap.TabNumber(key, e.KeyModifiers) is { } tab)
         {
-            Services.AppLog.Write($"Taste: {e.Key} → Launcher {tab + 1}");
+            Services.AppLog.Write($"Taste: {KeyForLog(key, e.Key)} → Launcher {tab + 1}");
             Latency.Measure($"Launcher {tab + 1}", pressedAt, () => _viewModel.ChooseTabNumber(tab));
             e.Handled = true;
             return;
         }
 
-        if (_viewModel is not null && ActionFor(e) is { } action)
+        if (_viewModel is not null && ActionFor(e, key) is { } action)
         {
             // A held key repeats its KeyDown. Moving and turning may repeat, and stop at a list's end like a held button
             // (#476); A acts on the release or after a hold, like the gamepad button, and a dialog must not open and close
             // again with every repeat.
-            var repeat = !_keysDown.Add(e.Key);
+            var repeat = !_keysDown.Add(key);
             if (repeat && action is UiAction.Accept or UiAction.Settings or UiAction.Options or UiAction.ViewOptions or UiAction.Status
                 or UiAction.KeyboardLayout)
             {
@@ -286,17 +317,71 @@ public partial class MainWindow : Window
                 return;
             }
 
-            Services.AppLog.Write($"Taste: {e.Key} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
+            Services.AppLog.Write($"Taste: {KeyForLog(key, e.Key)} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             var viewModel = _viewModel;
             Latency.Measure(action.ToString(), pressedAt, () => viewModel.Handle(action, repeat));
             e.Handled = true;
         }
     }
 
+    /// <summary>The key's place and, where the layout prints another letter there, that letter too: "W (Z)" on AZERTY (#588).</summary>
+    private static string KeyForLog(Key place, Key printed) => place == printed ? place.ToString() : $"{place} ({printed})";
+
+    /// <summary>The mouse's back button is B, as Esc is (#586); on a text being written it acts as Esc there.</summary>
+    private void OnMouseBackPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_viewModel is null || e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.XButton1Pressed)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (_viewModel.OpenTextEditor is { } editor)
+        {
+            editor.HandleKey(Key.Escape);
+            return;
+        }
+
+        Services.AppLog.Write("Maus: Zurück-Taste → Back");
+        _viewModel.Handle(UiAction.Back);
+    }
+
+    /// <summary>A key that ends "Bild ansehen" (#565) does nothing else, nor do its repeats.</summary>
+    private bool SwallowedByImageShow(Key key)
+    {
+        if (_keysSwallowedByImageShow.Contains(key))
+        {
+            return true;
+        }
+
+        if (_viewModel?.TakeInputForImageShow() == true)
+        {
+            _keysSwallowedByImageShow.Add(key);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void OnPointerInputForImageShow(object? sender, PointerEventArgs e)
+    {
+        if (_viewModel?.TakePointerInputForImageShow() == true)
+        {
+            e.Handled = true;
+        }
+    }
+
     private void OnPreviewKeyUp(object? sender, KeyEventArgs e)
     {
-        _keysDown.Remove(e.Key);
-        if (_viewModel is not null && (ActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers)) is { } action)
+        var key = KeyPosition.Of(e);
+        _keysDown.Remove(key);
+        if (_keysSwallowedByImageShow.Remove(e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (_viewModel is not null && (ActionFor(e, key) ?? UiActionMap.FromKey(key, e.KeyModifiers)) is { } action)
         {
             _viewModel.Release(action);
         }
@@ -306,16 +391,16 @@ public partial class MainWindow : Window
     /// While the search takes typed text, only keys that type nothing are actions there; the rest
     /// arrive as text (<see cref="OnTextInput"/>). Elsewhere the usual key map applies.
     /// </summary>
-    private UiAction? ActionFor(KeyEventArgs e)
+    private UiAction? ActionFor(KeyEventArgs e, Key key)
     {
         if (_viewModel is { IsSettingsOpen: true })
         {
-            return SettingsActionFor(e) ?? UiActionMap.FromKey(e.Key, e.KeyModifiers);
+            return SettingsActionFor(key, e.KeyModifiers) ?? UiActionMap.FromKey(key, e.KeyModifiers);
         }
 
         if (_viewModel is not { IsSearchShown: true, IsDialogOpen: false })
         {
-            return UiActionMap.FromKey(e.Key, e.KeyModifiers);
+            return UiActionMap.FromKey(key, e.KeyModifiers);
         }
 
         // The arrows move through the hits, Page Up/Down turn them, Enter starts the focused one (held: its details).
@@ -341,7 +426,7 @@ public partial class MainWindow : Window
     /// launcher's page to the next launcher (#137), as in the library (owner, 2026-10-23). Page Up/Down scroll the info panel
     /// as RS does (Shift+W/S is RS everywhere, UiActionMap).
     /// </summary>
-    private static UiAction? SettingsActionFor(KeyEventArgs e) => (e.Key, e.KeyModifiers) switch
+    private static UiAction? SettingsActionFor(Key key, KeyModifiers modifiers) => (key, modifiers) switch
     {
         (Key.Q, KeyModifiers.Shift) => UiAction.PreviousTab,
         (Key.E, KeyModifiers.Shift) => UiAction.NextTab,
@@ -381,6 +466,17 @@ public partial class MainWindow : Window
     private void OnPointerMovedAnywhere(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);
+        if (_imageShowPointer is not { } last || Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) > PointerMoveThreshold)
+        {
+            // The first move only marks where the mouse rests: a pointer that didn't move isn't input.
+            if (_imageShowPointer is not null)
+            {
+                _viewModel?.TakeInputForImageShow();
+            }
+
+            _imageShowPointer = position;
+        }
+
         if (_viewModel is null || _viewModel.Input.ShowsCloseButtons)
         {
             _restingPointer = position;
@@ -404,7 +500,15 @@ public partial class MainWindow : Window
     private void OnSettingsRowPointerMoved(object? sender, PointerEventArgs e)
     {
         var position = e.GetPosition(this);
-        if (_rowPointer is { } last && Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) <= PointerMoveThreshold)
+        if (_rowPointer is not { } last)
+        {
+            // The first event only says where the pointer rests: a window that opens under it (Arcadia restarted on
+            // "Sprache", #554) must keep the focus it opened with.
+            _rowPointer = position;
+            return;
+        }
+
+        if (Math.Abs(position.X - last.X) + Math.Abs(position.Y - last.Y) <= PointerMoveThreshold)
         {
             return;
         }

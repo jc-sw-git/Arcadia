@@ -77,7 +77,7 @@
         <Border BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
           <Panel MinHeight="28" HorizontalAlignment="Right">
             <TextBlock Classes="installCount" Text="{Binding Footer}" IsVisible="{Binding IsRunning}" VerticalAlignment="Center" />
-            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.Close}" IsVisible="{Binding IsFailed}" />
+            <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.Close}" IsVisible="{Binding IsFailed}" />
           </Panel>
         </Border>
       </StackPanel>

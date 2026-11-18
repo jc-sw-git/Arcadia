@@ -14,7 +14,7 @@ public interface IChangeArtworkHost
 {
     void Close(ChangeArtworkViewModel modal);
 
-    /// <summary>"Zu den Datenquellen ›": the modal closes, the settings open where the key is entered.</summary>
+    /// <summary>"Zu den Datenquellen": the modal closes, the settings open where the key is entered.</summary>
     void OpenDataSources(ChangeArtworkViewModel modal);
 
     /// <summary>The system's file dialog for an image, mouse mode on meanwhile; null if cancelled.</summary>
@@ -108,7 +108,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     /// <summary>What the grid shows: the tiles, then the notice where it is shown, which flows on after them.</summary>
     public ObservableCollection<object> GridItems { get; } = [];
 
-    /// <summary>The notice without a working key, with "Zu den Datenquellen ›".</summary>
+    /// <summary>The notice without a working key, with "Zu den Datenquellen".</summary>
     public ArtworkNoticeViewModel Notice { get; }
 
     /// <summary>The focus moved: the view brings the focused tile into sight.</summary>
@@ -117,7 +117,7 @@ public sealed partial class ChangeArtworkViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial IReadOnlyList<ArtworkFactViewModel> Facts { get; private set; } = [];
 
-    /// <summary>No key, or one that doesn't work: the notice with "Zu den Datenquellen ›" after the tiles.</summary>
+    /// <summary>No key, or one that doesn't work: the notice with "Zu den Datenquellen" after the tiles.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(GridHeading))]
     public partial SuggestionKeyState KeyState { get; private set; } = SuggestionKeyState.Missing;

@@ -43,7 +43,7 @@
           <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Right" VerticalAlignment="Center">
             <ctl:KeyHint Pad="LB|RB" Keys="⇧ Q|⇧ E" Text="{x:Static app:AppTexts.ArtworkTabsHint}" />
             <ctl:KeyHint Pad="D-Pad" Keys="WASD" Text="{x:Static app:AppTexts.ArtworkChooseHint}" />
-            <ctl:KeyHint Pad="A" Keys="Leertaste" Text="{x:Static app:AppTexts.ArtworkUseHint}" />
+            <ctl:KeyHint Pad="A" Keys="{x:Static app:AppTexts.KeySpace}" Text="{x:Static app:AppTexts.ArtworkUseHint}" />
             <Button Classes="plain" Command="{Binding PickOtherFileCommand}" IsVisible="{Binding CanPickOtherFile}">
               <ctl:KeyHint Pad="X" Keys="F" Text="{x:Static app:AppTexts.ArtworkOtherFileHint}" />
             </Button>
@@ -51,7 +51,7 @@
               <ctl:KeyHint Pad="Y" Keys="V" Text="{x:Static app:AppTexts.ArtworkRestoreHint}" />
             </Button>
             <Button Classes="plain" Command="{Binding CloseCommand}">
-              <ctl:KeyHint Pad="B" Keys="Esc" Text="{x:Static app:AppTexts.Close}" />
+              <ctl:KeyHint Pad="B" Keys="{x:Static app:AppTexts.KeyEscape}" Text="{x:Static app:AppTexts.Close}" />
             </Button>
           </StackPanel>
         </Border>
@@ -66,10 +66,10 @@
             <Border Classes="artworkMini" Width="620" Height="349">
               <Viewbox Stretch="Uniform">
                 <Canvas Width="1920" Height="1080" Background="{Binding HeroBackdrop}">
-                  <ctl:ArtworkImage Width="1920" Height="1080" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                  <Border Width="1920" Height="1080" Background="{StaticResource DetailScrimSide}" />
-                  <Border Width="1920" Height="150" Background="{StaticResource DetailScrimTop}" />
-                  <Border Canvas.Top="820" Width="1920" Height="260" Background="{StaticResource DetailScrimBottom}" />
+                  <ctl:ArtworkImage Width="1920" Height="1080" Fit="DetailPage" File="{Binding Tile.Hero}" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
+                  <Border Width="1920" Height="440" Background="{StaticResource DetailScrimTitle}" />
+                  <Border Width="1920" Height="110" Background="{StaticResource DetailScrimTop}" />
+                  <Border Canvas.Top="1000" Width="1920" Height="80" Background="{StaticResource DetailScrimBottom}" />
                   <Border Classes="artworkMark hero" Width="1920" Height="1080" IsVisible="{Binding IsCurrentHeroMarked}" />
 
                   <Border Classes="artworkMiniStack" Canvas.Left="40" />
@@ -178,6 +178,8 @@
                   </ItemsControl.DataTemplates>
                 </ItemsControl>
               </ScrollViewer>
+              <!-- Where more tiles follow, the grid fades into the modal (docs/product/design.md → Scrolling). -->
+              <ctl:EdgeFade Name="TileFade" Margin="-8" Size="48" FocusRoom="8" FadeColor="{StaticResource ModalSurfaceColor}" ScrollTarget="{Binding #TileScroller}" />
             </Panel>
           </DockPanel>
         </Grid>

@@ -104,7 +104,7 @@ public sealed class SeveralHitsRows
         var heldBack = IsAsking && HeldBack;
         _waiting.IsEnabled = open;
         _waiting.IsDimmed = !open;
-        _waiting.CountBadge = open ? waiting.Count.ToString(Services.Formatting.Culture) : null;
+        _waiting.CountBadge = open ? Services.Formatting.Count(waiting.Count) : null;
         _waiting.Subtitle = !IsAsking ? AppTexts.DataSourcesWaitingOnlyAsk
             : open ? AppTexts.DataSourcesWaitingSubtitle
             : heldBack ? AppTexts.DataSourcesWaitingSteamGridDbOff : AppTexts.DataSourcesWaitingNone;

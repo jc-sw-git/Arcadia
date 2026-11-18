@@ -210,4 +210,21 @@ public sealed class DetailControlsTests
         arcadia.Press(UiAction.Accept);
         Assert.NotNull(arcadia.Main.FilterModal);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T560-2")]
+    public async Task The_play_button_shows_As_glyph_only_while_it_has_the_focus()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+        arcadia.Hold(UiAction.Accept, PastHoldTime);
+        var play = Assert.Single(arcadia.Detail!.Current.Buttons, button => button.IsPrimary);
+        Assert.True(play.IsFocused);
+        Assert.Equal((true, false), (play.ShowsPressGlyph, play.ShowsIcon));
+
+        // Down into the rail: A presses the rail now, so the button shows its icon instead.
+        arcadia.Press(UiAction.Down);
+        Assert.False(play.IsFocused);
+        Assert.Equal((false, true), (play.ShowsPressGlyph, play.ShowsIcon));
+        Assert.All(arcadia.Detail.Current.Buttons, button => Assert.False(button.ShowsPressGlyph));
+    }
 }

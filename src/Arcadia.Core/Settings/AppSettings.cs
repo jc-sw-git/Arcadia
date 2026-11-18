@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Arcadia.Core.Launchers;
 using Arcadia.Core.Library;
 using Arcadia.Launchers.Abstractions;
@@ -8,6 +9,17 @@ namespace Arcadia.Core.Settings;
 /// <summary>User settings, stored as JSON in the user's application data folder.</summary>
 public sealed record AppSettings
 {
+    /// <summary>The format of <c>settings.json</c> this Arcadia writes; see <see cref="SchemaVersion"/>.</summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// The format the file was written in; a file without it is version 1. A change older files can't be read with (a
+    /// property changes its type) raises <see cref="CurrentSchemaVersion"/> and converts the older JSON in
+    /// <see cref="SettingsStore.Load"/> before it is parsed: otherwise one changed type would put every setting into
+    /// <c>settings.json.broken</c>.
+    /// </summary>
+    public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
     /// <summary>
     /// "Controller-Wächter (Pan)" (#242): Pan hides the real Steam Controller and Arcadia emulates it, for games (Xbox
     /// pad) and for Steam (a copy). Off, nothing is emulated and every program sees the real controllers. Off by default:
@@ -69,8 +81,17 @@ public sealed record AppSettings
     /// <summary>The <see cref="LauncherInfo.Id"/> of the tab Arcadia opens with; null for the first tab.</summary>
     public string? LastTabLauncherId { get; init; }
 
-    /// <summary>The on-screen keyboard's layout the user picked last; null for the default (German).</summary>
-    public string? KeyboardLayout { get; init; }
+    /// <summary>The category "Lokalisierung" (#553): the on-screen keyboard's default layout and quick selection, the clock.</summary>
+    public LocalizationSettings Localization { get; init; } = new();
+
+    /// <summary>
+    /// The layout older versions saved when R3 picked one; read once to become "Standard-Layout" (#553, A4), never written
+    /// again: an R3 pick holds only while the keyboard is open now.
+    /// </summary>
+    [JsonPropertyName("KeyboardLayout")]
+    [JsonConverter(typeof(LocalizationSettings.Lenient.Text))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? LegacyKeyboardLayout { get; init; }
 
     /// <summary>The controller as a mouse (#64).</summary>
     public MouseModeSettings MouseMode { get; init; } = new();
@@ -97,7 +118,7 @@ public sealed record AppSettings
     /// <summary>The status modal's order (#166): "Neueste zuerst" when true, else "Dringlichkeit", for every opening.</summary>
     public bool SortsStatusByNewest { get; init; }
 
-    /// <summary>"Reihenfolge für Artwork" and "Zuschneiden erlaubt" in "Datenquellen" (#489).</summary>
+    /// <summary>"Reihenfolge für Artwork" and "Bei mehreren Treffern" in "Datenquellen" (#489, #491).</summary>
     public ArtworkSettings Artwork { get; init; } = new();
 
     /// <summary>
@@ -134,6 +155,18 @@ public sealed record AppSettings
     /// <summary>Replaces a quick selection written as <c>null</c> by hand with an empty one, so every game shows the defaults.</summary>
     public AppSettings WithValidQuickSelection() => this with { QuickSelection = QuickSelection ?? new() };
 
+    /// <summary>Like <see cref="WithValidLibraryView"/> for "Lokalisierung", with one log line per value replaced.</summary>
+    public AppSettings WithValidLocalization(Action<string> log)
+    {
+        var localization = Localization ?? new();
+        if (LegacyKeyboardLayout is { } legacy && localization.KeyboardLayout is null)
+        {
+            localization = localization with { KeyboardLayout = legacy };
+        }
+
+        return this with { Localization = localization.WithValidValues(log), LegacyKeyboardLayout = null };
+    }
+
     /// <summary>The filter saved for the launcher's tab, without what this version doesn't know; none for no entry.</summary>
     public GameFilter FilterOf(string launcherId) =>
         (LibraryFilters ?? new Dictionary<string, SavedFilter>()).GetValueOrDefault(launcherId)?.ToFilter() ?? GameFilter.None;
@@ -152,6 +185,25 @@ public sealed record AppSettings
         }
 
         return this with { LibraryFilters = filters };
+    }
+
+    /// <summary>
+    /// An own tag renamed or merged into <paramref name="to"/>, or deleted (null), in every tab's filter (#466 case 17); the
+    /// same settings when no filter holds it.
+    /// </summary>
+    public AppSettings WithOwnTagRenamed(string name, string? to)
+    {
+        var settings = this;
+        foreach (var launcherId in (LibraryFilters ?? new Dictionary<string, SavedFilter>()).Keys)
+        {
+            var filter = FilterOf(launcherId);
+            if (filter.NamesOf(FilterList.Tag).Has(name, isOwn: true))
+            {
+                settings = settings.WithFilter(launcherId, filter.WithOwnTagRenamed(name, to));
+            }
+        }
+
+        return settings;
     }
 
     /// <summary>What the user changed about the launcher; nothing changed gives an empty entry.</summary>
@@ -278,13 +330,24 @@ public sealed class SettingsStore(string path)
             try
             {
                 _keepUnreadFile = false;
-                return File.Exists(Path)
-                    ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings()
-                    : new AppSettings();
+                if (!File.Exists(Path))
+                {
+                    return new AppSettings();
+                }
+
+                var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(Path), Json) ?? new AppSettings();
+                if (loaded.SchemaVersion > AppSettings.CurrentSchemaVersion)
+                {
+                    // Written by a newer Arcadia (the player went back a version): what this one doesn't know would be
+                    // lost with the next save, so the newer file is kept beside it.
+                    KeepCopy($".v{loaded.SchemaVersion}");
+                }
+
+                return loaded with { SchemaVersion = AppSettings.CurrentSchemaVersion };
             }
             catch (JsonException)
             {
-                KeepBrokenFile();
+                KeepCopy(".broken");
                 return new AppSettings();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -301,11 +364,11 @@ public sealed class SettingsStore(string path)
         }
     }
 
-    private void KeepBrokenFile()
+    private void KeepCopy(string suffix)
     {
         try
         {
-            File.Copy(Path, Path + ".broken", overwrite: true);
+            File.Copy(Path, Path + suffix, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -323,7 +386,16 @@ public sealed class SettingsStore(string path)
 
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
         var temp = Path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(settings, Json));
+
+        // On disk before the move: otherwise a power cut right after it can leave an empty settings.json behind the
+        // new name. The file is a few KB, so the flush stays in the milliseconds the UI thread can spare for a change
+        // the player made, and the caller still learns synchronously that it wasn't saved.
+        using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+        {
+            JsonSerializer.Serialize(file, settings, Json);
+            file.Flush(flushToDisk: true);
+        }
+
         File.Move(temp, Path, overwrite: true);
     }
 }

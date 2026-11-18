@@ -93,6 +93,34 @@ public sealed class LibraryRefresherTests
     }
 
     [Fact]
+    public void A_new_title_type_start_or_reinstall_is_a_change()
+    {
+        var game = GameOf("steam", "620") with { InstallDirectory = @"D:\Games\Example", InstalledAt = new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero), InstallSizeBytes = 1000 };
+        var shown = new LauncherLibrary(KnownLaunchers.Steam, [game]);
+
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { Title = "Example 2" }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { Type = GameType.Tool }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { Launch = new LaunchTarget.ProtocolUri("steam://rungameid/620") }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { Install = new LaunchTarget.ProtocolUri("steam://install/620") }] }]));
+        // Reinstalled into the same folder: only the date and the size tell.
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { InstalledAt = game.InstalledAt!.Value.AddDays(3) }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [game with { InstallSizeBytes = 2000 }] }]));
+    }
+
+    [Fact]
+    public void The_same_games_in_another_order_or_with_rebuilt_arguments_are_no_change()
+    {
+        var a = GameOf("epic", "a") with { Launch = new LaunchTarget.Executable(@"C:\Games\a.exe", ["-windowed"], null) };
+        var b = GameOf("epic", "b");
+        var shown = new LauncherLibrary(KnownLaunchers.Epic, [a, b]);
+        var rescannedA = a with { Launch = new LaunchTarget.Executable(@"C:\Games\a.exe", ["-windowed"], null) };
+
+        Assert.False(LibraryRefresher.HasChanged([shown], [shown with { Games = [b, rescannedA] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [b, a with { Launch = new LaunchTarget.Executable(@"C:\Games\a.exe", ["-dx12"], null) }] }]));
+        Assert.True(LibraryRefresher.HasChanged([shown], [shown with { Games = [b, GameOf("epic", "c")] }]));
+    }
+
+    [Fact]
     public void A_new_playtime_or_last_start_is_a_change_since_the_library_sorts_by_it()
     {
         var before = new LauncherLibrary(KnownLaunchers.Steam, [GameOf("steam", "620") with { Playtime = TimeSpan.FromHours(2), LastPlayedAt = new DateTimeOffset(2026, 10, 20, 18, 0, 0, TimeSpan.Zero) }]);

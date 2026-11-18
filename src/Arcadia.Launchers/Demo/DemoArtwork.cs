@@ -31,7 +31,7 @@ public sealed class DemoArtwork(string folder) : ILauncherArtwork
         return new Lookup(this);
     }
 
-    /// <summary>Every fourth in Epic's catalog formats (#488), 3 : 4 and 16 : 9, so the crop to 2 : 3 and 3.1 : 1 can be looked at.</summary>
+    /// <summary>Every fourth in Epic's catalog formats (#488), 3 : 4 and 16 : 9, so the crop to 2 : 3 can be looked at and a background in the detail page's own 16 : 9 beside the flat ones.</summary>
     private static bool InEpicsFormats(int variant) => variant % 4 == 3;
 
     private string PathOf(ArtworkKind kind, int variant) =>

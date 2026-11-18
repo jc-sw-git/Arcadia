@@ -17,7 +17,7 @@ namespace Arcadia.App.ViewModels;
 /// (<see cref="WaitingHitsViewModel"/>). In the games list
 /// ▲ ▼ choose a game (round at the ends), A goes into its hits, B closes; in the hits the D-pad moves through the grid,
 /// A takes the hit and comes back to the games list on the next waiting entry, B comes back without. Y skips the entry in
-/// both. The list follows the services: entries found by a later search come at the end of their kind, a game that left
+/// both. A click on a hit only marks it, a double click takes it (#539). The list follows the services: entries found by a later search come at the end of their kind, a game that left
 /// the library goes.
 /// </summary>
 /// <remarks>
@@ -80,7 +80,11 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     /// <summary>The current game's hits; null after the last game.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasArtworkTabs))]
     public partial WaitingHitsViewModel? Hits { get; private set; }
+
+    /// <summary>The game seeks cover and background: the footer names LB/RB for their tabs (#539).</summary>
+    public bool HasArtworkTabs => Hits is ArtworkHitsViewModel { SeeksBoth: true };
 
     /// <summary>The focus is in the hits (the second level), not in the games list.</summary>
     [ObservableProperty]
@@ -101,7 +105,7 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     public string AcceptHint => !InHits ? AppTexts.WaitingOpenHitsHint
         : Hits?.Zone == WaitingHitsFocus.Term ? AppTexts.WaitingSearchHint
         : Hits?.Zone == WaitingHitsFocus.Reset ? AppTexts.WaitingReset
-        : AppTexts.WaitingTakeHint;
+        : Hits?.TakeHint ?? AppTexts.WaitingTakeHint;
 
     public string BackHint => InHits ? AppTexts.Back : AppTexts.Close;
 
@@ -110,6 +114,13 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
 
     /// <summary>The focus moved in the games list: the view brings the current game into sight.</summary>
     public event EventHandler? FocusMoved;
+
+    /// <summary>RS or Shift+W/S while a metadata hit's facts overflow their box: the view scrolls it one step up (-1) or down (1) (#560).</summary>
+    public event Action<int>? FactsScrollRequested;
+
+    /// <summary>The marked hit's facts are taller than their box (the view says so): RS scrolls them and the footer names RS.</summary>
+    [ObservableProperty]
+    public partial bool FactsOverflow { get; set; }
 
     /// <summary>A press while the list is open; it takes every one. With the keyboard out, the keyboard takes it.</summary>
     public void Handle(UiAction action)
@@ -127,13 +138,20 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 break;
             case UiAction.Up or UiAction.Down or UiAction.Left or UiAction.Right or UiAction.Accept when InHits:
                 Hits!.Handle(action);
-                OnPropertyChanged(nameof(AcceptHint));
+                HintsChanged();
                 break;
             case UiAction.Accept when HasGames:
                 EnterHits();
                 break;
             case UiAction.Status:
                 Skip();
+                break;
+            case UiAction.SecondaryUp or UiAction.SecondaryDown when FactsOverflow && Hits is { ShowsFacts: true }:
+                FactsScrollRequested?.Invoke(action == UiAction.SecondaryUp ? -1 : 1);
+                break;
+            case UiAction.PreviousTab or UiAction.NextTab when Hits is ArtworkHitsViewModel artworkHits:
+                // Cover and background sought: LB/RB turn their tabs (#539), as in "Artwork ändern".
+                artworkHits.SwitchTab();
                 break;
             case UiAction.Back when InHits:
                 LeaveHits();
@@ -176,6 +194,38 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void Accept() => Handle(UiAction.Accept);
 
+    /// <summary>A pick or another tab, also by a click or double click: the footer says what A does now.</summary>
+    private void OnHitsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(WaitingHitsViewModel.TakeHint))
+        {
+            HintsChanged();
+        }
+        else if (e.PropertyName is nameof(ArtworkHitsViewModel.SeeksBoth))
+        {
+            OnPropertyChanged(nameof(HasArtworkTabs));
+        }
+    }
+
+    private void HintsChanged()
+    {
+        OnPropertyChanged(nameof(AcceptHint));
+        OnPropertyChanged(nameof(BackHint));
+    }
+
+    /// <summary>A click on a hit: the focus comes into the hits, onto it; nothing is taken (#539).</summary>
+    private void Mark(WaitingHitViewModel hit)
+    {
+        if (Hits is not { } hits || _disposed)
+        {
+            return;
+        }
+
+        InHits = true;
+        hits.Mark(hit);
+        HintsChanged();
+    }
+
     private void EnterHits()
     {
         if (Hits is { } hits)
@@ -189,9 +239,10 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
     {
         InHits = false;
         Hits?.Leave();
+        (Hits as ArtworkHitsViewModel)?.DropPicks();
     }
 
-    /// <summary>A or a click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>
+    /// <summary>A or a double click on a hit: the choice is kept at once and the next game becomes current; its images come off the UI thread.</summary>
     private void Take(WaitingHitViewModel hit)
     {
         if (CurrentGame is not { } game || _disposed)
@@ -208,7 +259,10 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
                 Refresh();
                 break;
             case ArtworkHitViewModel artworkHit:
-                var choosing = _artwork.ChooseAsync(game.Game, artworkHit.Hit);
+                // A background chosen after the cover (#539) comes from its own game; the cover from the one picked first.
+                var choosing = artworkHit.Cover is { } cover
+                    ? _artwork.ChooseAsync(game.Game, cover, heroHit: artworkHit.Hit)
+                    : _artwork.ChooseAsync(game.Game, artworkHit.Hit);
                 InHits = false;
                 Refresh();
                 Loading = choosing;
@@ -296,13 +350,19 @@ public sealed partial class WaitingListViewModel : ViewModelBase, IDisposable
         game?.IsCurrent = true;
         CurrentGame = game;
         InHits = false;
-        Hits?.Dispose();
+        if (Hits is { } before)
+        {
+            before.PropertyChanged -= OnHitsChanged;
+            before.Dispose();
+        }
+
         Hits = game switch
         {
-            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, _artwork, metadata, game.Title, _keyboard, Take),
-            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take),
+            { Metadata: { } metadata } when _metadata is not null => new MetadataHitsViewModel(_metadata, metadata, game.Title, _keyboard, Take, Mark),
+            { Artwork: { } artwork } => new ArtworkHitsViewModel(_artwork, artwork, game.Title, _keyboard, Take, Mark),
             _ => null,
         };
+        Hits?.PropertyChanged += OnHitsChanged;
         Hits?.Start();
         FocusMoved?.Invoke(this, EventArgs.Empty);
     }

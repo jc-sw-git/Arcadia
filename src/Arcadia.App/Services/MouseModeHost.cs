@@ -481,13 +481,13 @@ public sealed class MouseModeHost : IDisposable
             }
 
             var settings = _settings.Current;
-            var layout = KeyboardLayout.Find(settings.KeyboardLayout);
+            var layouts = SystemKeyboardLayout.Choice(settings.Localization);
             var (keyboard, window) = KeyboardAndWindow();
             var atTop = window.Open(settings.MouseMode.KeyboardAtTop);
-            keyboard.Open(layout, atTop);
+            keyboard.Open(layouts, atTop);
             _openKeyboard = keyboard;
             _gameWasInFront = GameInFront();
-            AppLog.Write($"Bildschirmtastatur offen ({(atTop ? "oben" : "unten")}, {layout.Code})");
+            AppLog.Write($"Bildschirmtastatur offen ({(atTop ? "oben" : "unten")}, {layouts.Default.Code})");
         }
         catch (Exception ex)
         {
@@ -503,8 +503,7 @@ public sealed class MouseModeHost : IDisposable
         {
             var target = new WindowInFrontTarget(_output, () => CloseKeyboard("B oder Ausblenden"), OnKeyboardDocked); // not a UI text (log)
             _keyboard = new OnScreenKeyboardViewModel(
-                KeyboardLayout.Find(_settings.Current.KeyboardLayout), target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
-            _keyboard.LayoutChosen += chosen => SaveKeyboardSetting(s => s with { KeyboardLayout = chosen.Id });
+                SystemKeyboardLayout.Choice(_settings.Current.Localization), target, _time, action => Dispatcher.UIThread.Post(action), _activity.IsInUse);
             _keyboardWindow = new MouseModeKeyboardWindow { DataContext = _keyboard };
         }
 

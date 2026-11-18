@@ -2,7 +2,8 @@
 
 ## The page (#15)
 
-- A whole page in place of the library (≡, Enter, the chip); B or ✕ go back to the same place. Categories are tabs in
+- A whole page in place of the library (≡, Enter, the chip); B or ✕ go back to the same place, also
+  after a game of the tag list was shown in place of the settings (#586). Categories are tabs in
   the header like the launcher tabs (LB/RB, Shift+Q/E, a click; Q/E = LT/RT switch tabs inside a category, e.g.
   launcher pages, as in the library), only those with content; a warning or an error of a category shows its symbol
   beside the name, info nothing. Choosing a category's tab opens it at its top level (the launcher list, not the
@@ -12,6 +13,8 @@
   once, A (Space) starts actions; only settings and actions are rows, facts about a setting (e.g. Pan's status, what a
   removal takes) are boxes (`InfoSection`) below its description in the info panel. The info panel beside the rows
   explains the focused row, RS (Shift+W/S, the wheel) scrolls it, fades show more; the mouse over a row focuses it.
+  It starts at its top for another row or when the row's value or greying changes, never because a run in the
+  background refreshes the rows (#547).
   A row with named values gets one box per value below its name, the current one highlighted (#506; a number range,
   e.g. a hold time, gets none); a greyed row with a reason shows it as the blue note at the very top.
 - Rows that don't fit fade into the page at an edge where more rows follow, none where everything fits (#237, same
@@ -52,8 +55,8 @@ switch.
 - A controller fix closes the modal, opens "Controller" on its row and starts there (its question, the progress
   dialog); a fix already running only jumps there. "Jetzt aktualisieren" runs from the modal; a failure is an error
   toast and the entry stays. "Zu den Einstellungen" opens the category on the message's row ("Pan läuft nicht": the row
-  that says why; the update: "Jetzt aktualisieren"), its top row if the message went meanwhile; B returns to library
-  or detail page.
+  that says why; the update: "Jetzt aktualisieren"), its top row if the message went meanwhile; B or ✕ on the settings
+  open the status modal again with the entries as they are then (#586).
 - The list follows the header live: a new entry never moves the focus, a gone focused one hands it to the next. After
   the last one: a celebrating graphic (its confetti falls once) and "Hier gibt es nichts zu sehen. Alles erledigt! Das
   hast du wunderbar gemacht!"; B closes.
@@ -66,6 +69,10 @@ installed, rescans, every "Demo-Spiel: …"), **Warning** when the action didn't
 failures ("… konnte nicht gestartet werden …", unexpected errors, a failed save or install, a file that won't open,
 controllers not recognised). Pan's notices take the level of their source. The UI never says "Toast": a toast is a
 "Meldung", a status message a "Status".
+
+## Category "Lokalisierung"
+
+Between "Datenquellen" and "Über Arcadia": [localization.md](localization.md).
 
 ## Category "Über Arcadia"
 

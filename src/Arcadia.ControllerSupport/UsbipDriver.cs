@@ -21,22 +21,31 @@ public static class UsbipDriver
 
     public static Version? InstalledVersion()
     {
-        foreach (var (displayVersion, _, _) in UninstallEntries())
+        // Unreadable counts as not installed, as for HidHide (HidHideInstallation.InstalledVersion): a key a policy locks
+        // or a driver file being replaced must not end the check that asks.
+        try
         {
-            if (Version.TryParse(displayVersion, out var version))
+            foreach (var (displayVersion, _, _) in UninstallEntries())
             {
-                return version;
+                if (Version.TryParse(displayVersion, out var version))
+                {
+                    return version;
+                }
             }
-        }
 
-        // Fallback: the version of the loaded driver file, wherever the driver store put it.
-        if (DriverFile() is { } driver && FileVersionInfo.GetVersionInfo(driver).FileVersion is { } fileVersion
-            && Version.TryParse(fileVersion.Split(' ')[0], out var parsed))
+            // Fallback: the version of the loaded driver file, wherever the driver store put it.
+            if (DriverFile() is { } driver && FileVersionInfo.GetVersionInfo(driver).FileVersion is { } fileVersion
+                && Version.TryParse(fileVersion.Split(' ')[0], out var parsed))
+            {
+                return parsed;
+            }
+
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return parsed;
+            return null;
         }
-
-        return null;
     }
 
     /// <summary>

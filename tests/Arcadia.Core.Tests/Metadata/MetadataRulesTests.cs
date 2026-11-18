@@ -33,7 +33,7 @@ public sealed class MetadataRulesTests
         var game = new Game { Id = "4000001", LauncherId = "steam", Title = "X", Launch = new LaunchTarget.ProtocolUri("steam://rungameid/4000001") };
         var parsed = store.Parse(game, """{"4000001":{"success":true,"data":{"steam_appid":4000001,"genres":[{"id":"70","description":"Early Access"}]}}}"""u8)!;
 
-        Assert.Null(MergedMetadata.Of([Provider("Steam", parsed)]).Genres);
+        Assert.Null(GermanPc.Merged([Provider("Steam", parsed)]).Genres);
     }
 
     [Theory]
@@ -47,7 +47,7 @@ public sealed class MetadataRulesTests
     [InlineData(BrokenGerman, null, BrokenGerman)]
     public void A_description_that_is_not_good_german_counts_only_without_a_german_one(string? first, string? second, string expected)
     {
-        var merged = MergedMetadata.Of([
+        var merged = GermanPc.Merged([
             Provider("Steam", new GameMetadata { Description = first }),
             Provider("Other", new GameMetadata { Description = second }),
         ]);
@@ -59,14 +59,14 @@ public sealed class MetadataRulesTests
     [Trait("TestCase", "T493-7")]
     public void Empty_descriptions_everywhere_give_none()
     {
-        Assert.Null(MergedMetadata.Of([Provider("Steam", new GameMetadata { Description = " \n " })]).Description);
+        Assert.Null(GermanPc.Merged([Provider("Steam", new GameMetadata { Description = " \n " })]).Description);
     }
 
     [Fact]
     [Trait("TestCase", "T493-8")]
     public void A_real_usk_wins_over_steams_own_rating_for_germany()
     {
-        var merged = MergedMetadata.Of([Provider("Steam", new GameMetadata
+        var merged = GermanPc.Merged([Provider("Steam", new GameMetadata
         {
             AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "18", ByStore: true), new AgeRating(AgeRatingBoard.Usk, "16")],
         })]);
@@ -78,7 +78,7 @@ public sealed class MetadataRulesTests
     [Trait("TestCase", "T493-8")]
     public void Without_a_real_usk_steams_own_rating_counts_as_usk_and_pegi_and_esrb_come_as_delivered()
     {
-        var merged = MergedMetadata.Of([Provider("Steam", new GameMetadata
+        var merged = GermanPc.Merged([Provider("Steam", new GameMetadata
         {
             AgeRatings = [new AgeRating(AgeRatingBoard.Esrb, "m"), new AgeRating(AgeRatingBoard.Pegi, "16"), new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true)],
         })]);
@@ -103,21 +103,21 @@ public sealed class MetadataRulesTests
     public void Unknown_rating_values_are_dropped(AgeRatingBoard board, string value)
     {
         Assert.Null(MetadataCheck.CheckedRating(new AgeRating(board, value)));
-        Assert.Empty(MergedMetadata.Of([Provider("Steam", new GameMetadata { AgeRatings = [new AgeRating(board, value)] })]).AgeRatings);
+        Assert.Empty(GermanPc.Merged([Provider("Steam", new GameMetadata { AgeRatings = [new AgeRating(board, value)] })]).AgeRatings);
     }
 
     [Fact]
     [Trait("TestCase", "T493-8")]
     public void No_rating_at_all_gives_none()
     {
-        Assert.Empty(MergedMetadata.Of([Provider("Steam", new GameMetadata { Developers = ["Made-up Studio"] })]).AgeRatings);
+        Assert.Empty(GermanPc.Merged([Provider("Steam", new GameMetadata { Developers = ["Made-up Studio"] })]).AgeRatings);
     }
 
     [Fact]
     [Trait("TestCase", "T493-9")]
     public void Each_field_comes_from_the_first_provider_that_has_it_and_keeps_its_source()
     {
-        var merged = MergedMetadata.Of([
+        var merged = GermanPc.Merged([
             Provider("First", new GameMetadata { Developers = ["Made-up Studio"], Genres = [Genre.Action] }),
             Provider("Nothing", GameMetadata.Empty),
             Provider("Second", new GameMetadata
@@ -142,8 +142,8 @@ public sealed class MetadataRulesTests
     [Trait("TestCase", "T493-9")]
     public void Providers_that_deliver_nothing_change_nothing()
     {
-        Assert.Same(MergedMetadata.None, MergedMetadata.Of([Provider("A", GameMetadata.Empty), Provider("B", GameMetadata.Empty)]));
-        Assert.True(MergedMetadata.Of([]).IsEmpty);
+        Assert.Same(MergedMetadata.None, GermanPc.Merged([Provider("A", GameMetadata.Empty), Provider("B", GameMetadata.Empty)]));
+        Assert.True(GermanPc.Merged([]).IsEmpty);
     }
 
     [Fact]

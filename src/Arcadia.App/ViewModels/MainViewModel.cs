@@ -42,6 +42,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     private readonly RepeatGate _repeats = new();
     private readonly ArtworkService? _artwork;
     private readonly MetadataService? _metadata;
+    private readonly FilterFactsSource _filterFacts;
 
     private Func<ViewOptionsViewModel?>? _createViewOptions;
 
@@ -84,12 +85,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         _time = time;
         LauncherTabs = new LauncherTabsViewModel(logos.BadgeOf);
         Messages = new RecentMessages(time, AppLog.Write);
+        Formatting.ClockFormat = settings.Current.Localization.Clock;
         Status = new StatusBarViewModel(controllerSupport, updates, time, new StatusMessageChanges(Messages, AppLog.Write));
         Status.PropertyChanged += OnStatusChanged;
         Toast = new ToastViewModel(time, Messages);
         Session = new LibrarySession(library, installs, running, launchedGames, time, artwork, metadata, titles);
         WatchUserData(Session.Titles.UserData);
         Tags = new OwnTags(Session.Titles.UserData, Formatting.Culture);
+        _filterFacts = new FilterFactsSource(MetadataOf, Tags);
         WatchOwnTags();
         if (artwork is not null)
         {
@@ -104,6 +107,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             WatchMetadata(metadata);
         }
 
+        WatchLanguageRestart();
+
         Session.LibrariesChanged += (_, _) => ApplyLibraries(Session.Libraries);
         Session.LaunchersRead += (_, _) => RefreshLauncherSettings();
         Session.InstallStatesChanged += (_, _) => UpdateInstallStates();
@@ -117,7 +122,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         ControllerMode = new ControllerModeViewModel(controllerSupport, settings, Status, _actions, this);
         PanDialogs = new PanDialogsViewModel(controllerSupport, settings, Toast, time, () => QuitRequested?.Invoke(this, EventArgs.Empty), CancelHold);
         PanDialogs.PropertyChanged += OnPanDialogsChanged;
-        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders);
+        Library = new LibraryViewModel(LauncherTabs, settings, SaveView, _actions, ShowStates, this, time, installFolders, _filterFacts);
         SearchKeyboard = CreateSharedKeyboard();
         SettingsKeyboard = CreateSharedKeyboard();
         Library.PropertyChanged += OnLibraryChanged;
@@ -129,6 +134,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
         AppErrors.Occurred += OnAppError;
         ControllerMode.FocusedGameChanged();
+        CreateImageShow();
     }
 
     /// <summary>The toasts and status changes since the start, for "Letzte Meldungen" (#433).</summary>
@@ -327,6 +333,23 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    /// <summary>
+    /// The detail page the settings were opened over, while a game of the tag list shows in its place (#586); it comes back
+    /// once the settings close. Covered, not closed, so it stays among the live pages while kept here.
+    /// </summary>
+    private GameDetailViewModel? DetailBehindSettings
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPagesChanged();
+        }
+    }
+
+    /// <summary>Opens the dialog again that opened the settings once they close (#586): B goes back where it came from.</summary>
+    private Action? _dialogBehindSettings;
+
     /// <summary>The file and folder dialogs over the window (#138); set once the window is there.</summary>
     public ISystemDialogs? Dialogs { get; set; }
 
@@ -371,6 +394,11 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// </param>
     public void Handle(UiAction action, bool repeat = false)
     {
+        if (SwallowedByImageShow(action, repeat))
+        {
+            return;
+        }
+
         if (!_repeats.Allows(action, repeat, ShownLayer()))
         {
             return;
@@ -523,12 +551,18 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     /// <summary>A button or key was let go.</summary>
     public void Release(UiAction action)
     {
+        if (ReleaseSwallowedByImageShow(action))
+        {
+            return;
+        }
+
         _repeats.Release(action);
         PanDialogs.Release(action);
         _actions.Release(action);
         WaitingList?.Release(action);
         TagDialog?.Release(action);
         ChangeTitle?.Release(action);
+        FilterModal?.Release(action);
         foreach (var page in OpenPages())
         {
             page.Release(action);
@@ -544,6 +578,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         WaitingList?.CancelHeldButtons();
         TagDialog?.CancelHeldButtons();
         ChangeTitle?.CancelHeldButtons();
+        FilterModal?.CancelHeldButtons();
         foreach (var page in OpenPages())
         {
             page.CancelHeldButtons();
@@ -698,23 +733,14 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     /// <summary>
-    /// B: always back to the library (owner, 2026-10-21), on the page of the game shown last and with the focus on it.
-    /// From the search that is the tab of the game's launcher, and the search closes.
+    /// B: back to where the page was opened from (#586), with the focus on the game shown last: the tag list, the search
+    /// with its text and hits, or the library on that game's page.
     /// </summary>
     [RelayCommand]
     private void CloseDetail()
     {
-        if (ReturnToTagList())
+        if (ReturnToTagList() || ReturnToSearch())
         {
-            return;
-        }
-
-        if (Detail is { IsFromSearch: true } fromSearch)
-        {
-            Detail = null;
-            DetailBehindSearch = null;
-            CloseSearch();
-            Library.Show(fromSearch.Current.Tile.Game);
             return;
         }
 
@@ -800,6 +826,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
 
         Settings?.Categories.OfType<ControllerSettingsViewModel>().FirstOrDefault()?.RunningGamesChanged();
+        RefreshLanguageRestart();
     }
 
     private void ShowNotice(LibraryNotice notice)
@@ -810,7 +837,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     /// <summary>
     /// X: the search over all launchers, with the on-screen keyboard. From a detail page opened from the search, back to
-    /// the search with its text; from any other detail page, the search over it, and B there leads back to it (#127).
+    /// the search as B does; from any other detail page, the search over it, and B there leads back to it (#127).
     /// </summary>
     [RelayCommand]
     private void OpenSearch()
@@ -820,10 +847,8 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             return;
         }
 
-        if (Detail is { IsFromSearch: true } fromSearch && Search is { } open)
+        if (ReturnToSearch())
         {
-            Detail = null;
-            open.FocusHit(fromSearch.Current.Tile.Game.Key);
             return;
         }
 
@@ -843,6 +868,22 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             CreateTile,
             _logos.BadgeOf,
             Input.Kind == InputKind.Gamepad);
+    }
+
+    /// <summary>
+    /// A detail page opened from the search closes onto it: its text, hits and keyboard as left, the focus on the game the
+    /// page showed last. False on any other page.
+    /// </summary>
+    private bool ReturnToSearch()
+    {
+        if (Detail is not { IsFromSearch: true } fromSearch || Search is not { } search)
+        {
+            return false;
+        }
+
+        Detail = null;
+        search.FocusHit(fromSearch.Current.Tile.Game.Key);
+        return true;
     }
 
     /// <summary>Back to the library, where it was before the search.</summary>
@@ -959,6 +1000,17 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void IStatusModalHost.OpenSettingsOf(StatusEntry entry, bool startFix)
     {
         StatusModal = null;
+        OpenSettingsOf(entry, startFix);
+
+        // B in the settings opens the status modal again (#586), with the entries as they are then.
+        if (Settings is not null)
+        {
+            _dialogBehindSettings = OpenStatusModal;
+        }
+    }
+
+    private void OpenSettingsOf(StatusEntry entry, bool startFix)
+    {
         switch (entry.Target)
         {
             case StatusTarget.PanProblem:
@@ -1028,8 +1080,15 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     void IStatusModalHost.OrderChanged(bool newestFirst) => SaveView(settings => settings with { SortsStatusByNewest = newestFirst });
 
     /// <summary>The settings page (#15) in place of the library, which stays as it is underneath for the way back.</summary>
-    private void ShowSettings(Type? first, string? launcherId = null)
+    /// <param name="keepsWayBack">The settings come back on the way back from a game of the tag list, so a dialog that opened
+    /// them before still opens again when they close; any other opening forgets it (#586).</param>
+    private void ShowSettings(Type? first, string? launcherId = null, bool keepsWayBack = false)
     {
+        if (!keepsWayBack)
+        {
+            _dialogBehindSettings = null;
+        }
+
         var changes = new SettingsChanges(_settings);
         var launchers = new LauncherSettingsViewModel(this, changes, _time, launcherId);
         var steam = Session.Launchers.SteamInputOwner?.Launcher.Id;
@@ -1039,6 +1098,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             new ControllerSettingsViewModel(_controllerSupport, changes, ControllerMode.Pan, GameInTheWay, (level, message) => Toast.Show(level, message),
                 (new Func<bool>(() => steam is not null && Session.Launchers.IsFound(steam)), OpenSteamControllerSettings)),
             .. CreateDataSources(changes) is { } dataSources ? [dataSources] : Array.Empty<SettingsCategoryViewModel>(),
+            new LocalizationSettingsViewModel(changes, ApplyClock, CreateLanguageRestart()),
             new AboutSettingsViewModel(_updates, _updates.InstallAsync, Messages, changes, Logs, _time, kind => OpenLogAsync(kind).Forget(AppTexts.ErrorContextOpenLog)),
         ];
         Settings = new SettingsPageViewModel(categories, changes, this, categories.FirstOrDefault(c => c.GetType() == first));
@@ -1057,7 +1117,43 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     }
 
     [RelayCommand]
-    private void CloseSettings() => Settings = null;
+    private void CloseSettings() => LeaveSettings();
+
+    /// <summary>
+    /// B or ✕ on the settings: back to where they were opened from (#586): the page underneath, also when a game of the tag
+    /// list covered it meanwhile, and the dialog that opened them.
+    /// </summary>
+    private void LeaveSettings()
+    {
+        Settings = null;
+        // A game of the tag list still open (the settings were opened anew over it) keeps the page for its own way back;
+        // otherwise the page comes back, shown before it is let go so it is never closed in between.
+        if (DetailBehindSettings is { } detail && (Detail is null || _tagListBehindDetail is null))
+        {
+            if (Detail is null && StillShows(detail))
+            {
+                Detail = detail;
+            }
+
+            DetailBehindSettings = null;
+        }
+
+        var reopen = _dialogBehindSettings;
+        _dialogBehindSettings = null;
+        reopen?.Invoke();
+    }
+
+    /// <summary>A covered detail page takes its list as it is now; false when its game left that list.</summary>
+    private bool StillShows(GameDetailViewModel detail) => detail.IsFromLibrary
+        ? LauncherTabs.SelectedTab is { } tab && detail.Update(Library.ShownGames(tab), Library.SortLabel)
+        : Search is { } search && detail.Update(search.Hits, null);
+
+    /// <summary>"Uhrzeit" as saved (#553): every time shown from now on follows it, the header clock at once.</summary>
+    private void ApplyClock()
+    {
+        Formatting.ClockFormat = _settings.Current.Localization.Clock;
+        Status.UpdateClock();
+    }
 
     /// <summary>Opens a log in the system's default app (#433); a failure is an error toast, never an exception.</summary>
     private async Task OpenLogAsync(LogKind kind)
@@ -1119,9 +1215,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
             _topPage = top;
         }
 
-        IReadOnlyList<IPage> live = DetailBehindSearch is { } kept ? [.. open, kept] : open;
+        IReadOnlyList<IPage> live = [.. open, .. new[] { DetailBehindSearch, DetailBehindSettings }.OfType<IPage>()];
         var closed = _livePages.Except(live).ToList();
         _livePages = live;
+        ImageShow?.Restart();
         foreach (var page in closed.OfType<IDisposable>())
         {
             page.Dispose();
@@ -1153,10 +1250,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         // A title just changed is on disk before Arcadia ends (#496); the write takes milliseconds, a stuck disk doesn't hold the exit.
         Session.Titles.UserData?.WhenWrittenAsync().Wait(UserDataWriteLimit);
         AppErrors.Occurred -= OnAppError;
+        StopWatchingLanguageRestart();
         PanDialogs.Dispose();
         ControllerMode.Dispose();
         Status.Dispose();
         Toast.Dispose();
+        ImageShow.Dispose();
         SearchKeyboard.Dispose();
         SettingsKeyboard.Dispose();
         Session.Dispose();
@@ -1359,7 +1458,7 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
         else if (page == Settings)
         {
-            Settings = null;
+            LeaveSettings();
         }
     }
 
@@ -1401,6 +1500,12 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
         }
     }
 
+    bool ILibraryHost.IsMetadataLoading => _metadata?.IsBusy == true;
+
+    AgeRatingBoard ILibraryHost.FirstAgeRatingBoard => _metadata?.FirstAgeRatingBoard ?? AgeRatingRegion.System;
+
+    FilterKeyboard ILibraryHost.FilterKeyboard => new(editor => SettingsKeyboard.Take(editor, Input.UsesController), SettingsKeyboard.GiveBack);
+
     LauncherRegistry ILauncherSettingsHost.Launchers => Session.Launchers;
 
     LauncherLibrary? ILauncherSettingsHost.LibraryOf(string launcherId) => LauncherTabs.Find(launcherId)?.Library;
@@ -1428,10 +1533,9 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
 
     void ILauncherSettingsHost.GiveBackKeyboard(IKeyboardTarget editor) => SettingsKeyboard.GiveBack(editor);
 
-    /// <summary>A keyboard in the layout last chosen, whose choice of another layout is saved.</summary>
+    /// <summary>A keyboard that opens in the default layout and offers the quick selection (#553).</summary>
     private SharedKeyboard CreateSharedKeyboard() => new(
-        () => KeyboardLayout.Find(_settings.Current.KeyboardLayout),
-        layout => SaveView(settings => settings with { KeyboardLayout = layout.Id }),
+        () => SystemKeyboardLayout.Choice(_settings.Current.Localization),
         _time,
         action => Avalonia.Threading.Dispatcher.UIThread.Post(action));
 

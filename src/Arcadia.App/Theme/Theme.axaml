@@ -14,7 +14,8 @@
     <Color x:Key="SurfaceColor">#151B23</Color>
     <SolidColorBrush x:Key="Surface" Color="{StaticResource SurfaceColor}" />
     <SolidColorBrush x:Key="SurfaceRaised" Color="#1E2630" />
-    <SolidColorBrush x:Key="SurfaceSunken" Color="#0F141A" />
+    <Color x:Key="SurfaceSunkenColor">#0F141A</Color>
+    <SolidColorBrush x:Key="SurfaceSunken" Color="{StaticResource SurfaceSunkenColor}" />
     <!-- "Was ist neu" in the settings: a card a shade lighter than its section, with a version pill. -->
     <SolidColorBrush x:Key="ChangelogSurface" Color="#141B23" />
     <SolidColorBrush x:Key="ChangelogBorder" Color="#243040" />
@@ -71,6 +72,8 @@
     <SolidColorBrush x:Key="CoverShade" Color="#B80B0F14" />
     <SolidColorBrush x:Key="ProgressTrack" Color="#33FFFFFF" />
 
+    <!-- A check, 14 × 10: give its Path these proportions, as a square box with Stretch="Uniform" sets it at the top. -->
+    <StreamGeometry x:Key="CheckMarkIcon">M5 12.5l4.5 4.5 9.5-10</StreamGeometry>
     <!-- The kinds of library entries and "installiert" (#141): line icons on a 24 × 24 grid, stroked with round caps by
          ctl:LineIcon, which also fills "<key>Fill". Own drawings, from the designs (T141Icons). -->
     <StreamGeometry x:Key="IconTypeGame">M6.5 6.5h11a4.5 4.5 0 0 1 4.4 3.6l1 5.2a2.8 2.8 0 0 1-4.9 2.4L15.5 15h-7L6 17.7a2.8 2.8 0 0 1-4.9-2.4l1-5.2A4.5 4.5 0 0 1 6.5 6.5zM7 9.5v4M5 11.5h4</StreamGeometry>
@@ -78,6 +81,14 @@
     <StreamGeometry x:Key="IconInstalled">M5 13.5h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM7.5 7l3 3 6-6</StreamGeometry>
     <StreamGeometry x:Key="IconInstalledFill">M16.4 17a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0-2.2 0z</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoftware">M10.20 4.21L10.52 1.50L13.48 1.50L13.80 4.21A8 8 0 0 1 16.24 5.22L18.38 3.53L20.47 5.62L18.78 7.76A8 8 0 0 1 19.79 10.20L22.50 10.52L22.50 13.48L19.79 13.80A8 8 0 0 1 18.78 16.24L20.47 18.38L18.38 20.47L16.24 18.78A8 8 0 0 1 13.80 19.79L13.48 22.50L10.52 22.50L10.20 19.79A8 8 0 0 1 7.76 18.78L5.62 20.47L3.53 18.38L5.22 16.24A8 8 0 0 1 4.21 13.80L1.50 13.48L1.50 10.52L4.21 10.20A8 8 0 0 1 5.22 7.76L3.53 5.62L5.62 3.53L7.76 5.22A8 8 0 0 1 10.20 4.21ZM9.4 9.6L7.4 12l2 2.4M12.9 9l-1.8 6M14.6 9.6l2 2.4-2 2.4</StreamGeometry>
+    <!-- The filter's metadata categories (#466, design T44Modal). -->
+    <StreamGeometry x:Key="IconFilterGenre">M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterTag">M3 12V4h8l9 9-8 8zM7.5 7.5h.01</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterDeveloper">M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterPublisher">M4 21V5l8-2v18M12 8l8 2v11M3 21h18M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterYear">M4 6h16v14H4zM4 10h16M8 3v4M16 3v4</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterAgeRating">M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z</StreamGeometry>
+    <StreamGeometry x:Key="IconFilterSearch">M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0M20 20l-4-4</StreamGeometry>
     <StreamGeometry x:Key="IconReset">M4 12a8 8 0 1 0 2.3 -5.6M4 4v4.5h4.5</StreamGeometry>
     <StreamGeometry x:Key="IconTypeTool">M10.52 11.22L3.37 18.37A1.6 1.6 0 0 0 5.63 20.63L12.78 13.48A5 5 0 0 0 19.52 6.88L17.26 9.14L14.86 6.74L17.12 4.48A5 5 0 0 0 10.52 11.22Z</StreamGeometry>
     <StreamGeometry x:Key="IconTypeSoundtrack">M14 16.4V4c2.4.6 5 2 5 5.4</StreamGeometry>
@@ -161,25 +172,33 @@
     <SolidColorBrush x:Key="AgeRatingBlue" Color="#1A9FE0" />
     <SolidColorBrush x:Key="AgeRatingOrange" Color="#F7A600" />
     <SolidColorBrush x:Key="AgeRatingRed" Color="#E3000F" />
-    <!-- Behind the detail page's quiet note (#541): dark in the middle, fading out evenly towards every edge. -->
+    <!-- Behind the detail page's quiet note (#541): dark in the middle, fading out evenly towards every edge; half as dark as
+         a solid shade (#546), so the image still shows through. -->
     <RadialGradientBrush x:Key="DetailNoteScrim" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
-      <GradientStop Offset="0" Color="#E00B0F14" />
-      <GradientStop Offset="0.55" Color="#B30B0F14" />
-      <GradientStop Offset="0.8" Color="#4D0B0F14" />
+      <GradientStop Offset="0" Color="#700B0F14" />
+      <GradientStop Offset="0.55" Color="#5A0B0F14" />
+      <GradientStop Offset="0.8" Color="#270B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </RadialGradientBrush>
-    <LinearGradientBrush x:Key="DetailScrimSide" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Offset="0" Color="#D10B0F14" />
-      <GradientStop Offset="0.45" Color="#800B0F14" />
-      <GradientStop Offset="1" Color="#260B0F14" />
-    </LinearGradientBrush>
+    <!-- The detail page's scrims (#565): only behind title and buttons, the header's tabs and the footer's hints, so the
+         background shows almost uncovered. The title's is an ellipse around title and buttons in the top 440 px. -->
+    <RadialGradientBrush x:Key="DetailScrimTitle" GradientOrigin="42.7%,56.8%" Center="42.7%,56.8%" RadiusX="46.9%" RadiusY="68.2%">
+      <GradientStop Offset="0" Color="#8C0B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </RadialGradientBrush>
     <LinearGradientBrush x:Key="DetailScrimTop" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#E60B0F14" />
+      <GradientStop Offset="0" Color="#B30B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="DetailScrimBottom" StartPoint="0%,100%" EndPoint="0%,0%">
-      <GradientStop Offset="0" Color="#FF0B0F14" />
-      <GradientStop Offset="0.25" Color="#FF0B0F14" />
+      <GradientStop Offset="0" Color="#D90B0F14" />
+      <GradientStop Offset="1" Color="#000B0F14" />
+    </LinearGradientBrush>
+    <!-- Over the blurred copy of a background around its sharp image (#565), so the image stands out from it. -->
+    <SolidColorBrush x:Key="ArtworkBlurShade" Color="#8C0B0F14" />
+    <!-- "Bild ansehen" (#565): behind the shown game's title, bottom left. -->
+    <LinearGradientBrush x:Key="ImageShowTitleScrim" StartPoint="0%,100%" EndPoint="0%,0%">
+      <GradientStop Offset="0" Color="#B30B0F14" />
       <GradientStop Offset="1" Color="#000B0F14" />
     </LinearGradientBrush>
     <!-- A raised button's label (#531): light text casts a small dark shadow, dark text on blue a light edge below,
@@ -209,6 +228,8 @@
     <!-- A focused status button turns white as its focus: whole to its edge, only the shadow beneath stays. -->
     <BoxShadows x:Key="RaisedShadowOnly">0 6 14 0 #8C000000</BoxShadows>
     <BoxShadows x:Key="RaisedEdgesFocusRing">0 6 14 0 #8C000000, inset 0 1.5 0 0 #47FFFFFF, inset 0 -2.5 0 0 #4D000000, 0 0 0 3 #F2F5F8</BoxShadows>
+    <!-- A small raised button, e.g. a value's ◀ ▶ (#540): the same light, edges and shadow, scaled to its size. -->
+    <BoxShadows x:Key="RaisedEdgesSmall">0 3 7 0 #8C000000, inset 0 1 0 0 #47FFFFFF, inset 0 -1.5 0 0 #4D000000</BoxShadows>
     <BoxShadows x:Key="DetailShadow">0 30 80 0 #73000000</BoxShadows>
     <BoxShadows x:Key="CoverShadow">0 24 50 0 #80000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 40 100 0 #99000000</BoxShadows>
@@ -272,6 +293,15 @@
     <!-- The mouse mode's on-screen keyboard (#110): keys with a darker lower edge like real ones (owner, 2026-10-22). -->
     <BoxShadows x:Key="KeyCapEdge">inset 0 -3 0 0 #0F141A</BoxShadows>
     <BoxShadows x:Key="KeyCapEdgeFocused">inset 0 -3 0 0 #0F141A, 0 0 0 3 #F2F5F8</BoxShadows>
+    <!-- Placeholders until artwork is loaded (Formatting): the hue comes from the title or the launcher's id, saturation
+         and lightness from here, as "saturation lightness". -->
+    <x:String x:Key="PlaceholderCoverTone">0.28 0.20</x:String>
+    <x:String x:Key="PlaceholderCoverAccentTone">0.55 0.66</x:String>
+    <x:String x:Key="PlaceholderHeroBackdropTone">0.30 0.17</x:String>
+    <x:String x:Key="PlaceholderHeroRingTone">0.40 0.28</x:String>
+    <x:String x:Key="PlaceholderLauncherTileTone">0.35 0.30</x:String>
+    <!-- The big letter on a cover without artwork: the accent, toned down. -->
+    <x:Double x:Key="MonogramOpacity">0.55</x:Double>
   </Styles.Resources>
 
   <!-- A button that draws only what we give it; the Fluent hover/press visuals don't fit the design. -->
@@ -394,8 +424,13 @@
     <Setter Property="Foreground" Value="{StaticResource Text}" />
   </Style>
   <Style Selector="Button.tab.selected">
-    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Background" Value="{StaticResource RaisedLight}" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
+  </Style>
+
+  <!-- A content control around a raised button: the button's shadow reaches beyond it (#540). -->
+  <Style Selector="ContentControl.unclipped, ContentControl.unclipped /template/ ContentPresenter">
+    <Setter Property="ClipToBounds" Value="False" />
   </Style>
 
   <!-- Item lists clip to their bounds as well, and a focused item's ring reaches beyond them. -->
@@ -518,6 +553,56 @@
         </KeyFrame>
       </Animation>
     </Style.Animations>
+  </Style>
+
+  <Style Selector="ctl|ArtworkImage">
+    <Setter Property="BlurShade" Value="{StaticResource ArtworkBlurShade}" />
+  </Style>
+
+  <!-- "Bild ansehen" (#565): the page fades out under it in a second and back in when it ends; leaving the front it goes at
+       once. Its two image layers blend into each other. Unseen it takes no input. -->
+  <Style Selector="Panel.imageShow">
+    <Setter Property="Background" Value="{StaticResource Bg}" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:1" Easing="SineEaseInOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Panel.imageShow.shown">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="True" />
+  </Style>
+  <Style Selector="Panel.imageShow.atOnce">
+    <Setter Property="Transitions" Value="{x:Null}" />
+  </Style>
+  <!-- The layer behind stays whole; the one in front blends in over it only once its image is decoded, so a cross-fade
+       never passes through the page colour. Its transition comes with it, so it drops to 0 at once when it turns to front. -->
+  <Style Selector="ctl|ArtworkImage.imageShowLayer">
+    <Setter Property="ZIndex" Value="0" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front">
+    <Setter Property="ZIndex" Value="1" />
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="ctl|ArtworkImage.imageShowLayer.front[IsShowing=True]">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:1.5" Easing="SineEaseInOut" />
+      </Transitions>
+    </Setter>
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="TextBlock.imageShowTitle">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="80,0,0,44" />
   </Style>
 
   <!-- Owned but not installed: the cover is shaded, the title stays readable. -->
@@ -893,9 +978,11 @@
     <Setter Property="Width" Value="250" />
     <Setter Property="Height" Value="46" />
     <Setter Property="CornerRadius" Value="23" />
-    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
   </Style>
   <Style Selector="Border.holdPill TextBlock">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
@@ -904,6 +991,7 @@
   </Style>
   <Style Selector="Border.holdPill.holding TextBlock">
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
   </Style>
   <Style Selector="Border.dangerBox">
     <Setter Property="Background" Value="{StaticResource DangerSurface}" />
@@ -1115,9 +1203,13 @@
   <Style Selector="Button.detailRail.open Border.railIcon Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
+  <!-- A second line rather than "…" (#587): "Modus „Standard (Steam-Eingabe)“" is longer than the rail is wide; the genres
+       of "Infos" (a game's data) still end in "…" after two lines. -->
   <Style Selector="TextBlock.railValue">
     <Setter Property="FontSize" Value="15" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
   <Style Selector="Button.detailRail.open TextBlock.railValue">
@@ -1183,7 +1275,7 @@
     <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
   </Style>
   <Style Selector="Border.detailInfoBox">
-    <Setter Property="Width" Value="336" />
+    <Setter Property="Width" Value="294" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
   </Style>
@@ -1192,7 +1284,7 @@
     <Setter Property="Background" Value="{StaticResource Bg}" />
   </Style>
   <Style Selector="Button.detailRow.focused Button.valueArrow">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
   <Style Selector="Button.detailRow.focused Button.valueArrow Path">
     <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
@@ -1201,19 +1293,22 @@
     <Setter Property="Opacity" Value="0.45" />
   </Style>
 
-  <!-- The quick selection in "Übersicht" (#500): pills like the detail page's buttons; "Übersicht anpassen" set apart
-       as an outline. A greyed entry keeps the focus but reads as off. -->
+  <!-- The quick selection in "Übersicht" (#500): raised pills like the detail page's buttons (#540); "Übersicht anpassen"
+       set apart by an outline. A greyed entry keeps the focus but reads as off and lies flat. -->
   <Style Selector="Button.quickEntry">
     <Setter Property="Height" Value="56" />
     <Setter Property="CornerRadius" Value="28" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.quickEntry:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailValueSurfaceHover}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed, Button.quickEntry.greyed:pointerover">
+    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
   </Style>
   <!-- A choice's ◀ value ▶ in its own chip (#531). -->
   <Style Selector="Border.quickChip">
@@ -1225,22 +1320,19 @@
   <Style Selector="Button.quickEntry.focused Border.quickChip">
     <Setter Property="Background" Value="{StaticResource DetailValueChipFocused}" />
   </Style>
-  <Style Selector="Button.quickEntry.focused /template/ Border#Chrome">
-    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
-  </Style>
   <Style Selector="Button.quickEntry.customize">
-    <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{StaticResource LineStrong}" />
     <Setter Property="BorderThickness" Value="2" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.quickEntry.customize:pointerover">
-    <Setter Property="Background" Value="{StaticResource DetailValueSurface}" />
-  </Style>
+  <!-- A name too long for its row ("Modo del Steam Controller" beside its value) takes a second line, never "…" (#587). -->
   <Style Selector="TextBlock.quickTitle">
     <Setter Property="FontSize" Value="17" />
+    <Setter Property="LineHeight" Value="20" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -1248,9 +1340,14 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
-    <Setter Property="MaxWidth" Value="150" />
+    <Setter Property="MaxWidth" Value="196" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- Wide enough for the longest value in every language, "Standard (Steam-Eingabe)" (#587). -->
+  <Style Selector="TextBlock.quickValue.inChip">
+    <Setter Property="Width" Value="196" />
+    <Setter Property="TextAlignment" Value="Center" />
   </Style>
   <Style Selector="Path.quickIcon">
     <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
@@ -1274,9 +1371,9 @@
     <Setter Property="Opacity" Value="0.45" />
   </Style>
   <Style Selector="Button.quickArrow">
-    <Setter Property="Width" Value="24" />
-    <Setter Property="Height" Value="24" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="CornerRadius" Value="14" />
   </Style>
 
   <!-- "Übersicht anpassen" (#500): the counter turns amber with five, the bar for "Für alle Spiele übernehmen". -->
@@ -1331,13 +1428,13 @@
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
   <Style Selector="Path.quickAppliedIcon">
-    <Setter Property="Data" Value="M5 12.5l4.5 4.5 9.5-10" />
+    <Setter Property="Data" Value="{StaticResource CheckMarkIcon}" />
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
     <Setter Property="StrokeThickness" Value="2.6" />
     <Setter Property="StrokeLineCap" Value="Round" />
     <Setter Property="StrokeJoin" Value="Round" />
-    <Setter Property="Width" Value="22" />
-    <Setter Property="Height" Value="22" />
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="14.3" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
@@ -1388,9 +1485,11 @@
   <Style Selector="Border.valueBox.current TextBlock.valueBoxTitle">
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
   </Style>
+  <!-- Reading text of an info panel: 16 px (design.md → Sizes). The line is high enough for an inline glyph (22 px) and the
+       descenders beside it, or a box with [R] cuts its text's lower edge (#587). -->
   <Style Selector="TextBlock.valueBoxText">
-    <Setter Property="FontSize" Value="15" />
-    <Setter Property="LineHeight" Value="21" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="24" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
@@ -1625,6 +1724,38 @@
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
   </Style>
+  <!-- Captions in capitals (the texts are upper case): the one kind of reading text below 14 px (design.md → Sizes). A
+       section's caption is a size larger, a heading over a list or menu two. -->
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.label.section">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="TextBlock.label.heading">
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <!-- An info panel's small print: reading text, so 16 px like every text of the panel (design.md → Sizes); the fainter
+       colour sets it apart. -->
+  <Style Selector="TextBlock.infoFootnote">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <!-- A mode card in an info panel (Border.modeCard): what the mode does, and the faint note which one is the default. -->
+  <Style Selector="TextBlock.bullet">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.modeDefault">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
   <Style Selector="TextBlock.infoText">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="LineHeight" Value="27" />
@@ -1646,6 +1777,15 @@
     <Setter Property="Padding" Value="8,0" />
     <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
   </Style>
+  <!-- The detail page's rows (#587): a game's Steam Controller mode, "Standard (Steam-Eingabe)", is longer than the
+       settings' values. In the quick selection's 15 px, 42 px wider, the info box 42 px narrower, so the rows' subtitles
+       keep their room. -->
+  <Style Selector="Border.valuePill.wide">
+    <Setter Property="Width" Value="292" />
+  </Style>
+  <Style Selector="Border.valuePill.wide TextBlock.valueText">
+    <Setter Property="FontSize" Value="15" />
+  </Style>
   <Style Selector="Button.settingRow.focused Border.valuePill">
     <Setter Property="Background" Value="{StaticResource Bg}" />
   </Style>
@@ -1659,22 +1799,25 @@
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="VerticalAlignment" Value="Stretch" />
   </Style>
+  <!-- The arrows switch the value, so they are raised buttons of their own (#540); greyed, they lie flat. -->
   <Style Selector="Button.valueArrow">
-    <Setter Property="Width" Value="30" />
-    <Setter Property="Height" Value="30" />
-    <Setter Property="CornerRadius" Value="15" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="CornerRadius" Value="16" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
   </Style>
   <Style Selector="Button.valueArrow Path">
-    <Setter Property="Stroke" Value="{StaticResource TextFaint}" />
+    <Setter Property="Stroke" Value="{StaticResource TextSoft}" />
   </Style>
   <Style Selector="Button.settingRow.focused Button.valueArrow, Button.valueArrow:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurfaceHover}" />
   </Style>
   <Style Selector="Button.settingRow.focused Button.valueArrow Path, Button.valueArrow:pointerover Path">
     <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
   </Style>
   <Style Selector="Button.valueArrow:disabled">
+    <Setter Property="Background" Value="Transparent" />
     <Setter Property="Opacity" Value="0.3" />
   </Style>
   <!-- As wide as the chevron itself (7 × 14): a square box left it off-centre in its button (owner, 2026-10-22). -->
@@ -1751,18 +1894,20 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <!-- An action on the right of a row ("Erneut versuchen ›"): a pill as wide as the value chips, so the rows' right edge
+  <!-- An action on the right of a row ("Erneut versuchen"): a pill as wide as the value chips, so the rows' right edge
        stays one column; it fills with the accent while its row has the focus, like a button about to be pressed
        (owner, 2026-10-22). The whole row is the button. -->
   <Style Selector="Border.rowGo">
     <Setter Property="Width" Value="250" />
     <Setter Property="Height" Value="46" />
     <Setter Property="CornerRadius" Value="23" />
-    <Setter Property="Padding" Value="22,0,18,0" />
-    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource RaisedSurface}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
   </Style>
   <!-- Only the label: a button glyph inside the pill keeps its own look. -->
   <Style Selector="Border.rowGo > Grid > TextBlock">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
@@ -1770,26 +1915,33 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
-  <Style Selector="Border.rowGo Path">
+  <Style Selector="Border.rowGo > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="Border.rowGo.primary > Grid > TextBlock">
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="Border.rowGo.primary Path">
+  <Style Selector="Border.rowGo.primary > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource AccentSoft}" />
   </Style>
   <Style Selector="Button.settingRow.focused Border.rowGo">
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
   </Style>
   <Style Selector="Button.settingRow.focused Border.rowGo > Grid > TextBlock">
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
   </Style>
-  <Style Selector="Button.settingRow.focused Border.rowGo Path">
+  <Style Selector="Button.settingRow.focused Border.rowGo > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
   </Style>
+  <!-- Nothing to press: flat, as a greyed button is everywhere. -->
   <Style Selector="Border.rowGo.disabled">
     <Setter Property="Opacity" Value="0.5" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
+  <Style Selector="Border.rowGo.disabled > Grid > TextBlock">
+    <Setter Property="Effect" Value="{x:Null}" />
   </Style>
   <!-- Focused but not now (e.g. a log that doesn't exist, #433): no accent, A does nothing there. -->
   <Style Selector="Button.settingRow.focused Border.rowGo.disabled">
@@ -1797,8 +1949,9 @@
   </Style>
   <Style Selector="Button.settingRow.focused Border.rowGo.disabled > Grid > TextBlock">
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="Effect" Value="{x:Null}" />
   </Style>
-  <Style Selector="Button.settingRow.focused Border.rowGo.disabled Path">
+  <Style Selector="Button.settingRow.focused Border.rowGo.disabled > Grid > Path">
     <Setter Property="Stroke" Value="{StaticResource TextMuted}" />
   </Style>
   <Style Selector="TextBlock.rowValue">
@@ -1909,9 +2062,11 @@
     <Setter Property="Height" Value="44" />
     <Setter Property="CornerRadius" Value="22" />
     <Setter Property="Padding" Value="20,0" />
-    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Background" Value="{StaticResource RaisedAccent}" />
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
   </Style>
   <Style Selector="Border.rowAction > TextBlock">
+    <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
     <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
     <Setter Property="FontSize" Value="16" />
     <Setter Property="FontWeight" Value="SemiBold" />
@@ -2153,34 +2308,12 @@
   <Style Selector="Border.switch.on > Ellipse">
     <Setter Property="HorizontalAlignment" Value="Right" />
   </Style>
-  <!-- A value from 1 to 9 in a setting row (mouse mode): arrows for the mouse, D-pad left/right for the controller. -->
-  <Style Selector="Button.stepperArrow">
-    <Setter Property="Width" Value="44" />
-    <Setter Property="Height" Value="44" />
-    <Setter Property="CornerRadius" Value="22" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
-    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
-    <Setter Property="FontSize" Value="24" />
-    <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="HorizontalContentAlignment" Value="Center" />
-    <Setter Property="VerticalContentAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Button.stepperArrow:pointerover">
-    <Setter Property="Background" Value="{StaticResource Line}" />
-  </Style>
-  <Style Selector="Button.stepperArrow:disabled">
-    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
-  </Style>
-  <Style Selector="TextBlock.stepperValue">
-    <Setter Property="MinWidth" Value="130" />
-    <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="TextAlignment" Value="Center" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
   <!-- Locked while Steam, Pan or VIIPER start or stop: the switch keeps its position but can't be flipped. -->
   <Style Selector="Border.switch.locked, Border.rowAction.locked">
     <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="Border.rowAction.locked">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
 
   <!-- Loading spinner: an open circle that keeps turning. -->
@@ -2582,6 +2715,11 @@
   </Style>
   <!-- The keyboard's layout menu (R3). Low enough for all five to fit within the keys' height: the mouse mode's window
        is only as large as the keyboard. -->
+  <!-- The layout's kind under its name ("Tastatur der Region", …): a short line, not a caption, so 15 px (design.md → Sizes). -->
+  <Style Selector="TextBlock.layoutKind">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
   <Style Selector="Button.layoutItem">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -3231,20 +3369,6 @@
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
   </Style>
-  <Style Selector="Path.filterChevron">
-    <Setter Property="Data" Value="M9 6l6 6-6 6" />
-    <Setter Property="Stroke" Value="{StaticResource LineStrong}" />
-    <Setter Property="StrokeThickness" Value="2.4" />
-    <Setter Property="StrokeLineCap" Value="Round" />
-    <Setter Property="StrokeJoin" Value="Round" />
-    <Setter Property="Width" Value="18" />
-    <Setter Property="Height" Value="18" />
-    <Setter Property="Stretch" Value="Uniform" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Button.filterCategory.current Path.filterChevron">
-    <Setter Property="Stroke" Value="{StaticResource TextStrong}" />
-  </Style>
 
   <!-- Values: a radio per line ("Installiert") or a checkbox in the grid ("Typ"); greyed out without hits, still choosable. -->
   <Style Selector="Button.filterOption, Button.filterValue">
@@ -3332,13 +3456,14 @@
     <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
   </Style>
   <Style Selector="Path.filterCheckMark">
-    <Setter Property="Data" Value="M5 12.5l4.5 4.5 9.5 -10" />
+    <Setter Property="Data" Value="{StaticResource CheckMarkIcon}" />
     <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
     <Setter Property="StrokeThickness" Value="3.6" />
     <Setter Property="StrokeLineCap" Value="Round" />
     <Setter Property="StrokeJoin" Value="Round" />
-    <Setter Property="Width" Value="14" />
-    <Setter Property="Height" Value="14" />
+    <!-- The check's own proportions (#540): in a square box Stretch="Uniform" sets it at the top, not in the middle. -->
+    <Setter Property="Width" Value="13" />
+    <Setter Property="Height" Value="9.3" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="IsVisible" Value="False" />
   </Style>
@@ -3351,8 +3476,280 @@
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
+  <!-- The metadata categories (#466, designs T44F04–T44F08). While the value search is written in, the modal moves up and
+       shortens above the keyboard; the list then shows four rows (FilterListPane.RowsInSightWhileWriting). -->
+  <Style Selector="Border.filterModal.writing">
+    <Setter Property="Height" Value="716" />
+    <Setter Property="Margin" Value="0,24,0,0" />
+  </Style>
+  <!-- The categories then lose their summaries, so all of them still fit beside the shortened list. -->
+  <Style Selector="Border.filterModal.writing Button.filterCategory">
+    <Setter Property="MinHeight" Value="52" />
+    <Setter Property="Padding" Value="14,4" />
+  </Style>
+  <Style Selector="Border.filterModal.writing Button.filterCategory ctl|FirstThatFits">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.filterLoadingNote">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="Margin" Value="0,-8,0,16" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterLoadingNote TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.filterSearch">
+    <Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.filterSearch:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterSearch.writing">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="ctl|LineIcon.filterSearchIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterSearchText, TextBlock.filterSearchPlaceholder">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="TextBlock.filterSearchPlaceholder">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <!-- The order: two halves, the one in use filled. -->
+  <Style Selector="Button.filterOrder">
+    <Setter Property="Height" Value="52" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart">
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="14,0" />
+  </Style>
+  <Style Selector="Border.filterOrderPart.on">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart TextBlock">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="Border.filterOrderPart.on TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <!-- "Ohne Angabe einbeziehen": a row with its switch, once something is chosen. -->
+  <Style Selector="Button.filterSwitchRow">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterSwitchRow.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="TextBlock.filterSwitchLabel">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.filterSwitchInfo">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.filterMatchNote">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Margin" Value="0,12,0,0" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.filterListHeading">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="Height" Value="56" />
+    <Setter Property="Padding" Value="0,28,0,0" />
+  </Style>
+  <Style Selector="TextBlock.filterListLead">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- An own tag (#495) stands out in the accent's soft colour. -->
+  <Style Selector="Button.filterValue.own TextBlock.filterValueLabel">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+  <Style Selector="ItemsControl.filterLetters">
+    <Setter Property="Margin" Value="14,0,0,0" />
+  </Style>
+  <Style Selector="TextBlock.filterLetter">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterLetter.current">
+    <Setter Property="Foreground" Value="{StaticResource AccentSoft}" />
+  </Style>
+
+  <!-- "Erscheinungsjahr": the chart's bars (dimmed outside a chosen range), the quick picks, "von" and "bis". -->
+  <Style Selector="ItemsControl.filterYearChart">
+    <Setter Property="Height" Value="190" />
+  </Style>
+  <Style Selector="Border.filterYearBar">
+    <Setter Property="CornerRadius" Value="3,3,0,0" />
+    <Setter Property="MinHeight" Value="2" />
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Border.filterYearBar.dimmed">
+    <Setter Property="Background" Value="{StaticResource LineStrong}" />
+  </Style>
+  <Style Selector="Border.filterYearBar.dimmed.inRange">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+  </Style>
+  <!-- Wider than its bar (the margin), so "2020" isn't cut in a narrow column. -->
+  <Style Selector="TextBlock.filterYearLabel">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+    <Setter Property="Margin" Value="-24,6,-24,0" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="Height" Value="22" />
+  </Style>
+  <Style Selector="Button.filterPick">
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterPick:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterPick.selected, Button.filterPick.selected:pointerover">
+    <Setter Property="Background" Value="{StaticResource Accent}" />
+    <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.filterPick.noHits">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="Button.filterPick.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.filterStepper">
+    <Setter Property="Height" Value="72" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Border.filterStepper.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="TextBlock.filterStepperLabel">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterStepperValue">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="MinWidth" Value="72" />
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterStep">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterStep:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+
+  <!-- "Altersfreigabe": a tile per rating, the system small above, the rating large, its hits below. -->
+  <Style Selector="Button.filterRatingTile">
+    <Setter Property="Width" Value="136" />
+    <Setter Property="Height" Value="120" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile:pointerover">
+    <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.selected">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.noHits">
+    <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingCaption">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.5" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingValue">
+    <Setter Property="FontSize" Value="32" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.filterRatingTile.all TextBlock.filterRatingValue">
+    <Setter Property="FontSize" Value="22" />
+  </Style>
+  <Style Selector="TextBlock.filterRatingCount">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
   <!-- "Artwork ändern" (#490, prototype in #13). Tiles fill the grid's 852 px: five covers (2 : 3) or two backgrounds
-       (3.1 : 1) a row; the notice spans three covers or the whole row. -->
+       (16 : 9, as the detail page shows them, #562) a row; the notice spans three covers or the whole row. -->
   <Style Selector="Border.artworkModal">
     <Setter Property="Background" Value="{StaticResource DetailSurface}" />
     <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
@@ -3385,7 +3782,7 @@
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
   </Style>
   <Style Selector="Button.artworkTab.selected">
-    <Setter Property="Background" Value="{StaticResource TextStrong}" />
+    <Setter Property="Background" Value="{StaticResource RaisedLight}" />
     <Setter Property="Foreground" Value="{StaticResource Bg}" />
     <Setter Property="FontWeight" Value="Bold" />
   </Style>
@@ -3578,7 +3975,7 @@
   </Style>
   <Style Selector="ItemsControl.hero Border.artworkFrame">
     <Setter Property="Width" Value="412" />
-    <Setter Property="Height" Value="133" />
+    <Setter Property="Height" Value="232" />
   </Style>
   <Style Selector="Button.artworkTile.focused Border.artworkFrame">
     <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
@@ -3639,13 +4036,13 @@
     <Setter Property="VerticalAlignment" Value="Top" />
   </Style>
   <Style Selector="Path.artworkTickMark">
-    <Setter Property="Data" Value="M5 12l5 5 9-10" />
+    <Setter Property="Data" Value="{StaticResource CheckMarkIcon}" />
     <Setter Property="Stroke" Value="{StaticResource OnAccent}" />
     <Setter Property="StrokeThickness" Value="3.4" />
     <Setter Property="StrokeLineCap" Value="Round" />
     <Setter Property="StrokeJoin" Value="Round" />
     <Setter Property="Width" Value="16" />
-    <Setter Property="Height" Value="16" />
+    <Setter Property="Height" Value="11.4" />
     <Setter Property="Stretch" Value="Uniform" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
@@ -3819,7 +4216,7 @@
   <!-- Three backgrounds a row (HeroColumns) when only the background is sought. -->
   <Style Selector="ItemsControl.hero Button.waitingHit Border.artworkFrame">
     <Setter Property="Width" Value="280" />
-    <Setter Property="Height" Value="90" />
+    <Setter Property="Height" Value="158" />
   </Style>
   <Style Selector="ItemsControl.hero TextBlock.waitingHitName">
     <Setter Property="MaxWidth" Value="280" />
@@ -3852,6 +4249,85 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
   </Style>
+  <!-- #539: a metadata hit is a row of the list beside the info box, the focused one ringed like a tile. -->
+  <Style Selector="Button.waitingFactHit">
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="ItemsControl.facts UniformGrid">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ItemsControl.facts Button.waitingFactHit">
+    <Setter Property="MinHeight" Value="92" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.waitingFactHit.focused">
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Button.waitingFactHit.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <Style Selector="Border.waitingFacts">
+    <Setter Property="Width" Value="540" />
+    <Setter Property="Margin" Value="24,8,0,0" />
+    <Setter Property="Padding" Value="24,20" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Background" Value="{StaticResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{StaticResource SurfaceRaised}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactsTitle">
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactValue">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.waitingFactsDescription">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="LineHeight" Value="24" />
+    <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="9" />
+    <Setter Property="TextTrimming" Value="WordEllipsis" />
+  </Style>
+  <!-- #539: what is picked in the tabs "Cover" and "Hintergrund", small, above the field. -->
+  <Style Selector="StackPanel.waitingPicks">
+    <Setter Property="Margin" Value="0,0,0,16" />
+  </Style>
+  <Style Selector="Border.waitingPickCover, Border.waitingPickHero">
+    <Setter Property="Height" Value="60" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+  </Style>
+  <Style Selector="Border.waitingPickCover">
+    <Setter Property="Width" Value="40" />
+  </Style>
+  <Style Selector="Border.waitingPickHero">
+    <Setter Property="Width" Value="107" />
+  </Style>
+  <Style Selector="TextBlock.waitingPickName">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource TextStrong}" />
+    <Setter Property="MaxWidth" Value="220" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <!-- The hit picked in the tab shown keeps an accent frame until cover and background are taken. -->
+  <Style Selector="Button.waitingHit.chosen Border.artworkFrame">
+    <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    <Setter Property="BorderThickness" Value="3" />
+  </Style>
   <Style Selector="Border.waitingNote">
     <Setter Property="Margin" Value="0,24,0,0" />
     <Setter Property="Padding" Value="20,16" />
@@ -3862,7 +4338,6 @@
   </Style>
   <Style Selector="Border.waitingNote > TextBlock">
     <Setter Property="FontSize" Value="16" />
-    <Setter Property="LineHeight" Value="25" />
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
   </Style>
@@ -3932,7 +4407,8 @@
 
   <!-- Raised buttons (#531): every button that does something when pressed stands out from its surface, lit from above
        with a shadow beneath, its label set into it; on a light or blue button the label gets a light edge below instead.
-       Rows, tabs, chips and value pills stay flat, and so does a greyed button: nothing to press. Each class's own
+       Rows, chips and value pills stay flat, and so does a greyed button: nothing to press. A row's action pill, a value's
+       ◀ ▶ and the selected tab are raised too (#540). Each class's own
        style sets the raised background; the edges and, with the focus, the edges with the ring are set only here, and
        this block stays at the end of the file, after every other style that sets a button's BoxShadow. -->
   <Style Selector="Button.detailAction /template/ Border#Chrome, Button.primary /template/ Border#Chrome, Button.secondary /template/ Border#Chrome,
@@ -3950,20 +4426,48 @@
   <Style Selector="Button.statusButton.focused /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource RaisedShadowOnly}" />
   </Style>
+  <Style Selector="Button.tab.selected /template/ Border#Chrome, Button.artworkTab.selected /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
+  <Style Selector="Button.valueArrow /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesSmall}" />
+  </Style>
+  <Style Selector="Button.quickEntry /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdges}" />
+  </Style>
+  <Style Selector="Button.quickEntry.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource RaisedEdgesFocusRing}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed.focused /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
+  </Style>
+  <!-- In a greyed or unavailable row the value can't be changed now: its arrows lie flat too. -->
+  <Style Selector="Button.quickEntry.greyed Button.valueArrow, Button.detailRow.greyed Button.valueArrow, Button.settingRow.unavailable Button.valueArrow">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.quickEntry.greyed Button.valueArrow /template/ Border#Chrome, Button.detailRow.greyed Button.valueArrow /template/ Border#Chrome,
+                   Button.settingRow.unavailable Button.valueArrow /template/ Border#Chrome">
+    <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
+  </Style>
   <Style Selector="Button.detailAction /template/ ContentPresenter, Button.secondary /template/ ContentPresenter, Button.action /template/ ContentPresenter,
                    Button.statusButton /template/ ContentPresenter, Button.quickAllButton /template/ ContentPresenter,
-                   Button.artworkNoticeButton /template/ ContentPresenter, Button.hold TextBlock">
+                   Button.artworkNoticeButton /template/ ContentPresenter, Button.hold TextBlock, Button.quickEntry:not(.greyed) /template/ ContentPresenter">
     <Setter Property="Effect" Value="{StaticResource RaisedLabelShadow}" />
   </Style>
   <Style Selector="Button.detailAction.primary /template/ ContentPresenter, Button.primary /template/ ContentPresenter, Button.finish /template/ ContentPresenter,
                    Button.action.primaryAction /template/ ContentPresenter, Button.statusButton.focused /template/ ContentPresenter,
-                   Button.hold.light TextBlock, Button.hold.holding TextBlock">
+                   Button.hold.light TextBlock, Button.hold.holding TextBlock,
+                   Button.tab.selected /template/ ContentPresenter, Button.artworkTab.selected /template/ ContentPresenter">
     <Setter Property="Effect" Value="{StaticResource RaisedLabelShadowOnAccent}" />
   </Style>
   <Style Selector="Button.detailAction:disabled /template/ Border#Chrome, Button.secondary:disabled /template/ Border#Chrome, Button.action:disabled /template/ Border#Chrome,
                    Button.finish:disabled /template/ Border#Chrome, Button.quickAllButton:disabled /template/ Border#Chrome,
                    Button.artworkNoticeButton:disabled /template/ Border#Chrome, Button.statusButton:disabled /template/ Border#Chrome,
-                   Button.primary:disabled /template/ Border#Chrome, Button.primary.blocked /template/ Border#Chrome, Button.hold.locked /template/ Border#Chrome">
+                   Button.primary:disabled /template/ Border#Chrome, Button.primary.blocked /template/ Border#Chrome, Button.hold.locked /template/ Border#Chrome,
+                   Button.valueArrow:disabled /template/ Border#Chrome">
     <Setter Property="BoxShadow" Value="{StaticResource NoRing}" />
   </Style>
   <Style Selector="Button:disabled /template/ ContentPresenter, Button.primary.blocked /template/ ContentPresenter, Button.hold.locked TextBlock">

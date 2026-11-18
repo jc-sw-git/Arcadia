@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Metadata.Igdb;
@@ -67,6 +68,9 @@ public sealed partial class MetadataService : IDisposable
     // Under _gate: "Alle Metadaten neu laden" was confirmed and its run has not ended; Progress reports it from the
     // confirmation on, also while another run still goes or the reload fails at once.
     private bool _reloadAsked;
+
+    // Under _gate: stops the run going on now ("Suche abbrechen", "Neu laden abbrechen"); a new one for each run.
+    private CancellationTokenSource _runCancel = new();
     private MetadataProgress _progress = MetadataProgress.NotYet;
 
     public MetadataService(MetadataCache cache, HttpClient http, TimeProvider time)
@@ -87,6 +91,15 @@ public sealed partial class MetadataService : IDisposable
     /// <summary>IGDB with the player's access (#494); null: launcher data only.</summary>
     public IgdbAccess? Igdb { get; init; }
 
+    /// <summary>
+    /// The UI language (#557): the stores are asked in it, and the texts shown are in it, else in English. Fixed for a
+    /// run: a change of "Sprache" applies after the restart.
+    /// </summary>
+    public CultureInfo Language { get; init; } = CultureInfo.CurrentUICulture;
+
+    /// <summary>The board whose age rating comes first (#557): the system region's.</summary>
+    public AgeRatingBoard FirstAgeRatingBoard { get; init; } = AgeRatingRegion.System;
+
     /// <summary>The metadata of these games changed (any thread).</summary>
     public event EventHandler<IReadOnlyCollection<string>>? Changed;
 
@@ -106,6 +119,22 @@ public sealed partial class MetadataService : IDisposable
             lock (_gate)
             {
                 return _reloadAsked ? _progress with { Reload = true } : _progress;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A run goes on, from its start: also while it indexes the cache and reads the launchers' own files, which
+    /// <see cref="MetadataProgress.Running"/> leaves out because nothing is fetched then. The filter tells by it that
+    /// categories may still come (#466).
+    /// </summary>
+    public bool IsBusy
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _running;
             }
         }
     }
@@ -221,12 +250,55 @@ public sealed partial class MetadataService : IDisposable
     }
 
     /// <summary>The run going on now and those queued behind it, and the choices still being written; for the tests.</summary>
-    public Task WhenIdleAsync()
+    /// <remarks>
+    /// A runner that ends while new work came in starts the next one from its last step, so the runner awaited may complete
+    /// with another one running: idle is only when no new runner or write took its place meanwhile.
+    /// </remarks>
+    public async Task WhenIdleAsync()
+    {
+        while (true)
+        {
+            Task runner, saving;
+            lock (_gate)
+            {
+                (runner, saving) = (_runner, _saving);
+            }
+
+            await Task.WhenAll(runner, saving).ConfigureAwait(false);
+            lock (_gate)
+            {
+                if (_runner == runner && _saving == saving)
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// "Suche abbrechen" or "Neu laden abbrechen" (#547): the run going on stops at once, its request in flight too, and nothing
+    /// queued follows. What was fetched stays; the rest waits for the next scan or "Jetzt suchen", and the games a
+    /// cancelled reload didn't reach keep their data.
+    /// </summary>
+    public void CancelRun()
     {
         lock (_gate)
         {
-            return Task.WhenAll(_runner, _saving);
+            if (!_running)
+            {
+                return;
+            }
+
+            _pending = null;
+            _reloadAsked = false;
+            _runCancel.Cancel();
+
+            // Shown as stopped at once, not only once the request in flight has ended.
+            _progress = _progress with { Running = false, Reload = false, Remaining = null };
         }
+
+        Log("Metadaten: Lauf vom Spieler abgebrochen");
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void Dispose() => _shutdown.Cancel();
@@ -244,12 +316,16 @@ public sealed partial class MetadataService : IDisposable
                 _madeUp = madeUp;
             }
 
-            if (!_running)
+            if (_running)
             {
-                _running = true;
-                _runner = Task.Run(RunAsync);
+                return;
             }
+
+            _running = true;
+            _runner = Task.Run(RunAsync);
         }
+
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task RunAsync()
@@ -262,27 +338,18 @@ public sealed partial class MetadataService : IDisposable
                 _indexed = true;
             }
 
-            while (TakePending() is { } pending)
+            while (TakePending() is ({ } pending, var cancel))
             {
-                if (pending.Reload)
+                try
                 {
-                    foreach (var game in StoreGames(pending.Libraries))
-                    {
-                        _reloadLeft.Add(game.Game.Key);
-                    }
-
-                    foreach (var game in IgdbGames(pending.Libraries))
-                    {
-                        _igdbReloadLeft.Add(game.Game.Key);
-                    }
+                    await RunOnceAsync(pending, cancel);
                 }
-
-                ReadLocal(pending.Libraries);
-                WaitingChanged?.Invoke(this, EventArgs.Empty);
-                var storesReached = await FetchAsync(pending.Libraries, pending.Reload, _shutdown.Token);
-                if (!HasPending())
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested && !_shutdown.IsCancellationRequested)
                 {
-                    await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, _shutdown.Token);
+                    // Cancelled by the player: a reload ends here, the games it didn't reach keep their data.
+                    _reloadLeft.Clear();
+                    _igdbReloadLeft.Clear();
+                    Report(pending.Libraries, null, null);
                 }
             }
         }
@@ -297,35 +364,67 @@ public sealed partial class MetadataService : IDisposable
         }
         finally
         {
-            lock (_gate)
-            {
-                // In the same lock as the decision below, so a run starting now isn't reported as ended, and a
-                // confirmed reload ends with it.
-                _progress = _progress with { Running = false, Reload = false, Remaining = null };
-
-                // A run queued while this one ended still needs a runner.
-                if (_pending is not null && !_shutdown.IsCancellationRequested)
-                {
-                    _runner = Task.Run(RunAsync);
-                }
-                else
-                {
-                    _running = false;
-                    _reloadAsked = false;
-                }
-            }
-
-            ProgressChanged?.Invoke(this, EventArgs.Empty);
+            EndRunner();
         }
     }
 
-    private Pending? TakePending()
+    private async Task RunOnceAsync(Pending pending, CancellationToken cancel)
+    {
+        if (pending.Reload)
+        {
+            foreach (var game in StoreGames(pending.Libraries))
+            {
+                _reloadLeft.Add(game.Game.Key);
+            }
+
+            foreach (var game in IgdbGames(pending.Libraries))
+            {
+                _igdbReloadLeft.Add(game.Game.Key);
+            }
+        }
+
+        ReadLocal(pending.Libraries);
+        WaitingChanged?.Invoke(this, EventArgs.Empty);
+        var storesReached = await FetchAsync(pending.Libraries, pending.Reload, cancel);
+        if (!HasPending())
+        {
+            await FetchIgdbAsync(pending.Libraries, pending.Reload, storesReached, cancel);
+        }
+    }
+
+    private void EndRunner()
+    {
+        lock (_gate)
+        {
+            // In the same lock as the decision below, so a run starting now isn't reported as ended, and a
+            // confirmed reload ends with it.
+            _progress = _progress with { Running = false, Reload = false, Remaining = null };
+
+            // A run queued while this one ended still needs a runner.
+            if (_pending is not null && !_shutdown.IsCancellationRequested)
+            {
+                _runner = Task.Run(RunAsync);
+            }
+            else
+            {
+                _running = false;
+                _reloadAsked = false;
+            }
+        }
+
+        ProgressChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>The queued run with a token of its own; taken in one lock with it, so "Suche abbrechen" can't fall between.</summary>
+    private (Pending? Run, CancellationToken Cancel) TakePending()
     {
         lock (_gate)
         {
             var pending = _pending;
             _pending = null;
-            return pending;
+            _runCancel.Dispose();
+            _runCancel = CancellationTokenSource.CreateLinkedTokenSource(_shutdown.Token);
+            return (pending, _runCancel.Token);
         }
     }
 
@@ -443,11 +542,11 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    private static IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
+    private IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
         libraries
             .Where(l => l.Source?.Store is not null)
             .SelectMany(l => l.Library.Games.Select(g => (g, l.Source!.Store!, l.Library.Launcher.DisplayName)))
-            .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g)) is not null)
+            .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g, Language)) is not null)
             .DistinctBy(g => g.g.Key, StringComparer.Ordinal);
 
     private bool IsMissing(Game game) => _reloadLeft.Contains(game.Key) || _records.GetValueOrDefault(game.Key)?.Store is null;
@@ -495,7 +594,7 @@ public sealed partial class MetadataService : IDisposable
 
     private async Task<Outcome> FetchGameAsync(Game game, IMetadataStore store, string source, FetchRun run, CancellationToken cancel)
     {
-        if (CheckedAddress(SafeAddressOf(store, game)) is not { } address)
+        if (CheckedAddress(SafeAddressOf(store, game, Language)) is not { } address)
         {
             _reloadLeft.Remove(game.Key);
             return Outcome.NoAddress;
@@ -534,7 +633,10 @@ public sealed partial class MetadataService : IDisposable
             }
 
             var known = _records.GetValueOrDefault(game.Key) ?? new CachedMetadata(game.Key, source, null, null, null);
-            var updated = known with { Source = source, Store = MetadataCheck.Checked(parsed), StoreAt = _time.GetUtcNow() };
+            var updated = known with
+            {
+                Source = source, Store = MetadataCheck.Checked(parsed), StoreAt = _time.GetUtcNow(), StoreLanguage = Language.TwoLetterISOLanguageName,
+            };
             Keep(updated);
             var changed = new List<string>();
             Show(updated.GameKey, changed);
@@ -547,11 +649,11 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
-    private static Uri? SafeAddressOf(IMetadataStore store, Game game)
+    private static Uri? SafeAddressOf(IMetadataStore store, Game game, CultureInfo language)
     {
         try
         {
-            return store.AddressOf(game);
+            return store.AddressOf(game, language);
         }
         catch (Exception e) when (e is ArgumentException or FormatException or UriFormatException)
         {
@@ -707,15 +809,16 @@ public sealed partial class MetadataService : IDisposable
         {
             if (source == MetadataSourceKind.Launcher)
             {
-                providers.Add(new ProviderMetadata(cached.Source, cached.Data));
+                providers.Add(new ProviderMetadata(cached.Source, cached.Data, cached.StoreLanguage));
             }
             else if (source == MetadataSourceKind.Igdb && withIgdb && cached.Igdb is { } igdb)
             {
-                providers.Add(new ProviderMetadata(IgdbName, igdb.Data));
+                // IGDB's texts are English (#557).
+                providers.Add(new ProviderMetadata(IgdbName, igdb.Data, "en"));
             }
         }
 
-        var merged = MergedMetadata.Of(providers);
+        var merged = MergedMetadata.Of(providers, Language.TwoLetterISOLanguageName, FirstAgeRatingBoard);
         return withIgdb && settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
             ? merged with { Title = new Sourced<string>(title, IgdbName), LauncherTitle = new Sourced<string>(launcherTitle!, cached.Source) }
             : merged;

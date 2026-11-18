@@ -607,8 +607,9 @@ public sealed class PanClient : IEmulationGuardian, IHidingCheck, IAsyncDisposab
                 ? ControllerSupportTexts.PanOtherProtocol(PanMessage.ProtocolVersion)
                 : ControllerSupportTexts.PanRejectsArcadia(hello.Reason);
             Drop(null);
-            // Another client may be on its way out: that is retried soon; a wrong protocol or session is not.
-            throw new PanUnavailableException(reason, permanent: hello.Reason != PanReason.OtherClient);
+            // Another client on its way out or a service that stops (and is started again) is retried soon; a wrong
+            // protocol or session is not.
+            throw new PanUnavailableException(reason, permanent: hello.Reason is not (PanReason.OtherClient or PanReason.ServiceStopping));
         }
 
         if (hello.Reason == PanReason.JournalUnreadable)

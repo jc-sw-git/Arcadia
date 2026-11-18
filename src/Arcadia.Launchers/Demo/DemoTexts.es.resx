@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="DemoToolsInfo" xml:space="preserve"><value>Muestra las herramientas de la biblioteca de demostración.</value></data>
+  <data name="DemoSoftwareInfo" xml:space="preserve"><value>Muestra el software de la biblioteca de demostración.</value></data>
+  <data name="DemoSoundtracksInfo" xml:space="preserve"><value>Muestra las bandas sonoras de la biblioteca de demostración.</value></data>
+  <data name="DemoToolsTitle" xml:space="preserve"><value>Incluir herramientas</value></data>
+  <data name="DemoSoftwareTitle" xml:space="preserve"><value>Incluir software</value></data>
+  <data name="DemoSoundtracksTitle" xml:space="preserve"><value>Incluir bandas sonoras</value></data>
+  <data name="DemoToolsSubtitle" xml:space="preserve"><value>Herramientas de demostración</value></data>
+  <data name="DemoSoftwareSubtitle" xml:space="preserve"><value>Software de demostración</value></data>
+  <data name="DemoSoundtracksSubtitle" xml:space="preserve"><value>Bandas sonoras de demostración</value></data>
+  <data name="DemoLocation" xml:space="preserve"><value>Datos de demostración</value></data>
+  <data name="DemoMetadataDescriptionLong" xml:space="preserve"><value>&lt;h2&gt;Acerca del juego&lt;/h2&gt;Explora un mundo inventado lleno de ciudades abandonadas, máquinas misteriosas y bosques tranquilos. Reúnes piezas, construyes tu propio campamento y conoces personajes que tienen cada uno su propia historia.&lt;br&gt;&lt;br&gt;&lt;ul class='bb_ul'&gt;&lt;li&gt;&lt;strong&gt;Mundo amplio:&lt;/strong&gt; más de veinte zonas que puedes visitar en cualquier orden.&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Tu propio campamento:&lt;/strong&gt; construye, amuebla e invita a tus amigos.&lt;/li&gt;&lt;li&gt;Música tranquila y un tiempo que cambia con las horas 🌧️&lt;/li&gt;&lt;/ul&gt;&lt;img src='https://example.invalid/bild.png'&gt;&lt;a href='https://example.invalid'&gt;Más información&lt;/a&gt;&lt;br&gt;Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. Cada sección de esta descripción inventada solo sirve para mostrar un texto largo que se lee en la zona «Info» y hay que desplazar. </value></data>
+  <data name="DemoMetadataShortLong" xml:space="preserve"><value>Explora un mundo inventado lleno de ciudades abandonadas y máquinas misteriosas, construye tu propio campamento y conoce personajes con sus propias historias. Un viaje tranquilo que te acompaña todo el tiempo que quieras y te descubre muchos pequeños secretos por el camino.</value></data>
+  <data name="DemoMetadataDescriptionShort" xml:space="preserve"><value>Un breve juego de carreras inventado para dos en una sola pantalla.</value></data>
+  <data name="DemoMetadataDescriptionEnglish" xml:space="preserve"><value>You explore a made-up island with your friends and the weather that changes over the day. This game exists only in English, so its description is English too.</value></data>
+  <data name="DemoMetadataDeveloper1" xml:space="preserve"><value>Estudio Inventado</value></data>
+  <data name="DemoMetadataDeveloper2" xml:space="preserve"><value>Pixelwerk Juegos con un nombre bastante largo para la línea de info S. L.</value></data>
+  <data name="DemoMetadataDeveloper3" xml:space="preserve"><value>Nordlicht Games</value></data>
+  <data name="DemoMetadataPublisher" xml:space="preserve"><value>Editorial Inventada</value></data>
+  <data name="DemoMetadataTag1" xml:space="preserve"><value>Un jugador</value></data>
+  <data name="DemoMetadataTag2" xml:space="preserve"><value>Atmosférico</value></data>
+  <data name="DemoMetadataTag3" xml:space="preserve"><value>Exploración</value></data>
+  <data name="DemoMetadataTag4" xml:space="preserve"><value>Cooperativo</value></data>
+  <data name="DemoMetadataTag5" xml:space="preserve"><value>Gran historia</value></data>
+  <data name="DemoMetadataTag6" xml:space="preserve"><value>Relajante</value></data>
+  <data name="DemoMetadataTag7" xml:space="preserve"><value>Gráficos pixelados</value></data>
+  <data name="DemoMetadataSummary" xml:space="preserve"><value>Los metadatos inventados de la demo</value></data>
+  <data name="DemoMetadataAbout" xml:space="preserve"><value>La biblioteca de demostración trae descripciones, géneros, etiquetas y clasificaciones por edad inventadas. Arcadia no las pide en ningún sitio.</value></data>
+  <data name="DemoMetadataTopicTag" xml:space="preserve"><value>Tema {number}</value></data>
+</root>

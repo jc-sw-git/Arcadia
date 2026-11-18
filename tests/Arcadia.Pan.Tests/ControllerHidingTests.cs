@@ -380,7 +380,7 @@ public sealed class ControllerHidingTests : IDisposable
         using var block = new ManualResetEventSlim();
         _controllers.ScanBlock = block;
         var hide = Hide(FakeControllers.DualSense, generation);
-        await _controllers.ScanEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await _controllers.ScanEntered.Task.WaitAsync(FakeControllers.ScanBlockLimit);
         _clock.Advance(TimeSpan.FromSeconds(4));
 
         _guardian.Tick();
@@ -429,7 +429,7 @@ public sealed class ControllerHidingTests : IDisposable
         using var block = new ManualResetEventSlim();
         _controllers.ScanBlock = block;
         var hide = Hide(FakeControllers.DualSense, generation);
-        await _controllers.ScanEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await _controllers.ScanEntered.Task.WaitAsync(FakeControllers.ScanBlockLimit);
         await _guardian.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
 
         block.Set();

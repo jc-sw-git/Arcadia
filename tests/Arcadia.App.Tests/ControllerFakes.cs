@@ -400,11 +400,14 @@ internal sealed class FakeReleases(string installed, params (string Version, str
     /// <summary>Set, a download reports 40 % and waits for it before it fails, so a test sees it running.</summary>
     public TaskCompletionSource? HeldDownload { get; init; }
 
+    /// <summary>Set, a download reports 40 % and then gets no further until it is cancelled.</summary>
+    public bool StallsDownload { get; init; }
+
     public UpdateManager Manager(string folder)
     {
         var packages = Directory.CreateDirectory(Path.Combine(folder, "packages")).FullName;
         var locator = new TestVelopackLocator("Arcadia", installed, packages, null);
-        return new UpdateManager(new FeedSource(Feed(), HeldDownload), locator: locator);
+        return new UpdateManager(new FeedSource(Feed(), HeldDownload, StallsDownload), locator: locator);
     }
 
     public object GitHubList() => published.Select(release => new
@@ -430,7 +433,7 @@ internal sealed class FakeReleases(string installed, params (string Version, str
         })],
     };
 
-    private sealed class FeedSource(VelopackAssetFeed feed, TaskCompletionSource? held) : IUpdateSource
+    private sealed class FeedSource(VelopackAssetFeed feed, TaskCompletionSource? held, bool stalls) : IUpdateSource
     {
         public Task<VelopackAssetFeed> GetReleaseFeed(IVelopackLogger logger, string? appId, string channel, Guid? stagingId = null, VelopackAsset? latestLocalRelease = null) =>
             Task.FromResult(feed);
@@ -441,6 +444,12 @@ internal sealed class FakeReleases(string installed, params (string Version, str
             {
                 progress(40);
                 await held.Task;
+            }
+
+            if (stalls)
+            {
+                progress(40);
+                await Task.Delay(Timeout.Infinite, cancelToken);
             }
 
             throw new InvalidOperationException("Die Abnahmetests laden kein Update.");

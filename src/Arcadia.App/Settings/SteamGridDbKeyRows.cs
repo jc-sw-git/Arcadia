@@ -130,9 +130,9 @@ public sealed class SteamGridDbKeyRows
         _test.Subtitle = (hasKey, _key.LastCheck) switch
         {
             (false, _) => AppTexts.DataSourcesTestNeedsKey,
-            (true, { Outcome: SteamGridDbOutcome.KeyRejected } check) => AppTexts.DataSourcesTestRejected(check.At.ToOffset(_time.GetLocalNow().Offset)),
+            (true, { Outcome: SteamGridDbOutcome.KeyRejected } check) => AppTexts.DataSourcesTestRejected(Services.Formatting.Clock(check.At.ToOffset(_time.GetLocalNow().Offset))),
             (true, { Outcome: SteamGridDbOutcome.NoConnection }) => AppTexts.DataSourcesTestNoConnection,
-            (true, { } check) => AppTexts.DataSourcesTestOk(check.At.ToOffset(_time.GetLocalNow().Offset)),
+            (true, { } check) => AppTexts.DataSourcesTestOk(Services.Formatting.Clock(check.At.ToOffset(_time.GetLocalNow().Offset))),
             _ => AppTexts.DataSourcesTestNotYet,
         };
         _paste.IsEnabled = !_checking;

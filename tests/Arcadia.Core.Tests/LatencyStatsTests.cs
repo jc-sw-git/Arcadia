@@ -22,6 +22,18 @@ public sealed class LatencyStatsTests
     }
 
     [Fact]
+    public void A_percentile_beyond_the_last_bucket_says_it_is_at_least_50_ms()
+    {
+        var stats = new LatencyStats();
+        stats.Add(TimeSpan.FromMicroseconds(49_995));
+        stats.Add(TimeSpan.FromMilliseconds(60));
+        stats.Add(TimeSpan.FromMilliseconds(70));
+
+        // 49,995 µs is still in the last regular bucket; the other two are only known to be at least 50 ms.
+        Assert.Equal("n 3, Mittel 59998 µs, p50 ≥ 50000 µs, p99 ≥ 50000 µs, max 70000 µs", stats.Summary());
+    }
+
+    [Fact]
     public void Nothing_measured_says_so_and_a_reset_starts_over()
     {
         var stats = new LatencyStats();

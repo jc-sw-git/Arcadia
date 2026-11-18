@@ -198,13 +198,8 @@ public static class IgdbAnswer
         item.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number) ? number : null;
 }
 
-/// <summary>IGDB's cover images (#494): only by an id of letters and digits, only over HTTPS from IGDB's image host.</summary>
+/// <summary>IGDB's cover image ids (#494): kept only as an id of letters and digits, never as an address.</summary>
 public static class IgdbImages
 {
-    public static readonly Uri Host = new("https://images.igdb.com/igdb/image/upload/");
-
     public static bool IsImageId(string? id) => id is { Length: > 0 and <= 40 } && id.All(char.IsAsciiLetterOrDigit);
-
-    /// <summary>The cover in IGDB's 264 × 374 size; null for an id that isn't one.</summary>
-    public static Uri? CoverOf(string? imageId) => IsImageId(imageId) ? new Uri(Host, $"t_cover_big/{imageId!.ToLowerInvariant()}.jpg") : null;
 }

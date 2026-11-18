@@ -96,6 +96,7 @@ public sealed class FirstRunDataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T497-1")]
+    [Trait("TestCase", "T546-4")]
     public async Task Fertig_on_the_launcher_page_leads_to_the_step_with_the_rows_of_the_settings()
     {
         using var arcadia = await StartAsync();
@@ -123,6 +124,7 @@ public sealed class FirstRunDataSourcesTests
         var finish = Row(arcadia, FirstRunDataSourcesViewModel.FinishRowKey);
         Assert.Contains(finish.Info, block => block is InfoText { Text: var text } && text.Contains("so langsam, wie es der Shop erlaubt", StringComparison.Ordinal));
         Assert.Equal((AppTexts.FirstRunSkip, AppTexts.FirstRunSkipSubtitle, AppTexts.FirstRunSkip), (finish.Title, finish.Subtitle, step.FinishText));
+        Assert.Equal("ABSCHLIESSEN", finish.Group);
     }
 
     [AvaloniaFact]

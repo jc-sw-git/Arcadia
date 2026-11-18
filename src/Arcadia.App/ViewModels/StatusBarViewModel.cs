@@ -191,7 +191,8 @@ public partial class StatusBarViewModel : ViewModelBase, IDisposable
 
     private void OnUpdatesChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(UpdateArcadiaUpdateState);
 
-    private void UpdateClock()
+    /// <summary>Shows the time again, e.g. after "Uhrzeit" changed (#553).</summary>
+    public void UpdateClock()
     {
         var now = _time.GetLocalNow();
         Clock = Formatting.Clock(now);

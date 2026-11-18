@@ -46,8 +46,8 @@ re-sends once if no process appears from the install directory within 30 s. If t
   downloaded; any other is skipped with the log line `Epic-Katalogbilder: Bild von Katalogeintrag <id> übergangen …`
   naming its host. The two domains are what Epic's catalog is known to use; not yet checked against the owner's
   catalog (T488-16 looks for that log line).
-- The 3 : 4 cover fits the 2 : 3 tile within "Normal" (11 % cut away); the 16 : 9 image never fits the hero (43 %), so
-  it is the cropped fallback until a source with a fitting hero (SteamGridDB, #489) has one. Downloaded once; a new
+- The 3 : 4 cover fits the 2 : 3 tile within "Normal" (11 % cut away); the 16 : 9 image is the detail page's own shape
+  and fits the background (#562), so SteamGridDB isn't asked for one. Downloaded once; a new
   address in the catalog for the same image (new art) is downloaded at the next scan.
 - SteamGridDB (#491): a game is asked for at SteamGridDB's platform `egs` by its AppName (letters, digits, `-`, `_`, at
   most 100 characters; anything else is no id). That SteamGridDB files Epic games by AppName is an assumption, not

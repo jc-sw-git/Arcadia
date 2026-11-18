@@ -62,6 +62,35 @@ public sealed class SearchSpeedTests
         Assert.Equal(keys, Keys(window));
     }
 
+    /// <summary>
+    /// An [R3] switch keeps every key that stands where it stood and only changes what it types: building all the keys'
+    /// controls again made a switch take most of a second (#553).
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("TestCase", "T553-23")]
+    public async Task A_layout_switch_keeps_the_keys_that_stand_where_they_stood()
+    {
+        using var window = await ArcadiaWindow.ShowAsync(ThousandGames);
+        window.Press(UiAction.Search);
+        var keyboard = window.Arcadia.Search!.Keyboard;
+        foreach (var code in new[] { "US", "FR", "ES", "DE" })
+        {
+            var before = Keys(window);
+            var views = keyboard.Keys.ToList();
+            window.Press(UiAction.KeyboardLayout);
+            while (keyboard.LayoutMenu.Items.Single(item => item.IsFocused).Layout.Code != code)
+            {
+                window.Press(UiAction.Down);
+            }
+
+            window.Press(UiAction.Accept);
+            Assert.Equal(code, keyboard.Layout.Code);
+            var kept = keyboard.Keys.Count(views.Contains);
+            Assert.True(kept >= keyboard.Keys.Count - 4, $"{code}: nur {kept} von {keyboard.Keys.Count} Tasten behalten.");
+            Assert.Equal(kept, Keys(window).Count(before.Contains));
+        }
+    }
+
     private static List<Button> Keys(ArcadiaWindow window) =>
         window.Window.GetVisualDescendants().OfType<OnScreenKeyboardView>().Single(view => view.DataContext == window.Arcadia.Search!.Keyboard)
             .GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("boardKey")).ToList();

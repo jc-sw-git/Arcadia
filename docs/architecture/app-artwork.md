@@ -3,13 +3,13 @@
 Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` → Artwork). The other parts of the App:
 [app.md](app.md).
 
-- `Services/ArtworkFolder`: the cache in `%LOCALAPPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
+- `Services/ArtworkFolder`: the cache in `%APPDATA%\Arcadia\artwork` and the `ArtworkService` with an `HttpClient` of
   its own that sends no cookies; `App.axaml.cs` passes it in through `ArcadiaParts.Artwork` (the tests' in their folder).
   It also makes the `SteamGridDbKey`: DPAPI for the current user on Windows, memory only elsewhere.
 - Category "Datenquellen" (#489): `Settings/DataSourcesSettingsViewModel` switches its two tabs (#538, `IDataSourcesTab`;
   `DataSourcesHeadViewModel` above the rows, LT/RT) and shows only the chosen tab's rows. `ArtworkSourcesTab` holds
   `SteamGridDbKeyRows` (key, paste, key page, test, delete; the first usable key searches), `ArtworkSourceRows` (the sources as `ArtworkSourceRowViewModel`
-  switches with L3 lifting, missing images with progress and cancel, "Zuschneiden erlaubt"; every change calls
+  switches with L3 lifting, missing images with progress and cancel; every change calls
   `ArtworkService.SettingsChanged`, #506) and
   `ArtworkReloadRows` ("Alle Artworks neu laden" with its question, the overwrite switch); `MetadataSourcesTab` holds
   `IgdbAccessRows` (#494: client id, secret, paste, Twitch's console, test, delete), `MetadataSourceRows` (the metadata
@@ -22,11 +22,20 @@ Covers and backgrounds (#13, #487); the cache and its run are Core's (`core.md` 
   `Services/MetadataFolder`: its own client without cookies or redirects, the `IgdbAccess` with DPAPI on Windows; `MainViewModel.Metadata.cs`: its errors,
   the reload's warning, `MetadataOf`, `MetadataChanged`); `MainViewModel` gives each new tile its `GameArtwork` (with
   the install and run state, `ShowStates`) and, on `Changed`, the shown tiles theirs. `GameTileViewModel.Cover`/`Hero`.
-- `Controls/ArtworkImage`: draws one image cropped centred with rounded corners. It loads only when it is drawn (a hidden
+- `Controls/ArtworkImage`: draws one image with rounded corners, placed by its `Fit` (`Controls/ArtworkPlacement`, #565):
+  a cover fills cropped centred, a background loses at most 10 % (`AlmostWhole`, chosen by the image's kind), the detail
+  page uses `DetailPage`, "Bild ansehen" `Whole`. Where the image leaves its box uncovered it draws the blurred copy
+  (`Controls/BlurredCopy`: 64 px wide, box-blurred, made once per decode off the UI thread) under the theme's
+  `ArtworkBlurShade`; fading edges are opacity masks. It loads only when it is drawn (a hidden
   slot decodes nothing), at the size it has on the screen (layout size × the `Viewbox`'s scale × the screen's scaling); a render transform alone draws nothing anew, so `Controls/DepthSlot` redraws its cover's images when the cover arrives at its slot (#532),
   drops the image at once when its slot shows another game, and says `IsShowing`, which hides the placeholder's
   monogram and title. Badges and the shade lie above it in the views; on the detail page the background fills the
-  screen under the scrims `DetailScrimSide`/`Top`/`Bottom` (`Theme.axaml`), which keep title and buttons readable.
+  screen under the scrims `DetailScrimTitle`/`Top`/`Bottom` (`Theme.axaml`), only behind title, tabs and footer.
+- "Bild ansehen" (#565): `ViewModels/ImageShowViewModel` (the idle timer, two layers taking turns, `ImageShowOrder` for
+  the random order without repeats) and `MainViewModel.ImageShow.cs` (when it may run, the pool from the detail page's
+  games, swallowing the press that ends it with its repeats and release). `MainWindow` shows it over everything but the
+  toast, swallows keys, clicks and the wheel that end it, counts mouse moves as input and reports `Activated`/`Deactivated`
+  (`SetInFront`).
 - `Services/ArtworkLoader`: decodes off the UI thread, a few at a time; an image it can't decode is logged and reported
   to the service as broken, which loads it again at the next scan. `Decoded` and `Loaded` let tests count.
 
@@ -46,8 +55,9 @@ copy among the offers waiting in the cache: taking another tile overwrites the f
 waiting row with its count) once per tab of "Datenquellen"; `ViewModels/WaitingListViewModel` (the games of one
 `WaitingKind`, and the two levels) and `WaitingHitsViewModel` (one entry's hits: the grid, "Eigener
 Suchbegriff" with the settings' on-screen keyboard, tile images off the UI thread once the focus rests), with
-`ArtworkHitsViewModel` (what is sought, the hit checks) over `ArtworkService.ByName` (`CheckWaitingHitAsync`,
-`SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`) and `MetadataHitsViewModel` over `MetadataService.Waiting.cs`
-(IGDB's covers through `ArtworkService.OfferedCoverAsync`); `Views/WaitingListView`. `MainViewModel.WaitingList.cs` opens
+`ArtworkHitsViewModel` (what is sought, the hit checks, the tabs "Cover" and "Hintergrund" with a pick each, #539) over
+`ArtworkService.ByName` (`CheckWaitingHitAsync`, `CheckHitAsync`, `SearchByTermAsync`, `HitImageAsync`, `WaitingMatchNow`;
+`NameMatch.HeroGameId` keeps a background from another game) and `MetadataHitsViewModel` over `MetadataService.Waiting.cs`
+(a list beside `WaitingHitFacts`, no images); `Views/WaitingListView` (click marks, double click takes). `MainViewModel.WaitingList.cs` opens
 it over the settings; while open it takes every press before the settings, and real keys go to its field
 (`MainViewModel.OpenTextEditor`).

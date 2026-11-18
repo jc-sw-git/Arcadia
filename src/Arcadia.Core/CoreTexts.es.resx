@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="NameEmpty" xml:space="preserve"><value>El nombre no puede estar vacío.</value></data>
+  <data name="NameTooLong" xml:space="preserve"><value>Como máximo {maxLength} caracteres.</value></data>
+  <data name="NameControlCharacter" xml:space="preserve"><value>El nombre contiene un carácter de control.</value></data>
+  <data name="KeywordEmpty" xml:space="preserve"><value>El atajo no puede estar vacío.</value></data>
+  <data name="KeywordNoSeparator" xml:space="preserve"><value>Sin «{separator}»: separa varios launchers.</value></data>
+  <data name="KeywordOnlyLowercaseAndDigits" xml:space="preserve"><value>Solo letras minúsculas y cifras.</value></data>
+  <data name="KeywordTooLong" xml:space="preserve"><value>Como máximo {maxLength} caracteres.</value></data>
+  <data name="KeywordTaken" xml:space="preserve"><value>{launcher} ya usa {prefix}{keyword}.</value></data>
+  <data name="LogoFileEmpty" xml:space="preserve"><value>El archivo está vacío.</value></data>
+  <data name="LogoFileTooLarge" xml:space="preserve"><value>El archivo ocupa más de {megabytes} MB.</value></data>
+  <data name="LogoNotAnImage" xml:space="preserve"><value>No es un archivo PNG, SVG, ICO ni WebP.</value></data>
+  <data name="LogoSvgStylesheet" xml:space="preserve"><value>El SVG carga una hoja de estilos; Arcadia solo admite imágenes simples.</value></data>
+  <data name="LogoSvgReferences" xml:space="preserve"><value>El SVG carga otros archivos o páginas; Arcadia solo admite imágenes sin referencias externas.</value></data>
+  <data name="LogoSvgScripts" xml:space="preserve"><value>El SVG contiene scripts o contenido web; Arcadia solo admite imágenes simples.</value></data>
+  <data name="LogoSvgEmbedsImages" xml:space="preserve"><value>El SVG incrusta otras imágenes; Arcadia solo admite gráficos vectoriales simples.</value></data>
+  <data name="GenreAction" xml:space="preserve"><value>Acción</value></data>
+  <data name="GenreAdventure" xml:space="preserve"><value>Aventura</value></data>
+  <data name="GenreRolePlaying" xml:space="preserve"><value>Rol</value></data>
+  <data name="GenreStrategy" xml:space="preserve"><value>Estrategia</value></data>
+  <data name="GenreSimulation" xml:space="preserve"><value>Simulación</value></data>
+  <data name="GenreRacing" xml:space="preserve"><value>Carreras</value></data>
+  <data name="GenreSports" xml:space="preserve"><value>Deportes</value></data>
+  <data name="GenreShooter" xml:space="preserve"><value>Disparos</value></data>
+  <data name="GenrePuzzle" xml:space="preserve"><value>Puzles</value></data>
+  <data name="GenrePlatformer" xml:space="preserve"><value>Plataformas</value></data>
+  <data name="GenreFighting" xml:space="preserve"><value>Lucha</value></data>
+  <data name="GenreCasual" xml:space="preserve"><value>Casual</value></data>
+  <data name="GenreIndie" xml:space="preserve"><value>Indie</value></data>
+  <data name="GenreMassivelyMultiplayer" xml:space="preserve"><value>MMO</value></data>
+  <data name="GenreArcade" xml:space="preserve"><value>Arcade</value></data>
+  <data name="GenreMusic" xml:space="preserve"><value>Música</value></data>
+  <data name="GenrePointAndClick" xml:space="preserve"><value>Point &amp; click</value></data>
+  <data name="GenreVisualNovel" xml:space="preserve"><value>Novela visual</value></data>
+  <data name="GenreCardAndBoard" xml:space="preserve"><value>Cartas y tablero</value></data>
+  <data name="GenreTactics" xml:space="preserve"><value>Táctica</value></data>
+  <data name="MetadataSourceIgdb" xml:space="preserve"><value>IGDB</value></data>
+</root>

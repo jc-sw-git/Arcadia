@@ -105,18 +105,16 @@ public sealed partial class DataSourcesTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T506-53")]
-    public async Task The_info_of_the_order_the_switches_and_the_tolerance_say_the_images_change_at_once()
+    public async Task The_info_of_the_order_and_the_switches_say_the_images_change_at_once()
     {
         var (arcadia, _) = await StartAsync();
         using var _ = arcadia;
         OpenDataSources(arcadia);
 
         var source = Row(arcadia, ArtworkSourceRows.SourceKey(ArtworkSourceKind.Launcher));
-        var crop = Row(arcadia, "artwork-crop");
         Assert.Contains(Texts(source.Info), text => text == AppTexts.DataSourcesOrderWhen);
         Assert.Equal([AppTexts.DataSourcesSourceOffInfo, AppTexts.DataSourcesSourceOnInfo], source.ValueBoxes.Select(box => box.Text));
-        Assert.Contains(Texts(crop.Info), text => text == AppTexts.DataSourcesCropWhen);
-        Assert.All(Texts([.. source.Info, .. crop.Info]), text => Assert.DoesNotContain("nächsten Suche", text, StringComparison.Ordinal));
+        Assert.All(Texts(source.Info), text => Assert.DoesNotContain("nächsten Suche", text, StringComparison.Ordinal));
     }
 
     private static IEnumerable<string> Texts(IEnumerable<InfoBlock> blocks) => blocks.SelectMany(block => block switch

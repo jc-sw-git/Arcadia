@@ -305,10 +305,11 @@ public sealed class ArtworkServiceTests : IDisposable
     [Fact]
     public async Task The_first_image_that_fits_wins_over_an_earlier_one_that_doesnt()
     {
-        // T487-8: a square own cover and a fitting cached one; a 2 : 1 own hero and a fitting one from the server.
+        // T487-8: a square own cover and a fitting cached one; a 2.4 : 1 own hero (neither 16 : 9 nor flat) and a fitting
+        // one from the server.
         _server.Serve(HeroUrl, TestImages.Jpeg(1920, 620));
         _source.Cover = [new("steam-grid", File: File("own-cover.png", TestImages.Png(90, 90))), new("steam-cache", File: File("cover.jpg", TestImages.Jpeg(600, 900)))];
-        _source.Hero = [new("steam-grid", File: File("own-hero.png", TestImages.Png(200, 100))), new("steam-server", Download: new Uri(HeroUrl))];
+        _source.Hero = [new("steam-grid", File: File("own-hero.png", TestImages.Png(240, 100))), new("steam-server", Download: new Uri(HeroUrl))];
 
         await ScanAsync(GameOf("4000001"));
 

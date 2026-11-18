@@ -1,3 +1,5 @@
+using Arcadia.Launchers.Abstractions;
+
 namespace Arcadia.Core.Library;
 
 /// <summary>
@@ -91,18 +93,53 @@ public sealed class LibraryRefresher(LibraryService library, TimeProvider time)
     }
 
     /// <summary>
-    /// True if launchers or games differ in anything a tab or cover shows, or in what the library sorts by: after a game
-    /// ended, its playtime and last start come with the next rescan (#95); after an account switch in the launcher, its hint
-    /// (#83). Launchers count in their tab order (#136).
+    /// True if launchers or games differ in anything a game carries: what a tab or cover shows, what the library sorts
+    /// and filters by (after a game ended, its playtime and last start come with the next rescan, #95; a reinstall into
+    /// the same folder, its install date), how it starts, and a launcher's hint after an account switch (#83).
+    /// Launchers count in their tab order (#136), games per launcher in any order. Compared field by field (records),
+    /// without building strings: a 5,000-game library is compared on the UI thread after every rescan.
     /// </summary>
     public static bool HasChanged(IReadOnlyList<LauncherLibrary> current, IReadOnlyList<LauncherLibrary> scanned)
     {
-        static string Tabs(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries.Select(l => $"{l.Launcher.Id}:{l.IsFound}:{l.ScanFailed}"));
+        if (current.Count != scanned.Count)
+        {
+            return true;
+        }
 
-        static string Signature(IEnumerable<LauncherLibrary> libraries) => string.Join('|', libraries
-            .SelectMany(l => l.Games.Select(g => $"{l.Launcher.Id}/{g.Key}:{g.IsInstalled}:{g.UpdateAvailable}:{g.InstallDirectory}:{g.LastPlayedAt?.UtcTicks}:{g.Playtime?.Ticks}:{g.InstallBlockedReason}:{g.Notice}"))
-            .Order(StringComparer.Ordinal));
+        for (var i = 0; i < current.Count; i++)
+        {
+            var (before, after) = (current[i], scanned[i]);
+            if (before.Launcher.Id != after.Launcher.Id || before.IsFound != after.IsFound || before.ScanFailed != after.ScanFailed
+                || GamesDiffer(before.Games, after.Games))
+            {
+                return true;
+            }
+        }
 
-        return Tabs(current) != Tabs(scanned) || Signature(current) != Signature(scanned);
+        return false;
+    }
+
+    private static bool GamesDiffer(IReadOnlyList<Game> before, IReadOnlyList<Game> after)
+    {
+        if (before.Count != after.Count)
+        {
+            return true;
+        }
+
+        if (before.SequenceEqual(after))
+        {
+            return false; // the usual case: a scanner lists its games in the same order each time
+        }
+
+        var byKey = new Dictionary<string, Game>(before.Count, StringComparer.Ordinal);
+        foreach (var game in before)
+        {
+            if (!byKey.TryAdd(game.Key, game))
+            {
+                return true; // a key twice is a scanner's mistake: showing the scan is the safe side
+            }
+        }
+
+        return after.Any(game => !byKey.TryGetValue(game.Key, out var known) || known != game);
     }
 }

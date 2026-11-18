@@ -8,8 +8,10 @@ using Avalonia.Media.Imaging;
 namespace Arcadia.App.Controls;
 
 /// <summary>
-/// A game's cover or background from the artwork cache (#487), cropped centred to fill the box (never stretched, never with
-/// bars) with rounded corners. It loads only once it is drawn, so a tile that isn't visible decodes nothing, and decodes the
+/// A game's cover or background from the artwork cache (#487) with rounded corners, never stretched, never with bars. A
+/// cover fills its box cropped centred; a background shows almost whole (#565, <see cref="ArtworkFit"/>), and where it leaves
+/// the box uncovered a blurred, darkened copy of it shows (<see cref="BlurShade"/>). The blurred copy (<see cref="BlurredCopy"/>) is made
+/// once per decode off the UI thread and drawn scaled up: no blur is computed while drawing. It loads only once it is drawn, so a tile that isn't visible decodes nothing, and decodes the
 /// image off the UI thread at the size it is drawn on the screen. Until the image is there it draws nothing and
 /// <see cref="IsShowing"/> is false, so the placeholder below shows; a slot that changes its game drops the old image at once.
 /// </summary>
@@ -24,10 +26,23 @@ public sealed class ArtworkImage : Control
     public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =
         AvaloniaProperty.Register<ArtworkImage, CornerRadius>(nameof(CornerRadius));
 
+    public static readonly StyledProperty<ArtworkFit> FitProperty =
+        AvaloniaProperty.Register<ArtworkImage, ArtworkFit>(nameof(Fit));
+
+    /// <summary>Darkens the blurred copy, so the sharp image stands out from it; a theme resource (style in <c>Theme.axaml</c>).</summary>
+    public static readonly StyledProperty<IBrush?> BlurShadeProperty =
+        AvaloniaProperty.Register<ArtworkImage, IBrush?>(nameof(BlurShade));
+
     public static readonly DirectProperty<ArtworkImage, bool> IsShowingProperty =
         AvaloniaProperty.RegisterDirect<ArtworkImage, bool>(nameof(IsShowing), image => image.IsShowing);
 
+    // Masks of the sharp image's fading edges (#565): only their alpha counts, so they are no theme colours.
+    private static readonly IImmutableBrush FadeBottom = Fade(new RelativePoint(0, 0, RelativeUnit.Relative), new RelativePoint(0, 1, RelativeUnit.Relative), (0, 1), (0.78, 1), (1, 0));
+    private static readonly IImmutableBrush FadeTopAndBottom = Fade(new RelativePoint(0, 0, RelativeUnit.Relative), new RelativePoint(0, 1, RelativeUnit.Relative), (0, 0), (0.06, 1), (0.94, 1), (1, 0));
+    private static readonly IImmutableBrush FadeLeftAndRight = Fade(new RelativePoint(0, 0, RelativeUnit.Relative), new RelativePoint(1, 0, RelativeUnit.Relative), (0, 0), (0.06, 1), (0.94, 1), (1, 0));
+
     private Bitmap? _bitmap;
+    private Bitmap? _blurred;
     private ArtworkFile? _bitmapFile;
     private int _bitmapWidth;
     private ArtworkFile? _loadingFile;
@@ -37,7 +52,7 @@ public sealed class ArtworkImage : Control
 
     static ArtworkImage()
     {
-        AffectsRender<ArtworkImage>(CornerRadiusProperty);
+        AffectsRender<ArtworkImage>(CornerRadiusProperty, FitProperty, BlurShadeProperty);
         IsHitTestVisibleProperty.OverrideDefaultValue<ArtworkImage>(false);
     }
 
@@ -58,6 +73,18 @@ public sealed class ArtworkImage : Control
     {
         get => GetValue(CornerRadiusProperty);
         set => SetValue(CornerRadiusProperty, value);
+    }
+
+    public ArtworkFit Fit
+    {
+        get => GetValue(FitProperty);
+        set => SetValue(FitProperty, value);
+    }
+
+    public IBrush? BlurShade
+    {
+        get => GetValue(BlurShadeProperty);
+        set => SetValue(BlurShadeProperty, value);
     }
 
     /// <summary>The image is drawn; the placeholder's monogram and title hide behind it.</summary>
@@ -96,8 +123,9 @@ public sealed class ArtworkImage : Control
             return;
         }
 
+        var fit = FitOf(file);
         var (width, height) = ShownPixels(bounds.Size);
-        var wanted = DecodeWidth(file.Size, width, height);
+        var wanted = DecodeWidth(file.Size, width, height, fit);
         if (_bitmap is null || _bitmapWidth < wanted)
         {
             Load(file, wanted);
@@ -108,26 +136,61 @@ public sealed class ArtworkImage : Control
             return;
         }
 
+        var placement = ArtworkPlacement.Of(bitmap.Size, bounds.Size, fit);
         using (context.PushClip(new RoundedRect(bounds, CornerRadius)))
         {
-            context.DrawImage(bitmap, CentredCrop(bitmap.Size, bounds.Size), bounds);
+            if (placement.HasMargins(bounds.Size) && _blurred is { } blurred)
+            {
+                context.DrawImage(blurred, ArtworkPlacement.Of(blurred.Size, bounds.Size, ArtworkFit.Fill).Source, bounds);
+                if (BlurShade is { } shade)
+                {
+                    context.FillRectangle(shade, bounds);
+                }
+            }
+
+            if (FadeOf(placement.Fading) is { } fade)
+            {
+                using (context.PushOpacityMask(fade, placement.Target))
+                {
+                    context.DrawImage(bitmap, placement.Source, placement.Target);
+                }
+            }
+            else
+            {
+                context.DrawImage(bitmap, placement.Source, placement.Target);
+            }
         }
     }
 
-    /// <summary>The part of the image that fills the box when it is scaled to cover it, centred.</summary>
-    internal static Rect CentredCrop(Size image, Size box)
+    /// <summary>The width to decode at so the image is still sharp at <paramref name="width"/> × <paramref name="height"/> pixels with <paramref name="fit"/>; never more than its own.</summary>
+    internal static int DecodeWidth(ImageSize image, double width, double height, ArtworkFit fit = ArtworkFit.Fill)
     {
-        var scale = Math.Max(box.Width / image.Width, box.Height / image.Height);
-        var width = box.Width / scale;
-        var height = box.Height / scale;
-        return new Rect((image.Width - width) / 2, (image.Height - height) / 2, width, height);
+        var placement = ArtworkPlacement.Of(new Size(image.Width, image.Height), new Size(width, height), fit);
+        var scale = placement.Target.Width / placement.Source.Width;
+        return (int)Math.Min(image.Width, Math.Ceiling(image.Width * scale));
     }
 
-    /// <summary>The width to decode at so the image still covers <paramref name="width"/> × <paramref name="height"/> pixels; never more than its own.</summary>
-    internal static int DecodeWidth(ImageSize image, double width, double height)
+    private ArtworkFit FitOf(ArtworkFile file) => Fit != ArtworkFit.Auto ? Fit
+        : file.Kind == Arcadia.Launchers.Abstractions.ArtworkKind.Hero ? ArtworkFit.AlmostWhole
+        : ArtworkFit.Fill;
+
+    private static IImmutableBrush? FadeOf(FadingEdges edges) => edges switch
     {
-        var scale = Math.Max(width / image.Width, height / image.Height);
-        return (int)Math.Min(image.Width, Math.Ceiling(image.Width * scale));
+        FadingEdges.Bottom => FadeBottom,
+        FadingEdges.TopAndBottom => FadeTopAndBottom,
+        FadingEdges.LeftAndRight => FadeLeftAndRight,
+        _ => null,
+    };
+
+    private static IImmutableBrush Fade(RelativePoint start, RelativePoint end, params (double Offset, double Alpha)[] stops)
+    {
+        var brush = new LinearGradientBrush { StartPoint = start, EndPoint = end };
+        foreach (var (offset, alpha) in stops)
+        {
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(alpha * 255), 0, 0, 0), offset));
+        }
+
+        return brush.ToImmutable();
     }
 
     /// <summary>The box's size in screen pixels: Big Picture is laid out at 1920 × 1080 and scaled to the window (#24).</summary>
@@ -152,24 +215,28 @@ public sealed class ArtworkImage : Control
 
         _loadingFile = file;
         _loadingWidth = width;
-        DecodeAsync(loader, file, width).Forget(AppTexts.ErrorContextArtwork);
+        DecodeAsync(loader, file, width, blurred: FitOf(file) != ArtworkFit.Fill).Forget(AppTexts.ErrorContextArtwork);
     }
 
-    private async Task DecodeAsync(ArtworkLoader loader, ArtworkFile file, int width)
+    private async Task DecodeAsync(ArtworkLoader loader, ArtworkFile file, int width, bool blurred)
     {
-        Bitmap? bitmap = null;
+        (Bitmap? Sharp, Bitmap? Blurred) decoded = default;
         try
         {
-            bitmap = await Task.Run(() => loader.DecodeAsync(file, width));
+            decoded = await Task.Run(async () =>
+            {
+                var sharp = await loader.DecodeAsync(file, width);
+                return (sharp, blurred && sharp is not null ? BlurredCopy.Of(sharp) : null);
+            });
         }
         finally
         {
             // Started on the UI thread, so this goes on there; a decode that threw counts as failed.
-            Take(file, width, bitmap);
+            Take(file, width, decoded.Sharp, decoded.Blurred);
         }
     }
 
-    private void Take(ArtworkFile file, int width, Bitmap? bitmap)
+    private void Take(ArtworkFile file, int width, Bitmap? bitmap, Bitmap? blurred)
     {
         if (_loadingFile == file && _loadingWidth == width)
         {
@@ -185,11 +252,13 @@ public sealed class ArtworkImage : Control
         if (File != file || TopLevel.GetTopLevel(this) is null)
         {
             bitmap.Dispose();
+            blurred?.Dispose();
             return;
         }
 
         _bitmap?.Dispose();
-        (_bitmap, _bitmapFile, _bitmapWidth) = (bitmap, file, width);
+        _blurred?.Dispose();
+        (_bitmap, _blurred, _bitmapFile, _bitmapWidth) = (bitmap, blurred, file, width);
         IsShowing = true;
         InvalidateVisual();
     }
@@ -197,7 +266,8 @@ public sealed class ArtworkImage : Control
     private void Drop()
     {
         _bitmap?.Dispose();
-        (_bitmap, _bitmapFile, _bitmapWidth, _loadingFile) = (null, null, 0, null);
+        _blurred?.Dispose();
+        (_bitmap, _blurred, _bitmapFile, _bitmapWidth, _loadingFile) = (null, null, null, 0, null);
         IsShowing = false;
     }
 }

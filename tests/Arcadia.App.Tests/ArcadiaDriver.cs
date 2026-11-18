@@ -79,7 +79,8 @@ internal sealed class ArcadiaDriver : IDisposable
         string folder, bool ownsFolder, IReadOnlyList<LauncherSpec> launchers, FakeTimeProvider time, RecordedStarts starts,
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
         Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null,
-        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null, FakeIgdb? igdb = null)
+        FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null, FakeIgdb? igdb = null,
+        AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk)
     {
         SteamGridDb = steamGridDb ?? new FakeSteamGridDb();
         External = external ?? new ExternalAppsFake();
@@ -140,6 +141,9 @@ internal sealed class ArcadiaDriver : IDisposable
         Metadata = new MetadataService(new MetadataCache(Path.Combine(folder, "metadata")), new HttpClient(MetadataStore, disposeHandler: false), time)
         {
             Log = AppLog.Write,
+            // The UI language as the App resolves it at the start, and the region (Germany unless the test names another, #557).
+            Language = Core.Localization.UiLanguages.Resolve(Settings.Current.Localization.Language, CultureInfo.GetCultureInfo(arguments.SystemLanguage ?? "de-DE")),
+            FirstAgeRatingBoard = firstAgeRatingBoard,
             Settings = () => Settings.Current.Metadata,
             SeveralHits = () => Settings.Current.Artwork.WithValidValues().SeveralHits,
             Igdb = new IgdbAccess(
@@ -158,6 +162,7 @@ internal sealed class ArcadiaDriver : IDisposable
             UserData = UserData,
             Open = Open,
             Logs = Logs,
+            SystemLanguage = CultureInfo.GetCultureInfo(arguments.SystemLanguage ?? "de-DE"),
             SteamProgram = (ILauncherProgram?)steam ?? files?.ControllerSupport,
         });
         ControllerSupport = _app.ControllerSupport;
@@ -194,6 +199,15 @@ internal sealed class ArcadiaDriver : IDisposable
         {
             lock (Restarts) Restarts.Add(reason);
         };
+        Main.RestartForLanguage = () =>
+        {
+            lock (Restarts) Restarts.Add(LanguageRestart);
+        };
+        if (arguments.ShowsLanguageSetting)
+        {
+            Main.ShowLanguageSetting();
+        }
+
         ForGames.Routing.Update();
     }
 
@@ -228,6 +242,9 @@ internal sealed class ArcadiaDriver : IDisposable
 
     /// <summary>Why Arcadia restarted itself, in order (#396): "Arcadia neu starten", or after a HidHide install.</summary>
     public List<string> Restarts { get; } = [];
+
+    /// <summary>What <see cref="Restarts"/> records for "Sprache anwenden" (#554).</summary>
+    public const string LanguageRestart = "Sprache anwenden";
 
     /// <summary>Pan, the guardian the pads stand under (#243); available unless a test takes it away.</summary>
     public FakeEmulationGuardian Pan { get; } = new();
@@ -398,7 +415,7 @@ internal sealed class ArcadiaDriver : IDisposable
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
         IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default,
-        HttpMessageHandler? imageServer = null, Action<FakeStoreServer>? stores = null)
+        HttpMessageHandler? imageServer = null, Action<FakeStoreServer>? stores = null, AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -408,7 +425,8 @@ internal sealed class ArcadiaDriver : IDisposable
             ActiveLaunchers = launchers.Select(spec => spec.Launcher.Id).ToList(),
         });
         var time = new FakeTimeProvider(Now);
-        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments, imageServer: imageServer);
+        var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments, imageServer: imageServer,
+            firstAgeRatingBoard: firstAgeRatingBoard);
 
         // The store pages answer from the first scan on (#493).
         stores?.Invoke(driver.MetadataStore);
@@ -441,7 +459,8 @@ internal sealed class ArcadiaDriver : IDisposable
     public async Task<ArcadiaDriver> RestartAsync(IReadOnlyList<LauncherSpec>? launchers = null, StartArguments arguments = default)
     {
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened,
-            steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore, igdb: Igdb);
+            steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore, igdb: Igdb,
+            firstAgeRatingBoard: Metadata.FirstAgeRatingBoard);
         await restarted.LoadAsync();
         return restarted;
     }
@@ -454,9 +473,28 @@ internal sealed class ArcadiaDriver : IDisposable
             Main.HandleGamepad(action);
             Main.Release(action);
             Dispatcher.UIThread.RunJobs();
+            AwaitFilterCounts();
         }
 
         return this;
+    }
+
+    /// <summary>The filter modal counts off the UI thread (#466): a press's counts show before the test looks.</summary>
+    private void AwaitFilterCounts()
+    {
+        if (Main.FilterModal is not { } filter)
+        {
+            return;
+        }
+
+        // Shown on the UI thread once counted: its jobs run while the count goes on.
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!filter.Counting.IsCompleted)
+        {
+            Assert.True(watch.Elapsed < WaitLimit, "Die Zählung des Filters wurde nicht fertig.");
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(1);
+        }
     }
 
     /// <summary>Arcadia's window loses the focus, e.g. to a launcher: held buttons are dropped, their release may never come.</summary>
@@ -499,6 +537,7 @@ internal sealed class ArcadiaDriver : IDisposable
         Assert.True(command.CanExecute(null), "Der Klick wirkt nicht: der Befehl ist gesperrt.");
         command.Execute(null);
         Dispatcher.UIThread.RunJobs();
+        AwaitFilterCounts();
         return this;
     }
 
@@ -778,7 +817,10 @@ internal sealed class ArcadiaDriver : IDisposable
 
 /// <summary>The command line's switches that change what Arcadia shows at the start: <c>--demo</c> and <c>--first-run</c>.</summary>
 /// <param name="PanUnsupported">Pan can't run on this system, as on Linux (#242).</param>
-internal readonly record struct StartArguments(bool Demo = false, bool FirstRun = false, bool PanUnsupported = false);
+/// <param name="ShowsLanguageSetting"><c>--show-language-setting</c>, as after "Sprache anwenden" (#554).</param>
+/// <param name="SystemLanguage">The system's display language (#554); null: German, whatever the machine speaks.</param>
+internal readonly record struct StartArguments(
+    bool Demo = false, bool FirstRun = false, bool PanUnsupported = false, bool ShowsLanguageSetting = false, string? SystemLanguage = null);
 
 /// <summary>
 /// A launcher of the test: <paramref name="Games"/> games of the demo library, or exactly <paramref name="Library"/> where

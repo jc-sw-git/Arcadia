@@ -103,9 +103,9 @@ public sealed class SearchHitTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T127-4")]
-    public async Task From_the_details_of_a_hit_X_returns_to_the_search_as_it_was_and_B_goes_to_the_game_in_its_launchers_listing()
+    public async Task From_the_details_of_a_hit_X_and_B_return_to_the_search_as_it_was()
     {
-        // Thirty games before it in the Xbox tab, so it sits on page two.
+        // Thirty games before it in the Xbox tab, so it sits on page two, away from where the library was left.
         var fillers = Enumerable.Range(1, 30).Select(i => Installed(KnownLaunchers.Xbox, $"Filler {i:00}", ArcadiaDriver.Now.AddDays(-10)));
         var zephyr = Installed(KnownLaunchers.Xbox, "Zephyr Run", ArcadiaDriver.Now.AddDays(-60));
         IReadOnlyList<LauncherSpec> library =
@@ -130,13 +130,15 @@ public sealed class SearchHitTests
         Assert.Equal("zephyr", search.Text);
         Assert.Equal("Zephyr Run", search.FocusedResult?.Title);
 
+        // B does the same since #586, and the search closes onto the library as it was before it.
         arcadia.PressDown(UiAction.Settings).Wait(PastHoldTime).LetGo(UiAction.Settings);
         arcadia.Press(UiAction.Back);
         Assert.Null(arcadia.Detail);
+        Assert.Same(search, arcadia.Search);
+        Assert.Equal(("zephyr", "Zephyr Run"), (search.Text, search.FocusedResult?.Title));
+        arcadia.Press(UiAction.Back, times: 2);
         Assert.Null(arcadia.Search);
-        Assert.Equal("Xbox", arcadia.SelectedTab?.Name);
-        Assert.Equal("2", arcadia.CurrentPage);
-        Assert.Equal(zephyr.Key, arcadia.FocusedGame?.Game.Key);
+        Assert.Equal(("GOG Galaxy", "1"), (arcadia.SelectedTab?.Name, arcadia.CurrentPage));
     }
 
     [AvaloniaFact]

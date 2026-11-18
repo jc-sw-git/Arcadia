@@ -40,7 +40,7 @@ public sealed class SettingsRowTests
         Assert.Equal(new Footer(Change: true, Activate: AppTexts.Toggle), Footer.Of(arcadia.FocusRow("mouse-mode-end-in-front")));
 
         // A row that only shows something: neither.
-        arcadia.Press(UiAction.NextTab, times: 2);
+        arcadia.Press(UiAction.NextTab, times: 3);
         Assert.Equal(AppTexts.AboutTitle, settings.Selected.Name);
         Assert.Equal(new Footer(Change: false, Activate: null), Footer.Of(settings.FocusedRow!));
     }

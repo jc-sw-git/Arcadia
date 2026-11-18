@@ -5,7 +5,7 @@ extra buttons, what counts): `docs/product/controls.md`.
 
 - **One source:** `SdlGamepadSource` reads every pad through SDL's gamepad API, polled every 8 ms (the repeat of held
   directions and the mouse mode need a steady clock); while emulated pads get states for a game it also reads every 1 ms in
-  between for them (`Sampled`, [every-controller.md](pad-latency.md)). `GamepadReading.PadId` is SDL's id of the device, new on every
+  between for them (`Sampled`, [pad-latency.md](pad-latency.md)). `GamepadReading.PadId` is SDL's id of the device, new on every
   connect; `arcadia.log` names it as `Controller #<id>` on connect, disconnect and Back + Start, with SDL's name, type
   and USB ids (no serial number).
 - **The official `SDL3.dll`** (3.4.18) comes from SDL's GitHub release; `src/Arcadia.Input/Sdl3.targets` downloads it

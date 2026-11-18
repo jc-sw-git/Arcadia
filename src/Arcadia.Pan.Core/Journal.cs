@@ -125,8 +125,15 @@ public sealed record JournalLoad(JournalState State, string? Problem, bool FromP
 /// the previous one, so power loss mid-write leaves either the old or the new journal. A journal that can't be read
 /// never throws out of here: the previous one is used, the broken one moved aside, and the problem reported.
 /// </summary>
-public sealed class JournalFile(string path)
+/// <param name="createFolder">
+/// Makes the journal's folder when it went missing while Pan runs (somebody deleted it): on Windows with Pan's rights
+/// (<c>ServiceSetup.SecureDataDirectory</c>), since a plain create would inherit <c>%ProgramData%</c>'s, under which
+/// users may write. Null: a plain create (tests, other platforms).
+/// </param>
+public sealed class JournalFile(string path, Action<string>? createFolder = null)
 {
+    private readonly Action<string> _createFolder = createFolder ?? (folder => Directory.CreateDirectory(folder));
+
     public string Path { get; } = path;
 
     public string PreviousPath => Path + ".previous";
@@ -137,7 +144,12 @@ public sealed class JournalFile(string path)
 
     public void Save(JournalState state)
     {
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
+        var folder = System.IO.Path.GetDirectoryName(Path)!;
+        if (!Directory.Exists(folder))
+        {
+            _createFolder(folder);
+        }
+
         using (var stream = new FileStream(TempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
         {
             JsonSerializer.Serialize(stream, state, JournalJson.Default.JournalState);

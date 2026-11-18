@@ -44,7 +44,9 @@ internal sealed class FakeStorePage : IMetadataStore
 {
     public RequestLimit Limit { get; init; } = new(60, TimeSpan.FromMinutes(1));
 
-    public Uri? AddressOf(Game game) => game.Id.All(char.IsAsciiDigit) ? new Uri("https://store.example/app/" + game.Id) : null;
+    // The language goes into the query as a store would take it (#557), so a test sees which one Arcadia asked in.
+    public Uri? AddressOf(Game game, System.Globalization.CultureInfo language) =>
+        game.Id.All(char.IsAsciiDigit) ? new Uri($"https://store.example/app/{game.Id}?l={language.TwoLetterISOLanguageName}") : null;
 
     public GameMetadata? Parse(Game game, ReadOnlySpan<byte> answer)
     {

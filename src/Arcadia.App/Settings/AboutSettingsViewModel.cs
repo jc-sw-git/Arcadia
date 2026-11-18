@@ -108,7 +108,7 @@ public sealed class AboutSettingsViewModel : SettingsCategoryViewModel
             { AvailableVersion: { } next, IsRestartingForUpdate: true } => AppTexts.AboutLoadedRestarting(next),
             { AvailableVersion: { } next, Progress: { } percent } => LoadingText(next, percent),
             { AvailableVersion: { } next } => AppTexts.AboutAvailable(next),
-            { LastChecked: { } checkedAt } => AppTexts.AboutUpToDateCheckedAt(checkedAt.ToLocalTime()),
+            { LastChecked: { } checkedAt } => AppTexts.AboutUpToDateCheckedAt(Formatting.ClockWithUnit(checkedAt.ToLocalTime())),
             _ => AppTexts.AboutUpToDate,
         };
         var source = AppTexts.AboutLicense(ArcadiaUpdateService.RepositoryUrl.Replace("https://", string.Empty, StringComparison.Ordinal));

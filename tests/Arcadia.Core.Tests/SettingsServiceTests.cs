@@ -31,6 +31,41 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void A_saved_file_says_its_format_and_leaves_no_temporary_file()
+    {
+        new SettingsService(new SettingsStore(SettingsPath)).Update(settings => settings with { KeepSisr = true });
+
+        Assert.Contains($"\"SchemaVersion\": {AppSettings.CurrentSchemaVersion}", File.ReadAllText(SettingsPath));
+        Assert.False(File.Exists(SettingsPath + ".tmp"));
+    }
+
+    [Fact]
+    public void A_file_from_a_newer_Arcadia_is_kept_beside_the_one_this_version_saves()
+    {
+        var newer = $$"""{ "SchemaVersion": {{AppSettings.CurrentSchemaVersion + 1}}, "KeepSisr": true, "SomethingNew": 3 }""";
+        File.WriteAllText(SettingsPath, newer);
+
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        service.Update(settings => settings with { PanEnabled = true });
+
+        Assert.True(service.Current.KeepSisr);
+        Assert.Equal(newer, File.ReadAllText(SettingsPath + $".v{AppSettings.CurrentSchemaVersion + 1}"));
+        Assert.Contains($"\"SchemaVersion\": {AppSettings.CurrentSchemaVersion}", File.ReadAllText(SettingsPath));
+    }
+
+    [Fact]
+    public void A_file_without_a_format_is_read_as_the_first_and_makes_no_copy()
+    {
+        File.WriteAllText(SettingsPath, """{ "KeepSisr": true }""");
+
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+
+        Assert.True(service.Current.KeepSisr);
+        Assert.Equal(1, service.Current.SchemaVersion);
+        Assert.Empty(Directory.GetFiles(_directory, "settings.json.v*"));
+    }
+
+    [Fact]
     [Trait("TestCase", "T214-9")]
     public void SISR_s_old_settings_are_dropped_with_the_next_save_and_the_modes_per_game_stay()
     {
@@ -49,6 +84,20 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.DoesNotContain("SteamControllerSupport", saved);
         Assert.DoesNotContain("LastSisrUpdateCheck", saved);
         Assert.False(new SettingsService(new SettingsStore(SettingsPath)).Current.ControllerSupportOverrides["epic:fortnite"]);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T566-3")]
+    public void An_old_crop_value_is_ignored_and_dropped_at_the_next_save()
+    {
+        File.WriteAllText(SettingsPath, """{ "Artwork": { "Crop": "Much", "SeveralHits": "TakeFirst" } }""");
+        var service = new SettingsService(new SettingsStore(SettingsPath));
+        Assert.Equal(SeveralHits.TakeFirst, service.Current.Artwork.SeveralHits);
+
+        service.Update(settings => settings with { KeepSisr = true });
+
+        Assert.DoesNotContain("Crop", File.ReadAllText(SettingsPath), StringComparison.Ordinal);
+        Assert.Equal(SeveralHits.TakeFirst, new SettingsService(new SettingsStore(SettingsPath)).Current.Artwork.SeveralHits);
     }
 
     [Fact]

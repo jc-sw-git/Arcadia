@@ -1,15 +1,9 @@
 using Arcadia.App.ViewModels;
+using Arcadia.Core.Library;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Arcadia.App.Filter;
-
-/// <summary>The categories of the filter (#44); part B and C add theirs here.</summary>
-public enum FilterCategory
-{
-    Installed,
-    Type,
-}
 
 /// <summary>
 /// A category row on the left of the filter modal (#44, design T44Bausteine "Kategorie-Zeile"): name, icon and a one-line
@@ -49,12 +43,25 @@ public sealed partial class FilterCategoryViewModel(FilterCategory category, str
 }
 
 /// <summary>
-/// One value on the right of the filter modal (#44): a radio ("Installiert") or a checkbox ("Typ", with its type's icon),
-/// with the hits it would bring given the other category's choice. A value with none is greyed out and still choosable.
+/// One value on the right of the filter modal (#44, #466): a radio ("Installiert") or a checkbox ("Typ" with its type's
+/// icon, a genre, tag, developer or publisher), with the hits it would bring given the other categories' choice. A value
+/// with none is greyed out and still choosable.
 /// </summary>
 public sealed partial class FilterValueViewModel(string label, string? iconKey, Action<FilterValueViewModel> pick) : ViewModelBase
 {
     public string Label => label;
+
+    /// <summary>What a choice holds: a genre's key, a name in its most frequent spelling; empty for a fixed option.</summary>
+    public string Key { get; init; } = string.Empty;
+
+    /// <summary>An own tag (#495): it hits only the entries the player gave it.</summary>
+    public bool IsOwn { get; init; }
+
+    /// <summary>"Alle …": clears the category.</summary>
+    public bool IsAll { get; init; }
+
+    /// <summary>How many of the tab's entries have the value, for "Häufigste zuerst".</summary>
+    public int Entries { get; init; }
 
     /// <summary>The type's icon (#141); null for none.</summary>
     public string? IconKey => iconKey;

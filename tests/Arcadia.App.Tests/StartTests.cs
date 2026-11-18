@@ -97,7 +97,7 @@ public sealed class StartTests
         using var arcadia = await ArcadiaDriver.StartAsync();
         var status = arcadia.Main.Status;
         Assert.Equal("20:00", status.Clock);
-        Assert.Equal("Sa., 24. Okt.", status.Date);
+        Assert.Equal("Sa, 24. Okt.", status.Date);
 
         arcadia.Wait(TimeSpan.FromSeconds(61));
         Assert.Equal("20:01", status.Clock);

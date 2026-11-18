@@ -41,10 +41,17 @@ public static class SteamShortcuts
 
     /// <summary>
     /// Appends a non-Steam entry and returns it. Steam must not be running: it keeps its own copy
-    /// in memory and overwrites the file on exit. The previous file is kept as <c>shortcuts.vdf.bak</c>.
+    /// in memory and overwrites the file on exit. The previous file is kept (<see cref="Save"/>).
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="executable"/> holds a quote or a NUL: Steam would split the entry there.</exception>
     public static SteamShortcut Add(string path, string name, string executable, string launchOptions = "")
     {
+        if (executable.Length == 0 || executable.Contains('"', StringComparison.Ordinal) || executable.Contains('\0', StringComparison.Ordinal)
+            || name.Contains('\0', StringComparison.Ordinal) || launchOptions.Contains('\0', StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Steam-Verknüpfung: Pfad, Name oder Startoptionen ungültig", nameof(executable)); // not a UI text (log)
+        }
+
         var root = File.Exists(path) ? BinaryVdf.Parse(File.ReadAllBytes(path)) : [];
         var shortcuts = root.GetMap("shortcuts");
         if (shortcuts is null)
@@ -126,11 +133,21 @@ public static class SteamShortcuts
         return removed;
     }
 
+    /// <summary>
+    /// Keeps the file before this save as <c>shortcuts.vdf.bak</c>, and the file before Arcadia's first change as
+    /// <c>shortcuts.vdf.arcadia-original.bak</c>, which later saves never overwrite: two saves in a row would otherwise
+    /// leave no copy of what the player had.
+    /// </summary>
     private static void Save(string path, VdfMap root)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         if (File.Exists(path))
         {
+            if (!File.Exists(path + OriginalSuffix))
+            {
+                File.Copy(path, path + OriginalSuffix);
+            }
+
             File.Copy(path, path + ".bak", overwrite: true);
         }
 
@@ -168,7 +185,9 @@ public static class SteamShortcuts
         Unquote(entry.GetString("Exe") ?? string.Empty),
         entry.GetString("LaunchOptions") ?? string.Empty);
 
-    private static string Quote(string text) => text.StartsWith('"') ? text : $"\"{text}\"";
+    private const string OriginalSuffix = ".arcadia-original.bak";
+
+    private static string Quote(string text) => $"\"{text}\"";
 
     private static string Unquote(string text) => text.Length >= 2 && text[0] == '"' && text[^1] == '"' ? text[1..^1] : text;
 

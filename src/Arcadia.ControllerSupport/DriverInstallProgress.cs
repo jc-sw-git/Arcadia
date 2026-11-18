@@ -378,7 +378,7 @@ public sealed class DriverInstallProgress
         _value = Math.Max(_value, total > 0 ? Math.Min(1, reached / total) : 0);
     }
 
-    private static string Megabytes(long bytes) => (bytes / 1_048_576d).ToString("0.0", CultureInfo.GetCultureInfo("de-DE"));
+    private static string Megabytes(long bytes) => (bytes / 1_048_576d).ToString("0.0", CultureInfo.CurrentCulture);
 
     /// <summary>The weights of the design (T413Dialog): usbip-win2's install is the long one, HidHide's next.</summary>
     private static double WeightOf(DriverInstallStepKind kind) => kind switch

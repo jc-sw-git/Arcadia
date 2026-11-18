@@ -115,7 +115,7 @@ public sealed class FirstRunTests
     [Trait("TestCase", "T139-4")]
     public async Task Settings_of_a_version_without_a_choice_of_launchers_bring_the_question_and_keep_everything_else()
     {
-        var beforeTheQuestion = new AppSettings { KeyboardLayout = "fr", PreferredPageSize = 64 };
+        var beforeTheQuestion = new AppSettings { LegacyKeyboardLayout = "fr", PreferredPageSize = 64 };
         using var arcadia = await ArcadiaDriver.StartAsync(settings: beforeTheQuestion);
 
         Assert.True(arcadia.Main.IsFirstRunShown);
@@ -123,7 +123,7 @@ public sealed class FirstRunTests
 
         var saved = new SettingsStore(arcadia.SettingsPath).Load();
         Assert.Equal(["gog", "xbox", "amazon"], saved.ActiveLaunchers);
-        Assert.Equal(("fr", 64), (saved.KeyboardLayout, saved.PreferredPageSize));
+        Assert.Equal(("fr", 64), (saved.Localization.KeyboardLayout, saved.PreferredPageSize));
     }
 
     [AvaloniaFact]

@@ -33,7 +33,6 @@ public class EpicScannerTests
         Assert.Equal("f7a0ebb44f93430fb1c4388a395eba96", game.Id);
         Assert.Equal(219175976, game.InstallSizeBytes);
         Assert.Equal(@"D:\Epic Games\LoopHero", game.InstallDirectory);
-        Assert.Equal(Path.Combine(@"D:\Epic Games\LoopHero", "Loop Hero.exe"), game.ExecutablePath);
         Assert.Equal(installedAt, game.InstalledAt);
         Assert.Equal(
             new LaunchTarget.ProtocolUri("com.epicgames.launcher://apps/ns123%3Aitem456%3Af7a0ebb44f93430fb1c4388a395eba96?action=launch&silent=true"),

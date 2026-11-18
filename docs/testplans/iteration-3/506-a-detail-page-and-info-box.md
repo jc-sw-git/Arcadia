@@ -63,7 +63,7 @@ otherwise; the cases follow the recommendation (the implementation follows all t
   both ways and going round; held ◀ ▶ (T476-9) ends with the highlight on the value reached. · E2E: yes
 - [x] **T506-16** Settings page, every category: each value row with named values gets the value boxes the same way,
   e.g. "Mausmodus", "Beenden des Mausmodus in Spielen erzwingen", "Standardeinstellung bei „Individuell“", a launcher
-  page's "Steam Controller", "Zuschneiden erlaubt", "Bei mehreren Treffern", and the switches (a box "Aus", then a box "An", in
+  page's "Steam Controller", "Bei mehreren Treffern", and the switches (a box "Aus", then a box "An", in
   the order ◀ ▶ go through them, Q2). ◀ ▶ moves the highlight as in T506-15. · E2E: yes
 - [x] **T506-17** Rows with a plain range of numbers get no value boxes: "Haltedauer" (mouse mode and "Mit ⧉ zurück zu
   Arcadia"), "Zeigergeschwindigkeit"; their info box reads as before. Action and info rows ("Artwork ändern",

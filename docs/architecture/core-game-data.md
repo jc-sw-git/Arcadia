@@ -5,7 +5,7 @@ what the player set by hand and is never thrown away.
 
 **Artwork** (`Artwork/`, #13, #487, #489, #491, #506)
 - `ArtworkService`: after each scan one background run brings every game's cover and background into the cache: the
-  launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3, 3.1 : 1, 15 %
+  launcher's images (`ILauncherArtwork`) in their order, the first that fits `ArtworkFormat` (2 : 3; background 16 : 9 or flat 3.1 : 1; 15 %
   cut away at most), else the first at all; downloads only for what is missing or what the launcher replaced (it no longer offers the cached image's address but
   another of the same origin, #488), 10 s each; an address that gave no image is not asked again in the same run;
   the run stops downloading at the first network failure; keeps the images of games that left a library, so they come back with them. `Of(key)` is
@@ -26,7 +26,7 @@ what the player set by hand and is never thrown away.
 - `ArtworkService.ByName.cs` (#491): a game SteamGridDB doesn't know by id is searched by name (`SteamGridDbNames`:
   search term, comparison, `Decide`); `NameMatchStore` keeps per game key Chosen (a SteamGridDB game id), Skipped or
   Waiting (hits, position) in `artwork/name-matches.json`. `Waiting`/`WaitingChanged`, `ChooseAsync`, `Skip`,
-  `TakeFirstForAllWaiting`, `HitCoverAsync` (a hit's cover for the waiting list, in `.suggestions/`).
+  `TakeFirstForAllWaiting`, `HitImageAsync` (a hit's cover or background for the waiting list, in `.suggestions/`).
 - `ArtworkCache`: `artwork/<game>/cover|hero.*` plus `artwork.json` (source, origin, stamp, "set by hand"), the own
   files as `own-cover|own-hero.*`, the image of a source switched off renamed to `off-cover|off-hero.*` (one per kind)
   and renamed back when it is on again, every file through a temporary file and a rename; folder names from the key that never
@@ -56,7 +56,7 @@ rows in "Datenquellen": `app-artwork.md`; the product rules: `docs/product/setti
   (Twitch's token by POST, IGDB's API v4 with client id and token in headers, 4 requests a second for all callers, 10 s,
   waits on 429), `IgdbQuery` (the only place queries are built: AppID digits, IGDB id, a search term of letters,
   digits and a few marks), `IgdbAnswer` (genres by name onto the list, age ratings by organization and the category's text, `IgdbAnswer.Reading` marking cached answers to ask again,
-  themes and keywords as tags, companies, first release date; `IgdbImages` the cover's https address),
+  themes and keywords as tags, companies, first release date; `IgdbImages` the cover's image id),
   `IgdbMatching` (main games only, name equality with `?` as one character, several hits).
 - `CacheFiles` (`Library/`): file names from game keys and writes through a temporary file, shared with `ArtworkCache`.
 - `SecretFile` (`Settings/`): a player's secret (SteamGridDB key, IGDB access) encrypted through injected

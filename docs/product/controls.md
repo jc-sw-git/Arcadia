@@ -12,6 +12,11 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   Q/E = LT/RT, Shift+Q/E = LB/RB, Shift+W/S = RS, 1 … 0 = launcher tab 1–10, Enter = ≡, R = ⧉. Arrows, Page Up/Down, Ctrl+Tab, F2,
   the menu key and Shift+F10 stay as unadvertised alternatives. In the search a real keyboard types, so only keys
   without text act there (arrows, Enter = ≡ starts the hit, Esc, Page Up/Down).
+- The letters and digits above name places, as on a US keyboard (#588): a key acts by where it lies, so on AZERTY
+  ZQSD move and A/E are LT/RT. Hints, key badges in texts and tooltips show the letter the active Windows input layout
+  prints there, and follow a layout switch at once; a key that prints no letter keeps the US letter. Typing uses the
+  real layout; the on-screen keyboard's layout is separate. On Linux the hints show the US letters for now.
+- The mouse's back button is B, as Esc is, wherever B acts; on a text being written it acts as Esc there (#586).
 - Every list goes round at its ends (#476): wherever the focus steps through items, a step past the last goes to the
   first and back, left/right in a row, up/down in a column; greyed-out items are passed over. That holds for the
   library and the search (`library.md`, `search.md`), the tabs, the settings' rows and the first start's, menus
@@ -21,7 +26,8 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
   area, it still does (the filter: left out of the values back to the categories). A lifted launcher being moved,
   the mouse wheel and the scroll bars stop at the ends.
 - RS (Shift+W/S, the wheel over it) scrolls an info box that doesn't fit, on the settings page and the detail page
-  (#506), and the text of "Infos" while it has the focus in the detail page's rail (#530); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
+  (#506), the text of "Infos" while it has the focus in the detail page's rail (#530), and a metadata hit's facts on
+  "Warten auf deine Auswahl" (#560); the focus stays, a box that fits ignores it, and a box whose row, value or greying changes starts at its top
   again. The footer names RS only while the box overflows.
 - Held buttons repeat (#476): the D-pad and both sticks after 400 ms, then every 90 ms; LT/RT and LB/RB, wherever
   they turn (library pages, search, detail page, launcher pages in the settings, tabs), after 400 ms, then every
@@ -47,7 +53,11 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 - UI texts name a controller button by the symbol on it, not by its name: ⧉ and ≡, not View/Back and Menu/Start
   (written with Xbox's names; drawn with the symbols of the controller in use), framed like in the legend also inside
   a text (`ButtonTextBlock`; in prose other buttons are written in brackets, e.g. "[L3]", "[LS]"). Never a bare "A" or
-  "B" in a text: `ButtonGlyphTextTests` fails on one in the App's strings.
+  "B" in a text: `ButtonGlyphTextTests` fails on one in the App's strings and `AppTexts.resx` (tooltips, plain text for
+  the mouse, and the mouse mode's button lists aside). While the keyboard is in use a button in prose shows the key that
+  does the same (`KeyNames`: [A] Leertaste, [B] Esc, [Y] V, …; #539); a text about one controller only, a text about
+  something only a controller does ([R3] on the on-screen keyboard; in the printing of the controller last used, Xbox
+  without one) and the sticks and Guide keep the button.
 - Every button hint follows the input in use (#127): after a controller button the controller's buttons, after a key
   or a click the keyboard's keys and the mouse (`KeyHint`, `KeyText`; the mouse merely moving changes nothing).
   Controller buttons are round or a pill, keys square with rounded corners, both with a darker lower edge. An element
@@ -70,5 +80,5 @@ Controllers in games (Pan, the Steam Controller, per-game mode): [controllers-in
 ## Dialogs
 
 Dialogs (Ansicht, settings' prompts) show an ✕ in the top right corner while mouse or keyboard is in use
-(`MainViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has no "Schließen"
-button besides.
+(`InputInUseViewModel.ShowsCloseButtons`); the controller closes them with B. A dialog that only informs has no "Schließen"
+button besides; the exception and the other design rules: `design.md`.

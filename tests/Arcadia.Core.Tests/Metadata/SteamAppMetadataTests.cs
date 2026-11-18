@@ -3,7 +3,7 @@ using Arcadia.Launchers.Steam;
 
 namespace Arcadia.Core.Tests.Metadata;
 
-/// <summary>#493: Steam's local metadata from <c>appinfo.vdf</c> and the names of its store tags (T493-3, T493-4).</summary>
+/// <summary>#493: Steam's local metadata from <c>appinfo.vdf</c> and the names of its store tags (T493-3, T493-4), in the UI language (T557-2).</summary>
 public sealed class SteamAppMetadataTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("arcadia-steam-metadata-").FullName;
@@ -130,6 +130,33 @@ public sealed class SteamAppMetadataTests : IDisposable
         var game = SteamGame("4000006");
 
         Assert.Equal(["Rätsel", "Shooter"], metadata.Look([game]).Of(game)!.Tags);
+    }
+
+    [Theory]
+    [Trait("TestCase", "T557-2")]
+    [InlineData("en-GB", "Puzzle", "Shooter")]
+    [InlineData("fr-FR", "Casse-tête", "Tir")]
+    [InlineData("es-ES", "Puzles", "Disparos")]
+    public void Store_tags_are_named_in_the_ui_language_at_every_read(string uiLanguage, string puzzle, string shooter)
+    {
+        var metadata = WithAppInfo(AppInfoMetadataFile.Build((4000006, Common(new()
+        {
+            ["name"] = "Tagged",
+            ["type"] = "Game",
+            ["store_tags"] = AppInfoMetadataFile.List("1664", "1774"),
+        }))));
+        var game = SteamGame("4000006");
+        var before = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(uiLanguage);
+
+            Assert.Equal([puzzle, shooter], metadata.Look([game]).Of(game)!.Tags);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = before;
+        }
     }
 
     [Fact]

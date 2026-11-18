@@ -15,10 +15,10 @@ public static class ServiceHost
     public static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// What a teardown may take at most, so Windows waits for it at start (a journal's recovery) and stop: its step
-    /// budgets add up to 70 s (ports 10, processes 10, show 30, restart 20) when the PnP lock hangs.
+    /// What a teardown may take at most, so Windows waits for it at start (a journal's recovery) and stop: the sum of
+    /// its step timeouts (<see cref="Guardian.LongestTeardown"/>) and a margin for the journal writes between them.
     /// </summary>
-    public static readonly TimeSpan TeardownWait = TimeSpan.FromSeconds(80);
+    public static readonly TimeSpan TeardownWait = Guardian.LongestTeardown + TimeSpan.FromSeconds(8);
 
     private static nint _statusHandle;
     private static Native.ServiceStatus _status;
@@ -118,7 +118,7 @@ public static class ServiceHost
         }
 
         var cleanup = new WindowsCleanup(log.Write);
-        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath), cleanup, log.Write, hiding: WindowsHiding.Create())
+        var guardian = new Guardian(new UnbiasedClock(), new JournalFile(PanPaths.JournalPath, _ => ServiceSetup.SecureDataDirectoryLogged(log.Write)), cleanup, log.Write, hiding: WindowsHiding.Create())
         {
             // The vendors' firmware tools: no controller of theirs is hidden while one runs (#238 D8).
             ProcessRuns = ProcessRuns,
@@ -138,7 +138,7 @@ public static class ServiceHost
         using var stop = consoleStop is { } console ? CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token, console) : CancellationTokenSource.CreateLinkedTokenSource(Stopping.Token);
         using var serve = new CancellationTokenSource();
         var server = new PipeServer(guardian, log.Write);
-        using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, stop.Cancel, log.Write);
+        using var idle = new IdleStop(IdleTimeout, () => guardian.ShowRetryPending, () => guardian.HasClient, stop.Cancel, log.Write);
         server.ClientPresent += idle.ClientPresent;
         server.ClientAccepted += image => PanUninstall.RecordArcadia(image, log.Write);
         var clientCame = false;

@@ -10,9 +10,12 @@
   stops at the page's edge; only a fresh press crosses onto the next page. LT/RT (Q/E, Page Up/Down,
   the buttons below the grid) turn the page and go round the same way; a page number goes straight to its page.
 - Covers are 2 : 3 wherever one is shown: library tile 146 × 219 (its height follows the column's width), search hit
-  190 × 285, detail page 210 × 315.
-- Covers and backgrounds (#13, #487): the cover fills the tile, the search hit and the detail page's cover; the background
-  (hero) fills the detail page's header and the preview's top (400 × 180), each cropped centred, never stretched. Until
+  190 × 285, detail page 180 × 270.
+- Covers and backgrounds (#13, #487): the cover fills the tile, the search hit and the detail page's cover, cropped
+  centred. A background (hero) shows almost whole wherever it is shown (#565): at most 10 % of it is cut, centred, and the
+  rest of the frame is a blurred, darkened copy of the same image (the preview's top 400 × 180, the tiles and previews of
+  "Artwork ändern" and "Warten auf deine Auswahl"); the detail page: [detail-page/page.md](detail-page/page.md). Never
+  stretched. Until
   an image is there the placeholder (hue, monogram, title) shows; with it, monogram and title hide, badges and the
   "not installed" shade stay on top. A launcher's images are checked again at every scan, so an image changed in the
   launcher (e.g. an own cover set in Steam) shows after the next scan; an image set by hand is never replaced by that.
@@ -34,6 +37,19 @@
   the count line keeps counting the whole tab. No hits: "Keine
   Einträge passen zu deinen Filtern." with "[R3] Filter ändern" (A too). The detail page turns through the hits only and opens the filter too
   (`detail-page/`).
+- Filter by metadata (#466): "Genre", "Tags", "Entwickler", "Publisher", "Erscheinungsjahr", "Altersfreigabe", each only
+  where an entry of the tab has it. Lists: "Alle …" first, every value with its hits; "Häufigste zuerst" (chosen first,
+  then hits, 0 hits greyed last) or A–Z with letters (genre starts A–Z, the others by frequency), L3 switches, kept per
+  category while the modal is open; LT/RT a page or, in A–Z, a letter; X searches the values with the on-screen keyboard
+  (cleared when leaving the category). Names count as one value ignoring case and outer spaces, shown in their most
+  frequent spelling; genres are saved by key. Own tags come first under "EIGENE TAGS", apart from a provider tag of the
+  same name; a provider tag the game also has as an own one shows only as the own one (as on the detail page); a
+  renamed or merged own tag follows into the filter, a deleted one drops out. Year: chart, quick picks ("Letzte 3
+  Jahre", decades, "Vor 2000"), "von"/"bis" (◀▶ one year, LT/RT ten, within the tab's years, "von" never after
+  "bis"); the tab's whole range is "Alle Jahre". Age rating (provisional): one system (the region's, #557),
+  then one or more of its ratings; no conversion between systems, another system clears the ratings. Once a value is
+  chosen, "Ohne Angabe einbeziehen" adds the entries without that metadata. Metadata arriving later re-filters the
+  library; a modal opened during a metadata run (reading the launchers' files included) says so and keeps its counts and categories.
 - The header's tab strip sits in the middle between logo and status, as wide as its tabs need, LB/RB right beside
   them. At its widest it keeps 40 px to both, with a divider in each gap; the selected tab stands in its middle and
   it fades out where more tabs follow: the cut-off tab itself turns transparent, nothing is laid over it, so over the

@@ -7,8 +7,17 @@ public abstract record LaunchTarget
     {
     }
 
-    /// <summary>A concrete executable with arguments and an optional working directory.</summary>
-    public sealed record Executable(string Path, IReadOnlyList<string> Arguments, string? WorkingDirectory) : LaunchTarget;
+    /// <summary>
+    /// A concrete executable with arguments and an optional working directory. Equal when the arguments are (a record
+    /// would compare the list by reference), so a rescan that finds the same game finds an equal one.
+    /// </summary>
+    public sealed record Executable(string Path, IReadOnlyList<string> Arguments, string? WorkingDirectory) : LaunchTarget
+    {
+        public bool Equals(Executable? other) =>
+            other is not null && Path == other.Path && WorkingDirectory == other.WorkingDirectory && Arguments.SequenceEqual(other.Arguments);
+
+        public override int GetHashCode() => HashCode.Combine(Path, WorkingDirectory, Arguments.Count);
+    }
 
     /// <summary>
     /// A launcher protocol URI, e.g.

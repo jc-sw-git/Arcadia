@@ -362,6 +362,12 @@ public sealed class FakeControllers : IControllerDevices
     public bool RestartFails;
     public bool ScanHangs;
 
+    /// <summary>
+    /// How long a held scan waits for the test at most, and the test for the scan to begin: the scan runs on the thread
+    /// pool, which a busy Windows runner served more than 5 s late (#589).
+    /// </summary>
+    public static readonly TimeSpan ScanBlockLimit = TimeSpan.FromSeconds(30);
+
     /// <summary>Set: a scan signals <see cref="ScanEntered"/> and waits for it, so a test can act while a hide scans.</summary>
     public ManualResetEventSlim? ScanBlock;
     public readonly TaskCompletionSource ScanEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -385,7 +391,7 @@ public sealed class FakeControllers : IControllerDevices
         if (ScanBlock is { } block)
         {
             ScanEntered.TrySetResult();
-            block.Wait(TimeSpan.FromSeconds(5));
+            block.Wait(ScanBlockLimit);
         }
 
         return Connected.TryGetValue(model, out var scan) ? scan : new ControllerScan(false, []);

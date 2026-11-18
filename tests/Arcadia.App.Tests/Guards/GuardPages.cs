@@ -31,7 +31,8 @@ internal static class GuardPages
         new("Spielmenü", [typeof(GameMenuViewModel)], Pressing(UiAction.Options),
             arcadia => Down(arcadia, arcadia.Arcadia.Main.GameMenu!.Actions.Count)),
         new("Bilder ändern", [typeof(ChangeArtworkViewModel)], OpenChangeArtwork),
-        new("Filter", [typeof(FilterModalViewModel)], Pressing(UiAction.KeyboardLayout),
+        // The demo walks the categories; the metadata panes' edges: RingGeometryTests (T466-25).
+        new("Filter", [typeof(FilterModalViewModel), typeof(FilterOptionsPane), typeof(FilterListPane), typeof(FilterYearPane), typeof(FilterRatingPane)], Pressing(UiAction.KeyboardLayout),
             arcadia => Down(arcadia, arcadia.Arcadia.Main.FilterModal!.Categories.Count)),
         new("Statusmeldungen", [typeof(StatusModalViewModel)], OpenStatusModalAsync, Start: StartWithEveryControllerPartMissingAsync),
         new("Detailseite", [typeof(GameDetailViewModel), typeof(GameDetailPageViewModel)], OpenDetail,
@@ -60,6 +61,7 @@ internal static class GuardPages
             arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Entries.Count)),
         new("Eigene Tags › Spiele", [typeof(TagListViewModel)], OpenTagGamesAsync,
             arcadia => Down(arcadia, arcadia.Arcadia.Main.TagList!.Games!.Items.Count)),
+        new("Einstellungen › Lokalisierung", [typeof(LocalizationSettingsViewModel)], OpenCategoryAsync<LocalizationSettingsViewModel>, Rows) { IsSettingsPage = true },
         new("Einstellungen › Über Arcadia", [typeof(AboutSettingsViewModel)], OpenCategoryAsync<AboutSettingsViewModel>, Rows) { IsSettingsPage = true },
         GuardPage.NotWalkedYet("Frage in den Einstellungen", [typeof(SettingsQuestionViewModel)], "Fragt nur nach Änderungen an Bildern oder Controller-Modi, die der Test erst anlegen müsste."),
         GuardPage.NotWalkedYet("Bearbeitungsfeld", [typeof(TextEditorViewModel)], "Ein Textfeld in einer Zeile; die Guards sehen es mit seiner Zeile."),
@@ -72,6 +74,7 @@ internal static class GuardPages
         GuardPage.NotWalkedYet("Anmeldung im Browser", [typeof(WebPageViewModel)], "Zeigt den Browser des Systems, den das Fenster ohne Bildschirm nicht zeichnet."),
         GuardPage.NotWalkedYet("Firmware-Hinweis", [typeof(FirmwareAttemptViewModel)], "Erscheint nur, wenn Steam die Firmware des Steam Controllers schreiben will."),
         GuardPage.NotWalkedYet("Pan-Update", [typeof(PanUpdatePageViewModel)], "Erscheint nur beim Start mit einem fremden Pan."),
+        GuardPage.NotWalkedYet("Bild ansehen", [typeof(ImageShowViewModel)], "Hat keinen Fokus und keine Knöpfe: jede Eingabe beendet es."),
     ];
 
     /// <summary>Every part missing: the controller page shows all its part rows and "Treiber installieren".</summary>
@@ -154,7 +157,7 @@ internal static class GuardPages
         Assert.NotNull(arcadia.LauncherCategory().PageLauncherId);
     }
 
-    private static Task OpenDetail(ArcadiaWindow arcadia)
+    internal static Task OpenDetail(ArcadiaWindow arcadia)
     {
         arcadia.Arcadia.Hold(UiAction.Accept, PastHoldTime);
         Assert.True(arcadia.Arcadia.Main.IsDetailOpen, "Detailseite offen");

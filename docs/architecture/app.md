@@ -108,7 +108,8 @@ fades where it is cut off; per place orientation, edges, sizes, colour, conditio
 - `Services/InputLatency`: each key or button press timed to the frame that shows it, one `Bild:` line in arcadia.log
   (#229).
 - `Services/MemoryTrim` (#636): once 64 MB were allocated since the last trim and nothing was pressed for 10 s, one full,
-  compacting collection (`Speicher: aufgeräumt …` in arcadia.log); the GC doesn't run at idle on its own.
+  compacting collection (`Speicher: aufgeräumt …` in arcadia.log); the GC doesn't run at idle on its own. Only while
+  Arcadia is in front and no game runs: the pause would stall the pads' forwarding. No other code collects.
 
 ## Artwork
 

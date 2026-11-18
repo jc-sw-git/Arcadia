@@ -27,8 +27,9 @@ Index and the category's frame: [README.md](README.md). The specification is #43
   tags are taken as delivered; Steam's are named from its tag list in the UI language.
 - Age ratings USK, PEGI, ESRB as delivered, unknown values dropped, merged per board (#541), the system region's board
   first ([detail page](../detail-page/page.md)): each board's rating comes
-  from the first provider in the order that has it, so IGDB adds the boards Steam lacks. Without a real USK from any
-  provider, Steam's own rating for Germany counts as USK. Every rating names its provider the same way ("Steam", "IGDB").
+  from the first provider in the order that has it, so IGDB adds the boards Steam lacks. A rating is labelled with a
+  board only when it comes from that board: Steam's own rating for Germany is not the USK's and is never shown (#682),
+  also not when it was cached before. Every rating names its provider the same way ("Steam", "IGDB").
 - When: after every scan, in the background, for the entries shown (a switched-off type asks nothing); one request at a
   time within the store's limit (Steam: 180 per 5 minutes, below its 200), 10 s each, HTTP 429 waits and continues. No
   network, a timeout or a server error skip the game silently until the next scan. Nothing is fetched before the first

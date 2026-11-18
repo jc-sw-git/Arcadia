@@ -568,6 +568,20 @@ public sealed class LibraryMetadataFilterTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T682-2")]
+    public async Task Steams_own_rating_is_no_usk_in_the_age_rating_filter()
+    {
+        var (spec, _, _) = SteamWith(
+            new Entry("Asche", Meta([Genre.Shooter], ratings: [new AgeRating(AgeRatingBoard.Usk, "16", ByStore: true), new AgeRating(AgeRatingBoard.Pegi, "12")])),
+            new Entry("Brandung", Meta([Genre.Shooter], ratings: new AgeRating(AgeRatingBoard.Usk, "18", ByStore: true))));
+        using var arcadia = await StartAsync(spec);
+        var modal = OpenAt(arcadia, "Altersfreigabe");
+
+        Assert.Equal(["PEGI"], modal.RatingPane!.Systems.Select(chip => chip.Label));
+        Assert.Equal(AgeRatingBoard.Pegi, modal.RatingPane.Board);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T466-18")]
     public async Task Metadata_arriving_while_a_filter_applies_adds_its_hits_without_a_key_press()
     {

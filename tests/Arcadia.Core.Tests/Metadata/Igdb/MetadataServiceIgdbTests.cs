@@ -362,7 +362,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     public async Task An_answer_cached_before_ratings_were_read_right_is_asked_again_and_adds_the_missing_boards()
     {
         await GrantAccessAsync();
-        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true)] };
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12")] };
         _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: Ratings("PEGI 12", "ESRB E10")));
         Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
         await RunToIdleAsync();
@@ -384,7 +384,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
         Assert.Equal(requests + 1, _igdb.ApiRequests);
         Assert.Equal(
             [
-                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true), "Made-up Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "Made-up Steam"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "IGDB"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "E10+"), "IGDB"),
             ],

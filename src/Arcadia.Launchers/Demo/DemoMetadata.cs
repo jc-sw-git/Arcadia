@@ -60,7 +60,7 @@ public sealed class DemoMetadata : ILauncherMetadata
                 AgeRatings = (n % 3) switch
                 {
                     0 => [new AgeRating(AgeRatingBoard.Usk, new[] { "0", "6", "12", "16", "18" }[n % 5]), new AgeRating(AgeRatingBoard.Pegi, "16")],
-                    1 => [new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true), new AgeRating(AgeRatingBoard.Esrb, "T")],
+                    1 => [new AgeRating(AgeRatingBoard.Esrb, "T")],
                     _ => [],
                 },
             };

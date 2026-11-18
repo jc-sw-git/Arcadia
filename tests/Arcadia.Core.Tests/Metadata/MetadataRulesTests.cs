@@ -63,20 +63,22 @@ public sealed class MetadataRulesTests
     }
 
     [Fact]
-    [Trait("TestCase", "T493-8")]
-    public void A_real_usk_wins_over_steams_own_rating_for_germany()
+    [Trait("TestCase", "T682-2")]
+    public void Steams_own_rating_is_never_the_usk_so_the_real_usk_of_a_later_provider_shows()
     {
-        var merged = GermanPc.Merged([Provider("Steam", new GameMetadata
-        {
-            AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "18", ByStore: true), new AgeRating(AgeRatingBoard.Usk, "16")],
-        })]);
+        // Steam's own value says 16, the USK gave 12: only the USK's 12 may be labelled USK.
+        var merged = GermanPc.Merged([
+            Provider("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16", ByStore: true)] }),
+            Provider("IGDB", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12")] }),
+        ]);
 
-        Assert.Equal([new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "16"), "Steam")], merged.AgeRatings);
+        Assert.Equal([new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "IGDB")], merged.AgeRatings);
     }
 
     [Fact]
     [Trait("TestCase", "T493-8")]
-    public void Without_a_real_usk_steams_own_rating_counts_as_usk_and_pegi_and_esrb_come_as_delivered()
+    [Trait("TestCase", "T682-2")]
+    public void Without_a_real_usk_there_is_no_usk_and_pegi_and_esrb_come_as_delivered()
     {
         var merged = GermanPc.Merged([Provider("Steam", new GameMetadata
         {
@@ -85,7 +87,6 @@ public sealed class MetadataRulesTests
 
         Assert.Equal(
             [
-                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true), "Steam"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "16"), "Steam"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "M"), "Steam"),
             ],

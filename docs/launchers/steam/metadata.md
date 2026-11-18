@@ -23,8 +23,8 @@ Checked on the owner's PC for #43 (`Run-Check-43-v2/-v3`, 79 installed apps, 30 
 - Answer `{"<AppID>":{"success":bool,"data":{…}}}`. `success:false`: Steam has no page (delisted, a tool) — cached
   as "nothing". An AppID Steam moved answers with the new app's data (`steam_appid` differs): treated as no answer.
 - Used: `about_the_game` (else `detailed_description`; HTML with images, lists, links), `short_description`,
-  `genres[].id`, `developers`, `publishers`, `ratings.usk|pegi|esrb|steam_germany.rating` (ESRB lower case: `m`).
-  `steam_germany` is Steam's own rating for Germany, counted as USK only without a real one. `release_date.date` is
+  `genres[].id`, `developers`, `publishers`, `ratings.usk|pegi|esrb.rating` (ESRB lower case: `m`).
+  `steam_germany` is Steam's own rating for Germany, not the USK's (it can say 16 where the USK says 12): not read. `release_date.date` is
   a localised text ("24. Feb. 2022") and isn't used; `appinfo.vdf` has the date.
 - A game without texts in the asked language answers in English (with `l=german` 3 of 30). Which ratings come depends on the
   country of the requesting IP: `steam_germany` comes from German addresses.

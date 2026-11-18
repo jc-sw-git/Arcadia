@@ -5,8 +5,8 @@ namespace Arcadia.Core.Metadata;
 
 /// <summary>
 /// Every value a provider or the cache delivers is checked here before it is shown (#493): descriptions as plain text,
-/// names and tags without control characters and of a sane length, genres from the list, age ratings only with a value
-/// their board really has. Whatever fails a check is dropped, never shown raw.
+/// names and tags without control characters and of a sane length, genres from the list, age ratings only from the board
+/// itself and with a value it really has. Whatever fails a check is dropped, never shown raw.
 /// </summary>
 public static class MetadataCheck
 {
@@ -43,10 +43,13 @@ public static class MetadataCheck
     /// <summary>A provider's title of a game (#494) in one line, without markup; null if it is empty or too long.</summary>
     public static string? CheckedTitle(string? title) => PlainName(title, MaxTitle);
 
-    /// <summary>The rating with its board's spelling (<c>m</c> → <c>M</c>, <c>e10</c> → <c>E10+</c>); null for a value the board doesn't have.</summary>
+    /// <summary>
+    /// The rating with its board's spelling (<c>m</c> → <c>M</c>, <c>e10</c> → <c>E10+</c>); null for a value the board
+    /// doesn't have and for a store's own rating, which is not the board's (#682; this also drops one an older cache holds).
+    /// </summary>
     public static AgeRating? CheckedRating(AgeRating? rating)
     {
-        if (rating is null || !Ratings.TryGetValue(rating.Board, out var values) || rating.Rating is null)
+        if (rating is null || rating.ByStore || !Ratings.TryGetValue(rating.Board, out var values) || rating.Rating is null)
         {
             return null;
         }

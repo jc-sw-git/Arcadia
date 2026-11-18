@@ -114,7 +114,7 @@ public sealed record MergedMetadata
             var ofBoard = providers
                 .SelectMany(p => p.Data.AgeRatings.Where(r => r.Board == board).Select(r => new Sourced<AgeRating>(r, p.Source)))
                 .ToList();
-            if ((ofBoard.FirstOrDefault(r => !r.Value.ByStore) ?? ofBoard.FirstOrDefault()) is { } rating)
+            if (ofBoard.FirstOrDefault() is { } rating)
             {
                 shown.Add(rating);
             }

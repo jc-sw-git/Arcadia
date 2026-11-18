@@ -2,7 +2,7 @@
 
 **Status:** Automated: T640-1 · QE: none · Open for the owner: none
 
-- [x] **T640-1** A secret typed key by key with D-pad and A on the on-screen keyboard leaves no `Gamepad:` line and no `Bild:` line naming a button in `arcadia.log`; outside of typing the presses are still logged. · E2E: yes
+- [x] **T640-1** A secret typed key by key with D-pad and A on the on-screen keyboard leaves no `Gamepad:` line and no `Bild:` line in `arcadia.log`; outside of typing the presses are still logged. · E2E: yes
 
 Automated tests:
 
@@ -15,3 +15,4 @@ History:
 | Test | Date | Who | Build / environment | Result | Consequence |
 |---|---|---|---|---|---|
 | T640-1 | 2026-11-18 | Claude | PR branch, Debug, Linux container, headless; red without the fix | ✅ | – |
+| T640-1 | 2026-11-18 | Claude (QE) | PR #645, Debug, Linux container, headless; red against `main` and with a `Bild:` line while typing | ✅ | – |

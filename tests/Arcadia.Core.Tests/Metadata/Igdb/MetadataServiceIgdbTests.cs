@@ -362,7 +362,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     public async Task An_answer_cached_before_ratings_were_read_right_is_asked_again_and_adds_the_missing_boards()
     {
         await GrantAccessAsync();
-        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true)] };
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12")] };
         _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: Ratings("PEGI 12", "ESRB E10")));
         Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
         await RunToIdleAsync();
@@ -384,11 +384,29 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
         Assert.Equal(requests + 1, _igdb.ApiRequests);
         Assert.Equal(
             [
-                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12", ByStore: true), "Made-up Steam"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "Made-up Steam"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "IGDB"),
                 new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Esrb, "E10+"), "IGDB"),
             ],
             _service.Of(Game.KeyOf(Steamish.Id, "100")).AgeRatings);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T682-2")]
+    public async Task Steams_own_rating_for_germany_stays_steam_de_and_igdb_adds_the_real_usk_beside_it()
+    {
+        await GrantAccessAsync();
+        _steamSource.Local["100"] = new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16")] };
+        _igdb.ServeSteam("100", FakeIgdb.Game(1, "Nordwind", extra: Ratings("USK 12")));
+        Scan(steam: [GameOf(Steamish, "100", "Nordwind")]);
+        await RunToIdleAsync();
+
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Usk, "12"), "IGDB"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.SteamGermany, "16"), "Made-up Steam"),
+            ],
+            AgeRatingRegion.Ordered(_service.Of(Game.KeyOf(Steamish.Id, "100")).AgeRatings, rating => rating.Value.Board, AgeRatingBoard.Usk));
     }
 
     /// <summary>IGDB's age ratings as the query asks for them: the organization and the rating category's own text.</summary>

@@ -22,10 +22,11 @@ public static class AgeRatingTones
     /// <summary>The tone of a checked rating; a value the board doesn't have (none gets this far) reads white.</summary>
     public static AgeRatingTone Of(AgeRating rating) => (rating.Board, rating.Rating) switch
     {
-        (AgeRatingBoard.Usk, "6") => AgeRatingTone.Yellow,
-        (AgeRatingBoard.Usk, "12") => AgeRatingTone.Green,
-        (AgeRatingBoard.Usk, "16") => AgeRatingTone.Blue,
-        (AgeRatingBoard.Usk, "18") => AgeRatingTone.Red,
+        // Steam's own rating for Germany is on the USK's scale and takes its colours; the name "Steam DE" tells them apart.
+        (AgeRatingBoard.Usk or AgeRatingBoard.SteamGermany, "6") => AgeRatingTone.Yellow,
+        (AgeRatingBoard.Usk or AgeRatingBoard.SteamGermany, "12") => AgeRatingTone.Green,
+        (AgeRatingBoard.Usk or AgeRatingBoard.SteamGermany, "16") => AgeRatingTone.Blue,
+        (AgeRatingBoard.Usk or AgeRatingBoard.SteamGermany, "18") => AgeRatingTone.Red,
         (AgeRatingBoard.Pegi, "3" or "7") => AgeRatingTone.Green,
         (AgeRatingBoard.Pegi, "12" or "16") => AgeRatingTone.Orange,
         (AgeRatingBoard.Pegi, "18") => AgeRatingTone.Red,

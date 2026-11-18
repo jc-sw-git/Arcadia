@@ -24,7 +24,9 @@ Checked on the owner's PC for #43 (`Run-Check-43-v2/-v3`, 79 installed apps, 30 
   as "nothing". An AppID Steam moved answers with the new app's data (`steam_appid` differs): treated as no answer.
 - Used: `about_the_game` (else `detailed_description`; HTML with images, lists, links), `short_description`,
   `genres[].id`, `developers`, `publishers`, `ratings.usk|pegi|esrb|steam_germany.rating` (ESRB lower case: `m`).
-  `steam_germany` is Steam's own rating for Germany, counted as USK only without a real one. `release_date.date` is
+  `steam_germany` is Valve's own rating for Germany, worked out from the developer's content questionnaire (Steamworks
+  "Content survey: Germany"), not the USK's: it can say 16 where the USK says 12. `usk` is set only when the developer
+  enters a real USK rating, which is rare. Shown as its own board "Steam DE". `release_date.date` is
   a localised text ("24. Feb. 2022") and isn't used; `appinfo.vdf` has the date.
 - A game without texts in the asked language answers in English (with `l=german` 3 of 30). Which ratings come depends on the
   country of the requesting IP: `steam_germany` comes from German addresses.

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text.Json.Nodes;
 using Arcadia.Core.Library;
 using Arcadia.Core.Metadata;
 using Arcadia.Core.Settings;
@@ -222,6 +223,36 @@ public sealed class MetadataServiceTests : IDisposable
 
         Assert.Equal(["1", "2"], _server.AskedIds);
         Assert.StartsWith("Beschreibung von 2", _service.Of(Key("2")).Description!.Value);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T682-3")]
+    public async Task Steams_own_rating_an_older_version_cached_as_usk_is_steams_own_after_a_restart_without_asking_steam_again()
+    {
+        ServeAll("1");
+        Scan("1");
+        await RunToIdleAsync();
+        _service.Dispose();
+
+        // A file as the version before wrote it: Steam's own rating stored as a USK marked "by store".
+        var file = Assert.Single(Directory.EnumerateFiles(CacheFolder, "*.json", SearchOption.AllDirectories));
+        var stored = JsonNode.Parse(File.ReadAllText(file))!;
+        stored["store"]!["ageRatings"] = JsonNode.Parse("""[{"board":"usk","rating":"16","byStore":true},{"board":"pegi","rating":"12"}]""");
+        File.WriteAllText(file, stored.ToJsonString());
+        var requests = _server.RequestCount;
+
+        _service = NewService();
+        _service.Open();
+        Scan("1");
+        await RunToIdleAsync();
+
+        Assert.Equal(requests, _server.RequestCount);
+        Assert.Equal(
+            [
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.Pegi, "12"), "Made-up Launcher"),
+                new Sourced<AgeRating>(new AgeRating(AgeRatingBoard.SteamGermany, "16"), "Made-up Launcher"),
+            ],
+            _service.Of(Key("1")).AgeRatings);
     }
 
     private void SwitchLauncherDataOff() => _settings = new MetadataSettings { Off = [MetadataSourceKind.Launcher] };

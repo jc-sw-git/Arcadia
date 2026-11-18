@@ -844,6 +844,7 @@
   <data name="StatusTip" xml:space="preserve"><value>Status (V)</value></data>
   <data name="SearchTip" xml:space="preserve"><value>Suchen (F)</value></data>
   <data name="SettingsTip" xml:space="preserve"><value>Einstellungen (Enter)</value></data>
+  <data name="ClockTip" xml:space="preserve"><value>Uhrzeit und Datum einstellen</value></data>
   <data name="FilterTip" xml:space="preserve"><value>Filter (G)</value></data>
   <data name="BackTip" xml:space="preserve"><value>Zurück (Esc)</value></data>
   <data name="Library" xml:space="preserve"><value>Bibliothek</value></data>

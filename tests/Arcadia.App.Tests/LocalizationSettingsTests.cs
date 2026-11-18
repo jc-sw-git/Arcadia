@@ -34,6 +34,27 @@ public sealed class LocalizationSettingsTests : IDisposable
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T612-8")]
+    public async Task A_click_on_the_clock_chip_opens_Lokalisierung_from_the_library_and_from_the_detail_page_and_B_goes_back()
+    {
+        using var arcadia = await ArcadiaDriver.StartAsync();
+
+        arcadia.Click(arcadia.Main.OpenClockSettingsCommand);
+        Assert.IsType<LocalizationSettingsViewModel>(arcadia.Main.Settings?.Selected);
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.True(arcadia.Main.IsLibraryShown);
+
+        arcadia.Hold(UiAction.Accept, TimeSpan.FromMilliseconds(1100));
+        Assert.True(arcadia.Main.IsDetailOpen);
+        arcadia.Click(arcadia.Main.OpenClockSettingsCommand);
+        Assert.IsType<LocalizationSettingsViewModel>(arcadia.Main.Settings?.Selected);
+        arcadia.Press(UiAction.Back);
+        Assert.False(arcadia.Main.IsSettingsOpen);
+        Assert.True(arcadia.Main.IsDetailOpen);
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T553-1")]
     public async Task The_category_sits_before_About_with_the_keyboard_and_clock_groups_and_B_goes_back()
     {

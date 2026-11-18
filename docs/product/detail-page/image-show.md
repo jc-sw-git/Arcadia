@@ -3,7 +3,7 @@
 Index: [README.md](README.md). The background's place on the page: [page.md](page.md).
 
 - After 10 s without any input on the detail page, the page fades out (about 1 s) and the shown game's background shows
-  whole and centred, its edges fading into the blurred, darkened copy around it (#565). Only the shown game's title
+  whole and centred in the whole window, its edges fading into the blurred, darkened copy around it (#565, #612). Only the shown game's title
   stays, small, bottom left: no button hints, no clock. No button or setting starts it or changes the 10 s.
 - After another 10 s a random background of another game blends in (about 1.5 s), then every 10 s the next. The pool is
   the games of the tab the page turns through, with its filter (from the search: its hits), that have a background,

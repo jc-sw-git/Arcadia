@@ -4,8 +4,13 @@ Index: [README.md](README.md).
 
 - The game's background fills the page behind header and footer (#565): a flat one (wider than 16 : 9) runs edge to
   edge at the top, uncut, and fades softly at its lower edge into its blurred, darkened copy below; a 16 : 9 one fills
-  the screen; a taller one loses at most 10 % and shows the blurred copy at its sides. Scrims darken only behind title
-  and buttons, the header's tabs and the footer's hints.
+  the screen; a taller one loses at most 10 % and shows the blurred copy at its sides. It fills the whole window, also
+  the bars beside or above and below the 16 : 9 layout, and never ends in a hard edge (#612). A scrim darkens only
+  behind title and buttons; header and footer lie on see-through bands in the panel's colour (45 % see-through), their
+  text with the shadow of text on artwork, up to the window's edges; the other launchers' tabs are chips as under the
+  mouse and the date is as light as body text. The library keeps its plain header and footer.
+- The covers have a quiet frame, a light line inside a dark one, that sets them off from any artwork (#612). The titles of the games before and
+  after, under the stacks, lie on the same soft cloud as the note under "Spielen".
 
 - On the game's artwork beside its cover: title, then one button row "Spielen", "Zu Favoriten", "In … öffnen" and
   a quiet note under "Spielen" (update, installation, soundtrack) that the focus never takes, on a soft dark cloud that

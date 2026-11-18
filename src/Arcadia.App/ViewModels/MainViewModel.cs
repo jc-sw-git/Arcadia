@@ -968,6 +968,10 @@ public partial class MainViewModel : ViewModelBase, IGameActionsOwner, ILibraryH
     [RelayCommand]
     private void OpenSettings() => ShowSettings(first: null);
 
+    /// <summary>A click on the header's clock chip (#612) opens "Lokalisierung", where clock and date are set; no button reaches it.</summary>
+    [RelayCommand]
+    private void OpenClockSettings() => ShowSettings(typeof(LocalizationSettingsViewModel));
+
     /// <summary>
     /// Y (V) or a click on the header's status chip (#166): only while the header shows a message or the update, and
     /// never over another dialog or menu.

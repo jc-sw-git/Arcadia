@@ -1,6 +1,6 @@
 # #612 Detail page: readable header and footer, background to the window's edges, framed cover
 
-**Status:** Automated: T612-3 (window area), T612-8 · QE: T612-1 to T612-6, T612-9 · Owner: T612-7 passed
+**Status:** Automated: T612-3 (window area), T612-8 · QE: T612-1 to T612-6, T612-9 · Open for the owner: none (T612-7 passed)
 
 - [x] **T612-1** Detail page open over a bright artwork: header (logo, tabs, clock) sits on a dark band, 45 %
   see-through, the artwork visibly shows through, all text reads clearly; the other launchers' tabs are chips as under

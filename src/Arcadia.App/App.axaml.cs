@@ -94,6 +94,7 @@ public partial class App : Application
     /// <summary>Builds the services, the view model and the window, and wires them; an error here ends in <see cref="StartupFailure"/>.</summary>
     private void StartDesktop(IClassicDesktopStyleApplicationLifetime desktop)
     {
+        StartTimeline.Mark("Avalonia"); // not a UI text (log)
         Trace.Listeners.Add(new AppLogTraceListener());
         var args = desktop.Args ?? [];
         var time = TimeProvider.System;
@@ -105,6 +106,7 @@ public partial class App : Application
 
         // Before the first text is read: a change of "Sprache" applies after a restart (#554).
         UiLanguage.Use(settings.Current.Localization.Language);
+        StartTimeline.Mark("Einstellungen"); // not a UI text (log)
         var demo = args.Contains(CommandLine.DemoArgument, StringComparer.OrdinalIgnoreCase);
         var firstRun = new FirstRunSetup(
             settings, demo, forced: args.Contains(CommandLine.FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
@@ -138,6 +140,10 @@ public partial class App : Application
             Metadata = MetadataFolder.CreateService(time, settings, Core.Diagnostics.LogLocation.DataFolder),
             UserData = new Core.UserData.UserDataStore(Core.Diagnostics.LogLocation.DataFolder),
         });
+        StartTimeline.Mark("Dienste"); // not a UI text (log)
+
+        // The scan runs off the UI thread while the window is built; LoadAsync below shows it (#637).
+        app.Main.Session.StartReading();
         var launchers = app.Launchers;
         var controllerSupport = app.ControllerSupport;
         var launchedGames = app.LaunchedGames;
@@ -152,6 +158,12 @@ public partial class App : Application
         }
 
         var window = new MainWindow { DataContext = viewModel };
+        StartTimeline.Mark("Fenster gebaut"); // not a UI text (log)
+        window.Opened += (_, _) =>
+        {
+            StartTimeline.Mark("Fenster offen"); // not a UI text (log)
+            window.RequestAnimationFrame(_ => StartTimeline.Mark("erstes Bild")); // not a UI text (log)
+        };
         viewModel.Clipboard = new WindowClipboard(window);
         viewModel.ForegroundRequested += (_, _) => window.BringToFront();
         if (args.Contains(CommandLine.FullscreenArgument, StringComparer.OrdinalIgnoreCase))
@@ -367,6 +379,14 @@ public partial class App : Application
         // Version and Windows build first: a bug report with only the log must say what it is about.
         AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "
             + $"{(updates.IsInstalled ? "installiert" : "nicht installiert")}, Sprache {UiLanguage.Culture.Name}, System {UiLanguage.System.Name}): {string.Join(' ', args)}");
+        StartTimeline.Mark("Start verdrahtet"); // not a UI text (log)
+        void OnFirstLibrary(object? sender, EventArgs e)
+        {
+            viewModel.Session.LibrariesChanged -= OnFirstLibrary;
+            window.RequestAnimationFrame(_ => StartTimeline.Finish("Bibliothek im Bild")); // not a UI text (log)
+        }
+
+        viewModel.Session.LibrariesChanged += OnFirstLibrary;
         viewModel.Session.LoadAsync().Forget(AppTexts.ErrorContextLoadLibrary);
         viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
         updates.CheckIfDueAsync().Forget(AppTexts.ErrorContextUpdateCheck);

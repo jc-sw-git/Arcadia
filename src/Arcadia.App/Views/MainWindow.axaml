@@ -336,23 +336,25 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.Resources>
                 <DataTemplate x:Key="LibraryCover" x:DataType="vm:GameTileViewModel">
-                  <!-- 2 : 3, the height following the column's width (#24). -->
+                  <!-- 2 : 3, the height following the column's width (#24). What a tile's game is (title, kind, colours, installed)
+                       never changes for that tile, so those bindings are OneTime: a page turn rebinds every tile of the page,
+                       and a binding that listens costs a subscription there (#637). -->
                   <ctl:CoverFrame Margin="10">
-                    <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand}"
-                            Background="{Binding CoverBrush}" ToolTip.Tip="{Binding Title}">
+                    <Button Classes="plain tile" Classes.focused="{Binding IsFocused}" Command="{Binding FocusCommand, Mode=OneTime}"
+                            Background="{Binding CoverBrush, Mode=OneTime}" ToolTip.Tip="{Binding Title, Mode=OneTime}">
                       <Panel>
                         <!-- The cover (#487); the monogram and the title show until it is there. -->
                         <ctl:ArtworkImage Name="CoverArt" File="{Binding Cover}" CornerRadius="8" Loader="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.ArtworkLoader}" />
-                        <Border Classes="shade" IsVisible="{Binding !IsInstalled}" />
+                        <Border Classes="shade" IsVisible="{Binding !IsInstalled, Mode=OneTime}" />
                         <Grid RowDefinitions="*,Auto" Margin="12">
-                          <TextBlock Text="{Binding Monogram}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush}" Classes.dim="{Binding !IsInstalled}"
+                          <TextBlock Text="{Binding Monogram, Mode=OneTime}" FontSize="56" FontWeight="ExtraBold" Foreground="{Binding AccentBrush, Mode=OneTime}" Classes.dim="{Binding !IsInstalled, Mode=OneTime}"
                                      IsVisible="{Binding !#CoverArt.IsShowing}" />
                           <!-- The kind sits above the title, where no state badge ever is (#141); the title keeps its width. -->
                           <StackPanel Grid.Row="1" Spacing="8">
-                            <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon}" ToolTip.Tip="{Binding TypeName}">
-                              <ctl:LineIcon Icon="{Binding TypeIconKey}" />
+                            <Border Classes="typeBadge" IsVisible="{Binding HasTypeIcon, Mode=OneTime}" ToolTip.Tip="{Binding TypeName, Mode=OneTime}">
+                              <ctl:LineIcon Icon="{Binding TypeIconKey, Mode=OneTime}" />
                             </Border>
-                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                            <TextBlock Text="{Binding Title, Mode=OneTime}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
                                        TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" IsVisible="{Binding !#CoverArt.IsShowing}" />
                           </StackPanel>
                         </Grid>
@@ -980,7 +982,7 @@
 
       <!-- "Titel ändern" (#496): a game's own title with the on-screen keyboard, over the detail page. Built once and kept,
            like the search: building the dialog and its keyboard at the opening cost a few hundred ms. -->
-      <views:ChangeTitleView Grid.RowSpan="4" DataContext="{Binding ChangeTitle}" />
+      <views:ChangeTitleView Name="ChangeTitlePanel" Grid.RowSpan="4" DataContext="{Binding ChangeTitle}" />
 
       <!-- "Übersicht anpassen" (#500): a game's quick selection, over the detail page. -->
       <ContentControl Grid.RowSpan="4" Content="{Binding CustomizeOverview}" IsVisible="{Binding IsCustomizeOverviewOpen}">

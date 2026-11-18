@@ -2570,6 +2570,11 @@
   <Style Selector="ctl|RevealPanel.keyboardDrawer.out">
     <Setter Property="Reveal" Value="1" />
   </Style>
+  <!-- A shut drawer kept in the layout (ChangeTitleView) joins it after the window's first frame (#637): the start's first
+       layout would otherwise build its keyboard, a few hundred ms before the library shows. -->
+  <Style Selector="ctl|RevealPanel.keyboardDrawer.afterFirstFrame:not(.out)">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
   <Style Selector="Button.keyboardTab">
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="Height" Value="40" />

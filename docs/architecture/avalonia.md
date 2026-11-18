@@ -34,3 +34,10 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   only inside that view. Elements built many times over (the keyboards' keys, every button's chrome) are types of their
   own (`ctl:KeyLabel`, `ctl:ButtonChrome`), so the window's `TextBlock`/`Border` styles skip them. `StyleCostTests`
   (window guard) bounds the records per element.
+- Start (#637): the window and every page, dialog and keyboard in it are built before the first frame, so what they do at
+  construction delays the library. A control that builds its children from properties (`KeyHint`, `PadGlyph`) builds
+  them in `MeasureOverride`, not at each property change: hidden pages aren't measured, so they cost nothing until shown.
+  The on-screen keyboards are built after the first frame (`MainWindow.BuildKeyboardsOnceLibraryShows`); a shut drawer
+  kept in the layout waits for it with class `afterFirstFrame`. Bindings in the library's cover template that never change
+  for a tile are `OneTime`. The release is published ReadyToRun. `arcadia.log`'s line `Start: …` gives each step in ms
+  since the process started, up to `Bibliothek im Bild`.

@@ -1,7 +1,7 @@
 # Releases and updates
 
 - Windows x64 only for now. Installer and self-update with **Velopack**: `tools/release/Pack.ps1 -Version x.y.z`
-  publishes self-contained, publishes Pan as Native AOT into `Pan\Pan.exe` beside `Arcadia.exe` (needs Visual Studio's
+  publishes self-contained with ReadyToRun (precompiled, so the start doesn't wait for the JIT), publishes Pan as Native AOT into `Pan\Pan.exe` beside `Arcadia.exe` (needs Visual Studio's
   C++ build tools; the CI's Windows runner has them) and runs `vpk pack` → `artifacts/releases/Arcadia-win-Setup.exe`
   + update feed. Installs without admin rights to `%LOCALAPPDATA%\Arcadia\current\Arcadia.exe`. Nothing else may go
   into `%LOCALAPPDATA%\Arcadia`: the setup takes any file there for an installation and deletes the folder on

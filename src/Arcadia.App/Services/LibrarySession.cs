@@ -35,6 +35,9 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
 
     // Launchers whose account changed their games while the library was loading: read again once it is loaded (#83).
     private readonly HashSet<string> _changedWhileLoading = new(StringComparer.Ordinal);
+
+    /// <summary>The reading <see cref="StartReading"/> started and <see cref="LoadAsync"/> hasn't taken yet.</summary>
+    private (Task<IReadOnlyList<LauncherLibrary>> Libraries, System.Diagnostics.Stopwatch Watch)? _reading;
     private readonly List<(ILauncherAccount Account, EventHandler Changed, EventHandler<Exception> Failed)> _accounts = [];
 
     /// <param name="artwork">Brings the games' covers and backgrounds into the cache after each read (#487); null: placeholders only.</param>
@@ -144,12 +147,25 @@ public sealed partial class LibrarySession : ObservableObject, IDisposable
     /// <summary>The library read last of <paramref name="launcherId"/>; null if the launcher isn't active.</summary>
     public LauncherLibrary? LibraryOf(string launcherId) => Libraries.FirstOrDefault(l => l.Launcher.Id == launcherId);
 
-    public async Task LoadAsync()
+    /// <summary>
+    /// Starts reading the libraries now, off the UI thread, for the next <see cref="LoadAsync"/> to show: at start the scan runs
+    /// while the window is still being built (#637).
+    /// </summary>
+    public void StartReading()
     {
         IsLoading = true;
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        var libraries = await _library.LoadAsync();
+        _reading ??= (_library.LoadAsync(), System.Diagnostics.Stopwatch.StartNew());
+    }
+
+    /// <summary>Reads the libraries, or takes the reading <see cref="StartReading"/> started, and shows them.</summary>
+    public async Task LoadAsync()
+    {
+        StartReading();
+        var (reading, watch) = _reading!.Value;
+        _reading = null;
+        var libraries = await reading;
         var scanned = watch.ElapsedMilliseconds;
+        StartTimeline.Mark("Bibliothek gelesen"); // not a UI text (log)
         IsLoading = false;
         Show(libraries);
         foreach (var launcherId in _changedWhileLoading)

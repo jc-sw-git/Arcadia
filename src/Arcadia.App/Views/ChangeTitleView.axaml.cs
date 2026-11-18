@@ -9,4 +9,7 @@ public partial class ChangeTitleView : UserControl
     {
         InitializeComponent();
     }
+
+    /// <summary>Lets the shut drawer into the layout, which builds its keyboard; called after the window's first frame (#637).</summary>
+    public void ShowShutDrawer() => KeyboardDrawer.Classes.Remove("afterFirstFrame");
 }

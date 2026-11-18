@@ -125,6 +125,30 @@ public sealed class LibrarySessionTests
         }
     }
 
+    [AvaloniaFact]
+    [Trait("TestCase", "T637-2")]
+    public async Task The_reading_started_before_the_window_is_the_one_the_load_shows()
+    {
+        using var setup = new SessionSetup([Installed(Launcher, "Alpha", ArcadiaDriver.Now)]);
+        var session = setup.Session;
+        var changes = 0;
+        session.LibrariesChanged += (_, _) => changes++;
+
+        session.StartReading();
+        Assert.True(session.IsLoading);
+        Assert.Equal(0, changes);
+        await session.LoadAsync();
+
+        Assert.Equal(1, setup.Launcher.Scanner.Scans);
+        Assert.Equal(1, changes);
+        Assert.False(session.IsLoading);
+        Assert.Equal(["Alpha"], session.LibraryOf(Launcher.Id)!.Games.Select(g => g.Title));
+
+        // The reading was taken: a later load reads again.
+        await session.LoadAsync();
+        Assert.Equal(2, setup.Launcher.Scanner.Scans);
+    }
+
     /// <summary>A session over one launcher whose games and install reports the test sets, on a fake clock.</summary>
     private sealed class SessionSetup : IDisposable
     {

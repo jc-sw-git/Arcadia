@@ -38,8 +38,9 @@
     </Panel>
 
     <!-- The settings' shared keyboard, always the same one. MainWindow keeps this view and the drawer stays in the
-         layout while shut (as the search's), so its keys are built and measured at the start, not at each opening. -->
-    <ctl:RevealPanel Classes="keyboardDrawer bleed" Classes.out="{Binding Editor, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}" VerticalAlignment="Bottom">
+         layout while shut (as the search's), so its keys are built and measured once after the start's first frame
+         (ShowShutDrawer), not at each opening. -->
+    <ctl:RevealPanel Name="KeyboardDrawer" Classes="keyboardDrawer bleed afterFirstFrame" Classes.out="{Binding Editor, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}" VerticalAlignment="Bottom">
       <Border Background="{StaticResource KeyboardSurface}" BorderBrush="{StaticResource SurfaceRaised}" BorderThickness="0,1,0,0" Padding="0,20,0,14">
         <views:OnScreenKeyboardView DataContext="{Binding $parent[Window].((vm:MainViewModel)DataContext)?.SettingsKeyboard.Keyboard}" HorizontalAlignment="Center" />
       </Border>

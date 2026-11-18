@@ -204,12 +204,23 @@ public partial class MainWindow : Window
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _viewModel.LauncherTabs.PropertyChanged += OnTabsPropertyChanged;
             _viewModel.Library.PropertyChanged += OnLibraryPropertyChanged;
-            BuildKeyboardsOnceLibraryShows(_viewModel.Session);
         }
 
         // A settings page open before the window knew its view model (the first start resumed on "Datenquellen", #497):
         // its rows scroll with the focus too.
         FollowSettingsPage(_viewModel?.Settings);
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        // Not before the window is open: the library, read while the window was built, may be there before (#637), and the
+        // keyboards built then would hold back the first frame by half a second.
+        if (_viewModel is not null)
+        {
+            BuildKeyboardsOnceLibraryShows(_viewModel.Session);
+        }
     }
 
     /// <summary>
@@ -226,6 +237,7 @@ public partial class MainWindow : Window
             {
                 Dispatcher.UIThread.Post(() => BuildKeyboard(SearchKeyboard, AppTexts.KeyboardOfSearch), DispatcherPriority.Background);
                 Dispatcher.UIThread.Post(() => BuildKeyboard(SettingsKeyboard, AppTexts.KeyboardOfSettings), DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(ChangeTitlePanel.ShowShutDrawer, DispatcherPriority.Background);
             });
             return;
         }

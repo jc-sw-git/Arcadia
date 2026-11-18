@@ -139,11 +139,21 @@ public sealed class GamepadRouting
 
         if (UiActionMap.FromGamepad(button) is { } action)
         {
-            AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
             Dispatcher.UIThread.Post(() =>
             {
                 if (_isArcadiaActive())
                 {
+                    // While a text is being written the presses are the typed keys (the on-screen keyboard starts on a
+                    // fixed key), so no line may name them: neither "Gamepad:" nor the press-to-frame line, whose count,
+                    // rhythm and handling time would show how long the key is and where its characters sit. Safety
+                    // beats measurability here.
+                    if (_viewModel.OpenTextEditor is not null)
+                    {
+                        _viewModel.HandleGamepad(action, repeat);
+                        return;
+                    }
+
+                    AppLog.Write($"Gamepad: {button} → {action}{(repeat ? " (gehalten)" : string.Empty)}");
                     _latency.Measure(action.ToString(), pressedAt, () => _viewModel.HandleGamepad(action, repeat));
                 }
             });

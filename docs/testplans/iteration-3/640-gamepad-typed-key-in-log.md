@@ -1,6 +1,6 @@
 # #640 A key typed with the gamepad can be rebuilt from the log
 
-**Status:** Automated: T640-1
+**Status:** Automated: T640-1 · QE: none · Open for the owner: none
 
 - [x] **T640-1** A secret typed key by key with D-pad and A on the on-screen keyboard leaves no `Gamepad:` line and no `Bild:` line naming a button in `arcadia.log`; outside of typing the presses are still logged. · E2E: yes
 

@@ -62,7 +62,7 @@ public sealed class FirstRunDataSourcesViewModel : SettingsCategoryViewModel
     }
 
     /// <summary>What ≡ does here, for the footer: "Überspringen", or "Fertig" once a key or access is there.</summary>
-    public string FinishText => _finish.Title;
+    public override string FinishText => _finish.Title;
 
     /// <summary>B on the rows (the editor takes B itself while a value is typed): back to the launcher page.</summary>
     public override bool Back()

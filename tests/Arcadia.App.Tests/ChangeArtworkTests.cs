@@ -14,7 +14,7 @@ namespace Arcadia.App.Tests;
 /// #490: "Artwork ändern" with the controller alone, from the detail page and the game menu: choosing the launcher's image,
 /// an own file through the (fake) file dialog, the 20 MB limit, "Standard wiederherstellen", and the notice without a key.
 /// </summary>
-public sealed class ChangeArtworkTests
+public sealed partial class ChangeArtworkTests
 {
     private static readonly TimeSpan PastHoldTime = TimeSpan.FromMilliseconds(1100);
 

@@ -24,6 +24,7 @@ Automated tests:
 | T683-5 | `MetadataServiceIgdbTests.Without_internet_igdb_is_not_asked_after_the_store_failed_and_only_the_players_run_says_so` (Core) |
 | T683-6, T683-7 | `DataSourcesTests` (`DataSourcesTests.Offline683.cs`) |
 | T683-8, T683-9 | `MetadataSettingsTests` |
+| T683-10 (without a window: the offer and the toast's text and level) | `ChangeArtworkTests.Without_internet_the_modal_offers_the_images_on_this_pc_and_warns_once`, `WaitingListLevelsTests.Without_internet_an_own_term_warns_and_says_steamgriddb_nicht_erreichbar_at_once` |
 
 History:
 
@@ -31,3 +32,5 @@ History:
 |---|---|---|---|---|---|
 | T683-3, T683-5 | 2026-11-18 | Claude | PR branch without the run's offline stop / with it, Debug, Linux | ❌ / ✅ | the checks go red on the bug |
 | T683-1 to T683-9 | 2026-11-18 | Claude | PR branch, Debug, Linux | ✅ | – |
+| T683-10 (tests above) | 2026-11-18 | Claude (QE) | PR branch with the check in "Artwork ändern" and before the own term removed / with it, Debug, Linux | ❌ / ✅ | the checks go red on the bug |
+| T683-10 | 2026-11-18 | Claude (QE) | PR branch, Debug, Linux, Xvfb, `--demo`, no network (own network namespace) | ❌ | "Jetzt suchen" and "Alle Artworks neu laden" warn at once and start nothing, but the toast shows no warning symbol (no toast has one); "Artwork ändern", the waiting list and the tab "Metadaten" can't be reached with demo games (greyed), checked by the tests above |

@@ -23,6 +23,7 @@ public sealed class UserDataStoreTests : IAsyncDisposable
             await store.WhenWrittenAsync();
         }
 
+        CacheFiles.OpenTemporary.Value = null;
         Directory.Delete(_folder, recursive: true);
     }
 
@@ -34,6 +35,21 @@ public sealed class UserDataStoreTests : IAsyncDisposable
         _stores.Add(store);
         store.Open();
         return store;
+    }
+
+    // #642: after a power cut the file must not be empty, so the write asks for the flush to the disk.
+    [Fact]
+    public async Task A_change_is_flushed_to_the_disk_before_the_file_is_replaced()
+    {
+        var flushes = new List<bool>();
+        CacheFiles.OpenTemporary.Value = temporary => new CacheFilesTests.RecordingStream(temporary, flushes);
+        var store = Open();
+
+        store.Change(Key, data => data with { Title = "Aal" });
+        await store.WhenWrittenAsync();
+
+        Assert.Contains(true, flushes);
+        Assert.DoesNotContain(false, flushes);
     }
 
     [Fact]

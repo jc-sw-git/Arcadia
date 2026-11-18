@@ -600,7 +600,7 @@ public sealed partial class ArtworkService : IDisposable
         {
             Log($"Artwork: {(run.Reload ? "neu geladen, " : string.Empty)}{run.Copied} kopiert, {run.Downloaded} geladen, {run.Missing} ohne Bild in {watch.ElapsedMilliseconds} ms"
                 + (run.SteamGridDbAsked > 0 ? $"; SteamGridDB {run.SteamGridDbAsked} gefragt" : string.Empty)
-                + (run.OfflineHosts.Count > 0 ? $"; keine Verbindung zu {string.Join(", ", run.OfflineHosts.Order(StringComparer.Ordinal))}, der Rest folgt bei der nächsten Suche" : string.Empty)
+                + (run.OfflineHosts.Count > 0 ? $"; keine Verbindung zu {string.Join(", ", run.OfflineHosts.Keys.Order(StringComparer.Ordinal))}, der Rest folgt bei der nächsten Suche" : string.Empty)
                 + (run.SteamGridDbStop is { } stop ? $"; SteamGridDB übersprungen ({stop})" : string.Empty)
                 + (run.Offline ? "; keine Internetverbindung" : string.Empty));
         }
@@ -1018,7 +1018,7 @@ public sealed partial class ArtworkService : IDisposable
         }
 
         // A scan goes online only for new games (#506, Q7): the launchers' images to download wait for a search too.
-        if (run.OfflineHosts.Contains(url.IdnHost) || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
+        if (run.OfflineHosts.ContainsKey(url.IdnHost) || run.Failed.Contains(url) || !run.GoesOnlineFor(game.Key))
         {
             return null;
         }
@@ -1249,7 +1249,7 @@ public sealed partial class ArtworkService : IDisposable
     /// <summary>One line per game and run, however many of its images or addresses failed: the first failure says why.</summary>
     private void LogOnce(Game game, RunState run, string line)
     {
-        if (run.Logged.Add(game.Key))
+        if (run.Logged.TryAdd(game.Key, true))
         {
             Log(line);
         }
@@ -1260,7 +1260,7 @@ public sealed partial class ArtworkService : IDisposable
     /// hangs costs one timeout, not one per game, and keeps no other host's images away. True the first time per host: its
     /// line is written whatever the game logged before (e.g. its other image missing), so the log names the host that failed.
     /// </summary>
-    private static bool GoOffline(RunState run, Uri url) => run.OfflineHosts.Add(url.IdnHost);
+    private static bool GoOffline(RunState run, Uri url) => run.OfflineHosts.TryAdd(url.IdnHost, true);
 
     /// <summary>
     /// A host failed (#683): one check of every host the run asked. None answering means no internet: the run goes online
@@ -1413,8 +1413,11 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>No host answered the check after one failed (#683): nothing more is asked online in this run.</summary>
         public bool Offline { get; set; }
 
-        /// <summary>One address per host the run asked, for the check when one fails (#683).</summary>
-        public Dictionary<string, Uri> Hosts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// One address per host the run asked, for the check when one fails (#683). Concurrent like the other sets a
+        /// download writes: "Artwork ändern" downloads its offers in parallel.
+        /// </summary>
+        public ConcurrentDictionary<string, Uri> Hosts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The automatic images of <paramref name="source"/> may be in use; an own file always.</summary>
         public bool IsOn(ArtworkSource source) => source switch
@@ -1450,14 +1453,14 @@ public sealed partial class ArtworkService : IDisposable
         /// <summary>Games done of those that missed an image at the start.</summary>
         public int Searched { get; set; }
 
-        public HashSet<string> Logged { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, bool> Logged { get; } = new(StringComparer.Ordinal);
 
         // An address that gave no image is not asked again in this run, but by the next: a rescan may find what the server
         // added meanwhile. One that gave an image is asked again for another game naming it (Epic's editions, #488).
         public HashSet<Uri> Failed { get; } = [];
 
         /// <summary>Hosts a download couldn't reach in this run: asked again at the next search (#506).</summary>
-        public HashSet<string> OfflineHosts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, bool> OfflineHosts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public int Copied { get; set; }
 

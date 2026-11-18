@@ -1,6 +1,5 @@
 using Arcadia.App.Input;
 using Arcadia.App.Services;
-using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 using Arcadia.Core.Artwork.SteamGridDb;
 using Arcadia.Core.Settings;
@@ -46,11 +45,12 @@ public sealed class ArtworkSourceRows
     private readonly SourceOrder<ArtworkSourceKind> _order;
 
     /// <param name="orderChanged">The sources' order or a lift changed: the category puts the rows anew.</param>
-    /// <param name="toast">Shows the warning when "Jetzt suchen" finds no connection.</param>
-    public ArtworkSourceRows(ArtworkService artwork, SteamGridDbKey key, SettingsChanges changes, Action orderChanged, Action<HealthSeverity, string> toast)
+    /// <param name="connection">The tab's connection check, shared with "Alle Artworks neu laden".</param>
+    public ArtworkSourceRows(ArtworkService artwork, SteamGridDbKey key, SettingsChanges changes, Action orderChanged, ConnectionFirst connection)
     {
         _artwork = artwork;
-        _connection = new ConnectionFirst(artwork.IsOnlineAsync, toast, RefreshMissing);
+        _connection = connection;
+        _connection.Changed += (_, _) => RefreshMissing();
         _key = key;
         _changes = changes;
         _orderChanged = orderChanged;
@@ -127,8 +127,8 @@ public sealed class ArtworkSourceRows
         }
 
         // A search going on is cancelled from here; a reload from its own row, so this one waits.
-        var searching = search.Running is { Reload: false } || _searchAsked || _connection.IsChecking;
-        var reloading = search.Running is { Reload: true };
+        var searching = search.Running is { Reload: false } || _searchAsked || _connection.Checking == MissingKey;
+        var reloading = search.Running is { Reload: true } || _connection.Checking == ArtworkReloadRows.ReloadKey;
         _missing.IsEnabled = !reloading && (searching || SteamGridDbOn);
         _missing.IsDimmed = !_missing.IsEnabled;
         _missing.IsWorking = searching || reloading;
@@ -138,7 +138,7 @@ public sealed class ArtworkSourceRows
         {
             { Running: { Reload: true } reload } => AppTexts.DataSourcesReloadRunning(done: reload.Done, total: reload.Total),
             { Running: { } run } => AppTexts.DataSourcesSearchRunning(done: run.Done, total: run.Total),
-            _ when _searchAsked || _connection.IsChecking => AppTexts.DataSourcesSearchBusy,
+            _ when _searchAsked || _connection.Checking == MissingKey => AppTexts.DataSourcesSearchBusy,
             { Result: { WithSteamGridDb: false } } => AppTexts.DataSourcesSearchLauncherOnly,
             { Result: { } result } => AppTexts.DataSourcesSearchFound(covers: result.Covers, heroes: result.Heroes),
             { MissingCovers: 0, MissingHeroes: 0 } when search == ArtworkSearch.NotYet => AppTexts.DataSourcesMissingNotYet,
@@ -167,7 +167,7 @@ public sealed class ArtworkSourceRows
 
     private void SearchOrCancel()
     {
-        if (_connection.Cancel())
+        if (_connection.Cancel(MissingKey))
         {
             return;
         }
@@ -180,12 +180,12 @@ public sealed class ArtworkSourceRows
             return;
         }
 
-        if (_artwork.Search.Running is not null || !SteamGridDbOn)
+        if (_artwork.Search.Running is not null || _connection.Checking is not null || !SteamGridDbOn)
         {
             return;
         }
 
-        _connection.Start(() =>
+        _connection.Start(MissingKey, () =>
         {
             _resultAtAsk = _artwork.Search.Result;
             _searchAsked = _artwork.SearchAgain(byPlayer: true);

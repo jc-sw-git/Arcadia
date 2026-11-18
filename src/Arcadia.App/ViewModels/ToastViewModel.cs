@@ -7,7 +7,7 @@ namespace Arcadia.App.ViewModels;
 
 /// <summary>
 /// The short message at the bottom of the library; a newer message replaces the current one. Each one is also kept in
-/// <see cref="RecentMessages"/> for "Letzte Meldungen" (#433).
+/// <see cref="RecentMessages"/> for "Letzte Meldungen" (#433). It shows its level's symbol as there (#683).
 /// </summary>
 public partial class ToastViewModel(TimeProvider time, RecentMessages history) : ViewModelBase, IDisposable
 {
@@ -21,6 +21,15 @@ public partial class ToastViewModel(TimeProvider time, RecentMessages history) :
 
     public bool IsVisible => Text is not null;
 
+    /// <summary>The shown message's level: the symbol beside it, as in "Letzte Meldungen".</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInfo), nameof(IsError))]
+    public partial HealthSeverity Level { get; private set; }
+
+    public bool IsInfo => Level == HealthSeverity.Info;
+
+    public bool IsError => Level == HealthSeverity.Error;
+
     /// <summary>Where every message is kept, also one shown elsewhere because Arcadia is behind a game.</summary>
     public RecentMessages History => history;
 
@@ -31,6 +40,7 @@ public partial class ToastViewModel(TimeProvider time, RecentMessages history) :
     {
         history.Add(level, MessageKind.Toast, message, repeats);
         StopExpiry();
+        Level = level;
         Text = message;
         if (sticky)
         {

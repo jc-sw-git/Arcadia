@@ -74,4 +74,31 @@ public sealed partial class DataSourcesTests
         Assert.True(arcadia.Artwork.Search.Result!.Offline);
         Assert.DoesNotContain(arcadia.Main.Toast.History.Entries, e => e.Text == AppTexts.DataSourcesSearchNoConnection);
     }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T683-6")]
+    public async Task While_one_rows_check_goes_the_other_row_waits_and_A_again_stops_the_check()
+    {
+        var (arcadia, _) = await StartAsync();
+        using var _ = arcadia;
+        OpenDataSources(arcadia);
+        await TypeKeyAsync(arcadia, FakeSteamGridDb.Key);
+        await SettledAsync(arcadia);
+        var asked = arcadia.SteamGridDb.Count;
+        arcadia.Connection.Held = new TaskCompletionSource<bool>();
+
+        var missing = Assert.IsType<ActionRowViewModel>(arcadia.FocusRow(ArtworkSourceRows.MissingKey));
+        arcadia.Press(UiAction.Accept);
+        var reload = Assert.IsType<ActionRowViewModel>(Row(arcadia, ArtworkReloadRows.ReloadKey));
+        Assert.Equal((AppTexts.DataSourcesSearchCancel, true), (missing.ActionText, missing.IsWorking));
+        Assert.Equal((false, true), (reload.IsEnabled, reload.IsDimmed));
+
+        arcadia.Press(UiAction.Accept);
+        arcadia.Connection.Held = null;
+        await SettledAsync(arcadia);
+        Assert.Equal((AppTexts.DataSourcesSearchNow, false), (missing.ActionText, missing.IsWorking));
+        Assert.True(reload.IsEnabled);
+        Assert.Equal(asked, arcadia.SteamGridDb.Count);
+        Assert.Equal(0, NoInternetToasts(arcadia));
+    }
 }

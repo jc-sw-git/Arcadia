@@ -1,5 +1,4 @@
 using Arcadia.App.Services;
-using Arcadia.ControllerSupport;
 using Arcadia.Core.Artwork;
 
 namespace Arcadia.App.Settings;
@@ -27,11 +26,12 @@ public sealed class ArtworkReloadRows
     private bool _reloadAsked;
 
     /// <param name="ask">Shows the question over the page (the category's dialog), or null to close it.</param>
-    /// <param name="toast">Shows the warning when the reload finds no connection.</param>
-    public ArtworkReloadRows(ArtworkService artwork, SettingsChanges changes, Action<SettingsQuestionViewModel?> ask, Action<HealthSeverity, string> toast)
+    /// <param name="connection">The tab's connection check, shared with "Jetzt suchen".</param>
+    public ArtworkReloadRows(ArtworkService artwork, SettingsChanges changes, Action<SettingsQuestionViewModel?> ask, ConnectionFirst connection)
     {
         _artwork = artwork;
-        _connection = new ConnectionFirst(artwork.IsOnlineAsync, toast, Refresh);
+        _connection = connection;
+        _connection.Changed += (_, _) => Refresh();
         _changes = changes;
         _ask = ask;
         _reload = new ActionRowViewModel(ReloadKey, AppTexts.DataSourcesReload, AskOrCancel)
@@ -72,8 +72,8 @@ public sealed class ArtworkReloadRows
             _reloadAsked = false;
         }
 
-        var reloading = _artwork.Search.Running is { Reload: true } || _reloadAsked || _connection.IsChecking;
-        var searching = _artwork.Search.Running is { Reload: false };
+        var reloading = _artwork.Search.Running is { Reload: true } || _reloadAsked || _connection.Checking == ReloadKey;
+        var searching = _artwork.Search.Running is { Reload: false } || _connection.Checking == ArtworkSourceRows.MissingKey;
         _reload.IsEnabled = !searching;
         _reload.IsDimmed = searching;
         _reload.IsWorking = reloading;
@@ -85,7 +85,7 @@ public sealed class ArtworkReloadRows
     /// <summary>A on "Alle Artworks neu laden": the question first, its text following the switch; while it runs, it stops.</summary>
     private void AskOrCancel()
     {
-        if (_connection.Cancel())
+        if (_connection.Cancel(ReloadKey))
         {
             return;
         }
@@ -98,7 +98,7 @@ public sealed class ArtworkReloadRows
             return;
         }
 
-        if (_artwork.Search.Running is not null)
+        if (_artwork.Search.Running is not null || _connection.Checking is not null)
         {
             return;
         }
@@ -112,7 +112,7 @@ public sealed class ArtworkReloadRows
             () =>
             {
                 _ask(null);
-                _connection.Start(() => _reloadAsked = _artwork.ReloadAll(_changes.Current.OverwritesArtworkSetByHand));
+                _connection.Start(ReloadKey, () => _reloadAsked = _artwork.ReloadAll(_changes.Current.OverwritesArtworkSetByHand));
             },
             () => _ask(null)));
     }

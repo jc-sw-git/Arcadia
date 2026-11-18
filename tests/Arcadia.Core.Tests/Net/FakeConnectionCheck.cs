@@ -12,6 +12,9 @@ internal sealed class FakeConnectionCheck : IConnectionCheck
     /// <summary>The answers of the next checks, before <see cref="Online"/> counts again: e.g. online before a run, offline in it.</summary>
     public Queue<bool> Next { get; } = new();
 
+    /// <summary>Set: the next checks wait for it, e.g. to look at the rows while a check goes.</summary>
+    public TaskCompletionSource<bool>? Held { get; set; }
+
     /// <summary>Each check's addresses, in order.</summary>
     public IReadOnlyList<IReadOnlyCollection<Uri>> Checks
     {
@@ -30,6 +33,11 @@ internal sealed class FakeConnectionCheck : IConnectionCheck
         lock (_checks)
         {
             _checks.Add(addresses());
+            if (Held is { } held)
+            {
+                return held.Task.WaitAsync(cancel);
+            }
+
             return Task.FromResult(Next.TryDequeue(out var next) ? next : Online);
         }
     }

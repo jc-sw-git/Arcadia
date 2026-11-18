@@ -20,8 +20,7 @@ public sealed class MetadataRows
     private readonly Action<SettingsQuestionViewModel?> _ask;
     private readonly ActionRowViewModel _missing;
     private readonly ActionRowViewModel _reload;
-    private readonly ConnectionFirst _missingCheck;
-    private readonly ConnectionFirst _reloadCheck;
+    private readonly ConnectionFirst _connection;
 
     // "Jetzt suchen" was pressed and the run's progress hasn't changed since: the row says it works at once.
     private MetadataProgress? _progressAtAsk;
@@ -31,8 +30,8 @@ public sealed class MetadataRows
     public MetadataRows(MetadataService metadata, Action<SettingsQuestionViewModel?> ask, Action<HealthSeverity, string> toast)
     {
         _metadata = metadata;
-        _missingCheck = new ConnectionFirst(metadata.IsOnlineAsync, toast, Refresh);
-        _reloadCheck = new ConnectionFirst(metadata.IsOnlineAsync, toast, Refresh);
+        _connection = new ConnectionFirst(metadata.IsOnlineAsync, toast);
+        _connection.Changed += (_, _) => Refresh();
         _ask = ask;
         _missing = new ActionRowViewModel(MissingKey, AppTexts.DataSourcesMetadataMissing, SearchOrCancel)
         {
@@ -62,8 +61,8 @@ public sealed class MetadataRows
         }
 
         // A search (after a scan or "Jetzt suchen") is stopped from this row, a reload from its own, so this one waits.
-        var reloading = progress.Reload || _reloadCheck.IsChecking;
-        var searching = !reloading && (progress.Running || _progressAtAsk is not null || _missingCheck.IsChecking);
+        var reloading = progress.Reload || _connection.Checking == ReloadKey;
+        var searching = !reloading && (progress.Running || _progressAtAsk is not null || _connection.Checking == MissingKey);
         _missing.Subtitle = MissingText(progress);
         // Greyed when nothing is missing ("Alle Metadaten geladen") and while a reload goes.
         _missing.IsEnabled = !reloading && (searching || progress.Missing > 0);
@@ -97,7 +96,7 @@ public sealed class MetadataRows
     private void SearchOrCancel()
     {
         var progress = _metadata.Progress;
-        if (progress.Reload || _reloadCheck.IsChecking || _missingCheck.Cancel())
+        if (progress.Reload || _connection.Checking == ReloadKey || _connection.Cancel(MissingKey))
         {
             return;
         }
@@ -110,7 +109,7 @@ public sealed class MetadataRows
             return;
         }
 
-        _missingCheck.Start(() =>
+        _connection.Start(MissingKey, () =>
         {
             var before = _metadata.Progress;
             if (_metadata.FetchMissing(byPlayer: true))
@@ -126,7 +125,7 @@ public sealed class MetadataRows
     /// </summary>
     private void AskOrCancel()
     {
-        if (_reloadCheck.Cancel())
+        if (_connection.Cancel(ReloadKey) || _connection.Checking is not null)
         {
             return;
         }
@@ -145,7 +144,7 @@ public sealed class MetadataRows
             () =>
             {
                 _ask(null);
-                _reloadCheck.Start(() => _metadata.ReloadAll());
+                _connection.Start(ReloadKey, () => _metadata.ReloadAll());
             },
             () => _ask(null)));
     }

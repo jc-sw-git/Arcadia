@@ -34,3 +34,4 @@ History:
 | T683-1 to T683-9 | 2026-11-18 | Claude | PR branch, Debug, Linux | ✅ | – |
 | T683-10 (tests above) | 2026-11-18 | Claude (QE) | PR branch with the check in "Artwork ändern" and before the own term removed / with it, Debug, Linux | ❌ / ✅ | the checks go red on the bug |
 | T683-10 | 2026-11-18 | Claude (QE) | PR branch, Debug, Linux, Xvfb, `--demo`, no network (own network namespace) | ❌ | "Jetzt suchen" and "Alle Artworks neu laden" warn at once and start nothing, but the toast shows no warning symbol (no toast has one); "Artwork ändern", the waiting list and the tab "Metadaten" can't be reached with demo games (greyed), checked by the tests above |
+| QE findings 1–3 | 2026-11-18 | Claude | PR branch, Debug, Linux, Xvfb, `--demo`: an Info toast (demo install) shows the blue i in front of its text; `ToastTests`, `DataSourcesTests` (shared check), all Core tests | ✅ | the toast symbol for Warning/Error is the same template, left to the QE's re-run |

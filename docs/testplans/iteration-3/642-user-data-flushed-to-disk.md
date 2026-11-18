@@ -1,6 +1,6 @@
 # #642 Own titles and tags can be lost after a power cut
 
-**Status:** Automated: T642-1 · Open for the owner: none
+**Status:** Automated: T642-1 · QE: none · Open for the owner: none
 
 - [x] **T642-1** The shared write helper (own titles and tags, artwork and metadata caches) flushes the temporary file
   to the disk before the rename replaces the old file; the old file is still whole until then. A power cut can't be

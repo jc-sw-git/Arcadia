@@ -23,3 +23,5 @@ History:
 | T680-1, all `PanClientTests` | 2026-11-18 | Claude | PR branch, Debug, Linux | ✅ | – |
 | T680-3 | 2026-11-18 | Claude | PR branch without / with the fix, Debug, Linux headless | ❌ / ✅ | – |
 | Exit teardown | 2026-11-18 | Claude | Avalonia 12.1.5, decompiled `ClassicDesktopStyleApplicationLifetime` | `Shutdown()` passes `force: true` and skips `ShutdownRequested`; only `Exit` comes. Checked mechanically, not run | T680-2 for the owner |
+| QE: T680-1, T680-3 | 2026-11-18 | Claude (QE) | PR branch without / with the fix (re-acknowledgement call, `IsActive` condition removed), Debug, Linux | ❌ / ✅ | – |
+| QE: exit teardown on "Apply language" | 2026-11-18 | Claude (QE) | PR branch without / with `desktop.Exit` handler, Debug, Linux Xvfb, `--demo`, Settings → Localization → Deutsch → Restart | without: old instance's log ends at `Arcadia startet neu` (no teardown); with: `Arcadia beendet.` 0.25 s later, new instance starts | runs the exit teardown for real; Pan's side stays T680-2 |

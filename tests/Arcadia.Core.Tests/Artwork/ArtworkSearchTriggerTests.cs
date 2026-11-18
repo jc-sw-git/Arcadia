@@ -513,6 +513,32 @@ public sealed class ArtworkSearchTriggerTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T639-1")]
+    public async Task A_source_switched_off_keeps_its_image_on_disk_also_when_no_other_source_has_one_and_it_comes_back_without_a_download()
+    {
+        var id = Ids(1)[0];
+        LauncherCoverFile(id, 600, 900);
+        await ScanAsync(id);
+        var keptFile = Cached(id)!.Cover!.File;
+        ClearRequests();
+
+        await ChangeSettingsAsync(_settings with { Off = [ArtworkSourceKind.Launcher] });
+        await _service.WhenIdleAsync();
+
+        Assert.Null(_service.Of("steam:" + id));
+        var record = Cached(id)!;
+        Assert.Null(record.Cover);
+        Assert.Equal(ArtworkSource.Launcher, record.OffCover!.Source);
+        Assert.True(File.Exists(Path.Combine(new ArtworkCache(ArtworkRoot).FolderOf("steam:" + id), record.OffCover.File)));
+
+        await ChangeSettingsAsync(_settings with { Off = [] });
+        Assert.NotNull(_service.Of("steam:" + id)?.Cover);
+        Assert.Null(Cached(id)!.OffCover);
+        Assert.True(File.Exists(Path.Combine(new ArtworkCache(ArtworkRoot).FolderOf("steam:" + id), Cached(id)!.Cover!.File)));
+        Assert.Equal((0, 0), (_sgdb.Count, ImageRequests));
+    }
+
+    [Fact]
     [Trait("TestCase", "T506-61")]
     public async Task Both_sources_off_leave_placeholders_except_images_set_by_hand_and_ask_nothing()
     {

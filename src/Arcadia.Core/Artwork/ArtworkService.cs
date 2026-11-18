@@ -705,7 +705,16 @@ public sealed partial class ArtworkService : IDisposable
                     ? await PickAsync(game, kind, lookup, null, null, null, null, run, cancel) ?? (pickedSize is null ? null : new Pick.Keep())
                     : await PickAsync(game, kind, lookup, switchedOff is null ? image : null, pickedSize, off, offSize, run, cancel);
                 written |= pick is Pick.Take or Pick.SetOn;
-                artwork = Apply(artwork, kind, pick, run);
+                if (switchedOff is not null && pick is null)
+                {
+                    // No other source has an image: Apply would delete the file, but the image of a source switched off stays on disk.
+                    run.Missing++;
+                }
+                else
+                {
+                    artwork = Apply(artwork, kind, pick, run);
+                }
+
                 if (switchedOff is not null && artwork.Of(kind) == switchedOff)
                 {
                     // Nothing took its place: kept aside for when its source is switched on.

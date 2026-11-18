@@ -542,8 +542,13 @@ public sealed partial class MetadataService : IDisposable
         }
     }
 
+    /// <summary>The launchers' stores are asked at all: "Launcher-Daten" is switched on (#638).</summary>
+    private bool StoresAreAsked => (Settings() ?? new MetadataSettings()).WithValidValues().IsOn(MetadataSourceKind.Launcher);
+
     private IEnumerable<(Game Game, IMetadataStore Store, string Source)> StoreGames(IReadOnlyList<LibraryMetadata> libraries) =>
-        libraries
+        !StoresAreAsked
+            ? []
+            : libraries
             .Where(l => l.Source?.Store is not null)
             .SelectMany(l => l.Library.Games.Select(g => (g, l.Source!.Store!, l.Library.Launcher.DisplayName)))
             .Where(g => CheckedAddress(SafeAddressOf(g.Item2, g.g, Language)) is not null)
@@ -569,19 +574,32 @@ public sealed partial class MetadataService : IDisposable
 
         foreach (var (game, store, source) in queue)
         {
+            // Also stops a run that is going when "Launcher-Daten" is switched off.
             if (HasPending())
             {
                 break;
             }
 
+            if (!StoresAreAsked)
+            {
+                StopForSwitchedOff();
+                break;
+            }
+
             var outcome = await FetchGameAsync(game, store, source, run, cancel);
             run.Count(outcome);
-            if (outcome != Outcome.Throttled)
+            if (outcome != Outcome.Throttled && outcome != Outcome.Stopped)
             {
                 _reloadLeft.Remove(game.Key);
             }
 
             Report(libraries, run, null);
+            if (outcome == Outcome.Stopped)
+            {
+                StopForSwitchedOff();
+                break;
+            }
+
             if (outcome == Outcome.Offline)
             {
                 break;
@@ -591,6 +609,9 @@ public sealed partial class MetadataService : IDisposable
         run.LogSummary(Log);
         return run.Answered > 0 || !run.Offline;
     }
+
+    /// <summary>A reload ends with the switch: the games it didn't reach keep their data and count as loaded.</summary>
+    private void StopForSwitchedOff() => _reloadLeft.Clear();
 
     private async Task<Outcome> FetchGameAsync(Game game, IMetadataStore store, string source, FetchRun run, CancellationToken cancel)
     {
@@ -603,6 +624,12 @@ public sealed partial class MetadataService : IDisposable
         while (true)
         {
             await PaceAsync(game.LauncherId, store.Limit, cancel);
+            // The switch may have gone off while waiting for the gap or after a 429.
+            if (!StoresAreAsked)
+            {
+                return Outcome.Stopped;
+            }
+
             var (outcome, answer, retryAfter) = await RequestAsync(address, cancel);
             if (outcome == Outcome.Throttled)
             {
@@ -876,6 +903,9 @@ public sealed partial class MetadataService : IDisposable
         Offline,
         Throttled,
         NoAddress,
+
+        /// <summary>"Launcher-Daten" was switched off before the request went out (#638).</summary>
+        Stopped,
     }
 
     /// <summary>One pass over the queue: its counts for the progress row and one log line at its end.</summary>

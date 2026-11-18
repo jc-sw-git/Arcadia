@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using Arcadia.Core.Library;
 using Arcadia.Core.Metadata;
+using Arcadia.Core.Settings;
 using Arcadia.Launchers.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -23,6 +24,7 @@ public sealed class MetadataServiceTests : IDisposable
     private readonly List<string> _log = [];
     private MetadataService _service;
     private CultureInfo _language = CultureInfo.GetCultureInfo("de-DE");
+    private MetadataSettings _settings = new();
 
     public MetadataServiceTests()
     {
@@ -75,6 +77,7 @@ public sealed class MetadataServiceTests : IDisposable
         // A German PC (#557) unless the test changes the language, whatever the machine running the tests speaks.
         Language = _language,
         FirstAgeRatingBoard = AgeRatingBoard.Usk,
+        Settings = () => _settings,
         Log = line =>
         {
             lock (_log)
@@ -156,6 +159,54 @@ public sealed class MetadataServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("TestCase", "T638-4")]
+    public async Task Switching_launcher_data_off_while_waiting_for_the_stores_gap_sends_no_request()
+    {
+        ServeAll("1", "2");
+        Scan("1", "2");
+        await WaitForRequestsAsync(1);
+        await Task.Delay(200);
+        SwitchLauncherDataOff();
+        await RunToIdleAsync();
+        Assert.Equal(["1"], _server.AskedIds);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-5")]
+    public async Task Switching_launcher_data_off_while_waiting_after_http_429_sends_no_request()
+    {
+        ServeAll("1");
+        _server.ThrottleOnce("1", TimeSpan.FromSeconds(30));
+        Scan("1");
+        await WaitForRequestsAsync(1);
+        await Task.Delay(200);
+        SwitchLauncherDataOff();
+        await RunToIdleAsync();
+        Assert.Equal(["1"], _server.AskedIds);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-6")]
+    public async Task A_reload_stopped_by_switching_launcher_data_off_asks_only_missing_games_after_switching_on()
+    {
+        ServeAll("1", "2", "3");
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+        var before = _server.RequestCount;
+        _server.Hang("1");
+        _service.ReloadAll();
+        await WaitForHangAsync();
+        SwitchLauncherDataOff();
+        _time.Advance(MetadataService.RequestTimeout);
+        await RunToIdleAsync();
+        _settings = new MetadataSettings();
+        ServeAll("1", "2", "3");
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+        Assert.Equal(before + 1, _server.RequestCount);
+    }
+
+    [Fact]
     [Trait("TestCase", "T493-18")]
     public async Task After_a_scan_only_games_without_store_data_are_asked_and_a_cached_game_is_never_asked_again()
     {
@@ -171,6 +222,54 @@ public sealed class MetadataServiceTests : IDisposable
 
         Assert.Equal(["1", "2"], _server.AskedIds);
         Assert.StartsWith("Beschreibung von 2", _service.Of(Key("2")).Description!.Value);
+    }
+
+    private void SwitchLauncherDataOff() => _settings = new MetadataSettings { Off = [MetadataSourceKind.Launcher] };
+
+    [Fact]
+    [Trait("TestCase", "T638-1")]
+    public async Task With_launcher_data_off_a_scan_asks_no_store()
+    {
+        ServeAll("1", "2");
+        SwitchLauncherDataOff();
+        Scan("1", "2");
+        await RunToIdleAsync();
+
+        Assert.Equal(0, _server.RequestCount);
+        Assert.Equal(0, _service.GameCount);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-2")]
+    public async Task With_launcher_data_off_reloading_asks_no_store()
+    {
+        ServeAll("1", "2");
+        Scan("1");
+        await RunToIdleAsync();
+        SwitchLauncherDataOff();
+        _service.ReloadAll();
+        await RunToIdleAsync();
+
+        Assert.Equal(["1"], _server.AskedIds);
+    }
+
+    [Fact]
+    [Trait("TestCase", "T638-3")]
+    public async Task Switching_launcher_data_off_during_a_run_stops_the_requests_and_switching_it_on_asks_only_the_missing_games()
+    {
+        ServeAll("1", "2", "3");
+        _server.Hang("2");
+        Scan("1", "2", "3");
+        await WaitForHangAsync();
+        SwitchLauncherDataOff();
+        _time.Advance(MetadataService.RequestTimeout);
+        await RunToIdleAsync();
+        Assert.Equal(["1", "2"], _server.AskedIds);
+
+        _settings = new MetadataSettings();
+        Scan("1", "2", "3");
+        await RunToIdleAsync();
+        Assert.Equal(["1", "2", "2", "3"], _server.AskedIds);
     }
 
     [Fact]

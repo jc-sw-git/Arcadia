@@ -1,6 +1,6 @@
 # #638 "Launcher-Daten" switched off asks no store
 
-**Status:** Automated: T638-1, T638-2, T638-3 · Open for the owner: none
+**Status:** Automated: T638-1, T638-2, T638-3 · QE: none · Open for the owner: none
 
 - [x] **T638-1** With "Launcher-Daten" off a scan sends no store request · E2E: yes
 - [x] **T638-2** With it off "Alle Metadaten neu laden" sends no store request · E2E: yes

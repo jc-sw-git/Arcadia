@@ -82,7 +82,10 @@ public partial class App : Application
                 settings, demo, forced: args.Contains(CommandLine.FirstRunArgument, StringComparer.OrdinalIgnoreCase), FirstRunProgressFile.Beside(settingsStore.Path, AppLog.Write));
 
             // SISR is replaced by Arcadia's own Xbox pad (#213); Arcadia never starts it and removes it only on request (#214).
-            var ownViiper = ViiperRelease.IsPinned ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
+            // A run with a data folder of its own (--data-folder, to measure) stays away from the PC's system-wide parts:
+            // no connection to Pan (it serves one Arcadia at a time and writes pan.log in ProgramData), no VIIPER.
+            var isolated = CommandLine.DataFolder(args) is not null;
+            var ownViiper = ViiperRelease.IsPinned && !isolated ? ViiperInstallation.InDataFolder(Core.Diagnostics.LogLocation.DataFolder) : null;
             var updates = new ArcadiaUpdateService(http, time) { Log = AppLog.Write };
             // Builds the view model before the window: an installed Pan that isn't this Arcadia's shows its update page
             // instead of the library (#297).
@@ -164,7 +167,7 @@ public partial class App : Application
             var viiper = ViiperXboxPads.Own(ownViiper?.Executable, Core.Diagnostics.LogLocation.DataFolder, Core.Diagnostics.LogLocation.Directory,
                 OperatingSystem.IsWindows() ? new WindowsViiperHost(AppLog.Write) : null, AppLog.Write);
             // Pan, the guardian service (#243): without it no pad; it keeps the connection itself.
-            var pan = new PanClient(OperatingSystem.IsWindows() ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
+            var pan = new PanClient(OperatingSystem.IsWindows() && !isolated ? new PanPipeTransport(AppLog.Write, () => controllerSupport.WhyPanIsLeftAlone) : new NoPanTransport(), time, AppLog.Write)
             {
                 WhyLeftAlone = () => controllerSupport.WhyPanIsLeftAlone,
                 Unexpected = AppErrors.ReportRepeating,

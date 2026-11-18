@@ -36,7 +36,7 @@ public sealed class LauncherLogos(SettingsService settings, string folder)
     private readonly Dictionary<string, Bitmap?> _pictures = new(StringComparer.Ordinal);
 
     /// <summary>Next to settings.json, which a reinstall keeps, not in the install folder, which an update replaces.</summary>
-    public static string DefaultFolder { get; } = Path.Combine(LogLocation.DataFolder, "logos");
+    public static string DefaultFolder => Path.Combine(LogLocation.DataFolder, "logos");
 
     /// <summary>The launcher as it shows now. Call on the UI thread.</summary>
     public LauncherBadge BadgeOf(LauncherInfo launcher) => new(

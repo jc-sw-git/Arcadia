@@ -6,13 +6,13 @@ namespace Arcadia.Launchers.Epic;
 /// Remembers when each Epic game was last played. Epic's logs hold only the last few launcher
 /// starts, so without this a game's "last played" would vanish once its session rotates out.
 /// </summary>
-public sealed class EpicLastPlayedStore(string path)
+public sealed class EpicLastPlayedStore(string? path)
 {
     private readonly Lock _lock = new();
     private Dictionary<string, DateTimeOffset>? _lastPlayed;
 
-    public static EpicLastPlayedStore CreateDefault() => new(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Arcadia", "epic-last-played.json"));
+    /// <summary>In Arcadia's data folder; without one (<paramref name="dataFolder"/> null) the dates are kept only until Arcadia closes.</summary>
+    public static EpicLastPlayedStore In(string? dataFolder) => new(dataFolder is null ? null : Path.Combine(dataFolder, "epic-last-played.json"));
 
     /// <summary>Adds the sessions' start times, saves if anything got newer, and returns the latest start per app.</summary>
     public IReadOnlyDictionary<string, DateTimeOffset> Merge(IEnumerable<EpicPlaySession> sessions)
@@ -44,7 +44,7 @@ public sealed class EpicLastPlayedStore(string path)
     {
         try
         {
-            if (File.Exists(path) && JsonSerializer.Deserialize<Dictionary<string, DateTimeOffset>>(File.ReadAllText(path)) is { } stored)
+            if (path is not null && File.Exists(path) && JsonSerializer.Deserialize<Dictionary<string, DateTimeOffset>>(File.ReadAllText(path)) is { } stored)
             {
                 return new Dictionary<string, DateTimeOffset>(stored, StringComparer.Ordinal);
             }
@@ -58,6 +58,11 @@ public sealed class EpicLastPlayedStore(string path)
 
     private void Save(Dictionary<string, DateTimeOffset> lastPlayed)
     {
+        if (path is null)
+        {
+            return;
+        }
+
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);

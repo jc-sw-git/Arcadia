@@ -45,6 +45,22 @@ public sealed class ArchitectureTests
     private static readonly string[] SingleLauncherNames = ["Arcadia.Launchers.Steam", "Arcadia.Launchers.Epic", "Arcadia.Launchers.Demo", "KnownLaunchers"];
 
     [Fact]
+    [Trait("TestCase", "T634-1")]
+    public void Only_LogLocation_asks_the_system_for_the_data_folder()
+    {
+        // --data-folder moves every file Arcadia writes only while all paths derive from LogLocation.DataFolder.
+        // LogFiles shortens a path for display, which is no path of ours.
+        var offending = new[] { "Arcadia.Core", "Arcadia.Launchers", "Arcadia.App", "Arcadia.Input", "Arcadia.Platform" }
+            .SelectMany(project => RepositoryFiles.SourceFiles(project, "*.cs"))
+            .Where(file => Path.GetFileName(file) is not ("LogLocation.cs" or "LogFiles.cs"))
+            .Where(file => File.ReadAllText(file).Contains("SpecialFolder.ApplicationData", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToList();
+
+        Assert.Empty(offending);
+    }
+
+    [Fact]
     public void Core_knows_launchers_only_through_the_contract() =>
         Assert.Equal(["Arcadia.Launchers.Abstractions"], ArcadiaReferencesOf(typeof(LauncherRegistry).Assembly));
 }

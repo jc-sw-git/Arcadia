@@ -52,7 +52,7 @@ public static class BuiltInLaunchers
             :
         [
             new SteamIntegration(time, folders?.Steam, steamAccount ?? (http is null || web is null || dataFolder is null ? null : SteamOnlineAccount.Create(http, web, time, dataFolder))),
-            new EpicIntegration(time, folders?.Epic),
+            new EpicIntegration(time, folders?.Epic, dataFolder),
         ];
 
         var ordered = new List<ILauncherIntegration>();

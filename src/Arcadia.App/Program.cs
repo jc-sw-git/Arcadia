@@ -34,7 +34,16 @@ sealed partial class Program
         if (CommandLine.DataFolder(args) is { } ownFolder)
         {
             // Before anything reads the data folder; the moves of older versions' files are the user's own folders' business.
-            LogLocation.UseDataFolder(ownFolder);
+            try
+            {
+                LogLocation.UseDataFolder(ownFolder);
+            }
+            catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                // Before the first log line: nothing to write to yet, and starting on the user's own data would defeat the option.
+                Console.Error.WriteLine($"{CommandLine.DataFolderArgument}: not a usable folder path ({e.Message})");
+                return;
+            }
         }
         else
         {

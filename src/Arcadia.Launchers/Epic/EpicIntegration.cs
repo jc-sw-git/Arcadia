@@ -4,7 +4,8 @@ namespace Arcadia.Launchers.Epic;
 
 /// <summary>The Epic Games Launcher: library, starts through the launcher, install progress, running games, catalog images.</summary>
 /// <param name="folders">Where Epic's files are; null: where Epic keeps them on this PC. The acceptance tests pass folders of their own.</param>
-public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = null) : ILauncherIntegration
+/// <param name="dataFolder">Arcadia's data folder, where the last start of each game is kept; null: not kept beyond this run.</param>
+public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = null, string? dataFolder = null) : ILauncherIntegration
 {
     /// <summary>
     /// Epic's logo (#138) from simple-icons (CC0), the shape Epic publishes; the name and the logo are Epic's trademarks
@@ -19,7 +20,7 @@ public sealed class EpicIntegration(TimeProvider time, EpicFolders? folders = nu
     public LauncherInfo Launcher => Info;
 
     public ILauncherScanner Scanner { get; } = folders is null
-        ? new EpicScanner()
+        ? new EpicScanner(lastPlayedStore: EpicLastPlayedStore.In(dataFolder))
         : new EpicScanner(folders.ManifestDirectory, folders.CatalogPath, folders.Logs, new EpicLastPlayedStore(folders.LastPlayedFile));
 
     public ILauncherClient? Client { get; } = new EpicLauncherClient(time);

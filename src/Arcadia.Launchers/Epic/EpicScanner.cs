@@ -19,7 +19,7 @@ public sealed class EpicScanner(
     private readonly string _manifestDirectory = manifestDirectory ?? DefaultManifestDirectory();
     private readonly string _catalogPath = catalogPath ?? EpicCatalog.DefaultPath();
     private readonly string _logDirectory = logDirectory ?? DefaultLogDirectory();
-    private readonly EpicLastPlayedStore _lastPlayedStore = lastPlayedStore ?? EpicLastPlayedStore.CreateDefault();
+    private readonly EpicLastPlayedStore _lastPlayedStore = lastPlayedStore ?? EpicLastPlayedStore.In(null);
 
     // Epic's rotated logs never change again; only the current one is parsed on every scan.
     private readonly Dictionary<string, (long Length, DateTime Written, EpicLogFacts Facts)> _parsedLogs = new(StringComparer.OrdinalIgnoreCase);

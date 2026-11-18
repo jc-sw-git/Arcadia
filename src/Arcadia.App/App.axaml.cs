@@ -46,6 +46,9 @@ public partial class App : Application
 
     private IGamepadSource? _gamepad;
 
+    /// <summary>Set once the pad polling and Pan run: ends them when a later step of the start fails (#641).</summary>
+    private Action? _teardownAfterFailedStart;
+
     /// <summary>Pan fell back to its previous journal or started empty (#243); its log says what was wrong.</summary>
 
     private static string PanJournalText => AppTexts.PanJournalUnreadable;
@@ -74,6 +77,14 @@ public partial class App : Application
             {
                 // Arcadia would otherwise vanish without a word (#641).
                 StartupFailure.Show(desktop, ex);
+                try
+                {
+                    _teardownAfterFailedStart?.Invoke();
+                }
+                catch (Exception cleanup)
+                {
+                    AppLog.Write($"Aufräumen nach dem Startfehler fehlgeschlagen: {cleanup}");
+                }
             }
         }
 
@@ -215,25 +226,65 @@ public partial class App : Application
         viewModel.PanDialogs.PanDialogShown += (_, _) => ForegroundGuard.BringBack(window);
         _gamepad.Start();
 
+        // Also when Arcadia fails to start after this point (#641): the pad polling, Pan and the timers must not run on behind the error window.
+        var timers = new List<DispatcherTimer>();
+        var tornDown = false;
+        void Teardown()
+        {
+            if (tornDown)
+            {
+                return;
+            }
+
+            tornDown = true;
+            foreach (var timer in timers)
+            {
+                timer.Stop();
+            }
+
+            _gamepad.Dispose();
+
+            // After the polling stopped: closes the open pages and stops the library's delayed rescans.
+            viewModel.Dispose();
+
+            // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
+            mouseMode.Dispose();
+
+            // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
+            // Pan hears the planned exit with it, so it has nothing to undo.
+            Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
+            Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
+            controllerSupport.Shutdown();
+            AppLog.Write("Arcadia beendet.");
+        }
+
+        _teardownAfterFailedStart = Teardown;
+
         var monitoring = new DispatcherTimer(ControllerSupportInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(() => controllerSupport.TickAsync()), AppTexts.ErrorContextControllerWatch));
         monitoring.Start();
+        timers.Add(monitoring);
 
         var xboxPadTick = new DispatcherTimer(ControllerSupportWatchInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(() => Task.Run(forGames.TickAsync), AppTexts.ErrorContextXboxPadForGames));
+        timers.Add(xboxPadTick);
 
         // Installs run in the launcher: follow their progress, and for launchers Arcadia can't
         // watch, rescan until the games it handed over are installed.
         var installProgress = new DispatcherTimer(InstallProgressInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.PollInstallsAsync, AppTexts.ErrorContextFollowInstalls));
         installProgress.Start();
+        timers.Add(installProgress);
         var installs = new DispatcherTimer(InstallCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(viewModel.Session.CheckPendingInstallsAsync, AppTexts.ErrorContextCheckInstalls));
         installs.Start();
+        timers.Add(installs);
         var updateCheck = new DispatcherTimer(UpdateCheckInterval, DispatcherPriority.Background, async (_, _) => await AppErrors.Guard(updates.CheckIfDueAsync, AppTexts.ErrorContextUpdateCheck));
         updateCheck.Start();
+        timers.Add(updateCheck);
 
         // Which games run (#95): asked off the UI thread, also in the background (Arcadia may be seen on a second
         // screen); the end of a game Arcadia started brings it back (#94). Coming to the front asks at once.
         var running = new DispatcherTimer(RunningGamesInterval, DispatcherPriority.Background, async (_, _) =>
             await AppErrors.Guard(viewModel.Session.PollRunningGamesAsync, AppTexts.ErrorContextRunningGames));
         running.Start();
+        timers.Add(running);
         window.Activated += (_, _) => viewModel.Session.PollRunningGamesAsync().Forget(AppTexts.ErrorContextRunningGames);
         viewModel.Session.StartedGameEnded += (_, gameKey) => ReturnAfterGameAsync(gameKey, "beendet").Forget(AppTexts.ErrorContextReturnAfterGame); // not a UI text (log)
 
@@ -300,29 +351,7 @@ public partial class App : Application
             AppLog.Write($"Steam Controller in Spielen bereit ({route.Why})");
         }).Forget(AppTexts.ErrorContextControllerWatch);
 
-        desktop.ShutdownRequested += (_, _) =>
-        {
-            monitoring.Stop();
-            xboxPadTick.Stop();
-            installs.Stop();
-            installProgress.Stop();
-            updateCheck.Stop();
-            running.Stop();
-            _gamepad.Dispose();
-
-            // After the polling stopped: closes the open pages and stops the library's delayed rescans.
-            viewModel.Dispose();
-
-            // After the polling stopped: lets go of a mouse button or key the mouse mode still holds.
-            mouseMode.Dispose();
-
-            // The Xbox pad goes also for an update: nothing feeds it while Arcadia restarts, and it comes back then.
-            // Pan hears the planned exit with it, so it has nothing to undo.
-            Task.Run(xboxPad.ShutdownAsync).Wait(TimeSpan.FromSeconds(5));
-            Task.Run(() => pan.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(2));
-            controllerSupport.Shutdown();
-            AppLog.Write("Arcadia beendet.");
-        };
+        desktop.ShutdownRequested += (_, _) => Teardown();
 
         // Version and Windows build first: a bug report with only the log must say what it is about.
         AppLog.Write($"Arcadia {updates.CurrentVersion} gestartet ({System.Runtime.InteropServices.RuntimeInformation.OSDescription}, "

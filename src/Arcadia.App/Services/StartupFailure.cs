@@ -52,7 +52,8 @@ public static class StartupFailure
                 Spacing = 20,
                 Children =
                 {
-                    new TextBlock { Text = AppTexts.StartupFailed(log: logPath), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                    new TextBlock { Text = AppTexts.StartupFailed, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                    new SelectableTextBlock { Text = logPath, TextWrapping = Avalonia.Media.TextWrapping.WrapWithOverflow },
                     close,
                 },
             },

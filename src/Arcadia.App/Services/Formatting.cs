@@ -81,10 +81,10 @@ public static class Formatting
 
     /// <summary>"09.10.2026" in local time, or "–".</summary>
     public static string Date(DateTimeOffset? value) =>
-        value is { } v ? Safe("Kurzdatum", region => v.ToLocalTime().ToString("d", region)) : "–";
+        value is { } v ? Safe("Kurzdatum", region => v.ToLocalTime().ToString("d", region), () => v.ToLocalTime().ToString(IsoDate, CultureInfo.InvariantCulture)) : "–";
 
     /// <summary>A day without a time, e.g. a release date: "09.10.2026".</summary>
-    public static string Date(DateOnly value) => Safe("Kurzdatum", region => value.ToString("d", region));
+    public static string Date(DateOnly value) => Safe("Kurzdatum", region => value.ToString("d", region), () => value.ToString(IsoDate, CultureInfo.InvariantCulture));
 
     /// <summary>"9. Oktober 2026" in local time: the region's long date without the weekday.</summary>
     public static string LongDate(DateTimeOffset value) => value.ToLocalTime().ToString(Dates.LongDate, Region);
@@ -183,7 +183,7 @@ public static class Formatting
     /// instead, so a time or date never ends Arcadia (#641, like #592 for the cut dates). The first failure per use
     /// goes to the log; the pattern is the region's, not the player's data.
     /// </summary>
-    private static string Safe(string use, Func<CultureInfo, string> format)
+    private static string Safe(string use, Func<CultureInfo, string> format, Func<string>? fallback = null)
     {
         try
         {
@@ -192,9 +192,12 @@ public static class Formatting
         catch (FormatException ex)
         {
             LogUnreadable(use, ex);
-            return format(CultureInfo.InvariantCulture);
+            return fallback?.Invoke() ?? format(CultureInfo.InvariantCulture);
         }
     }
+
+    // The fallback date: unambiguous in every country, unlike the invariant "11/14/2026".
+    private const string IsoDate = "yyyy-MM-dd";
 
     private static readonly HashSet<string> LoggedUses = [];
 

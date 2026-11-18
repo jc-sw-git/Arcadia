@@ -53,7 +53,7 @@ public sealed class UnreadableRegionFormatTests : IDisposable
     {
         Formatting.UseRegion(WithBrokenPatterns("HH:mm", shortDate));
 
-        Assert.Contains("2026", Formatting.Date(Now), StringComparison.Ordinal);
+        Assert.Equal("2026-11-14", Formatting.Date(Now));
         Assert.False(string.IsNullOrWhiteSpace(Formatting.Date(new DateOnly(2026, 11, 14))));
         Assert.False(string.IsNullOrWhiteSpace(Formatting.DateAndTime(Now)));
         Assert.False(string.IsNullOrWhiteSpace(Formatting.ShortDate(Now)));
@@ -100,7 +100,8 @@ public sealed class UnreadableRegionFormatTests : IDisposable
         window.Show();
 
         var texts = window.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
-        Assert.Contains(AppTexts.StartupFailed(log: @"C:\Users\someone\AppData\Roaming\Arcadia\logs\arcadia.log"), texts);
+        Assert.Contains(AppTexts.StartupFailed, texts);
+        Assert.Contains(@"C:\Users\someone\AppData\Roaming\Arcadia\logs\arcadia.log", texts);
         window.GetVisualDescendants().OfType<Button>().Single().RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
 
         Assert.True(closed);

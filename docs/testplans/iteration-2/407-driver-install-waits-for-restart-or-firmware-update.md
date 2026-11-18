@@ -13,19 +13,21 @@ Automated: `ControllerSupportRemovalTests` (the notice and how long it stays ope
 blocking rows, the greyed-out button, a row's install during a firmware update, the question with and without a puck),
 `ControllerHidingTests` (PlayStation Accessories' process name).
 
-- [ ] **T407-1** Uninstall Arcadia, answer "Treiber für die Controller-Emulation auch entfernen?" with Ja and accept
+**Status:** Automated: T407-2 to T407-4 · QE: – · Open for the owner: T407-1, T407-5
+
+- [ ] **T407-1** **Owner:** Uninstall Arcadia, answer "Treiber für die Controller-Emulation auch entfernen?" with Ja and accept
       the Windows prompt: a last message says Windows removes the drivers only at the next restart and to restart
       before installing Arcadia again; it closes by itself. · E2E: no (real uninstall and UAC)
-- [ ] **T407-2** Without restarting, install Arcadia again, Einstellungen → Controller: "Treiber installieren" is
+- [x] **T407-2** Without restarting, install Arcadia again, Einstellungen → Controller: "Treiber installieren" is
       greyed out; below it "Windows-Neustart ausstehend" (blue i) – "Treiberänderungen stehen noch aus"; [A] on the
       button does nothing. Restart the PC: the row is gone and "Treiber installieren" works. · E2E: yes
-- [ ] **T407-3** On a PC without Arcadia's drivers, open Xbox Zubehör (or PlayStation Accessories): "Treiber
+- [x] **T407-3** On a PC without Arcadia's drivers, open Xbox Zubehör (or PlayStation Accessories): "Treiber
       installieren" is greyed out, below it "Controller-Update wird durchgeführt" – "Treiber kann während eines
       Firmware-Updates nicht installiert werden"; close the app: within about ten seconds the button works again. · E2E: yes
-- [ ] **T407-4** [A] on "Treiber installieren": "Treiber installieren?" names usbip-win2, HidHide, VIIPER and Pan, the
+- [x] **T407-4** [A] on "Treiber installieren": "Treiber installieren?" names usbip-win2, HidHide, VIIPER and Pan, the
       Windows prompt and the recommended restart; the sentence about the puck's restart shows only with a Steam
       Controller or puck plugged in; B closes it and nothing is installed. · E2E: yes
-- [ ] **T407-5** With Arcadia set up and Pan on, a DualSense connected, open PlayStation Accessories: the DualSense row
+- [ ] **T407-5** **Owner:** With Arcadia set up and Pan on, a DualSense connected, open PlayStation Accessories: the DualSense row
       says "PlayStation Accessories ist geöffnet" and Arcadia takes it over only after the app is closed. · E2E: no
       (real app and controller)
 

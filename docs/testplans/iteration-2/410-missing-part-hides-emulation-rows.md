@@ -7,7 +7,9 @@ up with Pan on, a way to remove HidHide (Windows' Apps, then a restart), a contr
 
 Automated: `EveryControllerForGamesTests` (HidHide missing, Pan on, a DualSense connected).
 
-- [ ] **T410-1** Uninstall HidHide in Windows' Apps and restart the PC; Pan on, a controller connected; Einstellungen →
+**Status:** Automated: T410-1 · QE: T410-1 · Open for the owner: –
+
+- [x] **T410-1** Uninstall HidHide in Windows' Apps and restart the PC; Pan on, a controller connected; Einstellungen →
       Controller: below the switch only "HidHide fehlt" with "Installieren", no "HidHide ist nicht aktiv", no
       "Controller zuordnen"; the switch says "Es liegt ein Problem vor. Prüfe die Warnmeldungen darunter.". After
       "Installieren" (and Arcadia's restart) "Controller zuordnen" is back. · E2E: yes

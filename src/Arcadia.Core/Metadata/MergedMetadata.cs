@@ -56,10 +56,10 @@ public sealed record MergedMetadata
     /// <summary>
     /// Merges <paramref name="providers"/>, best first, per field (#43): a field missing from one comes from the next.
     /// A description follows the language rule (#557, <see cref="Text"/>); the age ratings start with
-    /// <paramref name="firstBoard"/>, the region's.
+    /// <paramref name="firstBoard"/>, the region's, and leave out Steam's rating for Germany unless <paramref name="showsSteamGermany"/>.
     /// </summary>
     /// <param name="uiLanguage">The UI language's two-letter code.</param>
-    public static MergedMetadata Of(IReadOnlyList<ProviderMetadata> providers, string uiLanguage, AgeRatingBoard firstBoard)
+    public static MergedMetadata Of(IReadOnlyList<ProviderMetadata> providers, string uiLanguage, AgeRatingBoard firstBoard, bool showsSteamGermany)
     {
         if (providers.Count == 0)
         {
@@ -75,7 +75,7 @@ public sealed record MergedMetadata
             Publishers = First(providers, data => data.Publishers.Count > 0 ? data.Publishers : null),
             ReleaseDate = providers.Where(p => p.Data.ReleaseDate is not null).Select(p => new Sourced<DateOnly>(p.Data.ReleaseDate!.Value, p.Source)).FirstOrDefault(),
             Tags = First(providers, data => data.Tags.Count > 0 ? data.Tags : null),
-            AgeRatings = Ratings(providers, firstBoard),
+            AgeRatings = Ratings(providers, firstBoard, showsSteamGermany),
         };
         return merged.IsEmpty ? None : merged;
     }
@@ -106,10 +106,10 @@ public sealed record MergedMetadata
     private static string? LanguageOf(string text, string asked) =>
         TextLanguage.LanguageOf(text) ?? (TextLanguage.IsLatin(text) ? asked : null);
 
-    private static List<Sourced<AgeRating>> Ratings(IReadOnlyList<ProviderMetadata> providers, AgeRatingBoard firstBoard)
+    private static List<Sourced<AgeRating>> Ratings(IReadOnlyList<ProviderMetadata> providers, AgeRatingBoard firstBoard, bool showsSteamGermany)
     {
         var shown = new List<Sourced<AgeRating>>();
-        foreach (var board in AgeRatingRegion.Order(firstBoard))
+        foreach (var board in AgeRatingRegion.Order(firstBoard, showsSteamGermany))
         {
             var ofBoard = providers
                 .SelectMany(p => p.Data.AgeRatings.Where(r => r.Board == board).Select(r => new Sourced<AgeRating>(r, p.Source)))

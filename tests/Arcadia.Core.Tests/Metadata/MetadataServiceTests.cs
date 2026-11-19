@@ -78,6 +78,7 @@ public sealed class MetadataServiceTests : IDisposable
         // A German PC (#557) unless the test changes the language, whatever the machine running the tests speaks.
         Language = _language,
         FirstAgeRatingBoard = AgeRatingBoard.Usk,
+        ShowsSteamGermany = true,
         Settings = () => _settings,
         Log = line =>
         {
@@ -803,7 +804,7 @@ public sealed class MetadataServiceTests : IDisposable
             AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "16"), new AgeRating(AgeRatingBoard.Pegi, "18"), new AgeRating(AgeRatingBoard.Esrb, "M")],
         };
         _service.Dispose();
-        _service = new MetadataService(new MetadataCache(CacheFolder), new HttpClient(_server), _time) { Language = _language, FirstAgeRatingBoard = AgeRatingBoard.Esrb };
+        _service = new MetadataService(new MetadataCache(CacheFolder), new HttpClient(_server), _time) { Language = _language, FirstAgeRatingBoard = AgeRatingBoard.Esrb, ShowsSteamGermany = false };
         _service.Open();
         Scan("1");
         await RunToIdleAsync();

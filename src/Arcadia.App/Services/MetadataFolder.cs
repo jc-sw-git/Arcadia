@@ -31,6 +31,7 @@ public static class MetadataFolder
             Log = AppLog.Write,
             Language = UiLanguage.Culture,
             FirstAgeRatingBoard = AgeRatingRegion.System,
+            ShowsSteamGermany = AgeRatingRegion.SystemShowsSteamGermany,
             Settings = () => settings.Current.Metadata,
             SeveralHits = () => settings.Current.Metadata.SeveralHitsOr(settings.Current.Artwork.WithValidValues().SeveralHits),
             Igdb = new IgdbAccess(store, new IgdbClient(http, time) { Log = AppLog.Write }, time),

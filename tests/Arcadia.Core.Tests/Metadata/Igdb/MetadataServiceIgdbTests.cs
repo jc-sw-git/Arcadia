@@ -57,6 +57,7 @@ public sealed partial class MetadataServiceIgdbTests : IDisposable
     {
         Language = _language,
         FirstAgeRatingBoard = AgeRatingBoard.Usk,
+        ShowsSteamGermany = true,
         Log = line =>
         {
             lock (_log)

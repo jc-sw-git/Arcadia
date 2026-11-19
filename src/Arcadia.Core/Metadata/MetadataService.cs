@@ -101,6 +101,9 @@ public sealed partial class MetadataService : IDisposable
     /// <summary>The board whose age rating comes first (#557): the system region's.</summary>
     public AgeRatingBoard FirstAgeRatingBoard { get; init; } = AgeRatingRegion.System;
 
+    /// <summary>Whether Steam's own rating for Germany shows at all: only when the system region is Germany.</summary>
+    public bool ShowsSteamGermany { get; init; } = AgeRatingRegion.SystemShowsSteamGermany;
+
     /// <summary>The metadata of these games changed (any thread).</summary>
     public event EventHandler<IReadOnlyCollection<string>>? Changed;
 
@@ -908,7 +911,7 @@ public sealed partial class MetadataService : IDisposable
             }
         }
 
-        var merged = MergedMetadata.Of(providers, Language.TwoLetterISOLanguageName, FirstAgeRatingBoard);
+        var merged = MergedMetadata.Of(providers, Language.TwoLetterISOLanguageName, FirstAgeRatingBoard, ShowsSteamGermany);
         return withIgdb && settings.IsOn(MetadataSourceKind.Igdb) && IgdbMatching.IsDoubtful(launcherTitle) && cached.Igdb?.Title is { } title
             ? merged with { Title = new Sourced<string>(title, IgdbName), LauncherTitle = new Sourced<string>(launcherTitle!, cached.Source) }
             : merged;

@@ -42,3 +42,10 @@ Read before changing `.axaml` files, styles or `Theme/Theme.axaml` (pointer in `
   kept in the layout waits for it with class `afterFirstFrame`. Bindings in the library's cover template that never change
   for a tile are `OneTime`. The release is published ReadyToRun. `arcadia.log`'s line `Start: …` gives each step in ms
   since the process started, up to `Bibliothek im Bild`.
+- Memory (#685): every element built costs about 15 KB of style records, whether it is shown or not. What is built many
+  times over is built only once it is seen: a page's covers through `ctl:BuiltInSight` (in sight during layout, two rows
+  ahead after the frame so a focus move stays fast; once built, a cover stays, as building it again would stutter a held
+  stick), and a heavy part that is shown rarely, such as a cover's install badge and progress bar, through
+  `ctl:BuiltWhenShown` (built at its first measure; hidden elements aren't measured). Its `IsVisible` binding goes on the
+  wrapper; the template keeps the rest. Parts that show on many covers at once (update, running) are built with the
+  cover: building them at their first show held a page turn for 200 ms.

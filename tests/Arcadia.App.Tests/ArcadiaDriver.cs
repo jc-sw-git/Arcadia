@@ -80,7 +80,7 @@ internal sealed class ArcadiaDriver : IDisposable
         LauncherInstalls installs, FakeSteam? steam, FakeReleases? releases, StartArguments arguments,
         Fixtures.LauncherFiles? files = null, List<LaunchTarget>? opened = null, HttpMessageHandler? imageServer = null,
         FakeSteamGridDb? steamGridDb = null, ExternalAppsFake? external = null, FakeStoreServer? metadataStore = null, FakeIgdb? igdb = null,
-        AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk)
+        AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk, bool showsSteamGermany = true)
     {
         SteamGridDb = steamGridDb ?? new FakeSteamGridDb();
         External = external ?? new ExternalAppsFake();
@@ -145,6 +145,7 @@ internal sealed class ArcadiaDriver : IDisposable
             // The UI language as the App resolves it at the start, and the region (Germany unless the test names another, #557).
             Language = Core.Localization.UiLanguages.Resolve(Settings.Current.Localization.Language, CultureInfo.GetCultureInfo(arguments.SystemLanguage ?? "de-DE")),
             FirstAgeRatingBoard = firstAgeRatingBoard,
+            ShowsSteamGermany = showsSteamGermany,
             Settings = () => Settings.Current.Metadata,
             SeveralHits = () => Settings.Current.Artwork.WithValidValues().SeveralHits,
             Igdb = new IgdbAccess(
@@ -420,7 +421,8 @@ internal sealed class ArcadiaDriver : IDisposable
     /// </summary>
     public static async Task<ArcadiaDriver> StartAsync(
         IReadOnlyList<LauncherSpec>? launchers = null, AppSettings? settings = null, FakeSteam? steam = null, FakeReleases? releases = null, StartArguments arguments = default,
-        HttpMessageHandler? imageServer = null, Action<FakeStoreServer>? stores = null, AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk)
+        HttpMessageHandler? imageServer = null, Action<FakeStoreServer>? stores = null, AgeRatingBoard firstAgeRatingBoard = AgeRatingBoard.Usk,
+        bool showsSteamGermany = true)
     {
         launchers ??= DefaultLaunchers;
         var folder = Directory.CreateTempSubdirectory("arcadia-app-tests-").FullName;
@@ -431,7 +433,7 @@ internal sealed class ArcadiaDriver : IDisposable
         });
         var time = new FakeTimeProvider(Now);
         var driver = new ArcadiaDriver(folder, ownsFolder: true, launchers, time, new RecordedStarts(), new LauncherInstalls(), steam, releases, arguments, imageServer: imageServer,
-            firstAgeRatingBoard: firstAgeRatingBoard);
+            firstAgeRatingBoard: firstAgeRatingBoard, showsSteamGermany: showsSteamGermany);
 
         // The store pages answer from the first scan on (#493).
         stores?.Invoke(driver.MetadataStore);
@@ -465,7 +467,7 @@ internal sealed class ArcadiaDriver : IDisposable
     {
         var restarted = new ArcadiaDriver(Folder, ownsFolder: false, launchers ?? Specs, Time, Starts, Installs, Steam, Releases, arguments, _files, _opened,
             steamGridDb: SteamGridDb, external: External, metadataStore: MetadataStore, igdb: Igdb,
-            firstAgeRatingBoard: Metadata.FirstAgeRatingBoard);
+            firstAgeRatingBoard: Metadata.FirstAgeRatingBoard, showsSteamGermany: Metadata.ShowsSteamGermany);
         await restarted.LoadAsync();
         return restarted;
     }

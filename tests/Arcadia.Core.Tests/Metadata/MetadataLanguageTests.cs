@@ -23,7 +23,7 @@ public sealed class MetadataLanguageTests
         new(source, MetadataCheck.Checked(new GameMetadata { Description = description }), language);
 
     private static string? DescriptionOf(string uiLanguage, params ProviderMetadata[] providers) =>
-        MergedMetadata.Of(providers, uiLanguage, AgeRatingBoard.Usk).Description?.Value;
+        MergedMetadata.Of(providers, uiLanguage, AgeRatingBoard.Usk, showsSteamGermany: true).Description?.Value;
 
     [Theory]
     [Trait("TestCase", "T557-3")]
@@ -161,6 +161,49 @@ public sealed class MetadataLanguageTests
     }
 
     [Theory]
+    [Trait("TestCase", "T682-7")]
+    [InlineData("DE", true)]
+    [InlineData("de", true)]
+    [InlineData("AT", false)]
+    [InlineData("CH", false)]
+    [InlineData("US", false)]
+    [InlineData(null, false)]
+    public void Only_the_region_germany_shows_steams_own_rating_for_germany(string? region, bool expected)
+    {
+        Assert.Equal(expected, AgeRatingRegion.ShowsSteamGermanyIn(region));
+    }
+
+    [Theory]
+    [Trait("TestCase", "T682-7")]
+    [InlineData(true, new[] { AgeRatingBoard.Usk, AgeRatingBoard.Pegi, AgeRatingBoard.SteamGermany })]
+    [InlineData(false, new[] { AgeRatingBoard.Usk, AgeRatingBoard.Pegi })]
+    public void Steams_own_rating_for_germany_is_left_out_outside_germany(bool showsSteamGermany, AgeRatingBoard[] expected)
+    {
+        // Austria and Germany both put the USK first; only Germany keeps Steam's own rating.
+        var merged = MergedMetadata.Of(
+            [new ProviderMetadata("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16"), new AgeRating(AgeRatingBoard.Pegi, "12")] }),
+             new ProviderMetadata("IGDB", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Usk, "12")] })],
+            "de",
+            AgeRatingBoard.Usk,
+            showsSteamGermany);
+
+        Assert.Equal(expected, merged.AgeRatings.Select(rating => rating.Value.Board));
+    }
+
+    [Fact]
+    [Trait("TestCase", "T682-7")]
+    public void A_game_with_only_steams_own_rating_has_no_rating_outside_germany()
+    {
+        var merged = MergedMetadata.Of(
+            [new ProviderMetadata("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16")] })],
+            "de",
+            AgeRatingBoard.Usk,
+            showsSteamGermany: false);
+
+        Assert.Empty(merged.AgeRatings);
+    }
+
+    [Theory]
     [Trait("TestCase", "T557-6")]
     [InlineData(AgeRatingBoard.Usk, new[] { AgeRatingBoard.Usk, AgeRatingBoard.Pegi, AgeRatingBoard.Esrb })]
     [InlineData(AgeRatingBoard.Pegi, new[] { AgeRatingBoard.Pegi, AgeRatingBoard.Usk, AgeRatingBoard.Esrb })]
@@ -173,7 +216,8 @@ public sealed class MetadataLanguageTests
                 new ProviderMetadata("IGDB", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Esrb, "M"), new AgeRating(AgeRatingBoard.Pegi, "18")] }),
             ],
             "de",
-            first);
+            first,
+            showsSteamGermany: true);
 
         Assert.Equal(expected, merged.AgeRatings.Select(rating => rating.Value.Board));
     }
@@ -185,7 +229,8 @@ public sealed class MetadataLanguageTests
         var merged = MergedMetadata.Of(
             [new ProviderMetadata("Steam", new GameMetadata { AgeRatings = [new AgeRating(AgeRatingBoard.Pegi, "12"), new AgeRating(AgeRatingBoard.Usk, "12")] })],
             "en",
-            AgeRatingBoard.Esrb);
+            AgeRatingBoard.Esrb,
+            showsSteamGermany: false);
 
         Assert.Equal([AgeRatingBoard.Usk, AgeRatingBoard.Pegi], merged.AgeRatings.Select(rating => rating.Value.Board));
     }

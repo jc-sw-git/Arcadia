@@ -78,13 +78,14 @@ public sealed class LibraryMetadataFilterTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private static async Task<ArcadiaDriver> StartAsync(LauncherSpec spec, SavedFilter? saved = null, AgeRatingBoard region = AgeRatingBoard.Usk)
+    private static async Task<ArcadiaDriver> StartAsync(
+        LauncherSpec spec, SavedFilter? saved = null, AgeRatingBoard region = AgeRatingBoard.Usk, bool showsSteamGermany = true)
     {
         var arcadia = await ArcadiaDriver.StartAsync([spec], settings: new AppSettings
         {
             ActiveLaunchers = [KnownLaunchers.Steam.Id],
             LibraryFilters = saved is null ? new Dictionary<string, SavedFilter>() : new Dictionary<string, SavedFilter> { [KnownLaunchers.Steam.Id] = saved },
-        }, firstAgeRatingBoard: region);
+        }, firstAgeRatingBoard: region, showsSteamGermany: showsSteamGermany);
         await RunToIdleAsync(arcadia);
         return arcadia;
     }
@@ -612,6 +613,19 @@ public sealed class LibraryMetadataFilterTests
         arcadia.Press(UiAction.Down).Press(UiAction.Right, times: 4).Press(UiAction.Accept);
         Assert.Equal("1", modal.HitsText);
         Assert.Equal("Steam DE 16", Category(modal, "Altersfreigabe").Summary);
+    }
+
+    [AvaloniaFact]
+    [Trait("TestCase", "T682-8")]
+    public async Task Outside_germany_the_age_rating_filter_offers_no_steam_de()
+    {
+        var (spec, _, _) = SteamWith(
+            new Entry("Asche", Meta([Genre.Shooter], ratings: [new AgeRating(AgeRatingBoard.SteamGermany, "16"), new AgeRating(AgeRatingBoard.Pegi, "12")])),
+            new Entry("Brandung", Meta([Genre.Shooter], ratings: new AgeRating(AgeRatingBoard.SteamGermany, "18"))));
+        using var arcadia = await StartAsync(spec, region: AgeRatingBoard.Usk, showsSteamGermany: false);
+        var modal = OpenAt(arcadia, "Altersfreigabe");
+
+        Assert.Equal(["PEGI"], modal.RatingPane!.Systems.Select(chip => chip.Label));
     }
 
     [AvaloniaFact]

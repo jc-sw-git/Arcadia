@@ -191,6 +191,26 @@ public sealed class DetailMetadataTests
     }
 
     [AvaloniaFact]
+    [Trait("TestCase", "T682-8")]
+    public async Task Outside_germany_steams_own_rating_is_not_shown()
+    {
+        var game = GameOf(KnownLaunchers.Steam, "4711");
+        var source = new FakeMetadataSource { Store = null };
+        source.Local[game.Id] = LocalOf() with
+        {
+            AgeRatings = [new AgeRating(AgeRatingBoard.SteamGermany, "16"), new AgeRating(AgeRatingBoard.Pegi, "12")],
+        };
+        // Austria: the USK first as in Germany, but Steam's rating for Germany isn't Austria's.
+        using var arcadia = await ArcadiaDriver.StartAsync([LauncherSpec.With(KnownLaunchers.Steam, game) with { Metadata = source }],
+            firstAgeRatingBoard: AgeRatingBoard.Usk, showsSteamGermany: false);
+        await RunToIdleAsync(arcadia);
+        var page = OpenDetail(arcadia);
+
+        Assert.Equal("PEGI 12", page.GameInfo.Badge);
+        Assert.Equal(["PEGI 12"], page.GameInfo.Facts.Where(fact => fact.IsBadge).Select(fact => fact.Value));
+    }
+
+    [AvaloniaFact]
     [Trait("TestCase", "T493-14")]
     [Trait("TestCase", "T493-28")]
     [Trait("TestCase", "T541-1")]

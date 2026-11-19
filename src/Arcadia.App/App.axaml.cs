@@ -297,9 +297,7 @@ public partial class App : Application
         var trimCheck = new DispatcherTimer(MemoryTrim.CheckInterval, DispatcherPriority.Background, async (_, _) =>
         {
             var mayPause = mouseMode.IsArcadiaActive && !runningGames.ActiveGames.Any(game => runningGames.RealStateOf(game) is not null);
-            // Covers far out of sight go only now, never while the player moves through a page (#685).
-            var viewsLetGo = mayPause && memoryTrim.IsQuiet && Controls.BuiltInSight.LetGoOutOfSight() > 0;
-            await AppErrors.Guard(() => Task.Run(() => memoryTrim.TrimIfDue(mayPause, viewsLetGo)), AppTexts.ErrorContextMemoryTrim);
+            await AppErrors.Guard(() => Task.Run(() => memoryTrim.TrimIfDue(mayPause)), AppTexts.ErrorContextMemoryTrim);
         });
         trimCheck.Start();
         timers.Add(trimCheck);

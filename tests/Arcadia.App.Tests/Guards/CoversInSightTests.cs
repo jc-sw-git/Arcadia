@@ -9,19 +9,17 @@ namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// #685: every element built costs memory whether it is seen or not, and a page of 128 covers was most of Arcadia's
-/// memory. A page builds only the covers in and near sight and lets the far ones go when the player is quiet; a cover
-/// builds its rare badges only when they show.
+/// memory. A page builds only the covers that came in or near sight, and a cover builds its rare
+/// badges only when they show.
 /// </summary>
 public sealed class CoversInSightTests
 {
-    // The grid shows a little over three rows of eight, built two rows ahead; the first five rows are always kept.
+    // The grid shows a little over three rows of eight, built two rows ahead.
     private const int MostCoversBuiltAtTheTop = 6 * 8;
-
-    private const int KeptPlaces = 40;
 
     [AvaloniaFact]
     [Trait("TestCase", "T685-1")]
-    public async Task A_page_of_128_builds_only_the_covers_seen_and_lets_the_far_ones_go_when_quiet()
+    public async Task A_page_of_128_builds_only_the_covers_that_came_in_or_near_sight()
     {
         using var window = await ArcadiaWindow.ShowAsync(Library(300), ArcadiaWindow.WithPageSize(128, Library(300)));
         var arcadia = window.Arcadia;
@@ -30,18 +28,11 @@ public sealed class CoversInSightTests
         Assert.True(Places(window)[0].IsBuilt, "Das erste Cover ist nicht gebaut.");
         Assert.False(Places(window)[^1].IsBuilt, "Das letzte Cover ist schon gebaut, obwohl es weit außer Sicht ist.");
 
-        // Down to the last cover, as a controller goes: the covers there are built, nothing is let go on the way.
+        // Down to the last cover, as a controller goes: the covers there are built, and those passed stay.
         window.Press(UiAction.Down, times: 15).WaitForTransitions();
         Assert.True(Places(window)[^1].IsBuilt, "Das letzte Cover ist nicht gebaut.");
-        Assert.True(Places(window)[KeptPlaces].IsBuilt, "Ein Cover auf dem Weg nach unten wurde schon beim Scrollen freigegeben.");
+        Assert.True(Places(window)[0].IsBuilt, "Das erste Cover wurde wieder abgebaut.");
         Assert.Equal(arcadia.PageGames[^8], arcadia.FocusedGame);
-
-        // The player is quiet: what is far from sight goes, but the first rows, which a page turn shows, stay.
-        Assert.True(BuiltInSight.LetGoOutOfSight() > 0, "Nichts wurde freigegeben.");
-        window.Settle();
-        Assert.False(Places(window)[KeptPlaces].IsBuilt, "Ein Cover weit außer Sicht bleibt gebaut.");
-        Assert.True(Places(window)[KeptPlaces - 1].IsBuilt, "Ein Cover der ersten Reihen wurde freigegeben.");
-        Assert.True(Places(window)[^1].IsBuilt, "Das Cover im Bild wurde freigegeben.");
 
         // Back up: the top shows its games at once.
         window.Press(UiAction.Up, times: 15).WaitForTransitions();

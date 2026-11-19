@@ -1,19 +1,18 @@
 # #685 Lower the number of UI elements built at the same time to meet the memory budget
 
-**Status:** Automated: T685-1, T685-2, T685-6 · QE: T685-3, T685-4 · Open for the owner: T685-5
+**Status:** Automated: T685-1, T685-2 · QE: T685-3, T685-4 · Open for the owner: T685-5
 
-- [x] **T685-1** A page of 128 covers builds only the covers in sight and two rows ahead; going down to the last cover builds those there and lets nothing go on the way; once the player is quiet the covers far from sight go, but the first five rows (what a page turn shows) stay · E2E: no (window guard; counts built controls)
+- [x] **T685-1** A page of 128 covers builds only the covers in sight and two rows ahead; going down to the last cover builds those there, and covers once built stay (building again would stutter a held stick) · E2E: no (window guard; counts built controls)
 - [x] **T685-2** A cover builds its update, running, starting and install badges only when one shows; a cover with an update shows its badge · E2E: no (window guard)
 - [ ] **T685-3** Library with 128 per page, search, detail page, a cover with an update, an install in progress and a running game look as on `main` (pixel comparison); scrolling a page of 128 with the controller down and up shows every cover with its image, no empty place · E2E: no (window)
-- [ ] **T685-4** Release, `--demo --demo-games 5000` and 905 with 128 per page: private memory after the start and after a session (scroll the page down and up, next page, search, settings) under 400 MB; a focus move down a row stays under 50 ms (`Bild:` lines) · E2E: no (memory of a real process)
-- [x] **T685-6** Covers let go while the player is quiet are worth a trim of their own, however little was allocated; never while he presses or Arcadia may not pause · E2E: no (timer logic)
+- [ ] **T685-4** Release, `--demo --demo-games 5000` and 905 with 128 per page: private memory after the start and after a session (scroll the page down and up, next page, search, settings) below `main`'s, the 400 MB budget named where it isn't met; focus moves, also held, as fast as on `main` and under 50 ms (`Bild:` lines) · E2E: no (memory of a real process)
+- [x] ~~**T685-6** Covers let go while the player is quiet are worth a trim of their own, however little was allocated; never while he presses or Arcadia may not pause~~ · E2E: no (timer logic) — dropped: covers are no longer let go (QE round 2: building them again stuttered a held stick)
 - [ ] **T685-5** **Owner:** real PC, Release, the real library at 128 per page: private memory after the start, after scrolling a page down and up, and on the detail page after 5 minutes without input; under 400 MB · E2E: no (real library, Windows memory) · RC
 
 Automated tests:
 
 | Test cases | Tests |
 |---|---|
-| T685-6 | `MemoryTrimTests` |
 | T685-1, T685-2 | `Guards/CoversInSightTests`; T24-5 (`Guards/LibrarySpeedTests`) adjusted to the built covers |
 
 History:
@@ -29,3 +28,5 @@ History:
 | T685-1, T685-2, T24-5, all window guards and tests | 2026-11-18 | implementation | PR branch, Release and Debug, Linux | ✅ (T24-5 red on the first build as expected: it counted 128 built covers) | T24-5 counts the built covers |
 | QE review (16 states pixel comparison, `Bild:` times, memory; 905 and 5,000 games, 128 per page) | 2026-11-18 | QE | PR d92861b + `main` 334cc62, Release, Linux cloud container (Xvfb) | pictures ✅; ❌ focus moves held at 90 ms up to 148 ms (main 24), ❌ previous page from a page's end 229 ms (main 42), ❌ 5,000 games after session + idle 403 MB | covers are let go only while the player is quiet, the first five rows always stay, two rows are built ahead |
 | QE's steps (`captures-685/qe`), after the fix | 2026-11-18 | implementation | PR branch, Release, Linux cloud container (Xvfb); `main` 1277ef1 | 5,000: Down max 29 ms (main 26), Up max 16 (main 18), previous page from the end 28–32 ms (main 36), next page 48 (main 39); 905: Down max 24, Up max 22, previous page 27, next page once 365 ms (render; 48 on the rerun with 5,000). Anonymous RSS 5,000: start 370–398 MB (main 381), after session + 40 s idle 422–444 MB (main 507), managed 136 MB; 905: start 268, after idle 393 MB | 5,000 games after a session stay above 400 MB on Linux, almost all native (managed 136 MB): open, T685-5 measures Windows |
+| QE review round 2 | 2026-11-19 | QE | PR 9601021 vs `main` cb3f7c9, Release, Linux cloud container (Xvfb) | page turns and held moves without a pause ✅; ❌ a held stick after the idle trim had let covers go: up to 128 ms (main 19); ❌ memory not lower than round 1; ❌ letting go ran outside `AppErrors.Guard` | covers are no longer let go: once built, a cover stays |
+| QE's steps1 + steps2 (`captures-685/qe`), after the change | 2026-11-19 | implementation | PR branch, Release, Linux cloud container (Xvfb) | 5,000: Down max 29 ms (90 presses), Up max 16, page turns 30–37 ms; 905: Down max 19, Up max 16, page turns 26–48 ms (all as on `main`). Anonymous RSS 905: start 298 MB (main 418–444), after the sessions and idle 456 MB (main 519–580 in the QE's runs); 5,000: start 451, end 456 MB | budget met after the start with 905, not after browsing whole pages of 128: open, lowered further by #690 (24 per page) |

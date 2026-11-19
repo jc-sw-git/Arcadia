@@ -9,8 +9,8 @@ namespace Arcadia.App.Tests.Guards;
 
 /// <summary>
 /// #685: every element built costs memory whether it is seen or not, and a page of 128 covers was most of Arcadia's
-/// memory. A page builds only the covers that came in or near sight, and a cover builds its rare
-/// badges only when they show.
+/// memory. A page builds only the covers that came in or near sight, and a cover builds its install
+/// badge and progress bar only when an install shows.
 /// </summary>
 public sealed class CoversInSightTests
 {
@@ -41,17 +41,15 @@ public sealed class CoversInSightTests
 
     [AvaloniaFact]
     [Trait("TestCase", "T685-2")]
-    public async Task A_cover_builds_its_update_badge_only_when_an_update_shows()
+    public async Task A_cover_builds_its_install_badge_and_progress_only_when_an_install_shows()
     {
-        var games = Games(10).Select((game, i) => i == 3 ? game with { UpdateAvailable = true } : game).ToArray();
-        using var window = await ArcadiaWindow.ShowAsync([LauncherSpec.With(KnownLaunchers.Gog, games)]);
+        using var window = await ArcadiaWindow.ShowAsync(Library(10));
         var arcadia = window.Arcadia;
 
-        var withUpdate = window.Tile(arcadia.PageGames.Single(tile => tile.UpdateAvailable));
-        var without = window.Tile(arcadia.PageGames.First(tile => !tile.UpdateAvailable));
-
-        Assert.Single(Badges(withUpdate), badge => badge.IsBuilt && badge.IsVisible);
-        Assert.All(Badges(without), badge => Assert.False(badge.IsBuilt));
+        var cover = window.Tile(arcadia.PageGames[0]);
+        Assert.False(arcadia.PageGames[0].IsInstallActive);
+        Assert.Equal(2, Badges(cover).Count);
+        Assert.All(Badges(cover), badge => Assert.False(badge.IsBuilt));
     }
 
     private static int Built(ArcadiaWindow window) => Places(window).Count(place => place.IsBuilt);

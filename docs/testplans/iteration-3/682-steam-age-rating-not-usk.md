@@ -6,7 +6,7 @@ the quality engineer checks them in the review.
 
 Follow-up from the owner's question in the thread: "Steam DE" only when the system region is Germany (T682-7 to T682-9).
 
-**Status:** Automated: T682-1, T682-2, T682-3, T682-4, T682-7, T682-8 · QE: T682-5 ✅, T682-9 · Open for the owner: T682-6
+**Status:** Automated: T682-1, T682-2, T682-3, T682-4, T682-7, T682-8 · QE: T682-5 ✅, T682-9 ✅ · Open for the owner: T682-6
 
 - [x] **T682-1** Steam's store answer with `usk`, `pegi`, `esrb` and `steam_germany`: USK, PEGI and ESRB are read as
   delivered, `steam_germany` as Steam's own board "Steam DE", never as USK. · E2E: yes
@@ -27,7 +27,7 @@ Follow-up from the owner's question in the thread: "Steam DE" only when the syst
   unknown region leave it out of the merged ratings; a game with only Steam's rating for Germany then has no rating. · E2E: yes
 - [x] **T682-8** Region Austria (USK first), a game with "Steam DE 16" and PEGI 12: badge and "Infos" show only PEGI 12;
   the filter "Altersfreigabe" offers only "PEGI", no "Steam DE". · E2E: yes
-- [ ] **T682-9** Demo data on a system with region Austria: no "Steam DE" in the info line, "Infos" or the filter
+- [x] **T682-9** Demo data on a system with region Austria: no "Steam DE" in the info line, "Infos" or the filter
   "Altersfreigabe"; with region Germany it is there as in T682-5. · E2E: no (window: the system region)
 
 Automated tests:
@@ -49,3 +49,4 @@ History:
 | T682-1 to T682-4 | 2026-11-18 | Claude (QE) | branch, Linux, Release `dotnet test`, plus the IGDB case for T682-2 (red with Steam's value read as USK) | ✅ | – |
 | T682-5 | 2026-11-18 | Claude (QE) | branch, Linux Xvfb, Release, `--demo`, region DE | ✅ "Infos" shows "Steam DE 12" with green border beside ESRB T, filter chip and tiles "Steam DE" fit (`captures-682/qe/`) | – |
 | T682-7, T682-8 | 2026-11-19 | Claude | branch, Linux, `dotnet test` of the metadata tests (red with Steam DE kept outside Germany) | ✅ | – |
+| T682-9 | 2026-11-19 | Claude (QE) | branch, Linux Xvfb, Release, `--demo`, region AT and DE | ✅ AT: info line and "Infos" show only ESRB T, filter offers USK/PEGI/ESRB; DE: "Steam DE" chip there (`captures-682/qe/694-*`) | – |
